@@ -45,6 +45,17 @@ export class UnityClientProtocol {
     this._send({ type: "config", config });
   }
 
+  /** MRS → Unity dimensional state (LEL-C skeleton). */
+  sendStateSnapshot(snapshot) {
+    this._send({
+      type: "state_snapshot",
+      frame: snapshot.frame ?? 0,
+      seed: snapshot.seed ?? 0,
+      timestamp: snapshot.timestamp ?? Date.now(),
+      entities: snapshot.entities ?? [],
+    });
+  }
+
   sendRaw(text) {
     try {
       this.ws.send(text);
