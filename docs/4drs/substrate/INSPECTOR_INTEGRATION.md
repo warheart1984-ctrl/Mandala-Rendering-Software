@@ -83,9 +83,9 @@ Unity: `MRSInspectorClient` (WebSocket) + menu **MRS / 4D Inspector** (`MRS4DIns
 npm run inspector:ws
 ```
 
-Default: `ws://127.0.0.1:9490`. Reuses `LiveLinkServer` + `UnityClientProtocol` with `MRSInspector4D.handleWireMessage` and a **default test mesh** (not a claimed RT4D Hyper-Caustic Lens binding). Unity Connect button / EditorPrefs key `MRS.Inspector.Endpoint`.
+Default: `ws://127.0.0.1:9490`. Reuses `LiveLinkServer` + `UnityClientProtocol` with `MRSInspector4D.handleWireMessage`. Server starts on a **default test mesh**; on Connect, Unity `MRSInspectorClient` pushes the active `FourDTesseractRenderer` inspectable snapshot (`scene_push`: rotated verts + `d4`/`d3`/`scale`, plus `meshAssetId`). UI shows `scene: default_test_mesh` vs `scene: unity_bound`. Manual **Push Scene** refreshes after surface/time changes. Not a claimed RT4D Hyper-Caustic Lens / multi-user sync.
 
-**Gaps (declared):** live scene sync from Unity mesh stream; real curvature; shaderDebug; production auth/TLS.
+**Gaps (declared):** SceneView 3D camera ≠ full 4D `Ray4D.from2DMouse` identity (projection params are pushed; Unity Scene camera matrix is not); real curvature; shaderDebug; production auth/TLS; auto re-push on every animation frame.
 
 ## Step 6 — Deterministic replay hooks
 
@@ -99,4 +99,4 @@ See [`INSPECTOR_EVIDENCE_BUNDLE.md`](./INSPECTOR_EVIDENCE_BUNDLE.md). Bit-identi
 npm run test:inspector4d
 ```
 
-Includes in-process `handleWireMessage` checks plus a short WebSocket round-trip against `LiveLinkServer`.
+Includes in-process `handleWireMessage` / `scene_push` checks plus a WebSocket `scene_push` → `inspect_ray` round-trip against `LiveLinkServer`.

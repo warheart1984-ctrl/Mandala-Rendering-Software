@@ -11,7 +11,8 @@ namespace SovereignX.CIEMS.Engine.Inspector
 {
     /// <summary>
     /// MRS Inspector JSON/WebSocket client (INSPECTOR_PROTOCOL.md).
-    /// Status: wires Editor ↔ Node inspector:ws; curvature remains stub-marked; not production scene binding.
+    /// Status: wires Editor ↔ Node inspector:ws; curvature remains stub-marked.
+    /// On connect, pushes inspectable scene (mesh + camera) so hits match SceneView geometry.
     /// Transport matches live-link (System.Net.WebSockets.ClientWebSocket).
     /// </summary>
     public class MRSInspectorClient
@@ -27,12 +28,15 @@ namespace SovereignX.CIEMS.Engine.Inspector
         public event Action OnConnected;
         public event Action OnDisconnected;
         public event Action<string> OnStatus;
+        public event Action<string> OnSceneStatus;
 
         readonly ConcurrentQueue<Action> _mainThread = new ConcurrentQueue<Action>();
         ClientWebSocket _ws;
         CancellationTokenSource _cts;
         Inspector4DResultDTO _last;
         string _lastWireJson;
+        string _sceneLabel = "scene: default_test_mesh";
+        bool _pushSceneOnConnect = true;
 
         public MRSInspectorClient(string endpoint = null)
         {
@@ -44,7 +48,13 @@ namespace SovereignX.CIEMS.Engine.Inspector
 
         public Inspector4DResultDTO LastResult => _last;
         public string LastWireJson => _lastWireJson;
+        public string SceneLabel => _sceneLabel;
         public bool UseStubWhenDisconnected { get; set; } = true;
+        public bool PushSceneOnConnect
+        {
+            get => _pushSceneOnConnect;
+            set => _pushSceneOnConnect = value;
+        }
 
         public static string LoadEndpointPref()
         {
@@ -91,6 +101,7 @@ namespace SovereignX.CIEMS.Engine.Inspector
             try { _ws?.Abort(); } catch { /* ignore */ }
             _ws = null;
             _cts = null;
+            _sceneLabel = "scene: default_test_mesh";
         }
 
         /// <summary>Drain callbacks onto the main/Editor thread.</summary>
@@ -101,6 +112,31 @@ namespace SovereignX.CIEMS.Engine.Inspector
                 try { action(); }
                 catch (Exception e) { Debug.LogWarning($"[MRS Inspector] {e.Message}"); }
             }
+        }
+
+        /// <summary>
+        /// Push current SceneView-related inspectable mesh + camera to the WS server.
+        /// Prefers FourDTesseractRenderer snapshot (rotated verts); else leaves server default.
+        /// Status: wires session bind — not production scene sync.
+        /// </summary>
+        public bool PushInspectableScene()
+        {
+            if (!IsConnected)
+            {
+                RaiseStatus("Push scene requires live connection");
+                return false;
+            }
+
+            var json = BuildScenePushJson();
+            if (string.IsNullOrEmpty(json))
+            {
+                RaiseStatus("No FourDTesseractRenderer — server keeps default_test_mesh");
+                return false;
+            }
+
+            SendJson(json);
+            RaiseStatus("Sent scene_push");
+            return true;
         }
 
         /// <summary>
@@ -117,11 +153,14 @@ namespace SovereignX.CIEMS.Engine.Inspector
 
             if (IsConnected)
             {
+                var cam = TryGetActiveCameraJson();
                 var json =
                     $"{{\"type\":\"inspect_screen\",\"schemaVersion\":\"1.1\"," +
-                    $"\"sx\":{F(sx)},\"sy\":{F(sy)},\"width\":{width},\"height\":{height}}}";
+                    $"\"sx\":{F(sx)},\"sy\":{F(sy)},\"width\":{width},\"height\":{height}" +
+                    (cam != null ? $",\"camera\":{cam}" : "") +
+                    "}";
                 SendJson(json);
-                RaiseStatus($"Sent inspect_screen sx={sx:F3} sy={sy:F3}");
+                RaiseStatus($"Sent inspect_screen sx={sx:F3} sy={sy:F3} ({_sceneLabel})");
                 return _last;
             }
 
@@ -191,6 +230,8 @@ namespace SovereignX.CIEMS.Engine.Inspector
                 {
                     OnConnected?.Invoke();
                     RaiseStatus($"Connected {Endpoint}");
+                    if (_pushSceneOnConnect)
+                        PushInspectableScene();
                 });
 
                 var buffer = new byte[1 << 16];
@@ -237,6 +278,13 @@ namespace SovereignX.CIEMS.Engine.Inspector
             {
                 try
                 {
+                    if (text.IndexOf("\"scene_bound\"", StringComparison.Ordinal) >= 0 ||
+                        text.IndexOf("\"scene_status\"", StringComparison.Ordinal) >= 0)
+                    {
+                        ApplySceneStatusFromWire(text);
+                        return;
+                    }
+
                     var dto = InspectorWireParser.ParseInspectResult(text);
                     if (dto == null)
                     {
@@ -253,6 +301,94 @@ namespace SovereignX.CIEMS.Engine.Inspector
                 }
             });
         }
+
+        void ApplySceneStatusFromWire(string text)
+        {
+            var label = ExtractJsonString(text, "label");
+            var sceneId = ExtractJsonString(text, "sceneId");
+            var ok = text.IndexOf("\"ok\":true", StringComparison.Ordinal) >= 0
+                     || text.IndexOf("\"ok\": true", StringComparison.Ordinal) >= 0;
+            if (!ok)
+            {
+                var err = ExtractJsonString(text, "error") ?? "bind_failed";
+                RaiseStatus($"scene_bound error={err}");
+                return;
+            }
+
+            _sceneLabel = !string.IsNullOrEmpty(label)
+                ? label
+                : (!string.IsNullOrEmpty(sceneId) ? $"scene: {sceneId}" : "scene: unity_bound");
+            RaiseStatus($"Bound {_sceneLabel}");
+            OnSceneStatus?.Invoke(_sceneLabel);
+        }
+
+        static string BuildScenePushJson()
+        {
+            var renderer = FindFirstFourDRenderer();
+            if (renderer == null) return null;
+            if (!renderer.TryBuildInspectableSnapshot(out var snap)) return null;
+
+            var sb = new StringBuilder(4096);
+            sb.Append("{\"type\":\"scene_push\",\"schemaVersion\":\"1.1\",");
+            sb.Append("\"sceneId\":\"unity_bound\",");
+            sb.Append("\"meshAssetId\":\"").Append(Escape(snap.surfaceId)).Append("\",");
+            sb.Append("\"camera\":{\"d4\":").Append(F(snap.d4))
+                .Append(",\"d3\":").Append(F(snap.d3))
+                .Append(",\"scale\":").Append(F(snap.scale)).Append("},");
+            sb.Append("\"mesh\":{\"vertices\":[");
+            for (int i = 0; i < snap.vertices.Length; i++)
+            {
+                if (i > 0) sb.Append(',');
+                var v = snap.vertices[i];
+                sb.Append('[').Append(F(v.x)).Append(',').Append(F(v.y)).Append(',')
+                    .Append(F(v.z)).Append(',').Append(F(v.w)).Append(']');
+            }
+            sb.Append("],\"faces\":[");
+            int faceCount = snap.facesFlat.Length / 3;
+            for (int f = 0; f < faceCount; f++)
+            {
+                if (f > 0) sb.Append(',');
+                int o = f * 3;
+                sb.Append('[').Append(snap.facesFlat[o]).Append(',')
+                    .Append(snap.facesFlat[o + 1]).Append(',')
+                    .Append(snap.facesFlat[o + 2]).Append(']');
+            }
+            sb.Append("]}}");
+            return sb.ToString();
+        }
+
+        static string TryGetActiveCameraJson()
+        {
+            var renderer = FindFirstFourDRenderer();
+            if (renderer == null) return null;
+            return $"{{\"d4\":{F(renderer.d4)},\"d3\":{F(renderer.d3)},\"scale\":{F(renderer.scale)}}}";
+        }
+
+        static FourDTesseractRenderer FindFirstFourDRenderer()
+        {
+#if UNITY_2023_1_OR_NEWER
+            return UnityEngine.Object.FindFirstObjectByType<FourDTesseractRenderer>();
+#else
+            return UnityEngine.Object.FindObjectOfType<FourDTesseractRenderer>();
+#endif
+        }
+
+        static string ExtractJsonString(string json, string key)
+        {
+            var needle = "\"" + key + "\"";
+            var idx = json.IndexOf(needle, StringComparison.Ordinal);
+            if (idx < 0) return null;
+            idx = json.IndexOf(':', idx + needle.Length);
+            if (idx < 0) return null;
+            idx = json.IndexOf('"', idx + 1);
+            if (idx < 0) return null;
+            var end = json.IndexOf('"', idx + 1);
+            if (end < 0) return null;
+            return json.Substring(idx + 1, end - idx - 1);
+        }
+
+        static string Escape(string s) =>
+            string.IsNullOrEmpty(s) ? "" : s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
         void SendJson(string json)
         {

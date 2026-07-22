@@ -32,6 +32,7 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
             _client ??= new MRSInspectorClient(_endpoint);
             _client.OnResult += SetResult;
             _client.OnStatus += s => { _status = s; Repaint(); };
+            _client.OnSceneStatus += _ => Repaint();
             _client.OnConnected += () => Repaint();
             _client.OnDisconnected += () => Repaint();
             EditorApplication.update += PumpClient;
@@ -112,13 +113,28 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
                 }
             }
 
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Push Scene", GUILayout.Width(90)))
+                {
+                    _client?.PushInspectableScene();
+                }
+                EditorGUILayout.LabelField(_client?.SceneLabel ?? "scene: default_test_mesh");
+            }
+
             var connected = _client != null && _client.IsConnected;
             EditorGUILayout.HelpBox(
                 connected
-                    ? $"Live: {_status}"
+                    ? $"Live: {_status} | {_client?.SceneLabel}"
                     : $"Offline: {_status} — stub fallback on Scene click until connected.",
                 connected ? MessageType.None : MessageType.None);
             EditorGUILayout.LabelField("State", connected ? "CONNECTED" : "DISCONNECTED");
+            if (connected && (_client?.SceneLabel?.Contains("default_test_mesh") ?? true))
+            {
+                EditorGUILayout.HelpBox(
+                    "Server scene is still the default test mesh. Add a FourDTesseractRenderer and Push Scene (or Connect again) so inspect hits match the SceneView surface.",
+                    MessageType.Warning);
+            }
         }
 
         private void DrawToolbar()

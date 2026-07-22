@@ -281,6 +281,46 @@ public class FourDTesseractRenderer : MonoBehaviour
         return transform.position + new Vector3(k * p.x * scale, k * p.y * scale, 0f);
     }
 
+    /// <summary>
+    /// Build inspectable 4D mesh + projection params matching current solid/gizmo pose.
+    /// Status: prepares Editor → inspector:ws scene_push payload (not multi-user sync).
+    /// </summary>
+    public bool TryBuildInspectableSnapshot(out InspectableSnapshot snap)
+    {
+        snap = default;
+        if (verts4D == null || facesFlat == null || facesFlat.Length < 3)
+            ReloadMesh();
+        if (verts4D == null || facesFlat == null || facesFlat.Length < 3)
+            return false;
+
+        float t = Application.isPlaying ? Time.time * speed : Time.realtimeSinceStartup * speed;
+        var rotated = new Vector4[verts4D.Length];
+        for (int i = 0; i < verts4D.Length; i++)
+            rotated[i] = Rotate4D(verts4D[i], t);
+
+        snap = new InspectableSnapshot
+        {
+            surfaceId = string.IsNullOrEmpty(_loadedSurface) ? surfaceId : _loadedSurface,
+            vertices = rotated,
+            facesFlat = facesFlat,
+            d4 = d4,
+            d3 = d3,
+            scale = scale,
+        };
+        return true;
+    }
+
+    /// <summary>Snapshot for MRS Inspector scene_push (rotated verts + camera).</summary>
+    public struct InspectableSnapshot
+    {
+        public string surfaceId;
+        public Vector4[] vertices;
+        public int[] facesFlat;
+        public float d4;
+        public float d3;
+        public float scale;
+    }
+
     void OnDrawGizmos()
     {
         if (renderMode == RenderMode.Solid) return;

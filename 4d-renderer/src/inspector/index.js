@@ -2,7 +2,6 @@ import { MeshPicker4D } from "../picking/MeshPicker4D.js";
 import { Ray4D } from "../picking/Ray4D.js";
 import {
   emptyInspectorResult,
-  dropWProjectionMatrix,
   vec4,
 } from "./types.js";
 import {
@@ -14,31 +13,96 @@ import {
   sub,
 } from "./differential.js";
 import { resultToWire, buildInspectorEvidenceBundle } from "./serialize.js";
+import {
+  createDefaultSceneBinding,
+  resolveSceneBindMessage,
+  sceneBoundWire,
+  sceneStatusWire,
+  DEFAULT_SCENE_ID,
+} from "./sceneBind.js";
 
 /**
  * MRSInspector4D — skeleton inspector (MRS-IC v1.1).
  * Status: skeleton — curvature second forms not computed; BVH path optional.
+ * Scene bind: wires Unity-pushed mesh/camera for picking (not multi-user sync).
  */
 export class MRSInspector4D {
   constructor(options = {}) {
-    this.mesh = options.mesh ?? null;
+    const defaults = createDefaultSceneBinding();
+    this.mesh = options.mesh ?? defaults.mesh;
     this.picker = options.picker ?? (this.mesh ? new MeshPicker4D(this.mesh) : null);
-    this.camera = options.camera ?? { d4: 4, d3: 4, scale: 80 };
-    this.projectionMatrix = options.projectionMatrix ?? dropWProjectionMatrix();
-    this.hyperplanes = options.hyperplanes ?? [];
-    this.rotationPlanes = options.rotationPlanes ?? [
-      {
-        axisA: vec4(1, 0, 0, 0),
-        axisB: vec4(0, 0, 0, 1),
-        angle: 0,
-        label: "x-w",
-      },
-    ];
+    this.camera = options.camera ?? defaults.camera;
+    this.projectionMatrix = options.projectionMatrix ?? defaults.projectionMatrix;
+    this.hyperplanes = options.hyperplanes ?? defaults.hyperplanes;
+    this.rotationPlanes = options.rotationPlanes ?? defaults.rotationPlanes;
     this.epsilon = options.epsilon ?? 1e-4;
+    this.meshesRoot = options.meshesRoot ?? undefined;
+    /** @type {import("./sceneBind.js").SceneBindingStatus} */
+    this.sceneStatus =
+      options.sceneStatus ??
+      options.status ??
+      (options.mesh
+        ? {
+            id: options.sceneId ?? "custom",
+            source: options.sceneSource ?? "constructor",
+            label: `scene: ${options.sceneId ?? "custom"}`,
+            meshAssetId: options.meshAssetId ?? null,
+            vertexCount: this.mesh?.vertices?.length ?? 0,
+            faceCount: this.mesh?.faces?.length ?? 0,
+            boundAt: Date.now(),
+          }
+        : defaults.status);
   }
 
-  inspectAtScreenPoint(sx, sy, width = 1, height = 1) {
-    const ray = Ray4D.from2DMouse(sx * width, sy * height, width, height, this.camera);
+  /** Current bind label for UI / logs (`scene: default_test_mesh` | `scene: unity_bound`). */
+  getSceneLabel() {
+    return this.sceneStatus?.label ?? `scene: ${DEFAULT_SCENE_ID}`;
+  }
+
+  getSceneStatus() {
+    return { ...this.sceneStatus };
+  }
+
+  /**
+   * Replace active inspect mesh + camera from a resolved binding.
+   * Rebuilds MeshPicker4D. Status: binds local session scene — not production sync.
+   */
+  applySceneBinding(binding) {
+    if (!binding?.mesh) return false;
+    this.mesh = binding.mesh;
+    this.picker = new MeshPicker4D(this.mesh);
+    if (binding.camera) this.camera = { ...binding.camera };
+    if (binding.projectionMatrix) {
+      this.projectionMatrix = binding.projectionMatrix.map((row) => [...row]);
+    }
+    if (binding.hyperplanes) this.hyperplanes = binding.hyperplanes;
+    if (binding.rotationPlanes) this.rotationPlanes = binding.rotationPlanes;
+    this.sceneStatus = { ...binding.status };
+    return true;
+  }
+
+  /**
+   * Handle scene_push / scene_bind wire message.
+   * @returns {object} scene_bound wire ack
+   */
+  bindSceneFromWire(msg) {
+    const resolved = resolveSceneBindMessage(msg, { meshesRoot: this.meshesRoot });
+    if (!resolved.ok) return sceneBoundWire(resolved.error, false);
+    this.applySceneBinding(resolved.binding);
+    return sceneBoundWire(this.sceneStatus, true);
+  }
+
+  /** Reset to labeled default test fixture. */
+  resetToDefaultScene() {
+    const defaults = createDefaultSceneBinding();
+    this.applySceneBinding(defaults);
+    this.sceneStatus = { ...defaults.status, boundAt: null };
+    return sceneBoundWire(this.sceneStatus, true);
+  }
+
+  inspectAtScreenPoint(sx, sy, width = 1, height = 1, cameraOverride = null) {
+    const cam = cameraOverride ?? this.camera;
+    const ray = Ray4D.from2DMouse(sx * width, sy * height, width, height, cam);
     const out = this.inspectAtRay(ray.origin, ray.direction);
     if (out.ok) {
       out.screenInput = { sx, sy, width, height };
@@ -87,9 +151,26 @@ export class MRSInspector4D {
 
   handleWireMessage(msg) {
     if (!msg || typeof msg !== "object") return { type: "inspect_result", ok: false, error: "bad_message" };
+    if (msg.type === "scene_push" || msg.type === "scene_bind") {
+      return this.bindSceneFromWire(msg);
+    }
+    if (msg.type === "scene_status" || msg.type === "get_scene_status") {
+      return sceneStatusWire(this.sceneStatus);
+    }
+    if (msg.type === "scene_reset") {
+      return this.resetToDefaultScene();
+    }
     if (msg.type === "inspect_screen") {
+      const cam =
+        msg.camera && typeof msg.camera === "object"
+          ? {
+              d4: Number(msg.camera.d4 ?? this.camera.d4),
+              d3: Number(msg.camera.d3 ?? this.camera.d3),
+              scale: Number(msg.camera.scale ?? this.camera.scale),
+            }
+          : null;
       return resultToWire(
-        this.inspectAtScreenPoint(msg.sx ?? 0.5, msg.sy ?? 0.5, msg.width ?? 1, msg.height ?? 1),
+        this.inspectAtScreenPoint(msg.sx ?? 0.5, msg.sy ?? 0.5, msg.width ?? 1, msg.height ?? 1, cam),
       );
     }
     if (msg.type === "inspect_ray") {
@@ -239,3 +320,12 @@ function arrToVec4(a) {
 export { resultToWire, buildInspectorEvidenceBundle, resultToJSON, vecToArr } from "./serialize.js";
 export { emptyInspectorResult, dropWProjectionMatrix } from "./types.js";
 export { createDefaultInspectorTestMesh } from "./defaultTestMesh.js";
+export {
+  createDefaultSceneBinding,
+  resolveSceneBindMessage,
+  loadMeshAsset,
+  defaultMeshesRoot,
+  DEFAULT_SCENE_ID,
+  sceneBoundWire,
+  sceneStatusWire,
+} from "./sceneBind.js";

@@ -30,6 +30,11 @@ export class UnityClientProtocol {
       case "inspect_screen":
       case "inspect_ray":
       case "inspect_primitive":
+      case "scene_push":
+      case "scene_bind":
+      case "scene_status":
+      case "get_scene_status":
+      case "scene_reset":
         this._handleInspect(msg);
         break;
       case "get_mesh":
@@ -51,24 +56,54 @@ export class UnityClientProtocol {
 
   _handleInspect(msg) {
     if (!this.inspector?.handleWireMessage) {
-      this._send({
-        type: "inspect_result",
-        schemaVersion: "1.1",
-        ok: false,
-        error: "no_inspector",
-      });
+      const isScene =
+        msg.type === "scene_push" ||
+        msg.type === "scene_bind" ||
+        msg.type === "scene_status" ||
+        msg.type === "get_scene_status" ||
+        msg.type === "scene_reset";
+      this._send(
+        isScene
+          ? {
+              type: "scene_bound",
+              schemaVersion: "1.1",
+              ok: false,
+              error: "no_inspector",
+            }
+          : {
+              type: "inspect_result",
+              schemaVersion: "1.1",
+              ok: false,
+              error: "no_inspector",
+            },
+      );
       return;
     }
     try {
       const out = this.inspector.handleWireMessage(msg);
       this._send(out);
     } catch (err) {
-      this._send({
-        type: "inspect_result",
-        schemaVersion: "1.1",
-        ok: false,
-        error: err?.message ? `inspect_error:${err.message}` : "inspect_error",
-      });
+      const isScene =
+        msg.type === "scene_push" ||
+        msg.type === "scene_bind" ||
+        msg.type === "scene_status" ||
+        msg.type === "get_scene_status" ||
+        msg.type === "scene_reset";
+      this._send(
+        isScene
+          ? {
+              type: "scene_bound",
+              schemaVersion: "1.1",
+              ok: false,
+              error: err?.message ? `bind_error:${err.message}` : "bind_error",
+            }
+          : {
+              type: "inspect_result",
+              schemaVersion: "1.1",
+              ok: false,
+              error: err?.message ? `inspect_error:${err.message}` : "inspect_error",
+            },
+      );
     }
   }
 
