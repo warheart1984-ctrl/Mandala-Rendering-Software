@@ -118,6 +118,9 @@
 | Unity MRS live-link client | **skeleton** | `unity/.../LiveLink/MRSUnityLiveLink.cs` |
 | MRS binary protocol MRS1 | **declared** | `docs/4drs/substrate/MRS_BINARY_PROTOCOL.md` |
 | Replay validator outline | **declared** | `scripts/replay-validator-outline.mjs` |
+| MRS Inspector Contract (MRS-IC) v1.1 | **declared** | `docs/4drs/substrate/MRS-IC-v1.1.md` |
+| 4D Inspector engine API | **skeleton** | `4d-renderer/src/inspector/` + `npm run test:inspector4d` |
+| Unity 4D Inspector Editor window | **skeleton** | `unity/.../Inspector/Editor/MRS4DInspectorWindow.cs` |
 
 ## VIII. Host ports
 

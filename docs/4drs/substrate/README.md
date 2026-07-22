@@ -11,5 +11,10 @@ Goal: treat physics, live links, shaders, assets, and replay as operations on st
 | [UNITY_LIVE_LINK.md](./UNITY_LIVE_LINK.md) | Unity client + \(\Pi_{3\mathrm{D}}\) | **skeleton** / Experimental |
 | [MRS_BINARY_PROTOCOL.md](./MRS_BINARY_PROTOCOL.md) | Little-endian MRS1 framing | **declared** |
 | [DETERMINISTIC_REPLAY.md](./DETERMINISTIC_REPLAY.md) | Replay hooks + validator outline | **declared** / **partial** evidence |
+| [INSPECTOR_MATH.md](./INSPECTOR_MATH.md) | Pick fields: normal, curvature, Jacobian, … | **declared** |
+| [MRS-IC-v1.1.md](./MRS-IC-v1.1.md) | Inspector Contract v1.1 | **declared** |
+| [INSPECTOR_PROTOCOL.md](./INSPECTOR_PROTOCOL.md) | JSON inspect_screen / inspect_result | **declared** |
+| [INSPECTOR_EVIDENCE_BUNDLE.md](./INSPECTOR_EVIDENCE_BUNDLE.md) | Replay evidence bundle | **declared** |
+| [INSPECTOR_INTEGRATION.md](./INSPECTOR_INTEGRATION.md) | Developer + Unity integration | **skeleton** |
 
 Capability snapshot in the root README remains evidence-bound; these docs do **not** auto-promote statuses.

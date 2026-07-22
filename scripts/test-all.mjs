@@ -16,6 +16,7 @@ const suites = [
   { name: "visual-regression", script: "scripts/test-visual-regression.mjs" },
   { name: "solid-play", script: "scripts/test-host-solid-play.mjs" },
   { name: "bvh4d-gpu", script: "scripts/test-bvh4d-gpu.mjs" },
+  { name: "inspector4d", script: "scripts/test-inspector4d.mjs" },
   { name: "conformance", script: "scripts/test-conformance.mjs" },
   { name: "host-probes", script: "scripts/verify-host-probes.mjs" },
   { name: "movie-pipelines", script: "scripts/verify-movie-pipelines.mjs" },

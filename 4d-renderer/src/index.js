@@ -73,6 +73,15 @@ export { Ray4D } from "./picking/Ray4D.js";
 export { MeshPicker4D } from "./picking/MeshPicker4D.js";
 export { PickerController } from "./picking/PickerController.js";
 
+export {
+  MRSInspector4D,
+  emptyInspectorResult,
+  dropWProjectionMatrix,
+  resultToWire,
+  resultToJSON,
+  buildInspectorEvidenceBundle,
+} from "./inspector/index.js";
+
 export { ShaderNode, Port } from "./shader-graph/ShaderNode.js";
 export { ShaderGraph } from "./shader-graph/ShaderGraph.js";
 export { WGSLCompiler } from "./shader-graph/WGSLCompiler.js";

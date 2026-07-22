@@ -26,6 +26,7 @@ Statuses below match charter evidence (not marketing). Details: [`constitution/C
 | Unreal adapter | Partial |
 | Native Vulkan dispatch | Experimental |
 | Live engine link (shared-frame / MRS↔Unity) | Experimental |
+| 4D Inspector (MRS-IC) | Skeleton |
 | 4D BVH GPU kernels | Skeleton |
 | Mathematical substrate / MRS-CRC | Declared |
 | 4D physics | Skeleton |
