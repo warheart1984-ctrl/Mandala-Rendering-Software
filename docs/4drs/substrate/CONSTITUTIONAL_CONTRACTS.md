@@ -17,9 +17,9 @@
 | **AE-C** | Asset Export Constitutional Contract | Explicit \(\Pi\) + provenance |
 | **DR-C** | Deterministic Replay Constitutional Contract | \(S_{n}=T^{(n)}(S_{0},\{u_{k}\})\) |
 | **MRS-CRC** | Constitutional Rendering Contract v1.0 | [`MRS-CRC-v1.0.md`](./MRS-CRC-v1.0.md) |
-| **MRS-IC** | Inspector Contract v1.1 | [`MRS-IC-v1.1.md`](./MRS-IC-v1.1.md) |
+| **MRS-IC** | Inspector Contract v1.1 / v1.2 | [`../contracts/MRS-IC-v1.1.md`](../contracts/MRS-IC-v1.1.md), [`../contracts/MRS-IC-v1.2.md`](../contracts/MRS-IC-v1.2.md) |
 
-See also: [`BVH4D_GPU.md`](./BVH4D_GPU.md), [`UNITY_LIVE_LINK.md`](./UNITY_LIVE_LINK.md), [`DETERMINISTIC_REPLAY.md`](./DETERMINISTIC_REPLAY.md), [`INSPECTOR_MATH.md`](./INSPECTOR_MATH.md).
+See also: [`BVH4D_GPU.md`](./BVH4D_GPU.md), [`UNITY_LIVE_LINK.md`](./UNITY_LIVE_LINK.md), [`DETERMINISTIC_REPLAY.md`](./DETERMINISTIC_REPLAY.md), [`INSPECTOR_MATH.md`](./INSPECTOR_MATH.md), [`../inspector/README.md`](../inspector/README.md).
 
 ---
 

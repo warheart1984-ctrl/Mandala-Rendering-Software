@@ -71,6 +71,7 @@ export function principalCurvatureStub(t1, t2) {
     k2: 0,
     dir1: { ...t1 },
     dir2: { ...t2 },
+    curvatureStub: true,
   };
 }
 

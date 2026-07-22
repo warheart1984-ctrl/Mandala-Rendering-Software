@@ -54,8 +54,14 @@ if (!bundle.hash) {
   process.exit(1);
 }
 
+if (!rayHit.curvature?.curvatureStub) {
+  console.error("expected curvatureStub marker (MRS-IC 3.5)", rayHit.curvature);
+  process.exit(1);
+}
+
 console.log("ok inspector4d", {
   face: rayHit.provenance.faceIndex,
   neighbors: rayHit.topology.neighborCellIds.length,
+  curvatureStub: rayHit.curvature.curvatureStub,
   hash: bundle.hash.slice(0, 24),
 });

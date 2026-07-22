@@ -16,6 +16,8 @@ namespace SovereignX.CIEMS.Engine.Inspector
         public Vector4 tangent2;
         public float k1;
         public float k2;
+        /// <summary>MRS-IC Invariant 3.5 — true while principal curvatures are stubbed to 0.</summary>
+        public bool curvatureStub = true;
         public Matrix4x4 jacobian4x2;
         public Matrix4x4 projectionMatrix;
         public RotationPlaneDTO[] rotationPlanes;

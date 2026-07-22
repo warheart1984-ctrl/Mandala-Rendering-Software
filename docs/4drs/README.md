@@ -9,6 +9,8 @@
 | [api/rt4d-v1.0-freeze.md](./api/rt4d-v1.0-freeze.md) | Stable API freeze |
 | [validation/Hyper-Caustic-Lens.md](./validation/Hyper-Caustic-Lens.md) | Official validation scene |
 | [substrate/](./substrate/) | Math foundations, MRS-CRC, MRS-IC, BVH GPU, Unity live-link, 4D Inspector |
+| [contracts/](./contracts/) | Canonical MRS-IC v1.1 / v1.2 |
+| [inspector/](./inspector/) | 4D Inspector documentation index |
 | [RELEASE_NOTES_v1.0.md](./RELEASE_NOTES_v1.0.md) | GitHub / Zenodo release notes |
 
 Charter: [`../../constitution/CHARTER.md`](../../constitution/CHARTER.md)  

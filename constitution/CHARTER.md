@@ -118,9 +118,12 @@
 | Unity MRS live-link client | **skeleton** | `unity/.../LiveLink/MRSUnityLiveLink.cs` |
 | MRS binary protocol MRS1 | **declared** | `docs/4drs/substrate/MRS_BINARY_PROTOCOL.md` |
 | Replay validator outline | **declared** | `scripts/replay-validator-outline.mjs` |
-| MRS Inspector Contract (MRS-IC) v1.1 | **declared** | `docs/4drs/substrate/MRS-IC-v1.1.md` |
+| MRS Inspector Contract (MRS-IC) v1.1 | **declared** | `docs/4drs/contracts/MRS-IC-v1.1.md` (substrate redirect) |
+| MRS Inspector Contract (MRS-IC) v1.2 | **declared** | `docs/4drs/contracts/MRS-IC-v1.2.md` (invariants; not runtime-enforced) |
 | 4D Inspector engine API | **skeleton** | `4d-renderer/src/inspector/` + `npm run test:inspector4d` |
 | Unity 4D Inspector Editor window | **skeleton** | `unity/.../Inspector/Editor/MRS4DInspectorWindow.cs` |
+| Inspector shader debug (v1.4) | **declared / future** | `docs/4drs/substrate/shader-debugging.md` |
+| Inspector GPU budget model | **declared budget** | `docs/4drs/substrate/performance/inspector-gpu-budget.md` (not measured) |
 
 ## VIII. Host ports
 

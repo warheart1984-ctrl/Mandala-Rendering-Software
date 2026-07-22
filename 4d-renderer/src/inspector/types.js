@@ -16,6 +16,8 @@ export function emptyInspectorResult() {
       k2: 0,
       dir1: vec4(1, 0, 0, 0),
       dir2: vec4(0, 1, 0, 0),
+      /** MRS-IC Invariant 3.5 — true until second fundamental forms exist. */
+      curvatureStub: true,
     },
     jacobian: [
       [1, 0],
