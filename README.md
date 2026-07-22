@@ -1,9 +1,30 @@
-# 4DCE — Constitutional Engine
+# 4D Rendering System (4DRS) — Mandala / MRS
 
-Governed 4D cinematic runtime with portable constitutional evidence across Browser, Unity, and Unreal hosts.
+Published title: **4D Rendering System v1.0**  
+Formal engine name: **RT4D** (*Ray Tracer for Four Dimensions*)  
+Official validation scene: **Hyper-Caustic Lens**
+
+Governed 4D cinematic host stack (historical name 4DCE) with portable constitutional evidence across Browser, Unity, and Unreal hosts, plus the RT4D path engine.
 
 **Namespace:** `SovereignX.CIEMS.Engine.*`  
 **Evidence bound:** see `constitution/CHARTER.md` for enforced vs partial vs skeleton claims.
+
+## v1.0 publish package
+
+| Artifact | Path |
+| --- | --- |
+| Naming | [`docs/4drs/NAMING.md`](docs/4drs/NAMING.md) |
+| Spec | [`docs/4drs/SPEC-v1.0.md`](docs/4drs/SPEC-v1.0.md) |
+| Architecture | [`docs/4drs/ARCHITECTURE.md`](docs/4drs/ARCHITECTURE.md) |
+| Technical note | [`docs/4drs/First-4D-Renderer.md`](docs/4drs/First-4D-Renderer.md) |
+| RT4D API freeze | [`docs/4drs/api/rt4d-v1.0-freeze.md`](docs/4drs/api/rt4d-v1.0-freeze.md) |
+| Hyper-Caustic Lens | [`docs/4drs/validation/Hyper-Caustic-Lens.md`](docs/4drs/validation/Hyper-Caustic-Lens.md) |
+| Charter | [`constitution/CHARTER.md`](constitution/CHARTER.md) |
+| Citation / Zenodo | [`CITATION.cff`](CITATION.cff), [`.zenodo.json`](.zenodo.json) |
+
+```bash
+npm run render:hcl-baseline   # regenerate Hyper-Caustic Lens preview + checksums
+```
 
 ## Quick start (production dev stack)
 

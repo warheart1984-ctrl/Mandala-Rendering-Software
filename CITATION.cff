@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+title: "4D Rendering System v1.0"
+message: "If you use this software, please cite it using these metadata."
+type: software
+version: 1.0.0
+date-released: "2026-07-22"
+repository-code: "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-"
+url: "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-"
+abstract: >-
+  4D Rendering System (4DRS) v1.0 publishes RT4D (Ray Tracer for Four Dimensions),
+  the Hyper-Caustic Lens official validation scene, constitutional charter evidence,
+  architecture, and the First 4D Renderer technical note.
+keywords:
+  - 4D rendering
+  - path tracing
+  - RT4D
+  - Hyper-Caustic Lens
+license: Apache-2.0
+authors:
+  - name: "Mandala Rendering System contributors"
+    website: "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-"

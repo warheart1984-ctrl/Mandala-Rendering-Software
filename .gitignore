@@ -8,6 +8,8 @@ Thumbs.db
 dist/
 build/
 output/
+!4d-renderer/src/render/rt4d/output/
+!4d-renderer/src/render/rt4d/output/**
 4d-renderer/output/
 4d-renderer/node_modules/
 cssv/node_modules/

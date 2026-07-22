@@ -1,0 +1,33 @@
+{
+  "validationScene": "Hyper-Caustic Lens",
+  "validationSceneId": "hyper-caustic-lens",
+  "system": "4D Rendering System",
+  "engine": "RT4D",
+  "release": "v1.0.0",
+  "frozenAt": "2026-07-22",
+  "factory": "createHyperCausticLens",
+  "source": "4d-renderer/src/render/rt4d/scene/TestHyperCausticLens.js",
+  "renderEntry": "renderRT4DFrame",
+  "settings": {
+    "width": 160,
+    "height": 120,
+    "samples": 32,
+    "maxDepth": 6,
+    "seed": 4,
+    "lensRadius": 1.2,
+    "camX": 0,
+    "camY": 0,
+    "camZ": -2.5,
+    "camW": 0
+  },
+  "notes": "Preview-resolution freeze for CI and Zenodo packaging. Higher-res gallery frames may be added as supplemental artifacts without changing these settings.",
+  "artifacts": {
+    "previewPpm": "artifacts/hyper-caustic-lens-v1.0-preview.ppm",
+    "previewPng": "artifacts/hyper-caustic-lens-v1.0-preview.png",
+    "manifest": "baseline.json"
+  },
+  "checksums": {
+    "previewPpm": "f9956a5070ef47bfb2ad8e73bcd44a9b82effe6db79918e1b98f1e226355c4ae",
+    "previewPng": "11640e859090c9b228930258f775cc99572046d3b055094a42b211f838c9a807"
+  }
+}

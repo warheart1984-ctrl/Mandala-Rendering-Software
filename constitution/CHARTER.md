@@ -1,6 +1,7 @@
-# Constitutional Engine Charter — 4DCE v1.1
+# Constitutional Engine Charter — 4DCE / 4DRS v1.0
 
-> **Drive-G-1:** No claim may exceed implementation evidence. Status tags: **enforced** | **partial** | **declared** | **skeleton**.
+> **Drive-G-1:** No claim may exceed implementation evidence. Status tags: **enforced** | **partial** | **declared** | **skeleton**.  
+> **Published system:** 4D Rendering System v1.0 · **Engine:** RT4D · **Validation:** Hyper-Caustic Lens — see `docs/4drs/`.
 
 ## I. Purpose
 
@@ -95,6 +96,17 @@
 - Unity / Unreal: mesh JSON wireframe **and solid** (`MeshFilter` / `UProceduralMeshComponent`); `renderMode` / `RenderMode`; faces in `*.mesh.json` via `npm run export:surfaces`
 - Host solid / Play Mode CI: **enforced** in Node via `npm run test:solid-play` (mesh faces + solid APIs + projected frame). Unity Test Runner + Unreal `GovernedEngine.FourD.SolidSmoke` present; native batch optional via `UNITY_PATH` / Session Frontend
 
+### VII.b RT4D path engine (4DRS v1.0)
+
+| Claim | Status | Evidence |
+| --- | --- | --- |
+| Formal engine name RT4D | **declared** | `docs/4drs/NAMING.md` |
+| Stable API freeze (math…scene) | **partial** | barrels + `docs/4drs/api/rt4d-v1.0-freeze.md` + package exports |
+| Hyper-Caustic Lens official validation | **enforced** (factory) | `createHyperCausticLens` + `docs/4drs/validation/` |
+| Baseline preview render | **partial** | `npm run render:hcl-baseline` + artifact checksums when present |
+| Spec / tech note / architecture published in-repo | **enforced** | `docs/4drs/SPEC-v1.0.md`, `First-4D-Renderer.md`, `ARCHITECTURE.md` |
+| Zenodo DOI | **declared** | `.zenodo.json` + `CITATION.cff`; deposit requires account link |
+
 ## VIII. Host ports
 
 | Port | Status |
@@ -141,3 +153,6 @@
 | CSSV dashboard | `cssv/server.js`, `cssv/public/` |
 | Production scripts | `package.json`, `scripts/test-all.mjs`, `scripts/start-dev.mjs` |
 | Root README | `README.md` |
+| 4DRS v1.0 docs | `docs/4drs/` |
+| RT4D engine | `4d-renderer/src/render/rt4d/` |
+| HCL baseline script | `scripts/render-hyper-caustic-baseline.mjs` |

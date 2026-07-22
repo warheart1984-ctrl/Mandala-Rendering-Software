@@ -81,3 +81,5 @@ export { createBuiltinNode, NODE_DEFS } from "./shader-graph/BuiltinNodes.js";
 export { LiveLinkServer } from "./live-link/LiveLinkServer.js";
 export { MeshStreamer } from "./live-link/MeshStreamer.js";
 export { UnityClientProtocol } from "./live-link/UnityClientProtocol.js";
+
+export * as RT4D from "./render/rt4d/index.js";

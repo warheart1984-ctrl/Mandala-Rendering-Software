@@ -1,0 +1,22 @@
+{
+  "title": "4D Rendering System v1.0",
+  "description": "Constitutional 4D rendering stack with RT4D (Ray Tracer for Four Dimensions), frozen Hyper-Caustic Lens validation scene, architecture, charter, and First 4D Renderer technical note.",
+  "upload_type": "software",
+  "publication_date": "2026-07-22",
+  "version": "1.0.0",
+  "keywords": [
+    "4D rendering",
+    "path tracing",
+    "RT4D",
+    "Hyper-Caustic Lens",
+    "four-dimensional graphics"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ],
+  "notes": "Connect the GitHub repository to Zenodo and publish from the v1.0.0 release, or upload the release archive with this metadata. Replace creators after account linking."
+}

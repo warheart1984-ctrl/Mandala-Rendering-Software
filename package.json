@@ -17,6 +17,7 @@
     "test:solid-play": "node scripts/test-host-solid-play.mjs",
     "export:surfaces": "node scripts/export-surface-meshes.mjs",
     "render:4d": "node 4d-renderer/src/cli.js render",
+    "render:hcl-baseline": "node scripts/render-hyper-caustic-baseline.mjs --write-hashes",
     "cssv:server": "node cssv/server.js",
     "serve": "node scripts/serve-static.mjs",
     "start": "node scripts/start-dev.mjs"
