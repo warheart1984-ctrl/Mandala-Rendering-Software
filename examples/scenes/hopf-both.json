@@ -1,0 +1,17 @@
+{
+  "id": "hopf-both",
+  "label": "Hopf surface · solid + wireframe",
+  "status": "declared-preset-format",
+  "surface": "hopf-surface",
+  "resolution": 28,
+  "width": 960,
+  "height": 720,
+  "profile": "lattice",
+  "renderMode": "both",
+  "scaleMode": "fit",
+  "d4": 4.2,
+  "d3": 4,
+  "scale": 85,
+  "frames": 1,
+  "fps": 30
+}

@@ -9,6 +9,24 @@ Governed 4D cinematic host stack (historical name 4DCE) with portable constituti
 **Namespace:** `SovereignX.CIEMS.Engine.*`  
 **Evidence bound:** see `constitution/CHARTER.md` for enforced vs partial vs skeleton claims.
 
+## Showcase (reference surfaces)
+
+Interactive Canvas demo and tutorials for the five registered surfaces — **reference implementation** showcase, not a claim of product-complete post-processing.
+
+| Entry | Path |
+| --- | --- |
+| Web demo | [`examples/web-demo.html`](examples/web-demo.html) |
+| Gallery | [`examples/gallery/`](examples/gallery/) |
+| Tutorials | [`examples/tutorials/`](examples/tutorials/) |
+| Suite index | [`examples/README.md`](examples/README.md) |
+
+```bash
+npm run serve
+# open http://localhost:8080/examples/web-demo.html
+```
+
+Package notes: [`4d-renderer/README.md`](4d-renderer/README.md).
+
 ## Capability snapshot
 
 Statuses below match charter evidence (not marketing). Details: [`constitution/CHARTER.md`](constitution/CHARTER.md).
@@ -104,6 +122,9 @@ ISL intent → CKL/GK decision → TimelinePlayer → Frame provenance → CSSV 
 | `npm run serve` | Static browser host only |
 | `npm run cssv:server` | CSSV dashboard + API only |
 | `npm start` | Both servers |
+| `npm run examples:gallery` | Generate gallery PNGs (needs node-canvas) |
+| `npm run examples:bench` | Measure local Node CanvasRenderer timings |
+| `npm run test:examples` | Examples suite smoke |
 
 ## Conformance
 

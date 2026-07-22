@@ -22,6 +22,7 @@ const suites = [
   { name: "movie-pipelines", script: "scripts/verify-movie-pipelines.mjs" },
   { name: "cql", script: "scripts/test-cql.mjs" },
   { name: "ckl-ascension", script: "scripts/test-ascension-ckl.mjs" },
+  { name: "examples-smoke", script: "scripts/test-examples-smoke.mjs" },
 ];
 
 let failed = 0;

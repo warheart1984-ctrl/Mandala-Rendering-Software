@@ -17,6 +17,19 @@ src/
   index.js     browser-safe exports (no node-canvas)
 ```
 
+## Showcase demo (Canvas)
+
+From repo root:
+
+```bash
+npm run serve
+# http://localhost:8080/examples/web-demo.html
+```
+
+Self-contained showcase of the five surfaces via `CanvasRenderer` (+ optional
+`HyperplaneSlicer`). Declared/not-wired panels list bloom, shadows, mic, browser
+GLTF — see [`examples/README.md`](../examples/README.md).
+
 ## Browser (4DCE host)
 
 From repo root (`npm start` / `npm run serve`):

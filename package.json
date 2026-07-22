@@ -23,7 +23,10 @@
     "inspector:ws": "node scripts/inspector-ws-server.mjs",
     "cssv:server": "node cssv/server.js",
     "serve": "node scripts/serve-static.mjs",
-    "start": "node scripts/start-dev.mjs"
+    "start": "node scripts/start-dev.mjs",
+    "examples:gallery": "node examples/gallery/generate.mjs",
+    "examples:bench": "node examples/benchmarks/bench-render.mjs",
+    "test:examples": "node scripts/test-examples-smoke.mjs"
   },
   "dependencies": {
     "4d-renderer": "file:./4d-renderer"

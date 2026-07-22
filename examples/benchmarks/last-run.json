@@ -1,0 +1,47 @@
+{
+  "methodology": "Single-threaded Node, node-canvas, CanvasRenderer.renderFrame loop. Warmup one frame excluded. Not a browser GPU benchmark. Not comparable to WebGPU/RT4D path tracer.",
+  "host": {
+    "platform": "win32",
+    "arch": "x64",
+    "node": "v24.18.0"
+  },
+  "measuredAt": "2026-07-22T22:28:36.929Z",
+  "results": [
+    {
+      "surface": "tesseract",
+      "resolution": "discrete",
+      "width": 640,
+      "height": 480,
+      "frames": 30,
+      "mode": "wireframe",
+      "renderer": "CanvasRenderer + node-canvas",
+      "elapsedMs": 100.67,
+      "perFrameMs": 3.356,
+      "measuredFpsEstimate": 298
+    },
+    {
+      "surface": "clifford-torus",
+      "resolution": 24,
+      "width": 640,
+      "height": 480,
+      "frames": 30,
+      "mode": "wireframe",
+      "renderer": "CanvasRenderer + node-canvas",
+      "elapsedMs": 1268.35,
+      "perFrameMs": 42.278,
+      "measuredFpsEstimate": 23.7
+    },
+    {
+      "surface": "hopf-surface",
+      "resolution": 24,
+      "width": 640,
+      "height": 480,
+      "frames": 30,
+      "mode": "wireframe",
+      "renderer": "CanvasRenderer + node-canvas",
+      "elapsedMs": 1331.83,
+      "perFrameMs": 44.394,
+      "measuredFpsEstimate": 22.5
+    }
+  ]
+}

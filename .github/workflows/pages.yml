@@ -1,0 +1,57 @@
+# Upload a Pages-safe tree (no node_modules / large binaries).
+#
+# Does not claim a live URL. Enable Pages → Source: GitHub Actions first.
+
+name: pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - "examples/**"
+      - "4d-renderer/src/**"
+      - "4d-renderer/package.json"
+      - "css/**"
+      - "index.html"
+      - "README.md"
+      - ".github/workflows/pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage static tree
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude node_modules \
+            --exclude .git \
+            --exclude output \
+            --exclude native \
+            --exclude unity \
+            --exclude unreal \
+            --exclude '*.zip' \
+            ./ _site/
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

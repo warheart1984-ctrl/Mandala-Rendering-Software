@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>4DRS — Surface Showcase</title>
+    <link rel="stylesheet" href="./web-demo/demo.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <h1 class="brand">4DRS</h1>
+        <p class="lede">
+          Interactive showcase of the <strong>Mandala / 4D Rendering System</strong>
+          reference surfaces. Renders via the existing
+          <strong>Canvas 2D</strong> path (<code>CanvasRenderer</code>) —
+          not a WebGPU product demo.
+        </p>
+        <div class="badge-row" aria-label="Capability badges">
+          <span class="badge present">5 surfaces · present</span>
+          <span class="badge present">wireframe / solid · present</span>
+          <span class="badge present">hyperplane slice · present</span>
+          <span class="badge present">PNG capture · present</span>
+          <span class="badge declared">bloom / shadows · declared</span>
+          <span class="badge declared">mic / GLTF browser · declared</span>
+        </div>
+      </header>
+
+      <div class="stage-wrap">
+        <canvas id="stage" aria-label="Projected 4D surface"></canvas>
+        <div class="hud">
+          <div><strong>fps</strong> <span id="read-fps">—</span></div>
+          <div><strong>θ</strong> <span id="read-theta">0.00</span></div>
+          <div><strong>verts</strong> <span id="read-verts">—</span></div>
+          <div><strong>edges</strong> <span id="read-edges">—</span></div>
+          <div><strong>path</strong> <span id="read-path">—</span></div>
+        </div>
+      </div>
+
+      <aside class="panel" aria-label="Demo controls">
+        <h2>Controls</h2>
+        <label>
+          Surface
+          <select id="ctrl-surface" aria-label="4D surface"></select>
+        </label>
+        <label>
+          Mode
+          <select id="ctrl-mode" aria-label="Render mode">
+            <option value="wireframe" selected>wireframe</option>
+            <option value="solid">solid</option>
+            <option value="both">solid + wireframe</option>
+          </select>
+        </label>
+        <label>
+          Profile
+          <select id="ctrl-profile" aria-label="Render profile"></select>
+        </label>
+        <label>
+          Mesh quality
+          <select id="ctrl-quality" aria-label="Mesh quality">
+            <option value="performance">performance</option>
+            <option value="balanced">balanced</option>
+            <option value="high" selected>high</option>
+            <option value="ultra">ultra</option>
+          </select>
+        </label>
+        <label>
+          Rotation speed
+          <input id="ctrl-speed" type="range" min="0" max="2" step="0.05" value="0.55" />
+        </label>
+        <label>
+          <span>Hyperplane slice mode</span>
+          <input id="ctrl-slice" type="checkbox" />
+        </label>
+        <label>
+          Slice offset <code>d</code>
+          <input id="ctrl-slice-d" type="range" min="-2.5" max="2.5" step="0.05" value="0" disabled />
+        </label>
+        <div class="actions">
+          <button type="button" id="btn-toggle" class="btn btn-primary">Pause rotation</button>
+          <button type="button" id="btn-reset" class="btn">Reset view</button>
+          <button type="button" id="btn-png" class="btn">Export PNG</button>
+        </div>
+        <p class="hint">
+          Drag to scrub θ / camera Y · wheel to zoom · Space pause · R reset.
+          Animation is <em>parametric cinematicRotation</em>, not a governed timeline player.
+        </p>
+        <div class="declared">
+          <h3>Declared / not wired in this demo</h3>
+          <ul>
+            <li>WebGPU bloom, tone map, chromatic aberration (<code>PostProcessor</code>)</li>
+            <li>Shadow maps / env reflections (<code>ShadowMapper</code>, <code>EnvironmentMapper</code>)</li>
+            <li>LOD managers (API present; not bound to this canvas loop)</li>
+            <li>Microphone / audio-reactive mapping (browser AudioAnalyzer exists; not enabled here)</li>
+            <li>Browser GLTF/OBJ export (Node <code>ExportManager</code> only)</li>
+            <li>Governed host timelines — use root <code>index.html</code> + <code>npm start</code></li>
+          </ul>
+        </div>
+      </aside>
+
+      <p class="footer-note">
+        Serve the repo root over HTTP (ES modules). From root:
+        <code>npm run serve</code> then open
+        <a href="/examples/web-demo.html">/examples/web-demo.html</a>.
+        Gallery · tutorials · maturity notes: <a href="./README.md">examples/README.md</a>.
+      </p>
+    </div>
+    <script type="module" src="./web-demo/demo.js"></script>
+  </body>
+</html>

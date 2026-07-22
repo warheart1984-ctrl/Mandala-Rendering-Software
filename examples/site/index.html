@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>4DRS Examples</title>
+    <meta
+      name="description"
+      content="Static entry for the 4DRS examples suite. Not a claimed live production URL."
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+      :root {
+        --ink: #0c1014;
+        --paper: #d6dde3;
+        --mist: #8a9aa8;
+        --copper: #c4895a;
+        --font-display: "Cormorant Garamond", Georgia, serif;
+        --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font-mono);
+        color: var(--paper);
+        background:
+          radial-gradient(ellipse 80% 50% at 20% 0%, #243240 0%, transparent 55%),
+          linear-gradient(165deg, #10161c, #0c1014 50%, #12100e);
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+      }
+      main { max-width: 36rem; }
+      h1 {
+        font-family: var(--font-display);
+        font-size: clamp(2.8rem, 6vw, 4rem);
+        margin: 0;
+        letter-spacing: 0.05em;
+      }
+      p { color: var(--mist); line-height: 1.55; font-size: 0.85rem; }
+      a { color: var(--copper); }
+      ul { padding-left: 1.1rem; color: var(--mist); font-size: 0.8rem; line-height: 1.7; }
+      .note {
+        margin-top: 1.5rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--mist);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>4DRS</h1>
+      <p>
+        Static examples entry for GitHub Pages prep. Paths assume Pages publishes
+        from <code>/docs</code> or this <code>examples/site</code> folder with the
+        repo root available — prefer publishing the <strong>repo root</strong> so
+        <code>/examples/web-demo.html</code> resolves package imports.
+      </p>
+      <ul>
+        <li><a href="../web-demo.html">Interactive web demo</a></li>
+        <li><a href="../gallery/">Screenshot gallery</a></li>
+        <li><a href="../tutorials/">Tutorials</a></li>
+        <li><a href="../../README.md">Repository README</a></li>
+      </ul>
+      <p class="note">No live production URL is claimed by this file.</p>
+    </main>
+  </body>
+</html>

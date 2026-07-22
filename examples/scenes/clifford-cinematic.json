@@ -1,0 +1,18 @@
+{
+  "id": "clifford-cinematic",
+  "label": "Clifford torus · cinematic solid",
+  "status": "declared-preset-format",
+  "note": "Fields align with createScene(). Load by mapping JSON keys into createScene(options) or CLI --surface/--profile/--mode.",
+  "surface": "clifford-torus",
+  "resolution": 32,
+  "width": 1280,
+  "height": 720,
+  "profile": "cinematic",
+  "renderMode": "solid",
+  "scaleMode": "fit",
+  "d4": 4,
+  "d3": 4,
+  "scale": 80,
+  "frames": 60,
+  "fps": 30
+}
