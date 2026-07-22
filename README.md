@@ -25,7 +25,9 @@ Statuses below match charter evidence (not marketing). Details: [`constitution/C
 | Unity adapter | Partial |
 | Unreal adapter | Partial |
 | Native Vulkan dispatch | Experimental |
-| Live engine link (shared-frame preview) | Experimental |
+| Live engine link (shared-frame / MRS↔Unity) | Experimental |
+| 4D BVH GPU kernels | Skeleton |
+| Mathematical substrate / MRS-CRC | Declared |
 | 4D physics | Skeleton |
 | Shader graph | Skeleton |
 
@@ -39,6 +41,7 @@ Statuses below match charter evidence (not marketing). Details: [`constitution/C
 | Technical note | [`docs/4drs/First-4D-Renderer.md`](docs/4drs/First-4D-Renderer.md) |
 | RT4D API freeze | [`docs/4drs/api/rt4d-v1.0-freeze.md`](docs/4drs/api/rt4d-v1.0-freeze.md) |
 | Hyper-Caustic Lens | [`docs/4drs/validation/Hyper-Caustic-Lens.md`](docs/4drs/validation/Hyper-Caustic-Lens.md) |
+| Substrate / MRS-CRC | [`docs/4drs/substrate/`](docs/4drs/substrate/) |
 | Charter | [`constitution/CHARTER.md`](constitution/CHARTER.md) |
 | Citation / Zenodo | [`CITATION.cff`](CITATION.cff), [`.zenodo.json`](.zenodo.json) |
 

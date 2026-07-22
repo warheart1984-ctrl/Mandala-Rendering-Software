@@ -107,6 +107,18 @@
 | Spec / tech note / architecture published in-repo | **enforced** | `docs/4drs/SPEC-v1.0.md`, `First-4D-Renderer.md`, `ARCHITECTURE.md` |
 | Zenodo DOI | **declared** | `CITATION.cff` / `.zenodo.json` list `10.5281/zenodo.21499388`; confirm deposit on Zenodo |
 
+### VII.c Mathematical substrate & live-link (4DRS)
+
+| Claim | Status | Evidence |
+| --- | --- | --- |
+| Math foundations + contracts (4D-PCC…DR-C) | **declared** | `docs/4drs/substrate/MATHEMATICAL_FOUNDATIONS.md`, `CONSTITUTIONAL_CONTRACTS.md` |
+| MRS-CRC v1.0 Articles I–VII | **declared** | `docs/4drs/substrate/MRS-CRC-v1.0.md` |
+| 4D BVH GPU kernel (CUDA/WGSL) | **skeleton** | `native/cuda/rt4d/`, `rt4d/accel/gpu/` |
+| Packed CPU GPU-shaped traverse | **skeleton** | `packBVH4D` / `traverseBVH4DPacked` + `scripts/test-bvh4d-gpu.mjs` |
+| Unity MRS live-link client | **skeleton** | `unity/.../LiveLink/MRSUnityLiveLink.cs` |
+| MRS binary protocol MRS1 | **declared** | `docs/4drs/substrate/MRS_BINARY_PROTOCOL.md` |
+| Replay validator outline | **declared** | `scripts/replay-validator-outline.mjs` |
+
 ## VIII. Host ports
 
 | Port | Status |
@@ -156,3 +168,6 @@
 | 4DRS v1.0 docs | `docs/4drs/` |
 | RT4D engine | `4d-renderer/src/render/rt4d/` |
 | HCL baseline script | `scripts/render-hyper-caustic-baseline.mjs` |
+| Substrate docs | `docs/4drs/substrate/` |
+| CUDA BVH skeleton | `native/cuda/rt4d/` |
+| Unity live-link | `unity/GovernedUnityProject/Assets/Engine/LiveLink/` |

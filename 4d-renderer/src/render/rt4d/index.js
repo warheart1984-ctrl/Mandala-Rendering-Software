@@ -17,6 +17,13 @@ export { PathTracer4D, SampleAccumulator } from "./integrator/PathTracer4D.js";
 
 export { HyperBox } from "./accel/HyperBox.js";
 export { BVH4D } from "./accel/BVH4D.js";
+export {
+  packBVH4D,
+  intersectAABB4D,
+  traverseBVH4DPacked,
+  BVH4D_CUDA_KERNEL_SOURCE,
+  BVH4D_WGSL_KERNEL_SKETCH,
+} from "./accel/gpu/index.js";
 
 export { Projector4D, AOVCollector } from "./output/projector.js";
 

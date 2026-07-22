@@ -81,6 +81,18 @@ export class LiveLinkServer {
     }
   }
 
+  /**
+   * Broadcast 4D entity state for Unity Π₃D.
+   * snapshot: { frame, seed?, entities: [{ id, pos4:[x,y,z,w], ... }] }
+   */
+  broadcastStateSnapshot(snapshot) {
+    for (const handler of this.protocols.values()) {
+      try {
+        handler.sendStateSnapshot(snapshot);
+      } catch {}
+    }
+  }
+
   getClientCount() {
     return this.clients.size;
   }
