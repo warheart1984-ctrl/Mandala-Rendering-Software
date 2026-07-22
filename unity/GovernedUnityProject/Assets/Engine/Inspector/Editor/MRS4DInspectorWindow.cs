@@ -6,7 +6,8 @@ using SovereignX.CIEMS.Engine.Inspector;
 namespace SovereignX.CIEMS.Engine.Inspector.Editor
 {
     /// <summary>
-    /// MRS 4D Inspector Editor window (MRS-IC v1.1 layout). Status: skeleton.
+    /// MRS 4D Inspector Editor window (MRS-IC layout).
+    /// Status: wires live protocol when connected; stub fallback when disconnected (labeled).
     /// Menu: MRS / 4D Inspector
     /// </summary>
     public class MRS4DInspectorWindow : EditorWindow
@@ -16,6 +17,8 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
         private bool _updateOnClick = true;
         private Vector2 _scroll;
         private bool _foldPos = true, _foldDiff = true, _foldJac, _foldRot = true, _foldHyp, _foldTop;
+        private string _endpoint = MRSInspectorClient.DefaultEndpoint;
+        private string _status = "Disconnected";
 
         [MenuItem("MRS/4D Inspector")]
         public static void ShowWindow()
@@ -25,14 +28,26 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
 
         private void OnEnable()
         {
-            _client ??= new MRSInspectorClient();
+            _endpoint = MRSInspectorClient.LoadEndpointPref();
+            _client ??= new MRSInspectorClient(_endpoint);
             _client.OnResult += SetResult;
+            _client.OnStatus += s => { _status = s; Repaint(); };
+            _client.OnConnected += () => Repaint();
+            _client.OnDisconnected += () => Repaint();
+            EditorApplication.update += PumpClient;
         }
 
         private void OnDisable()
         {
-            if (_client != null) _client.OnResult -= SetResult;
+            EditorApplication.update -= PumpClient;
+            if (_client != null)
+            {
+                _client.OnResult -= SetResult;
+                _client.Disconnect();
+            }
         }
+
+        private void PumpClient() => _client?.PumpMainThread();
 
         public void SetResult(Inspector4DResultDTO result)
         {
@@ -41,18 +56,27 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
         }
 
         public bool UpdateOnClick => _updateOnClick;
+        public MRSInspectorClient Client => _client;
 
         private void OnGUI()
         {
-            _updateOnClick = EditorGUILayout.ToggleLeft("Update on click", _updateOnClick);
+            DrawConnectionBar();
+            _updateOnClick = EditorGUILayout.ToggleLeft("Scene Click → Inspect", _updateOnClick);
             EditorGUILayout.Space(4);
+
+            if (_lastResult != null && _lastResult.ok && _lastResult.error == "stub_disconnected")
+            {
+                EditorGUILayout.HelpBox(
+                    "Showing local stub (not connected to protocol server). Start `npm run inspector:ws` and Connect.",
+                    MessageType.Warning);
+            }
 
             if (_lastResult == null || !_lastResult.ok)
             {
                 EditorGUILayout.HelpBox(
                     _lastResult?.error != null
                         ? $"Last error: {_lastResult.error}"
-                        : "Click in Scene view to inspect a 4D point.",
+                        : "Connect to inspector:ws, then click in Scene view (with Scene Click → Inspect).",
                     MessageType.Info);
                 DrawToolbar();
                 return;
@@ -71,6 +95,32 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
             DrawToolbar();
         }
 
+        private void DrawConnectionBar()
+        {
+            EditorGUILayout.LabelField("Endpoint", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _endpoint = EditorGUILayout.TextField(_endpoint);
+                if (GUILayout.Button("Connect", GUILayout.Width(72)))
+                {
+                    _client ??= new MRSInspectorClient(_endpoint);
+                    _client.Connect(_endpoint);
+                }
+                if (GUILayout.Button("Disconnect", GUILayout.Width(80)))
+                {
+                    _client?.Disconnect();
+                }
+            }
+
+            var connected = _client != null && _client.IsConnected;
+            EditorGUILayout.HelpBox(
+                connected
+                    ? $"Live: {_status}"
+                    : $"Offline: {_status} — stub fallback on Scene click until connected.",
+                connected ? MessageType.None : MessageType.None);
+            EditorGUILayout.LabelField("State", connected ? "CONNECTED" : "DISCONNECTED");
+        }
+
         private void DrawToolbar()
         {
             EditorGUILayout.Space(8);
@@ -78,13 +128,21 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
             {
                 if (GUILayout.Button("Copy JSON"))
                 {
-                    EditorGUIUtility.systemCopyBuffer = JsonUtility.ToJson(_lastResult, true);
+                    var text = !string.IsNullOrEmpty(_client?.LastWireJson)
+                        ? _client.LastWireJson
+                        : (_lastResult != null ? JsonUtility.ToJson(_lastResult, true) : "{}");
+                    EditorGUIUtility.systemCopyBuffer = text;
                 }
-                if (GUILayout.Button("Export Snapshot") && _lastResult != null)
+                if (GUILayout.Button("Export Snapshot") && (_lastResult != null || !string.IsNullOrEmpty(_client?.LastWireJson)))
                 {
                     var path = EditorUtility.SaveFilePanel("Export Inspector Snapshot", "", "inspector4d.json", "json");
                     if (!string.IsNullOrEmpty(path))
-                        System.IO.File.WriteAllText(path, JsonUtility.ToJson(_lastResult, true));
+                    {
+                        var text = !string.IsNullOrEmpty(_client?.LastWireJson)
+                            ? _client.LastWireJson
+                            : JsonUtility.ToJson(_lastResult, true);
+                        System.IO.File.WriteAllText(path, text);
+                    }
                 }
             }
         }
@@ -108,6 +166,7 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
             EditorGUILayout.LabelField("t2", V4(_lastResult.tangent2));
             EditorGUILayout.LabelField("k1", _lastResult.k1.ToString("G4"));
             EditorGUILayout.LabelField("k2", _lastResult.k2.ToString("G4"));
+            EditorGUILayout.LabelField("curvatureStub", _lastResult.curvatureStub ? "true (stub)" : "false");
         }
 
         private void DrawSectionC()
@@ -152,6 +211,8 @@ namespace SovereignX.CIEMS.Engine.Inspector.Editor
             EditorGUILayout.LabelField("Incident", Join(_lastResult.topology.incidentCellIds));
             EditorGUILayout.LabelField("Neighbors", Join(_lastResult.topology.neighborCellIds));
             EditorGUILayout.LabelField("Boundary", _lastResult.topology.isBoundary ? "Boundary point" : "Interior point");
+            EditorGUILayout.LabelField("primitiveId", _lastResult.primitiveId.ToString());
+            EditorGUILayout.LabelField("faceIndex", _lastResult.faceIndex.ToString());
         }
 
         private static string V4(Vector4 v) => $"{v.x}, {v.y}, {v.z}, {v.w}";

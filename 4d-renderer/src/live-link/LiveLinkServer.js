@@ -13,6 +13,8 @@ export class LiveLinkServer {
     this.onClientConnect = options.onClientConnect ?? null;
     this.onClientDisconnect = options.onClientDisconnect ?? null;
     this.onCommand = options.onCommand ?? null;
+    /** Optional MRSInspector4D — enables inspect_* on the same live-link transport. */
+    this.inspector = options.inspector ?? null;
     this._running = false;
   }
 
@@ -29,9 +31,12 @@ export class LiveLinkServer {
         remoteAddress: req.socket.remoteAddress,
         connectedAt: Date.now(),
         protocol: "unity",
+        path: req.url ?? "/",
       };
       this.clients.add(clientInfo);
-      const handler = new UnityClientProtocol(ws, clientInfo);
+      const handler = new UnityClientProtocol(ws, clientInfo, {
+        inspector: this.inspector,
+      });
       this.protocols.set(clientInfo.id, handler);
 
       handler.onCommand = (cmd) => {

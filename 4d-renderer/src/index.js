@@ -81,6 +81,7 @@ export {
   resultToJSON,
   buildInspectorEvidenceBundle,
 } from "./inspector/index.js";
+export { createDefaultInspectorTestMesh } from "./inspector/defaultTestMesh.js";
 
 export { ShaderNode, Port } from "./shader-graph/ShaderNode.js";
 export { ShaderGraph } from "./shader-graph/ShaderGraph.js";

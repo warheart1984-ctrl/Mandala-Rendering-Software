@@ -236,5 +236,6 @@ function arrToVec4(a) {
   return vec4(a.x ?? 0, a.y ?? 0, a.z ?? 0, a.w ?? 0);
 }
 
-export { resultToWire, buildInspectorEvidenceBundle, resultToJSON } from "./serialize.js";
+export { resultToWire, buildInspectorEvidenceBundle, resultToJSON, vecToArr } from "./serialize.js";
 export { emptyInspectorResult, dropWProjectionMatrix } from "./types.js";
+export { createDefaultInspectorTestMesh } from "./defaultTestMesh.js";

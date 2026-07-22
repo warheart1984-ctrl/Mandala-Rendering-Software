@@ -20,6 +20,7 @@
     "render:hcl-baseline": "node scripts/render-hyper-caustic-baseline.mjs --write-hashes",
     "test:bvh4d-gpu": "node scripts/test-bvh4d-gpu.mjs",
     "test:inspector4d": "node scripts/test-inspector4d.mjs",
+    "inspector:ws": "node scripts/inspector-ws-server.mjs",
     "cssv:server": "node cssv/server.js",
     "serve": "node scripts/serve-static.mjs",
     "start": "node scripts/start-dev.mjs"

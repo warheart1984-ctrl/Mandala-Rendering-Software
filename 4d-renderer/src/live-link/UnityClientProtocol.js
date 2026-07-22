@@ -1,8 +1,15 @@
 export class UnityClientProtocol {
-  constructor(ws, clientInfo) {
+  /**
+   * @param {import("ws").WebSocket} ws
+   * @param {object} clientInfo
+   * @param {{ inspector?: { handleWireMessage: (msg: object) => object } | null }} [options]
+   */
+  constructor(ws, clientInfo, options = {}) {
     this.ws = ws;
     this.clientInfo = clientInfo;
     this.onCommand = null;
+    /** Optional MRSInspector4D (or handleWireMessage-compatible) for inspect_* protocol. */
+    this.inspector = options.inspector ?? null;
     this._setup();
   }
 
@@ -20,6 +27,11 @@ export class UnityClientProtocol {
       case "ping":
         this.sendRaw(JSON.stringify({ type: "pong", timestamp: Date.now() }));
         break;
+      case "inspect_screen":
+      case "inspect_ray":
+      case "inspect_primitive":
+        this._handleInspect(msg);
+        break;
       case "get_mesh":
         if (this.onCommand) this.onCommand({ type: "request_mesh", requestId: msg.requestId });
         break;
@@ -34,6 +46,29 @@ export class UnityClientProtocol {
         break;
       default:
         if (this.onCommand) this.onCommand(msg);
+    }
+  }
+
+  _handleInspect(msg) {
+    if (!this.inspector?.handleWireMessage) {
+      this._send({
+        type: "inspect_result",
+        schemaVersion: "1.1",
+        ok: false,
+        error: "no_inspector",
+      });
+      return;
+    }
+    try {
+      const out = this.inspector.handleWireMessage(msg);
+      this._send(out);
+    } catch (err) {
+      this._send({
+        type: "inspect_result",
+        schemaVersion: "1.1",
+        ok: false,
+        error: err?.message ? `inspect_error:${err.message}` : "inspect_error",
+      });
     }
   }
 

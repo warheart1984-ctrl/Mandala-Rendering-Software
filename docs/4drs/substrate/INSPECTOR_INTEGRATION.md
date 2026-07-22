@@ -73,11 +73,19 @@ Fill:
 
 ## Step 5 — Serialize for Unity
 
-Provide JSON (+ binary **planned**). Helpers: `resultToJSON` / `buildInspectorEvidenceBundle` in `serialize.js`.
+Provide JSON (+ binary **planned**). Helpers: `resultToJSON` / `resultToWire` / `buildInspectorEvidenceBundle` in `serialize.js` (wire vectors are arrays per [`INSPECTOR_PROTOCOL.md`](./INSPECTOR_PROTOCOL.md)).
 
-Unity: `MRSInspectorClient` + menu **MRS / 4D Inspector** (`MRS4DInspectorWindow`); SceneView click hook.
+Unity: `MRSInspectorClient` (WebSocket) + menu **MRS / 4D Inspector** (`MRS4DInspectorWindow`); SceneView click hook. Copy/Export prefer last wire JSON when connected.
 
-UI mockups: [`WIREFRAME_FULL.md`](../../../unity/GovernedUnityProject/Assets/Engine/Inspector/UI/WIREFRAME_FULL.md), theme [`theme.md`](../../../unity/GovernedUnityProject/Assets/Engine/Inspector/UI/theme.md).
+### Local wire endpoint (prepares Editor integration)
+
+```bash
+npm run inspector:ws
+```
+
+Default: `ws://127.0.0.1:9490`. Reuses `LiveLinkServer` + `UnityClientProtocol` with `MRSInspector4D.handleWireMessage` and a **default test mesh** (not a claimed RT4D Hyper-Caustic Lens binding). Unity Connect button / EditorPrefs key `MRS.Inspector.Endpoint`.
+
+**Gaps (declared):** live scene sync from Unity mesh stream; real curvature; shaderDebug; production auth/TLS.
 
 ## Step 6 — Deterministic replay hooks
 
@@ -90,3 +98,5 @@ See [`INSPECTOR_EVIDENCE_BUNDLE.md`](./INSPECTOR_EVIDENCE_BUNDLE.md). Bit-identi
 ```bash
 npm run test:inspector4d
 ```
+
+Includes in-process `handleWireMessage` checks plus a short WebSocket round-trip against `LiveLinkServer`.

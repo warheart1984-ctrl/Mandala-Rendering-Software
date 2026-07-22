@@ -1,6 +1,18 @@
 # MRS 4D Inspector wire protocol
 
-**Status:** **declared**. Endpoint may share live-link transport or a dedicated path (`/mrs_inspector`).
+**Status:** **declared** / **skeleton** endpoint.  
+Transport may share live-link (`LiveLinkServer` + `UnityClientProtocol`) or a dedicated process (`npm run inspector:ws`, default `ws://127.0.0.1:9490`). Path `/mrs_inspector` is documentary — the `ws` listener does not route by HTTP path.
+
+**Evidence (Drive-G-1):** JS `handleWireMessage` + `resultToWire` prepare protocol-shaped JSON; Unity `MRSInspectorClient` wires connect/send/parse. Default server mesh is a **test fixture**, not a claimed Hyper-Caustic Lens / production scene binding. Curvature carries `curvatureStub: true`.
+
+## Connect (local)
+
+```bash
+npm run inspector:ws
+# optional: node scripts/inspector-ws-server.mjs --port 9490 --host 127.0.0.1
+```
+
+Unity Editor: **MRS → 4D Inspector** → set endpoint `ws://127.0.0.1:9490` → **Connect** → enable **Scene Click → Inspect**.
 
 ## Request — screen
 
@@ -38,6 +50,8 @@
 ```
 
 ## Response — `inspect_result`
+
+Vectors on the wire are **number arrays** `[x,y,z,w]` (not `{x,y,z,w}` objects). Internal JS results may still use objects; `resultToWire` converts.
 
 ```json
 {
@@ -78,4 +92,4 @@
 }
 ```
 
-Miss: `{ "type": "inspect_result", "ok": false, "error": "no_hit" }`.
+Miss (compact): `{ "type": "inspect_result", "schemaVersion": "1.1", "ok": false, "error": "no_hit" }`.
