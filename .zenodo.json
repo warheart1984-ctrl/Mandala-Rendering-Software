@@ -1,22 +1,39 @@
 {
-  "title": "4D Rendering System v1.0",
-  "description": "Constitutional 4D rendering stack with RT4D (Ray Tracer for Four Dimensions), frozen Hyper-Caustic Lens validation scene, architecture, charter, and First 4D Renderer technical note.",
+  "title": "4D Rendering System (4DRS) v1.0.0",
   "upload_type": "software",
-  "publication_date": "2026-07-22",
+  "description": "RT4D (Ray Tracer for Four Dimensions) — 4D path-tracing modules for math, geometry, materials, integration/transport, acceleration, and projection, plus the official Hyper-Caustic Lens validation scene. This release packages the v1.0 specification, architecture, API freeze, validation baseline, and First 4D Renderer technical note. Capability claims are evidence-tagged in constitution/CHARTER.md (RT4D API freeze and baseline are partial; scene factory and docs are enforced where listed).",
+  "creators": [
+    {
+      "name": "Halstead, Jon",
+      "affiliation": "Sovereign X OS Research Group"
+    }
+  ],
+  "license": "MIT",
   "version": "1.0.0",
   "keywords": [
     "4D rendering",
+    "radiative transport",
     "path tracing",
+    "S3 sampling",
+    "4D BVH",
+    "hypersurface",
+    "volumetric scattering",
     "RT4D",
-    "Hyper-Caustic Lens",
-    "four-dimensional graphics"
+    "4DRS",
+    "Hyper-Caustic Lens"
   ],
   "related_identifiers": [
     {
-      "identifier": "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-",
+      "identifier": "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-/releases/tag/v1.0.0",
       "relation": "isSupplementTo",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "10.5281/zenodo.21499388",
+      "relation": "isIdenticalTo",
+      "scheme": "doi",
       "resource_type": "software"
     }
   ],
-  "notes": "Connect the GitHub repository to Zenodo and publish from the v1.0.0 release, or upload the release archive with this metadata. Replace creators after account linking."
+  "notes": "Validation baseline under docs/4drs/validation/baseline.json and docs/4drs/validation/artifacts/. Regenerate with: npm run render:hcl-baseline. Module barrels: math, geometry, material, integrator, accel, output, scene (see docs/4drs/api/rt4d-v1.0-freeze.md)."
 }

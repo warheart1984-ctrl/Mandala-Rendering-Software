@@ -1,21 +1,38 @@
 cff-version: 1.2.0
-title: "4D Rendering System v1.0"
-message: "If you use this software, please cite it using these metadata."
+title: "4D Rendering System (4DRS)"
+message: "If you use RT4D in your research, please cite this release."
 type: software
-version: 1.0.0
+authors:
+  - family-names: Halstead
+    given-names: Jon
+    affiliation: Sovereign X OS Research Group
+version: "1.0.0"
 date-released: "2026-07-22"
+doi: "10.5281/zenodo.21499388"
 repository-code: "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-"
-url: "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-"
-abstract: >-
-  4D Rendering System (4DRS) v1.0 publishes RT4D (Ray Tracer for Four Dimensions),
-  the Hyper-Caustic Lens official validation scene, constitutional charter evidence,
-  architecture, and the First 4D Renderer technical note.
+url: "https://doi.org/10.5281/zenodo.21499388"
+license: MIT
+abstract: >
+  RT4D (Ray Tracer for Four Dimensions) is the path-tracing engine in 4D Rendering
+  System (4DRS) v1.0. Shipped modules cover R^4 math and S³ sampling helpers,
+  hypersurface/volume geometry, material BSDF/phase models (including a 4D-oriented
+  GGX path), path integration, 4D BVH acceleration, and 4D→3D→2D projection helpers.
+  The official validation scene, Hyper-Caustic Lens, exercises refractive hypersurface
+  hits, area lighting offset in w, and volumetric fog. See docs/4drs/ and
+  constitution/CHARTER.md for evidence-bound status (API freeze and baseline are
+  partial; factory and published docs are enforced where listed).
 keywords:
   - 4D rendering
+  - radiative transport
   - path tracing
+  - S3 sampling
+  - 4D BVH
+  - hypersurface
+  - volumetric scattering
   - RT4D
+  - 4DRS
   - Hyper-Caustic Lens
-license: Apache-2.0
-authors:
-  - name: "Mandala Rendering System contributors"
-    website: "https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21499388
+    description: Zenodo archive for 4DRS / RT4D v1.0.0

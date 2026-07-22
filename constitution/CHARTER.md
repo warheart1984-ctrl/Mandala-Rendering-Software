@@ -105,7 +105,7 @@
 | Hyper-Caustic Lens official validation | **enforced** (factory) | `createHyperCausticLens` + `docs/4drs/validation/` |
 | Baseline preview render | **partial** | `npm run render:hcl-baseline` + artifact checksums when present |
 | Spec / tech note / architecture published in-repo | **enforced** | `docs/4drs/SPEC-v1.0.md`, `First-4D-Renderer.md`, `ARCHITECTURE.md` |
-| Zenodo DOI | **declared** | `.zenodo.json` + `CITATION.cff`; deposit requires account link |
+| Zenodo DOI | **declared** | `CITATION.cff` / `.zenodo.json` list `10.5281/zenodo.21499388`; confirm deposit on Zenodo |
 
 ## VIII. Host ports
 
