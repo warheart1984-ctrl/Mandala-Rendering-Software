@@ -9,6 +9,26 @@ Governed 4D cinematic host stack (historical name 4DCE) with portable constituti
 **Namespace:** `SovereignX.CIEMS.Engine.*`  
 **Evidence bound:** see `constitution/CHARTER.md` for enforced vs partial vs skeleton claims.
 
+## Capability snapshot
+
+Statuses below match charter evidence (not marketing). Details: [`constitution/CHARTER.md`](constitution/CHARTER.md).
+
+| Capability | Status |
+| --- | --- |
+| 4D parametric surfaces | Present |
+| RT4D path rendering | Present |
+| Browser host | Present |
+| CSSV ledger | Partial |
+| Hyper-Caustic Lens validation | Present |
+| WebGPU | Present |
+| Canvas fallback | Present |
+| Unity adapter | Partial |
+| Unreal adapter | Partial |
+| Native Vulkan dispatch | Experimental |
+| Live engine link (shared-frame preview) | Experimental |
+| 4D physics | Skeleton |
+| Shader graph | Skeleton |
+
 ## v1.0 publish package
 
 | Artifact | Path |
