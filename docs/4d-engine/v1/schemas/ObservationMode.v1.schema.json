@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4d-engine.local/schemas/ObservationMode.v1.schema.json",
+  "title": "ObservationMode",
+  "description": "PLP v1 observation mode — declared.",
+  "type": "object",
+  "required": ["modeId"],
+  "additionalProperties": false,
+  "properties": {
+    "modeId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "drop_w | perspective_w | scale_by_w | offset_y_by_w | slice_hyperplane | extension"
+    },
+    "params": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "label": { "type": "string" }
+  }
+}

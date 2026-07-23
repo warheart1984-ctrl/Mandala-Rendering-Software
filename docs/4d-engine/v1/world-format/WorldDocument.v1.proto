@@ -1,0 +1,68 @@
+// WorldDocument.v1.proto — CONCEPTUAL SKETCH only.
+// Status: declared. No generated stubs, gRPC services, or wire compatibility claimed.
+syntax = "proto3";
+
+package fourd.engine.v1;
+
+option csharp_namespace = "FourD.Engine.V1";
+
+message Vec4 {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double w = 4;
+}
+
+message Rotate4D {
+  double xy = 1;
+  double xz = 2;
+  double xw = 3;
+  double yz = 4;
+  double yw = 5;
+  double zw = 6;
+}
+
+message Transform4D {
+  Vec4 translate = 1;
+  Rotate4D rotate = 2;
+  Vec4 scale = 3;
+}
+
+message Geometry {
+  string kind = 1; // surface | meshRef | sdfRef | empty
+  string surface_id = 2;
+  string uri = 3;
+  int32 resolution = 4;
+}
+
+message Material {
+  string id = 1;
+  string color = 2; // hex
+  double opacity = 3;
+  bool wireframe = 4;
+}
+
+message Entity {
+  string id = 1;
+  string name = 2;
+  Transform4D transform4d = 3;
+  Geometry geometry = 4;
+  string material_id = 5;
+  repeated string tags = 6;
+}
+
+message ObservationHint {
+  string mode_id = 1;
+  map<string, double> params = 2;
+}
+
+message WorldDocument {
+  string schema_version = 1; // "1.0"
+  string id = 2;
+  string name = 3;
+  string description = 4;
+  string units = 5;
+  repeated Material materials = 6;
+  repeated Entity entities = 7;
+  ObservationHint default_observation = 8;
+}

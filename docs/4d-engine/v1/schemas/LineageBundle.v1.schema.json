@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4d-engine.local/schemas/LineageBundle.v1.schema.json",
+  "title": "LineageBundle",
+  "description": "PLP lineage from projected Scene3D nodes to WorldDocument entities — declared.",
+  "type": "object",
+  "required": ["schemaVersion", "worldId", "observation", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "worldId": { "type": "string", "minLength": 1 },
+    "observation": {
+      "type": "object",
+      "required": ["modeId"],
+      "properties": {
+        "modeId": { "type": "string" },
+        "params": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["projectedNodeId", "sourceEntityId"],
+        "additionalProperties": false,
+        "properties": {
+          "projectedNodeId": { "type": "string" },
+          "sourceEntityId": { "type": "string" },
+          "geometryKind": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "generatedAt": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "partial", "skeleton"]
+    }
+  }
+}

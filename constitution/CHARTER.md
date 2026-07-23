@@ -131,7 +131,10 @@
 | --- | --- |
 | Browser (repo root) | **runs** — Opening + Mythar Ascension via ISL → CKL/GK → TimelinePlayer |
 | Unity (`unity/GovernedUnityProject/`) | **skeleton** — DTOs, world loader, provenance, replay mirrors; Play Mode not CI-verified |
+| Unity FourDAdapter (`Assets/Engine/FourDAdapter/`) | **skeleton** — consumes Scene3D+lineage; does not compute 4D (see `docs/4d-engine/v1/`) |
 | Unreal (`unreal/GovernedEnginePlugin/`) | **skeleton** — Option B timeline scheduler + binding resolver + provenance tick; Sequencer optional |
+| Unreal FourDAdapter (`unreal/FourDAdapter/`) | **skeleton** — Scene3D+lineage import stubs; does not compute 4D |
+| 4D Engine v1 architecture docs | **declared** — `docs/4d-engine/v1/` (World Format, PLP, adapters) |
 
 ## Boot sequence (browser — enforced)
 
@@ -172,8 +175,11 @@
 | Production scripts | `package.json`, `scripts/test-all.mjs`, `scripts/start-dev.mjs` |
 | Root README | `README.md` |
 | 4DRS v1.0 docs | `docs/4drs/` |
+| 4D Engine v1 (declared architecture) | `docs/4d-engine/v1/` — constitution, World Format, PLP, adapter stubs |
 | RT4D engine | `mrs/packages/renderer-core/src/render/rt4d/` |
 | HCL baseline script | `scripts/render-hyper-caustic-baseline.mjs` |
 | Substrate docs | `docs/4drs/substrate/` |
 | CUDA BVH skeleton | `native/cuda/rt4d/` |
 | Unity live-link | `unity/GovernedUnityProject/Assets/Engine/LiveLink/` |
+| Unity FourDAdapter | `unity/GovernedUnityProject/Assets/Engine/FourDAdapter/` (**skeleton**) |
+| Unreal FourDAdapter | `unreal/FourDAdapter/` (**skeleton**) |

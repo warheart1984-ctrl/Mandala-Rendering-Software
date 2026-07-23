@@ -97,4 +97,7 @@ export { LiveLinkServer } from "./live-link/LiveLinkServer.js";
 export { MeshStreamer } from "./live-link/MeshStreamer.js";
 export { UnityClientProtocol } from "./live-link/UnityClientProtocol.js";
 
+/** PLP v1 stub — skeleton; see docs/4d-engine/v1/plp/PLP_V1.md */
+export { projectWorld } from "./plp/projectWorld.js";
+
 export * as RT4D from "./render/rt4d/index.js";

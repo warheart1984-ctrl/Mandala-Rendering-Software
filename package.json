@@ -27,6 +27,7 @@
     "examples:gallery": "node examples/gallery/generate.mjs",
     "examples:bench": "node examples/benchmarks/bench-render.mjs",
     "test:examples": "node scripts/test-examples-smoke.mjs",
+    "validate:world-document": "node scripts/validate-world-document.mjs",
     "link:mrs-shim": "node scripts/link-mrs-shim.mjs"
   },
   "dependencies": {

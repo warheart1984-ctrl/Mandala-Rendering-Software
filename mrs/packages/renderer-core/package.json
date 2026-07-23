@@ -15,6 +15,7 @@
     "./render/canvas": "./src/render/canvas-renderer.js",
     "./inspector": "./src/inspector/index.js",
     "./live-link": "./src/live-link/index.js",
+    "./plp": "./src/plp/index.js",
     "./rt4d": "./src/render/rt4d/index.js",
     "./rt4d/math": "./src/render/rt4d/math/index.js",
     "./rt4d/geometry": "./src/render/rt4d/geometry/index.js",

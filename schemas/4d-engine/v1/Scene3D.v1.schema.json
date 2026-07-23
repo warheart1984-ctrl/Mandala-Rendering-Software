@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4d-engine.local/schemas/Scene3D.v1.schema.json",
+  "title": "Scene3D",
+  "description": "PLP projected 3D scene — declared. Canonical copy also under docs/4d-engine/v1/schemas/.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "nodes"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "id": { "type": "string", "minLength": 1 },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Node" }
+    },
+    "meshes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Mesh" }
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "color": { "type": "string" },
+          "opacity": { "type": "number" },
+          "wireframe": { "type": "boolean" }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "Mesh": {
+      "type": "object",
+      "required": ["id", "positions"],
+      "properties": {
+        "id": { "type": "string" },
+        "positions": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "normals": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "indices": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "primitive": {
+          "type": "string",
+          "enum": ["triangles", "lines", "points"]
+        }
+      }
+    },
+    "Node": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "meshId": { "type": "string" },
+        "materialId": { "type": "string" },
+        "transform": {
+          "type": "object",
+          "properties": {
+            "translate": {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "scale": {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

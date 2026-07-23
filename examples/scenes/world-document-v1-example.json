@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0",
+  "id": "world.example.clifford-lab",
+  "name": "Clifford lab",
+  "description": "Declared WorldDocument v1 example for schema validation (not a runtime-loaded production world).",
+  "units": "meters",
+  "materials": [
+    {
+      "id": "mat.wire-cyan",
+      "color": "#6ec8ff",
+      "opacity": 1,
+      "wireframe": true
+    }
+  ],
+  "entities": [
+    {
+      "id": "ent.clifford",
+      "name": "Clifford torus",
+      "transform4d": {
+        "translate": [0, 0, 0, 0],
+        "rotate": { "xw": 0.2, "zw": 0.1 },
+        "scale": [1, 1, 1, 1]
+      },
+      "geometry": {
+        "kind": "surface",
+        "surfaceId": "clifford-torus",
+        "resolution": 48
+      },
+      "materialId": "mat.wire-cyan",
+      "tags": ["demo", "surface"]
+    },
+    {
+      "id": "ent.tesseract",
+      "name": "Unit tesseract",
+      "transform4d": {
+        "translate": [2, 0, 0, 0],
+        "rotate": { "xw": 0 },
+        "scale": [0.5, 0.5, 0.5, 0.5]
+      },
+      "geometry": {
+        "kind": "surface",
+        "surfaceId": "tesseract",
+        "resolution": 16
+      },
+      "materialId": "mat.wire-cyan",
+      "tags": ["demo"]
+    }
+  ],
+  "defaultObservation": {
+    "modeId": "perspective_w",
+    "params": { "d4": 4, "d3": 4 }
+  },
+  "metadata": {
+    "status": "declared",
+    "createdBy": "docs/4d-engine/v1",
+    "note": "Validates against WorldDocument.v1.schema.json; ChatGPT Scene4DDTO remains a parallel contract."
+  }
+}

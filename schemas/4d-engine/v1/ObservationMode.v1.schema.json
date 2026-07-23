@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4d-engine.local/schemas/ObservationMode.v1.schema.json",
+  "title": "ObservationMode",
+  "description": "PLP v1 observation mode — declared. Canonical copy also under docs/4d-engine/v1/schemas/.",
+  "type": "object",
+  "required": ["modeId"],
+  "additionalProperties": false,
+  "properties": {
+    "modeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "params": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "label": { "type": "string" }
+  }
+}

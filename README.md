@@ -59,6 +59,11 @@ Statuses below match charter evidence (not marketing). Details: [`constitution/C
 | Mathematical substrate / MRS-CRC | Declared |
 | 4D physics | Skeleton |
 | Shader graph | Skeleton |
+| 4D Engine v1 constitution / World Format / PLP | Declared (`docs/4d-engine/v1/`) |
+| WorldDocument schema + example validation | Declared / partial (`npm run validate:world-document`) |
+| PLP `projectWorld` stub | Skeleton (`@mrs/renderer-core` `/plp`) |
+| Unity FourDAdapter (Scene3D+lineage) | Skeleton |
+| Unreal FourDAdapter (Scene3D+lineage) | Skeleton (`unreal/FourDAdapter/`) |
 
 ## v1.0 publish package
 
@@ -73,6 +78,7 @@ Statuses below match charter evidence (not marketing). Details: [`constitution/C
 | Substrate / MRS-CRC | [`docs/4drs/substrate/`](docs/4drs/substrate/) |
 | Charter | [`constitution/CHARTER.md`](constitution/CHARTER.md) |
 | Citation / Zenodo | [`CITATION.cff`](CITATION.cff), [`.zenodo.json`](.zenodo.json) |
+| 4D Engine v1 (declared) | [`docs/4d-engine/v1/README.md`](docs/4d-engine/v1/README.md) |
 
 ```bash
 npm run render:hcl-baseline   # regenerate Hyper-Caustic Lens preview + checksums

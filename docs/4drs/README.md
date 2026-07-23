@@ -12,6 +12,8 @@
 | [contracts/](./contracts/) | Canonical MRS-IC v1.1 / v1.2 |
 | [inspector/](./inspector/) | 4D Inspector documentation index |
 | [RELEASE_NOTES_v1.0.md](./RELEASE_NOTES_v1.0.md) | GitHub / Zenodo release notes |
+| [constitution/](./constitution/) | 4D Engine v1 constitution mirror → [`docs/4d-engine/v1/`](../4d-engine/v1/README.md) |
 
 Charter: [`../../constitution/CHARTER.md`](../../constitution/CHARTER.md)  
+4D Engine v1 (declared): [`../4d-engine/v1/README.md`](../4d-engine/v1/README.md)  
 Engine code: [`../../mrs/packages/renderer-core/src/render/rt4d/`](../../mrs/packages/renderer-core/src/render/rt4d/) (`@mrs/renderer-core`)
