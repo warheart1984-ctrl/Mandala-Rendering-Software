@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -72,13 +73,29 @@ namespace SovereignX.CIEMS.Engine.LiveLink
                 Enqueue(() => OnConnected?.Invoke());
 
                 var buffer = new byte[1 << 16];
-                while (!ct.IsCancellationRequested && _ws.State == WebSocketState.Open)
+                using (var messageBuffer = new MemoryStream())
                 {
-                    var result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct)
-                        .ConfigureAwait(false);
-                    if (result.MessageType == WebSocketMessageType.Close) break;
-                    var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    HandleMessage(text);
+                    while (!ct.IsCancellationRequested && _ws.State == WebSocketState.Open)
+                    {
+                        var result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct)
+                            .ConfigureAwait(false);
+                        if (result.MessageType == WebSocketMessageType.Close) break;
+
+                        messageBuffer.Write(buffer, 0, result.Count);
+                        if (!result.EndOfMessage) continue;
+
+                        var bytes = messageBuffer.ToArray();
+                        messageBuffer.SetLength(0);
+
+                        if (result.MessageType == WebSocketMessageType.Binary)
+                        {
+                            Debug.LogWarning("[MRS live-link] ignoring binary WebSocket message");
+                            continue;
+                        }
+
+                        var text = Encoding.UTF8.GetString(bytes);
+                        HandleMessage(text);
+                    }
                 }
             }
             catch (Exception e)
