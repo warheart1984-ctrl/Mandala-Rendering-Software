@@ -23,7 +23,11 @@
 | “Brand kit proves market leadership” | “**Declared brand positioning**” | `BRANDING_PACKAGE.md` |
 | “Partnership timeline is committed” | “Strategic draft; calendars **aspirational**” | `STUDIO_PARTNERSHIP_PROPOSAL.md` |
 | “Academic results / measured 4–6 ms in paper” | “Results = **targets / declared**; manuscript Results **to be filled with measured evidence**” | Soften all academic “results” |
+| “SIGGRAPH paper achieves 4–6 ms / accepted” | “**Declared academic draft**; Results = **targets / to be measured**; acceptance TBD” | `SIGGRAPH_PAPER.md` |
 | “SIGGRAPH course scheduled” | “**Declared educational outline** — acceptance / date TBD” | `SIGGRAPH_COURSE_NOTES.md` |
+| “Architecture poster proves realtime product” | “**Declared poster layout**; Results panel = targets only” | `ENGINE_ARCHITECTURE_POSTER.md` |
+| “6-week studio curriculum = certified Unreal training” | “**Declared curriculum draft** — pending functional Unreal integration” | `STUDIO_ONBOARDING_CURRICULUM.md` |
+| “Worldbuilding bible = shipped multi-world product” | “Creative / **declared** writers’ guide — not product proof” | `WORLDBUILDING_GUIDE.md` |
 | “Cinematic demo is a realtime product proof” | “Creative brief / director guide — not a shipped realtime claim” | `CINEMATIC_DEMO_SCRIPT.md`, `MULTI_WORLD_CINEMATIC_BIBLE.md` |
 | “Studio integration guide = certified onboarding” | “**Declared / planned** steps; adapter **skeleton**” | `STUDIO_INTEGRATION_GUIDE.md` |
 | “Investors: first-mover lock / audited metrics” | “Strategic draft; **not** audited financials; soften first-mover absolutes” | GTM draft only |
@@ -47,6 +51,8 @@
 - [ ] Unreal = declared interface / adapter consumer / RHI roadmap  
 - [ ] Full GPU SO(4) path not claimed (architecture declared; BVH partial)  
 - [ ] Academic Results not filled with fabricated measurements  
+- [ ] SIGGRAPH paper / poster / curriculum labeled draft; Unreal curriculum pending functional integration  
+- [ ] Worldbuilding / cinematic docs not cited as product capability  
 - [ ] Press / partnership / branding = drafts; contact lines are TBD or verified  
 - [ ] Root / product README **not** updated with these as shipped capabilities  
 - [ ] Scorecard still matches claims ([`docs/scorecards/fourd-renderer-v2.md`](../../../scorecards/fourd-renderer-v2.md))

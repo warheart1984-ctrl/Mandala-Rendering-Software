@@ -20,3 +20,7 @@ Punchier GTM drafts for brainstorming only.
 | [BRANDING_TAGLINES.md](./BRANDING_TAGLINES.md) | Tagline brainstorm |
 | [STUDIO_PARTNERSHIP_PROPOSAL.md](./STUDIO_PARTNERSHIP_PROPOSAL.md) | Partnership color |
 | [TECHNICAL_FAQ.md](./TECHNICAL_FAQ.md) | Punchy FAQ paraphrases |
+| [SIGGRAPH_PAPER.md](./SIGGRAPH_PAPER.md) | Abstract / Results punch-ups — redline before use |
+| [ENGINE_ARCHITECTURE_POSTER.md](./ENGINE_ARCHITECTURE_POSTER.md) | Poster header / flourish brainstorm |
+| [STUDIO_ONBOARDING_CURRICULUM.md](./STUDIO_ONBOARDING_CURRICULUM.md) | Curriculum marketing tone — still pending Unreal |
+| [WORLDBUILDING_GUIDE.md](./WORLDBUILDING_GUIDE.md) | Creative tagline / pitch amplification |

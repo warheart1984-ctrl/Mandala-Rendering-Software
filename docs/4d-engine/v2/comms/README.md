@@ -36,9 +36,13 @@ If aspirational copy and evidence-bound copy conflict, **evidence-bound + CLAIMS
 | [STUDIO_PARTNERSHIP_PROPOSAL.md](./STUDIO_PARTNERSHIP_PROPOSAL.md) | Strategic draft | Timelines **aspirational** |
 | [RESEARCH_ABSTRACT.md](./RESEARCH_ABSTRACT.md) | Evidence-bound abstract | “Declared architecture…” |
 | [ACADEMIC_POSTER.md](./ACADEMIC_POSTER.md) | Poster text | Results = targets / declared |
+| [ENGINE_ARCHITECTURE_POSTER.md](./ENGINE_ARCHITECTURE_POSTER.md) | Conference poster **layout** | Bands A–E; Results = targets / to be measured |
 | [ACADEMIC_PAPER_OUTLINE.md](./ACADEMIC_PAPER_OUTLINE.md) | 8–12 page structure | Expands poster |
 | [ACADEMIC_MANUSCRIPT.md](./ACADEMIC_MANUSCRIPT.md) | ~12-page prose summaries | Results **to be filled with measured evidence** |
+| [SIGGRAPH_PAPER.md](./SIGGRAPH_PAPER.md) | Polished academic outline | Results = **targets / to be measured** — not “achieves 4–6 ms” |
 | [SIGGRAPH_COURSE_NOTES.md](./SIGGRAPH_COURSE_NOTES.md) | Course outline | Acceptance / date TBD |
+| [STUDIO_ONBOARDING_CURRICULUM.md](./STUDIO_ONBOARDING_CURRICULUM.md) | 6-week training outline | **Declared curriculum draft** — pending functional Unreal |
+| [WORLDBUILDING_GUIDE.md](./WORLDBUILDING_GUIDE.md) | Writers / directors bible | Creative OK; technical VO still redlined |
 | [API_REFERENCE_MANUAL.md](./API_REFERENCE_MANUAL.md) | **Declared API sketch** | Not an implemented SDK |
 | [ENGINE_SDK_DOCUMENTATION.md](./ENGINE_SDK_DOCUMENTATION.md) | SDK narrative sketch | Links Shader ABI + API manual |
 | [TECHNICAL_FAQ.md](./TECHNICAL_FAQ.md) | Honest Q&A | Q6: architecture declared; partial BVH; not full GPU SO(4) |
@@ -57,7 +61,7 @@ If aspirational copy and evidence-bound copy conflict, **evidence-bound + CLAIMS
 
 ### Aspirational mirrors (punchy)
 
-See [`aspirational/README.md`](./aspirational/README.md) — includes press release, branding taglines, partnership proposal, technical FAQ paraphrases, plus earlier deck/pitch/website drafts.
+See [`aspirational/README.md`](./aspirational/README.md) — includes press release, branding taglines, partnership proposal, technical FAQ paraphrases, SIGGRAPH paper abstract/results punch-ups, poster/curriculum/worldbuilding mirrors, plus earlier deck/pitch/website drafts.
 
 ## Explicit non-claims (folder-wide)
 
