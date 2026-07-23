@@ -41,8 +41,8 @@ Peer of `unreal/GovernedEnginePlugin/`. Copy or symlink into `<YourProject>/Plug
 ## Design docs
 
 - **Canonical RFC:** [`UNREAL_4D_INTEGRATION_RFC_V1_1.md`](../../docs/4d-engine/v1/adapters/UNREAL_4D_INTEGRATION_RFC_V1_1.md)
-- [`UNREAL_ADAPTER_V1.md`](../../docs/4d-engine/v1/adapters/UNREAL_ADAPTER_V1.md) (module design; v1.1 section)
-- [`UNREAL_SUBSYSTEM_ENHANCEMENTS.md`](../../docs/4d-engine/v1/adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md)
+- [`UNREAL_ADAPTER_V1.md`](../../docs/4d-engine/v1/adapters/UNREAL_ADAPTER_V1.md) (adapter index; v1.1 status · v1.2 pointer)
+- [`UNREAL_SUBSYSTEM_ENHANCEMENTS.md`](../../docs/4d-engine/v1/adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md) (subsystem map · v1.2 plan · CI / Nanite roadmap)
 - [`UNREAL_SEQUENCER_4D_TRACK.md`](../../docs/4d-engine/v1/adapters/UNREAL_SEQUENCER_4D_TRACK.md)
 - [`UNREAL_MATERIAL_FUNCTIONS.md`](../../docs/4d-engine/v1/adapters/UNREAL_MATERIAL_FUNCTIONS.md)
 - [`UNREAL_W_ENCODING_COMPUTE.md`](../../docs/4d-engine/v1/adapters/UNREAL_W_ENCODING_COMPUTE.md)

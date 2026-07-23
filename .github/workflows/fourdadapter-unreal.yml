@@ -1,0 +1,31 @@
+# FourDAdapter Unreal CI — stub (not provisioned)
+
+# Drive-G-1: This workflow does NOT compile Unreal and is NOT a required check.
+# It exists so the CI Unreal gate design has a discoverable path without failing PRs.
+# Enable a real UE build job only after a UE 5.x image/runner is provisioned.
+#
+# Design doc: docs/4d-engine/v1/adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md §10
+# Planned path note: ci/unreal/fourdadapter.yml (same intent)
+
+name: FourDAdapter Unreal (not provisioned)
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Optional note (UE CI not provisioned)"
+        required: false
+        default: "manual probe only"
+
+jobs:
+  unreal-ci-not-provisioned:
+    name: Echo — UE CI not provisioned
+    runs-on: ubuntu-latest
+    steps:
+      - name: State clearly that this is not a build gate
+        run: |
+          echo "FourDAdapter Unreal CI is not provisioned."
+          echo "No Unreal Engine image/runner is configured for this repository."
+          echo "This job always succeeds and must not be marked required."
+          echo "See docs/4d-engine/v1/adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md §10"
+          echo "Input note: ${{ inputs.note }}"

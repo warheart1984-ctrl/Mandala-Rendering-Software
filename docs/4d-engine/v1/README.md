@@ -15,9 +15,9 @@
 | Proto sketch | [world-format/WorldDocument.v1.proto](./world-format/WorldDocument.v1.proto) | **declared** (conceptual; no generated stubs) |
 | Projection & Lineage Protocol | [plp/PLP_V1.md](./plp/PLP_V1.md) | **declared** (+ schemas; thin JS stub) |
 | Unity adapter | [adapters/UNITY_ADAPTER_V1.md](./adapters/UNITY_ADAPTER_V1.md) · `unity/.../FourDAdapter/` | **skeleton** |
-| Unreal adapter | [adapters/UNREAL_ADAPTER_V1.md](./adapters/UNREAL_ADAPTER_V1.md) · `unreal/FourDAdapter/` | **skeleton** (+ v1.1 **declared** subsystem docs) |
+| Unreal adapter (index) | [adapters/UNREAL_ADAPTER_V1.md](./adapters/UNREAL_ADAPTER_V1.md) · `unreal/FourDAdapter/` | **skeleton** · v1.1 **declared** · v1.2 **planned** |
 | Unreal Integration RFC v1.1 | [adapters/UNREAL_4D_INTEGRATION_RFC_V1_1.md](./adapters/UNREAL_4D_INTEGRATION_RFC_V1_1.md) | **Active** governance · evidence **declared** / **skeleton** / **roadmap** (non-functional without UE) |
-| Unreal v1.1 subsystem docs | [adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md](./adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md) · Sequencer / Materials / Debugger / Live / W-encoding | **declared** / **skeleton** / **roadmap** |
+| Unreal subsystem / v1.2 plan | [adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md](./adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md) · Sequencer / Materials / Debugger / Live / W-encoding · CI & Nanite **roadmap** | **declared** / **skeleton** / **planned** / **roadmap** |
 | Example world | [examples/scenes/world-document-v1-example.json](../../../examples/scenes/world-document-v1-example.json) | **declared** example |
 | Validate example | `npm run validate:world-document` | **partial** (schema check only) |
 

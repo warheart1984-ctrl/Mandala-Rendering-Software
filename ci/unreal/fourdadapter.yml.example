@@ -1,0 +1,28 @@
+# FourDAdapter Unreal CI — example / planned shape
+#
+# STATUS: example only — not an active GitHub Actions workflow.
+# Copy or evolve into .github/workflows/ when a UE 5.x image is provisioned.
+# Until then, use .github/workflows/fourdadapter-unreal.yml (workflow_dispatch stub).
+#
+# Drive-G-1: do not enable as a required check until the real build job exists.
+
+# name: FourDAdapter Unreal build
+# on:
+#   pull_request:
+#     paths:
+#       - 'unreal/FourDAdapter/**'
+#       - 'docs/4d-engine/v1/adapters/**'
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'unreal/FourDAdapter/**'
+#
+# jobs:
+#   build-plugin:
+#     runs-on: [self-hosted, unreal]   # requires provisioned UE runner/image
+#     steps:
+#       - uses: actions/checkout@v4
+#       - name: Build Development Editor with FourDAdapter
+#         run: |
+#           # UnrealEditor / UAT build against unreal/FourDAdapter/
+#           echo "UE image required — see UNREAL_SUBSYSTEM_ENHANCEMENTS.md §10"
