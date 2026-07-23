@@ -27,6 +27,7 @@
 | [validation/TEST_SUITE_AND_VALIDATION.md](./validation/TEST_SUITE_AND_VALIDATION.md) | Test categories T1–T5 | **declared** |
 | [performance/PERFORMANCE_MODEL_AND_GPU_BUDGET.md](./performance/PERFORMANCE_MODEL_AND_GPU_BUDGET.md) | Cost model & design targets | **declared budget** (not measured) |
 | Scorecard | [`docs/scorecards/fourd-renderer-v2.md`](../../scorecards/fourd-renderer-v2.md) | Drive-G-2 five dimensions |
+| RT4D GPU evolution (related, distinct) | [`../rt4d/RT4D_EVOLUTION_ROADMAP.md`](../rt4d/RT4D_EVOLUTION_ROADMAP.md) | Path-tracer GPU core **roadmap** — not this RFC suite |
 | [comms/](./comms/) | Positioning drafts (not capability evidence) | **Strategic / aspirational messaging drafts** — Drive-G-1 redlined; do **not** copy into README capability tables |
 
 ## Maturity (Drive-G-2 — five dimensions)

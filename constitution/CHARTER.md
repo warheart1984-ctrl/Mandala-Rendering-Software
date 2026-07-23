@@ -105,6 +105,7 @@
 | Hyper-Caustic Lens official validation | **enforced** (factory) | `createHyperCausticLens` + `docs/4drs/validation/` |
 | Baseline preview render | **partial** | `npm run render:hcl-baseline` + artifact checksums when present |
 | Spec / tech note / architecture published in-repo | **enforced** | `docs/4drs/SPEC-v1.0.md`, `First-4D-Renderer.md`, `ARCHITECTURE.md` |
+| RT4D GPU evolution roadmap (v2–v4) | **declared / roadmap** | `docs/4d-engine/rt4d/` — queues/denoise/multi-GPU/Vulkan·DX **not** claimed implemented |
 | Zenodo DOI | **declared** | `CITATION.cff` / `.zenodo.json` list `10.5281/zenodo.21499388`; confirm deposit on Zenodo |
 
 ### VII.c Mathematical substrate & live-link (4DRS)

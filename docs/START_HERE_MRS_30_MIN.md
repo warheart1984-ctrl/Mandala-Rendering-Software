@@ -108,6 +108,7 @@ On Windows, headless PNG needs native `canvas` + VS C++ Build Tools; the **brows
 | [`docs/4drs/README.md`](./4drs/README.md) | 4DRS / RT4D publish package |
 | [`docs/4d-engine/v1/README.md`](./4d-engine/v1/README.md) | Engine v1 / World Format / PLP / adapters |
 | [`docs/4d-engine/v2/README.md`](./4d-engine/v2/README.md) | FourDRenderer v2 RFC index |
+| [`docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](./4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md) | RT4D GPU evolution **roadmap** (v2–v4) |
 | [`docs/4drs/inspector/README.md`](./4drs/inspector/README.md) | Inspector contracts |
 
 ---
@@ -128,6 +129,7 @@ G:\New folder\          (or your clone root)
 │   ├── 4drs/                 # Spec, naming, substrate, inspector, validation
 │   ├── 4d-engine/v1/         # Constitution, World Format, PLP, adapters
 │   ├── 4d-engine/v2/         # FourDRenderer RFCs + comms drafts
+│   ├── 4d-engine/rt4d/       # RT4D GPU evolution roadmap (v2–v4)
 │   └── scorecards/           # Drive-G-2 maturity tables
 ├── schemas/                  # WorldDocument / PLP schemas
 └── scripts/                  # serve, validate, tests
@@ -161,7 +163,8 @@ G:\New folder\          (or your clone root)
 2. Core package: [`mrs/packages/renderer-core`](../mrs/packages/renderer-core).  
 3. Validation scene: [`docs/4drs/validation/Hyper-Caustic-Lens.md`](./4drs/validation/Hyper-Caustic-Lens.md).  
 4. Shader / ABI **declared**: [`docs/4d-engine/v2/shader-abi/SHADER_ABI.md`](./4d-engine/v2/shader-abi/SHADER_ABI.md).  
-5. Honest FAQ: [`docs/4d-engine/v2/comms/TECHNICAL_FAQ.md`](./4d-engine/v2/comms/TECHNICAL_FAQ.md).
+5. Honest FAQ: [`docs/4d-engine/v2/comms/TECHNICAL_FAQ.md`](./4d-engine/v2/comms/TECHNICAL_FAQ.md).  
+6. RT4D GPU evolution **roadmap** (v2–v4): [`docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](./4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md).
 
 ### Engine developer (Unity / Unreal)
 

@@ -68,6 +68,7 @@ Statuses below match charter evidence (not marketing). Details: [`constitution/C
 | Unreal FourDAdapter (Scene3D+lineage) | Skeleton (`unreal/FourDAdapter/`) |
 | FourDRenderer v2.0 architecture / RFCs | Declared / draft (`docs/4d-engine/v2/`) — Phase 1 **docs**; GPU/RHI **roadmap** |
 | FourDRenderer v2 Unreal RHI / Nanite / Lumen | Roadmap (not FourDAdapter v1.1) |
+| RT4D GPU evolution (v2–v4) | Roadmap / declared (`docs/4d-engine/rt4d/`) — wavefront, denoise, multi-GPU, Vulkan/DX **not implemented** |
 
 ## v1.0 publish package
 
@@ -85,6 +86,8 @@ Statuses below match charter evidence (not marketing). Details: [`constitution/C
 | 4D Engine v1 (declared) | [`docs/4d-engine/v1/README.md`](docs/4d-engine/v1/README.md) |
 | FourDRenderer v2 (declared RFCs) | [`docs/4d-engine/v2/README.md`](docs/4d-engine/v2/README.md) |
 | FourDRenderer v2 scorecard | [`docs/scorecards/fourd-renderer-v2.md`](docs/scorecards/fourd-renderer-v2.md) |
+| RT4D GPU evolution roadmap (v2–v4) | [`docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md) |
+| RT4D scorecard | [`docs/scorecards/rt4d.md`](docs/scorecards/rt4d.md) |
 
 ```bash
 npm run render:hcl-baseline   # regenerate Hyper-Caustic Lens preview + checksums

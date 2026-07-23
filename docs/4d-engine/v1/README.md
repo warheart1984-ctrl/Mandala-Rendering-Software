@@ -25,14 +25,18 @@
 
 Also mirrored under [`docs/4drs/constitution/`](../../4drs/constitution/) for discoverability from 4DRS docs.
 
-## Next architecture track — FourDRenderer v2.0
+## Next architecture tracks
 
 | Area | Path | Status |
 | --- | --- | --- |
 | FourDRenderer v2 index | [`../v2/README.md`](../v2/README.md) | **draft / declared** RFC suite |
-| Scorecard | [`docs/scorecards/fourd-renderer-v2.md`](../../scorecards/fourd-renderer-v2.md) | Drive-G-2 |
+| FourDRenderer v2 scorecard | [`docs/scorecards/fourd-renderer-v2.md`](../../scorecards/fourd-renderer-v2.md) | Drive-G-2 |
+| RT4D GPU evolution (v2–v4) | [`../rt4d/RT4D_EVOLUTION_ROADMAP.md`](../rt4d/RT4D_EVOLUTION_ROADMAP.md) | **roadmap** (path-tracer core; distinct from FourDRenderer v2) |
+| RT4D scorecard | [`docs/scorecards/rt4d.md`](../../scorecards/rt4d.md) | Drive-G-2 |
 
-v2 **extends** BVH / SO(4) / projection / Observation Mode contracts toward a structured GPU + Unreal-blend architecture. It does **not** replace Engine v1 World Format / PLP / FourDAdapter hybrid-first scope. Deep Unreal RHI / Nanite / Lumen work is **roadmap** in v2 — not claimed as FourDAdapter v1.1.
+FourDRenderer v2 **extends** BVH / SO(4) / projection / Observation Mode contracts toward a structured GPU + Unreal-blend architecture. It does **not** replace Engine v1 World Format / PLP / FourDAdapter hybrid-first scope. Deep Unreal RHI / Nanite / Lumen work is **roadmap** in v2 — not claimed as FourDAdapter v1.1.
+
+RT4D v2–v4 documents **declare** GPU core / quality / scale milestones for the path tracer; they do **not** claim wavefront queues, denoising, multi-GPU, or Vulkan/DX backends are implemented.
 
 ## What exists in MRS today vs declared here
 

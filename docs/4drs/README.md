@@ -16,4 +16,5 @@
 
 Charter: [`../../constitution/CHARTER.md`](../../constitution/CHARTER.md)  
 4D Engine v1 (declared): [`../4d-engine/v1/README.md`](../4d-engine/v1/README.md)  
+RT4D GPU evolution (v2–v4 **roadmap**): [`../4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](../4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md)  
 Engine code: [`../../mrs/packages/renderer-core/src/render/rt4d/`](../../mrs/packages/renderer-core/src/render/rt4d/) (`@mrs/renderer-core`)
