@@ -23,6 +23,15 @@
 
 Also mirrored under [`docs/4drs/constitution/`](../../4drs/constitution/) for discoverability from 4DRS docs.
 
+## Next architecture track — FourDRenderer v2.0
+
+| Area | Path | Status |
+| --- | --- | --- |
+| FourDRenderer v2 index | [`../v2/README.md`](../v2/README.md) | **draft / declared** RFC suite |
+| Scorecard | [`docs/scorecards/fourd-renderer-v2.md`](../../scorecards/fourd-renderer-v2.md) | Drive-G-2 |
+
+v2 **extends** BVH / SO(4) / projection / Observation Mode contracts toward a structured GPU + Unreal-blend architecture. It does **not** replace Engine v1 World Format / PLP / FourDAdapter hybrid-first scope. Deep Unreal RHI / Nanite / Lumen work is **roadmap** in v2 — not claimed as FourDAdapter v1.1.
+
 ## What exists in MRS today vs declared here
 
 | Capability | In-repo evidence today | 4D Engine v1 claim |
@@ -40,6 +49,7 @@ Also mirrored under [`docs/4drs/constitution/`](../../4drs/constitution/) for di
 
 ## Cross-links
 
+- FourDRenderer v2: [`docs/4d-engine/v2/README.md`](../v2/README.md)
 - Charter: [`constitution/CHARTER.md`](../../../constitution/CHARTER.md)
 - 4DRS docs: [`docs/4drs/README.md`](../../4drs/README.md)
 - Root capability snapshot: [`README.md`](../../../README.md)

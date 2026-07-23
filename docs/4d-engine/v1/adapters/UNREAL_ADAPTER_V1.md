@@ -25,6 +25,8 @@ This document is the **adapter index** for Unreal, linking to all subordinate sp
 
 **Constitutional boundary:** Unreal does **not** compute 4D. Authority for WorldDocument, observation, and projection remains with the 4D Engine / PLP pipeline (hybrid-first).
 
+**FourDRenderer v2.0:** Upstream architecture for 4D BVH / SO(4) / path / project contracts lives at [`../../v2/README.md`](../../v2/README.md). FourDAdapter remains a **consumer** of Scene3D + lineage. Deep Unreal RHI mods, Nanite W-awareness, and Lumen W-GI are **roadmap** under v2 — **out of scope** for FourDAdapter v1.1.
+
 ---
 
 ## 2. Document index
@@ -45,6 +47,7 @@ All Unreal-specific adapter docs live under `docs/4d-engine/v1/adapters/`:
 **Cross-links:**
 
 - Index: [../README.md](../README.md)
+- FourDRenderer v2 (upstream authority): [`../../v2/README.md`](../../v2/README.md) · [v2 roadmap](../../v2/roadmap/ENGINE_INTEGRATION_ROADMAP.md)
 - PLP: [../plp/PLP_V1.md](../plp/PLP_V1.md)
 - Unity parity: [UNITY_ADAPTER_V1.md](./UNITY_ADAPTER_V1.md)
 - Plugin README: [`unreal/FourDAdapter/README.md`](../../../unreal/FourDAdapter/README.md)

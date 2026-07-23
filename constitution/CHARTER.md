@@ -135,6 +135,9 @@
 | Unreal (`unreal/GovernedEnginePlugin/`) | **skeleton** — Option B timeline scheduler + binding resolver + provenance tick; Sequencer optional |
 | Unreal FourDAdapter (`unreal/FourDAdapter/`) | **skeleton** — Scene3D+lineage import stubs; does not compute 4D |
 | 4D Engine v1 architecture docs | **declared** — `docs/4d-engine/v1/` (World Format, PLP, adapters) |
+| FourDRenderer v2.0 RFC / architecture suite | **declared** / **draft** — `docs/4d-engine/v2/` (Phase 1 = docs; GPU kernels not claimed) |
+| FourDRenderer v2 Unreal RHI deep integration | **roadmap** — not FourDAdapter v1.1 scope |
+| FourDRenderer v2 Nanite / Lumen extensions | **roadmap** |
 
 ## Boot sequence (browser — enforced)
 
@@ -176,6 +179,8 @@
 | Root README | `README.md` |
 | 4DRS v1.0 docs | `docs/4drs/` |
 | 4D Engine v1 (declared architecture) | `docs/4d-engine/v1/` — constitution, World Format, PLP, adapter stubs |
+| FourDRenderer v2 (declared RFCs) | `docs/4d-engine/v2/` — architecture, BVH/projection, shading, Observation Modes, render graph, ABI, roadmap |
+| FourDRenderer v2 scorecard | `docs/scorecards/fourd-renderer-v2.md` |
 | RT4D engine | `mrs/packages/renderer-core/src/render/rt4d/` |
 | HCL baseline script | `scripts/render-hyper-caustic-baseline.mjs` |
 | Substrate docs | `docs/4drs/substrate/` |
