@@ -1,0 +1,35 @@
+{
+  "name": "@mrs/storage-b2",
+  "version": "0.1.0",
+  "description": "Backblaze B2 S3-compatible client scaffold for MRS asset storage (declared / operator-configured)",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "types.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "scripts": {
+    "smoke": "node scripts/smoke.mjs",
+    "list": "node scripts/list.mjs",
+    "upload": "node scripts/upload.mjs",
+    "download": "node scripts/download.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/s3-request-presigner": "^3.758.0"
+  },
+  "files": [
+    "src",
+    "scripts",
+    "types.d.ts",
+    "README.md"
+  ],
+  "license": "MIT"
+}

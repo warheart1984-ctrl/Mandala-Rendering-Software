@@ -69,6 +69,7 @@ Statuses below match charter evidence (not marketing). Details: [`constitution/C
 | FourDRenderer v2.0 architecture / RFCs | Declared / draft (`docs/4d-engine/v2/`) — Phase 1 **docs**; GPU/RHI **roadmap** |
 | FourDRenderer v2 Unreal RHI / Nanite / Lumen | Roadmap (not FourDAdapter v1.1) |
 | RT4D GPU evolution (v2–v4) | Roadmap / declared (`docs/4d-engine/rt4d/`) — wavefront, denoise, multi-GPU, Vulkan/DX **not implemented** |
+| Object storage (B2 S3-compatible) | Declared / operator-configured (`@mrs/storage-b2`, [`docs/ops/BACKBLAZE_B2_S3.md`](docs/ops/BACKBLAZE_B2_S3.md)) — not cloud rendering complete |
 
 ## v1.0 publish package
 

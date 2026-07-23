@@ -7,6 +7,10 @@ import { ExportManager } from "@mrs/renderer-core/pipeline/ExportManager";
 import { getSceneOrThrow } from "../scene-store.js";
 import { toCoreSurfaceId } from "../mrs-adapter/surface-map.js";
 
+// Declared (Drive-G-1): optional B2 upload after local export is not wired here.
+// Operators may call uploadArtifactIfConfigured from @mrs/storage-b2 — see docs/ops/BACKBLAZE_B2_S3.md.
+// Do not treat B2 as “cloud rendering complete.”
+
 export const exportSceneInputShape = {
   sceneId: z.string(),
   format: z

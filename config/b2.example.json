@@ -1,0 +1,15 @@
+{
+  "_comment": "Placeholder only — copy values into .env. Never commit real keys. Status: declared / operator-configured.",
+  "_docs": "docs/ops/BACKBLAZE_B2_S3.md",
+  "keyId": "0000000000000000000000000",
+  "applicationKey": "REPLACE_WITH_APPLICATION_KEY",
+  "bucket": "your-mrs-assets-bucket",
+  "region": "us-west-004",
+  "endpoint": "https://s3.us-west-004.backblazeb2.com",
+  "forcePathStyle": true,
+  "notes": {
+    "httpsOnly": true,
+    "masterKey": "not supported for S3-Compatible API — use a non-master application key",
+    "acl": "private | public-read only at bucket/object level"
+  }
+}

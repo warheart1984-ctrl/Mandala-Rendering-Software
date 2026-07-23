@@ -28,10 +28,15 @@
     "examples:bench": "node examples/benchmarks/bench-render.mjs",
     "test:examples": "node scripts/test-examples-smoke.mjs",
     "validate:world-document": "node scripts/validate-world-document.mjs",
-    "link:mrs-shim": "node scripts/link-mrs-shim.mjs"
+    "link:mrs-shim": "node scripts/link-mrs-shim.mjs",
+    "b2:smoke": "node mrs/packages/storage-b2/scripts/smoke.mjs",
+    "b2:list": "node mrs/packages/storage-b2/scripts/list.mjs",
+    "b2:upload": "node mrs/packages/storage-b2/scripts/upload.mjs",
+    "b2:download": "node mrs/packages/storage-b2/scripts/download.mjs"
   },
   "dependencies": {
     "4d-renderer": "file:./4d-renderer",
-    "@mrs/renderer-core": "file:./mrs/packages/renderer-core"
+    "@mrs/renderer-core": "file:./mrs/packages/renderer-core",
+    "@mrs/storage-b2": "file:./mrs/packages/storage-b2"
   }
 }

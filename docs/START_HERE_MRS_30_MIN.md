@@ -46,6 +46,7 @@
 | World Format / PLP | **Declared** (+ schema validation; PLP stub) |
 | FourDAdapter (Unity / Unreal) | **Skeleton** |
 | FourDRenderer v2 | **Declared RFCs** (Phase 1 docs; GPU/RHI **roadmap**) |
+| Object storage (B2 S3-compatible) | **Declared / operator-configured** ([`docs/ops/BACKBLAZE_B2_S3.md`](./ops/BACKBLAZE_B2_S3.md)) |
 
 Do **not** treat this as “world’s first” or unqualified “production-ready.” Per-dimension detail: [`docs/scorecards/fourd-renderer-v2.md`](./scorecards/fourd-renderer-v2.md), [`docs/scorecards/4d-engine-v1.md`](./scorecards/4d-engine-v1.md).
 
@@ -110,6 +111,7 @@ On Windows, headless PNG needs native `canvas` + VS C++ Build Tools; the **brows
 | [`docs/4d-engine/v2/README.md`](./4d-engine/v2/README.md) | FourDRenderer v2 RFC index |
 | [`docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](./4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md) | RT4D GPU evolution **roadmap** (v2–v4) |
 | [`docs/4drs/inspector/README.md`](./4drs/inspector/README.md) | Inspector contracts |
+| [`docs/ops/BACKBLAZE_B2_S3.md`](./ops/BACKBLAZE_B2_S3.md) | Optional B2 object storage (operator-configured) |
 
 ---
 
@@ -130,6 +132,7 @@ G:\New folder\          (or your clone root)
 │   ├── 4d-engine/v1/         # Constitution, World Format, PLP, adapters
 │   ├── 4d-engine/v2/         # FourDRenderer RFCs + comms drafts
 │   ├── 4d-engine/rt4d/       # RT4D GPU evolution roadmap (v2–v4)
+│   ├── ops/                  # Operator guides (e.g. B2 storage)
 │   └── scorecards/           # Drive-G-2 maturity tables
 ├── schemas/                  # WorldDocument / PLP schemas
 └── scripts/                  # serve, validate, tests
@@ -164,7 +167,8 @@ G:\New folder\          (or your clone root)
 3. Validation scene: [`docs/4drs/validation/Hyper-Caustic-Lens.md`](./4drs/validation/Hyper-Caustic-Lens.md).  
 4. Shader / ABI **declared**: [`docs/4d-engine/v2/shader-abi/SHADER_ABI.md`](./4d-engine/v2/shader-abi/SHADER_ABI.md).  
 5. Honest FAQ: [`docs/4d-engine/v2/comms/TECHNICAL_FAQ.md`](./4d-engine/v2/comms/TECHNICAL_FAQ.md).  
-6. RT4D GPU evolution **roadmap** (v2–v4): [`docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](./4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md).
+6. RT4D GPU evolution **roadmap** (v2–v4): [`docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](./4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md).  
+7. Optional asset store (B2 S3-compatible, **operator-configured**): [`docs/ops/BACKBLAZE_B2_S3.md`](./ops/BACKBLAZE_B2_S3.md).
 
 ### Engine developer (Unity / Unreal)
 

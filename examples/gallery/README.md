@@ -23,6 +23,12 @@ Surfaces: `tesseract`, `clifford-torus`, `hopf-surface`, `torus-3d`, `trefoil-4d
 Only describe files present under `images/` after a successful generate run.
 Do not invent hero screenshots or claim WebGPU / bloom / shadows for these stills.
 
+## Optional object storage (declared)
+
+Gallery PNGs can be uploaded to operator-configured Backblaze B2 via `@mrs/storage-b2`
+(`uploadArtifactIfConfigured`). Not wired into `generate.mjs` by default.
+See [`docs/ops/BACKBLAZE_B2_S3.md`](../../docs/ops/BACKBLAZE_B2_S3.md).
+
 ## Related
 
 - Interactive: [`../web-demo.html`](../web-demo.html)
