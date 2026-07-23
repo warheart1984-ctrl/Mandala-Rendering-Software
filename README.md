@@ -25,7 +25,9 @@ npm run serve
 # open http://localhost:8080/examples/web-demo.html
 ```
 
-Package notes: [`4d-renderer/README.md`](4d-renderer/README.md).
+Package notes: [`4d-renderer/README.md`](4d-renderer/README.md) (shim) · canonical core: [`mrs/packages/renderer-core`](mrs/packages/renderer-core) (`@mrs/renderer-core`).
+
+**MRS × ChatGPT App (monorepo):** see [`mrs/README.md`](mrs/README.md) and [`mrs/apps/chatgpt-mrs/README.md`](mrs/apps/chatgpt-mrs/README.md).
 
 ## Capability snapshot
 

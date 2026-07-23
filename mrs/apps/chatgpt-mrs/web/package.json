@@ -1,0 +1,28 @@
+{
+  "name": "@mrs/chatgpt-app-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MRS ChatGPT viewport widget (Vite + React)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mrs/renderer-web": "workspace:*",
+    "@mrs/scene-schema": "workspace:*",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^4.5.2",
+    "tailwindcss": "4.1.11",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.1",
+    "vite-plugin-singlefile": "^2.2.0"
+  }
+}

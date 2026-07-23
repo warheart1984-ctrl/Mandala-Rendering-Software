@@ -1,12 +1,15 @@
 {
-  "name": "4d-renderer",
+  "name": "@mrs/renderer-core",
   "version": "1.0.0",
-  "description": "Compatibility shim → @mrs/renderer-core (mrs/packages/renderer-core). src/ is a junction.",
+  "description": "4DRS surface renderer + RT4D path engine (MRS renderer core)",
   "type": "module",
   "main": "src/index.js",
-  "types": "../mrs/packages/renderer-core/types.d.ts",
+  "types": "types.d.ts",
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./types.d.ts",
+      "default": "./src/index.js"
+    },
     "./surfaces": "./src/surfaces/index.js",
     "./math": "./src/math/index.js",
     "./render/canvas": "./src/render/canvas-renderer.js",
@@ -23,7 +26,8 @@
     "./math/*": "./src/math/*",
     "./surfaces/*": "./src/surfaces/*",
     "./render/*": "./src/render/*",
-    "./pipeline/*": "./src/pipeline/*"
+    "./pipeline/*": "./src/pipeline/*",
+    "./pipeline/ExportManager": "./src/pipeline/ExportManager.js"
   },
   "bin": {
     "4d-render": "src/cli.js"

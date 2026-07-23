@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4d-renderer.local/schemas/Scene4DMesh.schema.json",
+  "title": "Scene4D Native Mesh Contract",
+  "type": "object",
+  "required": ["contractVersion", "id", "vertexCount", "faceCount", "vertices", "faces", "bounds4D", "contentHash"],
+  "properties": {
+    "contractVersion": { "const": "1.0" },
+    "id": { "type": "string", "minLength": 1 },
+    "source": { "const": "4d-renderer" },
+    "resolution": { "type": ["integer", "null"], "minimum": 1 },
+    "vertexCount": { "type": "integer", "minimum": 1 },
+    "edgeCount": { "type": "integer", "minimum": 0 },
+    "faceCount": { "type": "integer", "minimum": 0 },
+    "vertices": { "type": "array", "items": { "$ref": "#/$defs/Vec4" } },
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/Edge" } },
+    "faces": { "type": "array", "items": { "$ref": "#/$defs/Triangle" } },
+    "bounds4D": { "type": "object", "required": ["min", "max"], "properties": { "min": { "$ref": "#/$defs/Vec4" }, "max": { "$ref": "#/$defs/Vec4" } } },
+    "contentHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "$defs": {
+    "Vec4": { "type": "object", "required": ["x", "y", "z", "w"], "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" }, "w": { "type": "number" } } },
+    "Edge": { "type": "array", "prefixItems": [{ "type": "integer", "minimum": 0 }, { "type": "integer", "minimum": 0 }], "minItems": 2, "maxItems": 2 },
+    "Triangle": { "type": "array", "prefixItems": [{ "type": "integer", "minimum": 0 }, { "type": "integer", "minimum": 0 }, { "type": "integer", "minimum": 0 }], "minItems": 3, "maxItems": 3 }
+  }
+}

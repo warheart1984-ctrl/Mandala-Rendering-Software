@@ -1,0 +1,25 @@
+{
+  "FileVersion": 3,
+  "FriendlyName": "4D Render Link",
+  "Version": 1,
+  "VersionName": "1.0",
+  "Description": "Live link client for the 4D Radiative Transport Engine. Connects to the 4D renderer WebSocket server and streams mesh/snapshot data into Unreal.",
+  "Category": "Rendering",
+  "CreatedBy": "4D Renderer",
+  "CreatedByURL": "",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "SupportURL": "",
+  "CanContainContent": false,
+  "IsBetaVersion": false,
+  "IsExperimentalVersion": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "FourDRenderLink",
+      "Type": "Runtime",
+      "LoadingPhase": "Default",
+      "WhitelistPlatforms": ["Win64", "Linux", "Mac"]
+    }
+  ]
+}

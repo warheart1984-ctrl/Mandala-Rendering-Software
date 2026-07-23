@@ -1,0 +1,12 @@
+packages/renderer-core/node_modules/
+packages/renderer-core/output/
+packages/*/node_modules/
+apps/*/node_modules/
+apps/chatgpt-mrs/*/node_modules/
+node_modules/
+*.log
+.DS_Store
+
+packages/renderer-core/output/
+apps/chatgpt-mrs/server/smoke*.log
+apps/chatgpt-mrs/server/smoke.pid

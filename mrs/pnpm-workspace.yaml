@@ -1,0 +1,4 @@
+packages:
+  - "packages/*"
+  - "apps/chatgpt-mrs/server"
+  - "apps/chatgpt-mrs/web"

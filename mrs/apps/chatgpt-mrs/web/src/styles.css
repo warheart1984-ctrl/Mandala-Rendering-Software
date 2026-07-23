@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --mrs-bg: #0e1216;
+  --mrs-fg: #e8eef4;
+  --mrs-accent: #6ec8ff;
+  --mrs-muted: #8a9aab;
+  --mrs-panel: #161c22;
+  --mrs-border: #2a3440;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+html,
+body,
+#mrs-viewport-root {
+  margin: 0;
+  height: 100%;
+  background: var(--mrs-bg);
+  color: var(--mrs-fg);
+}

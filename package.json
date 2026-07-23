@@ -26,9 +26,12 @@
     "start": "node scripts/start-dev.mjs",
     "examples:gallery": "node examples/gallery/generate.mjs",
     "examples:bench": "node examples/benchmarks/bench-render.mjs",
-    "test:examples": "node scripts/test-examples-smoke.mjs"
+    "test:examples": "node scripts/test-examples-smoke.mjs",
+    "link:mrs-shim": "node scripts/link-mrs-shim.mjs",
+    "postinstall": "node scripts/link-mrs-shim.mjs"
   },
   "dependencies": {
-    "4d-renderer": "file:./4d-renderer"
+    "4d-renderer": "file:./4d-renderer",
+    "@mrs/renderer-core": "file:./mrs/packages/renderer-core"
   }
 }

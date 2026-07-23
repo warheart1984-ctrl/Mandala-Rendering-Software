@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4d-renderer.local/schemas/Scene4D.schema.json",
+  "title": "4D Scene",
+  "description": "Declarative 4D scene: SDF tree, camera path, lighting, render config",
+  "type": "object",
+  "required": ["version", "scene", "camera", "render"],
+  "properties": {
+    "version": { "type": "string", "const": "1.0" },
+    "scene": {
+      "type": "object",
+      "required": ["sdf"],
+      "properties": {
+        "sdf": { "$ref": "#/$defs/SDFNode" },
+        "background": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#0e1216" }
+      }
+    },
+    "camera": {
+      "type": "object",
+      "required": ["hyperplane", "projection", "path"],
+      "properties": {
+        "hyperplane": {
+          "type": "object",
+          "required": ["normal", "offset"],
+          "properties": {
+            "normal": { "$ref": "#/$defs/Vec4" },
+            "offset": { "type": "number", "default": 0 }
+          }
+        },
+        "projection": {
+          "type": "string",
+          "enum": ["perspective", "orthographic", "hybrid"],
+          "default": "perspective"
+        },
+        "d3": { "type": "number", "default": 4.0 },
+        "d4": { "type": "number", "default": 4.0 },
+        "scale": { "type": "number", "default": 80 },
+        "scaleMode": { "type": "string", "enum": ["fixed", "fit"], "default": "fit" },
+        "padding": { "type": "number", "minimum": 0, "maximum": 0.45, "default": 0.12 },
+        "temporalFraming": { "type": "boolean", "default": true },
+        "path": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CameraKeyframe" },
+          "minItems": 1
+        }
+      }
+    },
+    "render": {
+      "type": "object",
+      "properties": {
+        "width": { "type": "integer", "minimum": 1, "default": 1920 },
+        "height": { "type": "integer", "minimum": 1, "default": 1080 },
+        "frames": { "type": "integer", "minimum": 1, "default": 120 },
+        "fps": { "type": "integer", "minimum": 1, "default": 30 },
+        "maxSteps": { "type": "integer", "minimum": 1, "default": 128 },
+        "epsilon": { "type": "number", "default": 0.001 },
+        "maxDistance": { "type": "number", "default": 100 },
+        "mode": { "type": "string", "enum": ["gpu", "cpu"], "default": "gpu" },
+        "profile": { "type": "string", "enum": ["technical", "cinematic", "solid-copper", "lattice"], "default": "technical" },
+        "supersample": { "type": "integer", "minimum": 1, "maximum": 4, "default": 1 },
+        "codec": { "type": "string", "default": "libx264" },
+        "streamToFfmpeg": { "type": "boolean", "default": false },
+        "output": { "type": "string", "default": "output" }
+      }
+    },
+    "lighting": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "ambient": { "$ref": "#/$defs/Color", "default": { "r": 0.1, "g": 0.1, "b": 0.1 } },
+        "lights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "position", "color", "intensity"],
+            "properties": {
+              "type": { "type": "string", "enum": ["point", "directional", "hyperplane"] },
+              "position": { "$ref": "#/$defs/Vec4" },
+              "direction": { "$ref": "#/$defs/Vec4" },
+              "color": { "$ref": "#/$defs/Color" },
+              "intensity": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "SDFNode": {
+      "type": "object",
+      "required": ["type"],
+      "oneOf": [
+        { "type": "object", "required": ["type", "shape"], "properties": { "type": { "const": "primitive" }, "shape": { "type": "string", "enum": ["hypersphere", "hypertorus", "gyroid", "torus3d", "fbm", "ridged", "tesseract"] }, "params": { "type": "object" }, "transform": { "$ref": "#/$defs/Transform4D" } } },
+        { "type": "object", "required": ["type", "op", "children"], "properties": { "type": { "const": "boolean" }, "op": { "type": "string", "enum": ["union", "intersection", "subtraction", "smoothUnion", "smoothSubtraction"] }, "k": { "type": "number", "default": 0.3 }, "children": { "type": "array", "items": { "$ref": "#/$defs/SDFNode" }, "minItems": 2 } } },
+        { "type": "object", "required": ["type", "child", "transform"], "properties": { "type": { "const": "transform" }, "child": { "$ref": "#/$defs/SDFNode" }, "transform": { "$ref": "#/$defs/Transform4D" } } },
+        { "type": "object", "required": ["type", "child", "repeat"], "properties": { "type": { "const": "repeat" }, "child": { "$ref": "#/$defs/SDFNode" }, "repeat": { "$ref": "#/$defs/Vec4" }, "limit": { "$ref": "#/$defs/Vec4U" } } }
+      ]
+    },
+    "Transform4D": {
+      "type": "object",
+      "properties": {
+        "translate": { "$ref": "#/$defs/Vec4" },
+        "rotate": {
+          "type": "object",
+          "properties": {
+            "xy": { "type": "number" }, "xz": { "type": "number" }, "xw": { "type": "number" },
+            "yz": { "type": "number" }, "yw": { "type": "number" }, "zw": { "type": "number" }
+          }
+        },
+        "scale": { "$ref": "#/$defs/Vec4" }
+      }
+    },
+    "CameraKeyframe": {
+      "type": "object",
+      "required": ["t"],
+      "properties": {
+        "t": { "type": "number", "minimum": 0, "maximum": 1 },
+        "easing": { "type": "string", "enum": ["linear", "smoothstep", "smootherstep", "ease-in", "ease-out"], "default": "smoothstep" },
+        "hyperplaneOffset": { "type": "number" },
+        "hyperplaneNormal": { "$ref": "#/$defs/Vec4" },
+        "rotation": {
+          "type": "object",
+          "properties": { "xy": { "type": "number" }, "xz": { "type": "number" }, "xw": { "type": "number" }, "yz": { "type": "number" }, "yw": { "type": "number" }, "zw": { "type": "number" } }
+        },
+        "position": { "$ref": "#/$defs/Vec4" }
+      }
+    },
+    "Vec4": { "type": "object", "required": ["x", "y", "z", "w"], "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" }, "w": { "type": "number" } } },
+    "Vec4U": { "type": "object", "required": ["x", "y", "z", "w"], "properties": { "x": { "type": "integer", "minimum": 0 }, "y": { "type": "integer", "minimum": 0 }, "z": { "type": "integer", "minimum": 0 }, "w": { "type": "integer", "minimum": 0 } } },
+    "Color": { "type": "object", "required": ["r", "g", "b"], "properties": { "r": { "type": "number", "minimum": 0, "maximum": 1 }, "g": { "type": "number", "minimum": 0, "maximum": 1 }, "b": { "type": "number", "minimum": 0, "maximum": 1 } } }
+  }
+}

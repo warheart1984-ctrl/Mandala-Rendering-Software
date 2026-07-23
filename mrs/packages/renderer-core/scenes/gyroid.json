@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "scene": {
+    "background": "#0e1216",
+    "sdf": {
+      "type": "primitive",
+      "shape": "gyroid",
+      "params": { "scale": 1.5 },
+      "transform": {}
+    }
+  },
+  "camera": {
+    "hyperplane": { "normal": { "x": 0, "y": 0, "z": 0, "w": 1 }, "offset": 0 },
+    "projection": "perspective",
+    "d3": 4.0,
+    "d4": 4.0,
+    "scale": 80,
+    "path": [
+      { "t": 0.0, "hyperplaneOffset": 0 },
+      { "t": 0.5, "hyperplaneOffset": 0.3 },
+      { "t": 1.0, "hyperplaneOffset": 0 }
+    ]
+  },
+  "render": {
+    "width": 1920,
+    "height": 1080,
+    "frames": 120,
+    "fps": 30,
+    "maxSteps": 128,
+    "epsilon": 0.001,
+    "maxDistance": 100,
+    "mode": "gpu",
+    "output": "output/scenes/gyroid"
+  },
+  "lighting": {
+    "enabled": false
+  }
+}
