@@ -1,0 +1,10 @@
+# Constitutional paths require owner review
+# These files/dirs contain the governance framework and cannot be changed without authorization
+
+constitution/ @warheart1984-ctrl
+engine/constitution/ @warheart1984-ctrl
+engine/governance/policies/ @warheart1984-ctrl
+engine/conformance/default.conformance-profile.json @warheart1984-ctrl
+AGENTS.md @warheart1984-ctrl
+CITATION.cff @warheart1984-ctrl
+.zenodo.json @warheart1984-ctrl

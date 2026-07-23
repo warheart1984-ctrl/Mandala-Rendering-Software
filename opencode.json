@@ -1,0 +1,95 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md"],
+  "permission": {
+    "*": "ask",
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "constitution/*": "ask",
+      "engine/constitution/*": "ask",
+      "engine/governance/policies/*": "ask",
+      "engine/conformance/default.conformance-profile.json": "ask",
+      "AGENTS.md": "deny",
+      "CITATION.cff": "deny",
+      ".zenodo.json": "deny"
+    },
+    "edit": {
+      "*": "ask",
+      "constitution/*": "deny",
+      "engine/constitution/*": "deny",
+      "engine/governance/policies/*": "deny",
+      "engine/conformance/default.conformance-profile.json": "deny",
+      "AGENTS.md": "deny",
+      "CITATION.cff": "deny",
+      ".zenodo.json": "deny"
+    },
+    "bash": {
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git add *": "ask",
+      "git commit *": "ask",
+      "git push *": "ask",
+      "node *": "ask",
+      "npm test*": "allow",
+      "npm run test*": "allow",
+      "npm run lint*": "allow",
+      "rm *": "deny",
+      "rm -rf *": "deny"
+    },
+    "external_directory": {
+      "*": "deny"
+    },
+    "webfetch": {
+      "*": "ask"
+    },
+    "websearch": {
+      "*": "ask"
+    }
+  },
+  "agent": {
+    "governed": {
+      "description": "Constitutional agent — follows MRS lawbook (AGENTS.md). Declares intent before every action. Produces evidence for every change.",
+      "prompt": "You are a governed agent operating under the Mandala Rendering System Constitutional Charter (4DCE v1.0). Before EVERY action, you MUST:\n1. Declare your intent (what, why, which files, what tests)\n2. Verify you are not modifying protected paths without authorization\n3. Preserve all evidence chains, provenance, and conformance checks\n4. Run tests before committing (node src/render/rt4d/test/normalization.test.js)\n5. Never skip governance checks for convenience\n\nRead AGENTS.md for the full lawbook. The 5 core principles are:\n- P1: No execution without intent\n- P2: No state change without evidence\n- P3: No authority without contract\n- P4: Replayable reality\n- P5: Sovereign independence\n\nYou are constitutional. Act accordingly.",
+      "permission": {
+        "*": "ask",
+        "edit": {
+          "*": "ask",
+          "constitution/*": "deny",
+          "engine/constitution/*": "deny",
+          "engine/governance/policies/*": "deny",
+          "engine/conformance/default.conformance-profile.json": "deny",
+          "AGENTS.md": "deny"
+        },
+        "bash": {
+          "*": "ask",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "npm test*": "allow",
+          "npm run test*": "allow",
+          "node src/render/rt4d/test/*": "allow"
+        }
+      }
+    },
+    "reviewer": {
+      "description": "Read-only constitutional reviewer. Audits code against the lawbook without making changes.",
+      "mode": "subagent",
+      "prompt": "You are a constitutional code reviewer for the Mandala Rendering System. You may ONLY read and analyze — never modify files. Audit code against:\n1. The 5 core principles (P1-P5)\n2. The 7 runtime policies\n3. The 16 conformance checks\n4. Mathematical correctness (BRDF normalization, BVH intersection, projection formulas)\n5. Evidence chain preservation\n\nReport violations with specific file paths and line numbers. Reference AGENTS.md for the full lawbook.",
+      "permission": {
+        "read": "allow",
+        "edit": "deny",
+        "write": "deny",
+        "bash": {
+          "*": "deny",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow"
+        }
+      }
+    }
+  }
+}
