@@ -40,7 +40,8 @@ Peer of `unreal/GovernedEnginePlugin/`. Copy or symlink into `<YourProject>/Plug
 
 ## Design docs
 
-- [`UNREAL_ADAPTER_V1.md`](../../docs/4d-engine/v1/adapters/UNREAL_ADAPTER_V1.md) (v1.1 section)
+- **Canonical RFC:** [`UNREAL_4D_INTEGRATION_RFC_V1_1.md`](../../docs/4d-engine/v1/adapters/UNREAL_4D_INTEGRATION_RFC_V1_1.md)
+- [`UNREAL_ADAPTER_V1.md`](../../docs/4d-engine/v1/adapters/UNREAL_ADAPTER_V1.md) (module design; v1.1 section)
 - [`UNREAL_SUBSYSTEM_ENHANCEMENTS.md`](../../docs/4d-engine/v1/adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md)
 - [`UNREAL_SEQUENCER_4D_TRACK.md`](../../docs/4d-engine/v1/adapters/UNREAL_SEQUENCER_4D_TRACK.md)
 - [`UNREAL_MATERIAL_FUNCTIONS.md`](../../docs/4d-engine/v1/adapters/UNREAL_MATERIAL_FUNCTIONS.md)

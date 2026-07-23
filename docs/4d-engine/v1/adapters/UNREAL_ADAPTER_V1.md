@@ -1,12 +1,15 @@
 # Unreal Adapter v1 — Module Design
 
+> **Canonical v1.1 governance:** [UNREAL_4D_INTEGRATION_RFC_V1_1.md](./UNREAL_4D_INTEGRATION_RFC_V1_1.md)  
+> This file keeps module / technical detail. Status claims must not contradict the RFC status table.
+
 > **Drive-G-1:** This document **declares** a plugin architecture.  
 > In-repo evidence today is a **skeleton** under `unreal/FourDAdapter/` (headers, Build.cs, module stubs).  
 > It does **not** claim that Unreal Editor tools, material assets, Sequencer evaluation, Nanite paths, live projection, or a CI Unreal build are working.
 
 **Status:** **skeleton** (plugin tree) + **declared** (v1.1 subsystem enhancements) + **roadmap** (perf / Nanite / polish)
 
-**Version framing:** Adapter **v1** = consume-only import surface. **v1.1** = declared first-class subsystem extensions (docs + stubs below). No UE build evidence yet for v1.1 runtime behavior.
+**Version framing:** Adapter **v1** = consume-only import surface. **v1.1** = declared first-class subsystem extensions (docs + stubs below; governed by the Integration RFC). No UE build evidence yet for v1.1 runtime behavior.
 
 ---
 
@@ -156,6 +159,9 @@ No `.uasset` materials ship in this skeleton. Names and parameters are **declare
 
 ## 7. v1.1 subsystem enhancements (**declared**)
 
+> Governance and responsibilities for v1.1: [UNREAL_4D_INTEGRATION_RFC_V1_1.md](./UNREAL_4D_INTEGRATION_RFC_V1_1.md) (sections 3–11).  
+> PLP: adapter design **aligns with** / **declares compliance intent** for PL-1…PL-5 — not runtime enforcement.
+
 These extend the import plugin toward a first-class Unreal subsystem. All runtime behavior below is **declared** or **skeleton** until a local UE compile proves otherwise.
 
 | Enhancement | Doc | Code stub | Status |
@@ -215,6 +221,7 @@ These extend the import plugin toward a first-class Unreal subsystem. All runtim
 
 ## Cross-links
 
+- **Integration RFC v1.1 (canonical):** [UNREAL_4D_INTEGRATION_RFC_V1_1.md](./UNREAL_4D_INTEGRATION_RFC_V1_1.md)
 - Index: [../README.md](../README.md)
 - PLP: [../plp/PLP_V1.md](../plp/PLP_V1.md)
 - Unity adapter: [UNITY_ADAPTER_V1.md](./UNITY_ADAPTER_V1.md)
