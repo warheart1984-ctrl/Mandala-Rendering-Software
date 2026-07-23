@@ -1,6 +1,7 @@
 import { PathTracer4D, SampleAccumulator } from "./integrator/PathTracer4D.js";
 import { Projector4D } from "./output/projector.js";
 import { vec4 } from "./math/vec4.js";
+import { RT4DGPURenderer } from "./gpu/RT4DGPURenderer.js";
 
 export async function renderRT4DFrame(scene4D, camera4D, options = {}) {
   const width = options.width ?? camera4D.width;
@@ -41,4 +42,37 @@ export async function renderRT4DFrame(scene4D, camera4D, options = {}) {
 function fracSin(s) {
   const x = Math.sin(s * 127.1 + 311.7) * 43758.5453;
   return x - Math.floor(x);
+}
+
+let _gpuRenderer = null;
+
+export async function renderRT4DFrameGPU(scene4D, camera4D, options = {}) {
+  if (!navigator?.gpu) {
+    console.warn("WebGPU not available, falling back to CPU path tracer");
+    return renderRT4DFrame(scene4D, camera4D, options);
+  }
+
+  const width = options.width ?? camera4D.width;
+  const height = options.height ?? camera4D.height;
+
+  if (!_gpuRenderer) {
+    _gpuRenderer = new RT4DGPURenderer({ width, height, maxDepth: options.maxDepth ?? 4, samplesPerPixel: options.samples ?? 16 });
+    await _gpuRenderer.init();
+  }
+
+  _gpuRenderer.width = width;
+  _gpuRenderer.height = height;
+  _gpuRenderer.serializeScene(scene4D, camera4D);
+
+  const result = await _gpuRenderer.render(scene4D, camera4D, {
+    samples: options.samples ?? 16,
+    maxDepth: options.maxDepth ?? 4,
+    width,
+    height,
+  });
+
+  const proj = new Projector4D({ width, height });
+  const raster = proj.rasterize(result.pixels, width, height);
+
+  return { pixels: raster, width, height, samples: options.samples ?? 16, gpu: true };
 }

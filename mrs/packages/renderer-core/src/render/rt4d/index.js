@@ -30,4 +30,5 @@ export { Projector4D, AOVCollector } from "./output/projector.js";
 export { Scene4D } from "./scene/Scene4D.js";
 export { createHyperCausticLens } from "./scene/TestHyperCausticLens.js";
 
-export { renderRT4DFrame } from "./RT4DRenderer.js";
+export { renderRT4DFrame, renderRT4DFrameGPU } from "./RT4DRenderer.js";
+export { RT4DGPURenderer } from "./gpu/RT4DGPURenderer.js";
