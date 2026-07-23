@@ -2,7 +2,7 @@
 
 **Canonical location:** this file under `docs/4drs/contracts/`.  
 **Mirror / redirect:** [`../substrate/MRS-IC-v1.1.md`](../substrate/MRS-IC-v1.1.md) points here.  
-**Status (Drive-G-1):** **declared** contract prose. Runtime fill is **skeleton** via `4d-renderer/src/inspector/` (JS SoT) and Unity Editor stubs.  
+**Status (Drive-G-1):** **declared** contract prose. Runtime fill is **skeleton** via `mrs/packages/renderer-core/src/inspector/` (JS SoT; `@mrs/renderer-core`) and Unity Editor stubs.  
 **Math:** [`../substrate/INSPECTOR_MATH.md`](../substrate/INSPECTOR_MATH.md) · **CRC:** [`../substrate/MRS-CRC-v1.0.md`](../substrate/MRS-CRC-v1.0.md) · **Index:** [`../inspector/README.md`](../inspector/README.md)  
 **Successor:** [`MRS-IC-v1.2.md`](./MRS-IC-v1.2.md) (lineage + invariants)
 
@@ -159,7 +159,7 @@ Declared endpoints:
 - `inspectAtRay(origin4D, dir4D)`  
 - `inspectPrimitive(id, params)`  
 
-**SoT:** `4d-renderer/src/inspector/` (`MRSInspector4D`). C++ headers in integration guides are **declared** host API sketches, not a shipped native library.
+**SoT:** `mrs/packages/renderer-core/src/inspector/` (`MRSInspector4D`). C++ headers in integration guides are **declared** host API sketches, not a shipped native library.
 
 ### Clause 4.2 — Serialization
 

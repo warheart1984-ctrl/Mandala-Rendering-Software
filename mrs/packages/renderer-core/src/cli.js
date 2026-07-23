@@ -10,7 +10,7 @@
  *   node src/cli.js lattice --fill gyroid --res 24 --single
  */
 import { Command } from "commander";
-import { createCanvas } from "canvas";
+import { createCanvas } from "./lib/node-canvas.js";
 import { listSurfaces, getSurface, sampleSurface } from "./surfaces/index.js";
 import { renderMovie, renderFrameToBuffer } from "./pipeline/movie-pipeline.js";
 import { createScene } from "./pipeline/scene.js";

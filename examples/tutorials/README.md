@@ -1,6 +1,6 @@
 # Tutorials
 
-Runnable Node scripts that import real `4d-renderer` APIs. From repo root:
+Runnable Node scripts that import real `@mrs/renderer-core` APIs. From repo root:
 
 ```bash
 node examples/tutorials/basic-render.js
@@ -10,7 +10,8 @@ node examples/tutorials/export-formats.js
 node examples/tutorials/advanced-composition.js
 ```
 
-Requires `canvas` native build under `4d-renderer/` (`cd 4d-renderer && npm install`).
+Requires `canvas` native build via the MRS workspace (`cd mrs && pnpm run setup`). Package: `@mrs/renderer-core`.  
+> Root `4d-renderer/` remains a **compatibility shim** that re-exports `@mrs/renderer-core` — not the SoT.
 
 | Script | Evidence |
 | --- | --- |

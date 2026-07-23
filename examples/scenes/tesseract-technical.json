@@ -2,7 +2,7 @@
   "id": "tesseract-technical",
   "label": "Unit tesseract · technical wireframe",
   "status": "declared-preset-format",
-  "note": "Fields align with createScene() in 4d-renderer/src/pipeline/scene.js. No dedicated JSON scene loader is claimed — pass these options into createScene / CLI flags.",
+  "note": "Fields align with createScene() in mrs/packages/renderer-core/src/pipeline/scene.js. No dedicated JSON scene loader is claimed — pass these options into createScene / CLI flags.",
   "surface": "tesseract",
   "resolution": 16,
   "width": 1280,

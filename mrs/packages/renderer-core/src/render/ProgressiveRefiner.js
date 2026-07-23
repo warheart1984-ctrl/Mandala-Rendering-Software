@@ -1,4 +1,4 @@
-import { createCanvas } from "canvas";
+import { createCanvas } from "../lib/node-canvas.js";
 import { CanvasRenderer } from "./canvas-renderer.js";
 import { getSurface, sampleSurface } from "../surfaces/index.js";
 import { createScene } from "../pipeline/scene.js";

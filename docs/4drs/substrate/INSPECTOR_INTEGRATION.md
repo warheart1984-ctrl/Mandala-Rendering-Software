@@ -1,7 +1,8 @@
 # Inspector integration guide (MRS developers)
 
 **Status:** **skeleton** implementation exists in JS + Unity Editor stubs.  
-**JS SoT:** `4d-renderer/src/inspector/` (`MRSInspector4D`).  
+**JS SoT:** `mrs/packages/renderer-core/src/inspector/` (`MRSInspector4D`; package `@mrs/renderer-core`).  
+> Root `4d-renderer/` remains a **compatibility shim** that re-exports `@mrs/renderer-core` — not the SoT.  
 **Unity:** `unity/GovernedUnityProject/Assets/Engine/Inspector/`.  
 **Contracts:** [MRS-IC-v1.1](../contracts/MRS-IC-v1.1.md) · [MRS-IC-v1.2](../contracts/MRS-IC-v1.2.md)  
 **Alias path:** [`inspector-integration.md`](./inspector-integration.md) redirects here.

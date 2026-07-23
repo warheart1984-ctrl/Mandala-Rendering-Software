@@ -1,7 +1,7 @@
 # Scene presets (declared format)
 
 JSON files mirror `createScene(options)` fields from
-`4d-renderer/src/pipeline/scene.js`.
+`mrs/packages/renderer-core/src/pipeline/scene.js`.
 
 **Status:** declared preset format — there is no separate runtime scene-file
 loader claimed. Use by reading JSON and passing into `createScene`, or by

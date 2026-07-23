@@ -10,7 +10,8 @@ on:
     branches: [main, master]
     paths:
       - "examples/**"
-      - "4d-renderer/src/**"
+      - "mrs/packages/renderer-core/src/**"
+      - "mrs/packages/renderer-core/package.json"
       - "4d-renderer/package.json"
       - "css/**"
       - "index.html"

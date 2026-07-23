@@ -61,8 +61,23 @@ try {
   ctx.putImageData(img, 0, 0);
   writeFileSync(pngPath, canvas.toBuffer("image/png"));
   pngWritten = true;
+  console.log("[hcl] PNG via native canvas");
 } catch (err) {
-  console.warn("[hcl] PNG skipped (canvas unavailable):", err.message);
+  const msg = err instanceof Error ? err.message : String(err);
+  console.warn("[hcl] native canvas unavailable — trying pure-JS PNG encoder");
+  console.warn("[hcl] (for CLI/gallery cairo builds: cd mrs && pnpm run setup; Windows needs VS C++ Build Tools)");
+  console.warn("[hcl] underlying:", msg.split("\n")[0]);
+  try {
+    const { encodePngRgba } = await import("./lib/png-rgba.mjs");
+    writeFileSync(pngPath, encodePngRgba(width, height, pixels));
+    pngWritten = true;
+    console.log("[hcl] PNG via pure-JS encoder (no cairo)");
+  } catch (fallbackErr) {
+    console.warn(
+      "[hcl] PNG skipped — PPM still written. Fix canvas or scripts/lib/png-rgba.mjs:",
+      fallbackErr instanceof Error ? fallbackErr.message : fallbackErr
+    );
+  }
 }
 
 const checksums = {

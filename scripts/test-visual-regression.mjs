@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createCanvas } from "../4d-renderer/node_modules/canvas/index.js";
+import { createCanvas } from "../examples/lib/node-canvas.mjs";
 import { CanvasRenderer, getRenderProfile, getSurface, sampleSurface } from "../mrs/packages/renderer-core/src/index.js";
 import { isWebGPUSupported, createRendererWithFallback } from "../mrs/packages/renderer-core/src/gpu/WebGPURenderer.js";
 import { createGovernedRenderer, createSovereignXNativeDispatch, discoverBrowserRenderAdapters, routeSovereignXRenderer } from "../mrs/packages/renderer-core/src/gpu/SovereignXRenderAdapter.js";

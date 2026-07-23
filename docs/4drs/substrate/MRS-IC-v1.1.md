@@ -3,7 +3,7 @@
 > **Canonical:** [`../contracts/MRS-IC-v1.1.md`](../contracts/MRS-IC-v1.1.md)  
 > This substrate path is retained for existing links. Do not diverge content — edit the contracts copy.
 
-**Status (Drive-G-1):** **declared** contract · runtime **skeleton** (`4d-renderer/src/inspector/`).  
+**Status (Drive-G-1):** **declared** contract · runtime **skeleton** (`mrs/packages/renderer-core/src/inspector/`).  
 **Successor:** [`../contracts/MRS-IC-v1.2.md`](../contracts/MRS-IC-v1.2.md) · **Index:** [`../inspector/README.md`](../inspector/README.md)
 
 ## Redirect

@@ -7,7 +7,7 @@
 | `bvh4d_kernel.cuh` | `BVHNode4D`, `HitRecord`, AABB / hypersphere / hyperplane device funcs |
 | `traverse.cu` | `traverseBVH4D` kernel (requires `__CUDACC__` + `intersectPrimitive4D`) |
 
-JS bridge (CPU packed traverse + same math): `4d-renderer/src/render/rt4d/accel/gpu/`  
+JS bridge (CPU packed traverse + same math): `mrs/packages/renderer-core/src/render/rt4d/accel/gpu/`  
 Docs: `docs/4drs/substrate/BVH4D_GPU.md`
 
 ## Extending `intersectPrimitive4D`

@@ -4,17 +4,31 @@
  * Uses CanvasRenderer + node-canvas — same path as CLI single-frame render.
  *
  *   node examples/gallery/generate.mjs
+ *
+ * Requires native `canvas` (cairo). On Windows: cd mrs && pnpm run setup
+ * (VS C++ Build Tools). Browser web-demo does not need native canvas.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createCanvas } from "../lib/node-canvas.mjs";
 import { CanvasRenderer } from "../../mrs/packages/renderer-core/src/render/canvas-renderer.js";
 import {
   getSurface,
   sampleSurface,
   listSurfaces,
 } from "../../mrs/packages/renderer-core/src/surfaces/index.js";
+
+let createCanvas;
+try {
+  ({ createCanvas } = await import("../lib/node-canvas.mjs"));
+} catch (err) {
+  console.error(err instanceof Error ? err.message : err);
+  console.error(
+    "\nGallery PNG generation skipped — native canvas unavailable. " +
+      "Use examples/web-demo.html for browser Canvas2D, or fix canvas via: cd mrs && pnpm run setup."
+  );
+  process.exit(1);
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, "images");

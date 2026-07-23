@@ -29,6 +29,14 @@ Package notes: [`4d-renderer/README.md`](4d-renderer/README.md) (shim) · canoni
 
 **MRS × ChatGPT App (monorepo):** see [`mrs/README.md`](mrs/README.md) and [`mrs/apps/chatgpt-mrs/README.md`](mrs/apps/chatgpt-mrs/README.md).
 
+```bash
+cd mrs && pnpm run setup   # fresh clone: install + rebuild canvas/esbuild
+```
+
+### Windows native canvas (optional for widget)
+
+Headless PNG (CLI, gallery, some exports) needs native `canvas` + VS C++ Build Tools on Windows — see [`mrs/README.md`](mrs/README.md#windows-native-canvas-honest). Browser demo and ChatGPT widget use Canvas2D and do **not** require cairo.
+
 ## Capability snapshot
 
 Statuses below match charter evidence (not marketing). Details: [`constitution/CHARTER.md`](constitution/CHARTER.md).
@@ -124,7 +132,7 @@ ISL intent → CKL/GK decision → TimelinePlayer → Frame provenance → CSSV 
 | `npm run serve` | Static browser host only |
 | `npm run cssv:server` | CSSV dashboard + API only |
 | `npm start` | Both servers |
-| `npm run examples:gallery` | Generate gallery PNGs (needs node-canvas) |
+| `npm run examples:gallery` | Generate gallery PNGs (needs native `canvas`; see mrs README) |
 | `npm run examples:bench` | Measure local Node CanvasRenderer timings |
 | `npm run test:examples` | Examples suite smoke |
 

@@ -3,7 +3,7 @@
 | Layer | Formal name | Short form | Scope |
 | --- | --- | --- | --- |
 | Published system | **4D Rendering System** | **4DRS** | Charter + architecture + RT4D + validation scene + this release |
-| Ray / path engine | **RT4D** (*Ray Tracer for Four Dimensions*) | **RT4D** | Stable modules under `4d-renderer/src/render/rt4d/` |
+| Ray / path engine | **RT4D** (*Ray Tracer for Four Dimensions*) | **RT4D** | Stable modules under `mrs/packages/renderer-core/src/render/rt4d/` |
 | Official validation scene | **Hyper-Caustic Lens** | HCL | `createHyperCausticLens()` + frozen baseline |
 | Repository / host stack | Mandala Rendering System | MRS | GitHub repo; constitutional browser/Unity/Unreal hosts |
 

@@ -6,7 +6,7 @@
   "release": "v1.0.0",
   "frozenAt": "2026-07-22",
   "factory": "createHyperCausticLens",
-  "source": "4d-renderer/src/render/rt4d/scene/TestHyperCausticLens.js",
+  "source": "mrs/packages/renderer-core/src/render/rt4d/scene/TestHyperCausticLens.js",
   "renderEntry": "renderRT4DFrame",
   "settings": {
     "width": 160,

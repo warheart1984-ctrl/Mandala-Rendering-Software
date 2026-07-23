@@ -119,7 +119,7 @@ Until second fundamental forms exist:
 
 This **MUST** be explicitly marked as a stub in results and evidence bundles (`curvatureStub: true` / equivalent).
 
-**Evidence:** `4d-renderer/src/inspector/types.js`, `differential.js` (`principalCurvatureStub`).
+**Evidence:** `mrs/packages/renderer-core/src/inspector/types.js`, `differential.js` (`principalCurvatureStub`).
 
 ### Invariant 3.6 — Projection Consistency
 
@@ -147,7 +147,7 @@ Inspector **SHALL** serialize to:
 - binary (**planned**)  
 - evidence bundles (present helper)
 
-**SoT:** `4d-renderer/src/inspector/`. Unity: `unity/GovernedUnityProject/Assets/Engine/Inspector/`.
+**SoT:** `mrs/packages/renderer-core/src/inspector/` (`@mrs/renderer-core`). Unity: `unity/GovernedUnityProject/Assets/Engine/Inspector/`.
 
 ## Article V — Constitutional Evolution
 

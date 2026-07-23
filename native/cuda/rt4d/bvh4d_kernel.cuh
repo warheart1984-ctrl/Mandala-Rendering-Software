@@ -1,6 +1,6 @@
 // Copyright (c) Mandala Rendering System — CUDA RT4D BVH skeleton (not built in CI).
 // Status: skeleton. Compile with nvcc when CUDA toolkit is available.
-// Mirror of JS sketch in 4d-renderer/src/render/rt4d/accel/gpu/bvh4dKernelSketch.js
+// Mirror of JS sketch in mrs/packages/renderer-core/src/render/rt4d/accel/gpu/bvh4dKernelSketch.js
 
 #pragma once
 

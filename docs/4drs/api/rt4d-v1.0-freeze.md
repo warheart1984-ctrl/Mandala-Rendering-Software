@@ -2,7 +2,8 @@
 
 **Freeze date:** 2026-07-22  
 **Engine:** RT4D (Ray Tracer for Four Dimensions)  
-**Import root:** `4d-renderer/src/render/rt4d/` (also `import { RT4D } from "4d-renderer"` → `RT4D.*`)
+**Import root:** `mrs/packages/renderer-core/src/render/rt4d/` (also `import { RT4D } from "@mrs/renderer-core"` → `RT4D.*`)  
+> Root `4d-renderer/` remains a **compatibility shim** that re-exports `@mrs/renderer-core` — not the SoT.
 
 This freeze covers **public exports** listed below. SemVer: breaking changes require a major bump after `v1.0.0`.
 
@@ -10,14 +11,14 @@ This freeze covers **public exports** listed below. SemVer: breaking changes req
 
 | Module path | Package export (planned) | Barrel |
 | --- | --- | --- |
-| math | `4d-renderer/rt4d/math` | `math/index.js` |
-| geometry | `4d-renderer/rt4d/geometry` | `geometry/index.js` |
-| material | `4d-renderer/rt4d/material` | `material/index.js` |
-| integrator | `4d-renderer/rt4d/integrator` | `integrator/index.js` |
-| accel | `4d-renderer/rt4d/accel` | `accel/index.js` |
-| output | `4d-renderer/rt4d/output` | `output/index.js` |
-| scene | `4d-renderer/rt4d/scene` | `scene/index.js` |
-| (umbrella) | `4d-renderer/rt4d` | `index.js` |
+| math | `@mrs/renderer-core/rt4d/math` | `math/index.js` |
+| geometry | `@mrs/renderer-core/rt4d/geometry` | `geometry/index.js` |
+| material | `@mrs/renderer-core/rt4d/material` | `material/index.js` |
+| integrator | `@mrs/renderer-core/rt4d/integrator` | `integrator/index.js` |
+| accel | `@mrs/renderer-core/rt4d/accel` | `accel/index.js` |
+| output | `@mrs/renderer-core/rt4d/output` | `output/index.js` |
+| scene | `@mrs/renderer-core/rt4d/scene` | `scene/index.js` |
+| (umbrella) | `@mrs/renderer-core/rt4d` | `index.js` |
 
 ## math
 

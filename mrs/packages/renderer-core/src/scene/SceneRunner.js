@@ -1,7 +1,7 @@
 /**
  * Scene Runner — loads scene JSON, runs GPU/CPU render, emits evidence.
  */
-import { createCanvas } from "canvas";
+import { createCanvas } from "../lib/node-canvas.js";
 import fs from "node:fs";
 import path from "node:path";
 import { createWebGPURenderer } from "../gpu/WebGPURenderer.js";

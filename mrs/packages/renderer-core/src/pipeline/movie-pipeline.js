@@ -1,7 +1,7 @@
 /**
  * Movie pipeline — renders frame sequences to PNG and encodes to MP4 via FFmpeg.
  */
-import { createCanvas } from "canvas";
+import { createCanvas } from "../lib/node-canvas.js";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";

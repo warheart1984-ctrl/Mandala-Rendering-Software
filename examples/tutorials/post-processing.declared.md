@@ -1,6 +1,6 @@
 # Declared — post-processing
 
-`4d-renderer/src/gpu/PostProcessor.js` defines bloom / tone-mapping / chromatic aberration
+`mrs/packages/renderer-core/src/gpu/PostProcessor.js` defines bloom / tone-mapping / chromatic aberration
 against a WebGPU `device` (`GPUTextureUsage`, WGSL pipelines).
 
 **Not claimed in the examples suite:**

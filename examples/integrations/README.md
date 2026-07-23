@@ -4,7 +4,7 @@ Thin notes only — not installable plugins.
 
 | Integration | Status | Evidence |
 | --- | --- | --- |
-| CLI (`4d-render`) | Present | `4d-renderer/src/cli.js`, `npm run render:4d` |
+| CLI (`4d-render`) | Present | `mrs/packages/renderer-core/src/cli.js` (`@mrs/renderer-core`), `npm run render:4d` |
 | Browser host adapter | Present | `js/renderer.js` → `CanvasRenderer` |
 | Unity mesh JSON | Partial | `npm run export:surfaces` → StreamingAssets |
 | Unreal mesh JSON | Partial | same mesh export → Content/Surfaces |

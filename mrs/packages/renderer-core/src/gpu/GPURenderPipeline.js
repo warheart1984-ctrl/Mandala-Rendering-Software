@@ -126,7 +126,7 @@ export class GPURenderPipeline {
 
     const fs = await import("node:fs");
     const path = await import("node:path");
-    const { createCanvas } = await import("canvas");
+    const { createCanvas } = await import("../lib/node-canvas.js");
 
     const outputDir = path.resolve(scene.outputDir);
     fs.mkdirSync(outputDir, { recursive: true });

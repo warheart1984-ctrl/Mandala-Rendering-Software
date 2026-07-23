@@ -1,6 +1,6 @@
 # Declared — audio visualization
 
-`4d-renderer/src/audio/AudioVisualizer.js` includes `AudioAnalyzer` with
+`mrs/packages/renderer-core/src/audio/AudioVisualizer.js` includes `AudioAnalyzer` with
 `loadMicrophone()` / `loadAudio()` using the Web Audio API.
 
 **Not claimed in the examples suite:**

@@ -51,7 +51,7 @@ RT4D is organized as frozen modules:
 
 Entry points:
 
-- Umbrella: `4d-renderer/src/render/rt4d/index.js`  
+- Umbrella: `mrs/packages/renderer-core/src/render/rt4d/index.js`  
 - Frame: `renderRT4DFrame(scene, camera, { width, height, samples, maxDepth, seed })`  
 - Validation factory: `createHyperCausticLens(options?)`
 
@@ -103,7 +103,7 @@ node scripts/render-hyper-caustic-baseline.mjs --write-hashes
 | API freeze | `docs/4drs/api/rt4d-v1.0-freeze.md` |
 | Validation | `docs/4drs/validation/Hyper-Caustic-Lens.md` |
 | Charter | `constitution/CHARTER.md` |
-| Engine code | `4d-renderer/src/render/rt4d/` |
+| Engine code | `mrs/packages/renderer-core/src/render/rt4d/` |
 | Release tag | `v1.0.0` on GitHub |
 
 ## Citation

@@ -149,7 +149,9 @@ try {
   assert.ok(Buffer.isBuffer(buf) && buf.length > 100, "PNG buffer produced");
   pngOk = true;
 } catch (err) {
-  console.log(`  (optional node-canvas PNG skipped: ${err.message})`);
+  const hint =
+    "Optional PNG needs native canvas (cd mrs && pnpm run setup; Windows: VS C++ Build Tools). ";
+  console.log(`  (optional node-canvas PNG skipped: ${hint}${err.message})`);
 }
 
 console.log(

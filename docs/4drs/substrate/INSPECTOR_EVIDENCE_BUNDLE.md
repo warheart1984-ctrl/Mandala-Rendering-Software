@@ -1,6 +1,6 @@
 # Inspector evidence bundle
 
-**Status:** **declared**. Used for replay / research artifacts. Helper: `buildInspectorEvidenceBundle` in `4d-renderer/src/inspector/serialize.js`.  
+**Status:** **declared**. Used for replay / research artifacts. Helper: `buildInspectorEvidenceBundle` in `mrs/packages/renderer-core/src/inspector/serialize.js`.  
 **Alias:** [`evidence-bundle.md`](./evidence-bundle.md) redirects here.
 
 ## Bundle structure

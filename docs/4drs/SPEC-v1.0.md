@@ -3,7 +3,7 @@
 **Title:** 4D Rendering System v1.0  
 **Engine:** RT4D (*Ray Tracer for Four Dimensions*)  
 **Validation scene:** Hyper-Caustic Lens (official)  
-**Evidence bound:** Drive-G-1 — claims match shipped code under `4d-renderer/src/render/rt4d/` and this document set.
+**Evidence bound:** Drive-G-1 — claims match shipped code under `mrs/packages/renderer-core/src/render/rt4d/` and this document set.
 
 ## 1. Purpose
 

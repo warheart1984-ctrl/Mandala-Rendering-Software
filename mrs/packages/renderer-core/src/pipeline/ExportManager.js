@@ -5,7 +5,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { createCanvas } from "canvas";
+import { createCanvas } from "../lib/node-canvas.js";
 import { CanvasRenderer } from "../render/canvas-renderer.js";
 import { getSurface, sampleSurface } from "../surfaces/index.js";
 import { createScene } from "./scene.js";

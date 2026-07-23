@@ -53,7 +53,7 @@ Every physical step **SHALL** be able to produce:
 - constraint-resolution evidence (when constraints apply)  
 - temporal provenance  
 
-**Implementation status:** **declared**. Skeleton: `4d-renderer/src/physics/`. No CKL policy currently binds 4D-PCC articles.
+**Implementation status:** **declared**. Skeleton: `mrs/packages/renderer-core/src/physics/`. No CKL policy currently binds 4D-PCC articles.
 
 ---
 
@@ -101,7 +101,7 @@ Graphs **SHALL** be DAGs (no cycles).
 
 Shading that claims 4D awareness **SHALL** incorporate 4D geometry inputs (including \(w\)), normals \(N_{4}\), and/or manifold structure as documented for the graph.
 
-**Implementation status:** **declared**. Skeleton graph/WGSL path: `4d-renderer/src/shader-graph/`.
+**Implementation status:** **declared**. Skeleton graph/WGSL path: `mrs/packages/renderer-core/src/shader-graph/`.
 
 ---
 

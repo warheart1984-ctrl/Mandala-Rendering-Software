@@ -1,7 +1,7 @@
 # Hyper-Caustic Lens — official validation scene (v1.0)
 
 **Status:** official / frozen baseline for **4D Rendering System v1.0**  
-**Factory:** `createHyperCausticLens` in `4d-renderer/src/render/rt4d/scene/TestHyperCausticLens.js`  
+**Factory:** `createHyperCausticLens` in `mrs/packages/renderer-core/src/render/rt4d/scene/TestHyperCausticLens.js`  
 **Baseline manifest:** [`baseline.json`](./baseline.json)  
 **Rendered artifacts:** [`artifacts/`](./artifacts/)
 
@@ -31,4 +31,4 @@ Writes PNG/PPM under `docs/4drs/validation/artifacts/` and refreshes checksums i
 - Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
 - Technical note: [`../First-4D-Renderer.md`](../First-4D-Renderer.md)  
 - API freeze: [`../api/rt4d-v1.0-freeze.md`](../api/rt4d-v1.0-freeze.md)  
-- Code: `4d-renderer/src/render/rt4d/`  
+- Code: `mrs/packages/renderer-core/src/render/rt4d/`  

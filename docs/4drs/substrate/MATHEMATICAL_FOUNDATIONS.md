@@ -91,7 +91,7 @@ This is the **canonical 4D physics kernel** for particle / rigid updates.
 
 | Claim | Status | Evidence |
 | --- | --- | --- |
-| \(\mathbb{R}^{4}\) rigid bodies + world step | **skeleton** | `4d-renderer/src/physics/` (`PhysicsWorld4D`, `RigidBody4D`, `Collider4D`) |
+| \(\mathbb{R}^{4}\) rigid bodies + world step | **skeleton** | `mrs/packages/renderer-core/src/physics/` (`PhysicsWorld4D`, `RigidBody4D`, `Collider4D`) |
 | Explicit PDE \(\partial\Phi/\partial t = F(\ldots)\) field solver | **declared** | this document |
 | Full XPBD constraint projection suite | **declared** | this document; not charter-enforced |
 
@@ -167,7 +167,7 @@ N_{4}(x) = \frac{\partial S(x)}{\partial x}
 
 | Claim | Status | Evidence |
 | --- | --- | --- |
-| Node/graph containers + WGSL compile path | **skeleton** | `4d-renderer/src/shader-graph/` |
+| Node/graph containers + WGSL compile path | **skeleton** | `mrs/packages/renderer-core/src/shader-graph/` |
 | Pure-function / DAG / 4D-normal calculus as constitutional law | **declared** | SG-C |
 
 ---
@@ -204,7 +204,7 @@ A = \bigl(\Pi(K),\,\Pi(f),\,\Pi(\Phi)\bigr)
 | Claim | Status | Evidence |
 | --- | --- | --- |
 | Surface mesh export + host loaders | **partial** | `npm run export:surfaces`, `*.mesh.json`, Unity/Unreal solid paths |
-| Morph / sequential GLB exporters | **skeleton** | `4d-renderer/src/asset-pipeline/` |
+| Morph / sequential GLB exporters | **skeleton** | `mrs/packages/renderer-core/src/asset-pipeline/` |
 | Mandatory projection-evidence + dimensional-loss manifest | **declared** | AE-C |
 
 ---

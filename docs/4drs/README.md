@@ -14,4 +14,4 @@
 | [RELEASE_NOTES_v1.0.md](./RELEASE_NOTES_v1.0.md) | GitHub / Zenodo release notes |
 
 Charter: [`../../constitution/CHARTER.md`](../../constitution/CHARTER.md)  
-Engine code: [`../../4d-renderer/src/render/rt4d/`](../../4d-renderer/src/render/rt4d/)
+Engine code: [`../../mrs/packages/renderer-core/src/render/rt4d/`](../../mrs/packages/renderer-core/src/render/rt4d/) (`@mrs/renderer-core`)

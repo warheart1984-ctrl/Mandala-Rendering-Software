@@ -37,7 +37,7 @@ Substrate mirrors / redirects: [`../substrate/MRS-IC-v1.1.md`](../substrate/MRS-
 
 | Artifact | Path | Status |
 | --- | --- | --- |
-| JS SoT API | `4d-renderer/src/inspector/` | **skeleton** |
+| JS SoT API | `mrs/packages/renderer-core/src/inspector/` (`@mrs/renderer-core`) | **skeleton** |
 | Inspector WS (local) | `npm run inspector:ws` → `scripts/inspector-ws-server.mjs` | **skeleton** (test mesh) |
 | Smoke test | `scripts/test-inspector4d.mjs` (`npm run test:inspector4d`) | **skeleton** (+ WS round-trip) |
 | Unity window / client | `unity/.../Assets/Engine/Inspector/` | **skeleton** (protocol wired; stub offline) |

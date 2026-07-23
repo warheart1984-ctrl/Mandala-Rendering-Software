@@ -87,11 +87,11 @@
 
 ## VII. Cinematic 4D renderer (enforced in browser)
 
-- **SoT:** `4d-renderer/` — math, projection, surfaces, canvas draw (`src/index.js`)
+- **SoT:** `mrs/packages/renderer-core/` (`@mrs/renderer-core`) — math, projection, surfaces, canvas draw (`src/index.js`). Root `4d-renderer/` is a compatibility shim that re-exports this package.
 - **Host adapter:** `js/renderer.js` — preserves CSE/TimelinePlayer/evidence API (`theta`, `speed`, `cameraY`, …)
 - Default demo mesh: unit **tesseract** (16 verts, 32 edges); parametric surfaces (Clifford torus, Hopf, …) available in package + CLI
 - Planes XW,YZ,ZW,YW; project via d₄ then d₃; wireframe / solid draw
-- Browser movie export: governed **WebM** (`js/export.js`); CLI PNG + optional FFmpeg MP4 in `4d-renderer`
+- Browser movie export: governed **WebM** (`js/export.js`); CLI PNG + optional FFmpeg MP4 via `@mrs/renderer-core` (`4d-renderer` shim)
 - Provenance on export CSR + frame recorder during timeline play
 - Unity / Unreal: mesh JSON wireframe **and solid** (`MeshFilter` / `UProceduralMeshComponent`); `renderMode` / `RenderMode`; faces in `*.mesh.json` via `npm run export:surfaces`
 - Host solid / Play Mode CI: **enforced** in Node via `npm run test:solid-play` (mesh faces + solid APIs + projected frame). Unity Test Runner + Unreal `GovernedEngine.FourD.SolidSmoke` present; native batch optional via `UNITY_PATH` / Session Frontend
@@ -120,7 +120,7 @@
 | Replay validator outline | **declared** | `scripts/replay-validator-outline.mjs` |
 | MRS Inspector Contract (MRS-IC) v1.1 | **declared** | `docs/4drs/contracts/MRS-IC-v1.1.md` (substrate redirect) |
 | MRS Inspector Contract (MRS-IC) v1.2 | **declared** | `docs/4drs/contracts/MRS-IC-v1.2.md` (invariants; not runtime-enforced) |
-| 4D Inspector engine API | **skeleton** | `4d-renderer/src/inspector/` + `npm run test:inspector4d` |
+| 4D Inspector engine API | **skeleton** | `mrs/packages/renderer-core/src/inspector/` + `npm run test:inspector4d` |
 | Unity 4D Inspector Editor window | **skeleton** | `unity/.../Inspector/Editor/MRS4DInspectorWindow.cs` |
 | Inspector shader debug (v1.4) | **declared / future** | `docs/4drs/substrate/shader-debugging.md` |
 | Inspector GPU budget model | **declared budget** | `docs/4drs/substrate/performance/inspector-gpu-budget.md` (not measured) |
@@ -156,8 +156,8 @@
 | World / timeline loaders | `engine/world/`, `engine/timeline/` (headers + C#; UE impl in plugin Private) |
 | Binding / scheduler (Option B) | `engine/runtime/GovernedBinding.h`, `TimelineScheduler.h` |
 | Browser host glue | `js/engine/` |
-| Browser 4D adapter | `js/renderer.js` → `4d-renderer/src/index.js` |
-| 4D render package | `4d-renderer/` (CLI + surfaces + canvas draw) |
+| Browser 4D adapter | `js/renderer.js` → `@mrs/renderer-core` / `mrs/packages/renderer-core/src/index.js` |
+| 4D render package | `mrs/packages/renderer-core/` (CLI + surfaces + canvas draw); `4d-renderer/` shim |
 | Schemas | `schemas/` |
 | Demo world / timelines | `demo/worlds/`, `demo/timelines/` (incl. `mythar_ascension`) |
 | ISL scripts | `engine/scripting/scripts/Opening4DReveal.isl`, `MytharAscension.isl` |
@@ -172,7 +172,7 @@
 | Production scripts | `package.json`, `scripts/test-all.mjs`, `scripts/start-dev.mjs` |
 | Root README | `README.md` |
 | 4DRS v1.0 docs | `docs/4drs/` |
-| RT4D engine | `4d-renderer/src/render/rt4d/` |
+| RT4D engine | `mrs/packages/renderer-core/src/render/rt4d/` |
 | HCL baseline script | `scripts/render-hyper-caustic-baseline.mjs` |
 | Substrate docs | `docs/4drs/substrate/` |
 | CUDA BVH skeleton | `native/cuda/rt4d/` |

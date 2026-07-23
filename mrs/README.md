@@ -18,17 +18,9 @@ Root `4d-renderer/` is a **compatibility shim**: `package.json` `exports`/`main`
 
 ## Native deps (`canvas` / `esbuild`)
 
-pnpm 10 ignores dependency build scripts unless allowlisted. This monorepo sets `pnpm.onlyBuiltDependencies` to `canvas` and `esbuild` in `mrs/package.json` so postinstall native builds run on `pnpm install`.
+pnpm 10 ignores dependency build scripts unless allowlisted. This monorepo sets `pnpm.onlyBuiltDependencies` to `canvas` and `esbuild` in both `mrs/package.json` and `mrs/pnpm-workspace.yaml`, and `pnpm.neverBuiltDependencies` is empty so installs are not told to skip builds.
 
-**Windows:** `canvas` still needs a working Visual Studio C++ build toolchain (or a prebuilt binary matching your Node ABI). If install skips or fails the native build, `@mrs/renderer-core` CLI PNG export and canvas tutorials will fail until `canvas` loads; Browser Canvas2D paths do not need node-canvas.
-
-If a prior install left stale `ignoredBuilds` in `node_modules/.modules.yaml`, run:
-
-```bash
-npx pnpm@10.24.0 rebuild canvas esbuild
-```
-
-That clears ignore tracking when `onlyBuiltDependencies` already lists those packages.
+**Preferred clone path:** `cd mrs && pnpm run setup` (install + rebuild). If a prior install left stale `ignoredBuilds` in local `node_modules/.modules.yaml`, `pnpm rebuild canvas esbuild` clears it when the allowlist is present. Do not commit `node_modules` or `.modules.yaml`.
 
 ## RT4D math audit — normalization fixes
 
@@ -79,12 +71,31 @@ Production CUDA and WGSL kernels were added alongside the CPU BVH4D:
 
 ```bash
 cd mrs
-pnpm install
+pnpm run setup    # install + rebuild canvas/esbuild (fresh clones)
 pnpm --filter @mrs/chatgpt-app-web build
 pnpm --filter @mrs/chatgpt-app-server start
 ```
 
+Equivalent: `pnpm install && pnpm rebuild canvas esbuild`. Normal `pnpm install` also runs native builds when `onlyBuiltDependencies` is set; use `setup` if a prior install left sticky `ignoredBuilds` in local `node_modules/.modules.yaml` (never commit that file).
+
 See `apps/chatgpt-mrs/README.md` for MCP Inspector / ChatGPT / ngrok.
+
+## Windows native canvas (honest)
+
+Headless PNG (CLI `4d-render`, gallery `generate.mjs`, ExportManager image) needs the **cairo-backed** `canvas` native addon. This is **not** required for:
+
+- ChatGPT skybridge widget / `@mrs/renderer-web` (browser Canvas2D)
+- Browser `examples/web-demo.html`
+- RT4D math tests / inspector smokes that avoid PNG
+
+If `canvas` fails to load:
+
+1. Node.js **20+**
+2. Visual Studio Build Tools with **Desktop development with C++**  
+   [node-canvas Windows wiki](https://github.com/Automattic/node-canvas/wiki/Installation:-Windows)
+3. From `mrs/`: `pnpm run setup` (or `pnpm rebuild canvas esbuild`)
+
+Scripts that only need raw RGBA→PNG (e.g. Hyper-Caustic Lens baseline) fall back to a pure-JS PNG encoder when native canvas is missing. Gallery/CLI still need cairo for Canvas2D APIs.
 
 ## LiveLink ports (evidence)
 

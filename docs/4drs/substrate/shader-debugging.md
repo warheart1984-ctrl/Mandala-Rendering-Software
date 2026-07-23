@@ -44,4 +44,4 @@ See [`unity/.../Inspector/ShaderDebug/README.md`](../../../unity/GovernedUnityPr
 2. Capture intermediate node outputs.  
 3. Provide them to Unity via `Inspector4DResult.shaderDebug`.
 
-Related **declared** contract: SG-C in [`CONSTITUTIONAL_CONTRACTS.md`](./CONSTITUTIONAL_CONTRACTS.md). Shader graph skeleton: `4d-renderer/src/shader-graph/`.
+Related **declared** contract: SG-C in [`CONSTITUTIONAL_CONTRACTS.md`](./CONSTITUTIONAL_CONTRACTS.md). Shader graph skeleton: `mrs/packages/renderer-core/src/shader-graph/`.

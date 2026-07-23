@@ -25,10 +25,12 @@ ChatGPT / MCP Inspector
 
 ```bash
 cd mrs
-pnpm install
+pnpm run setup    # preferred on fresh clones (install + rebuild canvas/esbuild)
 pnpm --filter @mrs/chatgpt-app-web build
 pnpm --filter @mrs/chatgpt-app-server start
 ```
+
+The widget uses browser Canvas2D — **native `canvas` is optional** for ChatGPT App day-to-day. It is only needed for headless PNG export (`export_4d_scene` image / ExportManager). See `mrs/README.md` → Windows native canvas.
 
 Server: `http://127.0.0.1:8000`
 
