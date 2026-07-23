@@ -1,6 +1,9 @@
 #include "FourDAdapterEditor.h"
 #include "FourDImporterCommands.h"
 #include "FourDImporterStyle.h"
+#include "FourDDebuggerCommands.h"
+#include "FourDDebuggerStyle.h"
+#include "FourDViewportOverlay.h"
 #include "Modules/ModuleManager.h"
 #include "ToolMenus.h"
 
@@ -10,24 +13,42 @@ void FFourDAdapterEditorModule::StartupModule()
 {
 	FFourDImporterStyle::Initialize();
 	FFourDImporterCommands::Register();
+	FFourDDebuggerStyle::Initialize();
+	FFourDDebuggerCommands::Register();
 	RegisterMenus();
-	// Skeleton: details customizations and tab spawners deferred until UE host open.
-	UE_LOG(LogTemp, Log, TEXT("FourDAdapterEditor: skeleton module started (menus/commands registered; UI stubs not interactive)"));
+	RegisterDebuggerTabSpawner();
+	FFourDViewportOverlay::Register();
+	UE_LOG(LogTemp, Log, TEXT("FourDAdapterEditor: skeleton module started (importer + debugger stubs; UI not interactive)"));
 }
 
 void FFourDAdapterEditorModule::ShutdownModule()
 {
+	FFourDViewportOverlay::Unregister();
+	UnregisterDebuggerTabSpawner();
 	UnregisterMenus();
+	FFourDDebuggerCommands::Unregister();
+	FFourDDebuggerStyle::Shutdown();
 	FFourDImporterCommands::Unregister();
 	FFourDImporterStyle::Shutdown();
 }
 
 void FFourDAdapterEditorModule::RegisterMenus()
 {
-	// Skeleton — ToolMenus entry for "Import 4D Projection" when editor host is available.
+	// Skeleton — ToolMenus entries for Import / Debugger when editor host is available.
 }
 
 void FFourDAdapterEditorModule::UnregisterMenus()
+{
+}
+
+void FFourDAdapterEditorModule::RegisterDebuggerTabSpawner()
+{
+	// Skeleton — FGlobalTabmanager::RegisterNomadTabSpawner("FourDAdapter.Debugger", ...)
+	// would spawn SFourDDebuggerPanel. Not registered here without WorkspaceMenuStructure deps verified.
+	UE_LOG(LogTemp, Log, TEXT("FourDAdapterEditor: debugger tab spawner stub (not registered)"));
+}
+
+void FFourDAdapterEditorModule::UnregisterDebuggerTabSpawner()
 {
 }
 

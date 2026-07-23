@@ -15,7 +15,8 @@
 | Proto sketch | [world-format/WorldDocument.v1.proto](./world-format/WorldDocument.v1.proto) | **declared** (conceptual; no generated stubs) |
 | Projection & Lineage Protocol | [plp/PLP_V1.md](./plp/PLP_V1.md) | **declared** (+ schemas; thin JS stub) |
 | Unity adapter | [adapters/UNITY_ADAPTER_V1.md](./adapters/UNITY_ADAPTER_V1.md) · `unity/.../FourDAdapter/` | **skeleton** |
-| Unreal adapter | [adapters/UNREAL_ADAPTER_V1.md](./adapters/UNREAL_ADAPTER_V1.md) · `unreal/FourDAdapter/` | **skeleton** |
+| Unreal adapter | [adapters/UNREAL_ADAPTER_V1.md](./adapters/UNREAL_ADAPTER_V1.md) · `unreal/FourDAdapter/` | **skeleton** (+ v1.1 **declared** subsystem docs) |
+| Unreal v1.1 subsystem docs | [adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md](./adapters/UNREAL_SUBSYSTEM_ENHANCEMENTS.md) · Sequencer / Materials / Debugger / Live / W-encoding | **declared** / **skeleton** / **roadmap** |
 | Example world | [examples/scenes/world-document-v1-example.json](../../../examples/scenes/world-document-v1-example.json) | **declared** example |
 | Validate example | `npm run validate:world-document` | **partial** (schema check only) |
 

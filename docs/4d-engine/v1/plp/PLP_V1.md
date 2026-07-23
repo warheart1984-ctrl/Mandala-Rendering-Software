@@ -98,6 +98,10 @@ Current stub (**skeleton**):
 
 Path: `mrs/packages/renderer-core/src/plp/projectWorld.js`.
 
+## Host live consumption (**declared**)
+
+Unreal `UFourDLiveLinkClient` **declares** a `ProjectionRequest` / `ProjectionResponse` JSON bridge that carries `scene3D` + `lineageBundle` (see [UNREAL_LIVE_PROJECTION.md](../adapters/UNREAL_LIVE_PROJECTION.md)). Intended producer is a gateway around `projectWorld`. This is **not** Unity LiveLink wire parity and is **not** proven end-to-end.
+
 ## Non-goals
 
 - Computing 4D physics inside PLP.

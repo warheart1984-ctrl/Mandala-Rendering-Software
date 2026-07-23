@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.1.0-skeleton",
+	"VersionName": "0.1.1-skeleton",
 	"FriendlyName": "4D Adapter",
-	"Description": "Skeleton plugin: consume PLP scene3D + lineageBundle. Does not compute 4D. Not CI-verified.",
+	"Description": "Skeleton plugin v1.1 stubs: consume PLP scene3D + lineageBundle (or declared live ProjectionResponse). Does not compute 4D. Sequencer/Nanite/live not claimed. Not CI-verified.",
 	"Category": "4D Engine",
 	"CreatedBy": "4DRS / Mandala",
 	"CreatedByURL": "",

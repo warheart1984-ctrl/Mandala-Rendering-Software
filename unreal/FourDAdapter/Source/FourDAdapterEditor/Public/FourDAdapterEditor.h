@@ -12,4 +12,6 @@ public:
 private:
 	void RegisterMenus();
 	void UnregisterMenus();
+	void RegisterDebuggerTabSpawner();
+	void UnregisterDebuggerTabSpawner();
 };

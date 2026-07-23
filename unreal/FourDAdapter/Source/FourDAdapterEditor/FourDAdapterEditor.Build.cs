@@ -24,5 +24,8 @@ public class FourDAdapterEditor : ModuleRules
 			"PropertyEditor",
 			"ToolMenus",
 		});
+
+		// Optional / declared (v1.1) — NOT enabled; uncomment in a local UE project as needed:
+		// "WorkspaceMenuStructure", "EditorWidgets", "Sequencer", "MovieSceneTools"
 	}
 }

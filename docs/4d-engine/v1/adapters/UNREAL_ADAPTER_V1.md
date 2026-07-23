@@ -2,9 +2,11 @@
 
 > **Drive-G-1:** This document **declares** a plugin architecture.  
 > In-repo evidence today is a **skeleton** under `unreal/FourDAdapter/` (headers, Build.cs, module stubs).  
-> It does **not** claim that Unreal Editor tools, material assets, or a CI Unreal build are working.
+> It does **not** claim that Unreal Editor tools, material assets, Sequencer evaluation, Nanite paths, live projection, or a CI Unreal build are working.
 
-**Status:** **skeleton** (plugin tree) + **declared** (materials, editor UX, workflow)
+**Status:** **skeleton** (plugin tree) + **declared** (v1.1 subsystem enhancements) + **roadmap** (perf / Nanite / polish)
+
+**Version framing:** Adapter **v1** = consume-only import surface. **v1.1** = declared first-class subsystem extensions (docs + stubs below). No UE build evidence yet for v1.1 runtime behavior.
 
 ---
 
@@ -16,10 +18,13 @@ The Unreal Adapter **consumes** Projection & Lineage Protocol (PLP) artifacts:
 | --- | --- |
 | `scene3D` | Projected 3D scene (nodes, meshes, materials) ready for Unreal Actors / meshes |
 | `lineageBundle` | Maps Unreal objects back to 4D origins (Node4D, Mesh4D, Camera4D, Slice3D, W-band) |
+| Live PLP responses (**declared**) | Same pair over WS/TCP — see [UNREAL_LIVE_PROJECTION.md](./UNREAL_LIVE_PROJECTION.md) |
 
 **Constitutional boundary:** Unreal does **not** compute 4D. Authority for WorldDocument, observation, and projection remains with the 4D Engine / PLP pipeline (hybrid-first). The adapter instantiates and visualizes projected output only.
 
-Parity note: Unity’s `FourDAdapter` follows the same consume-only contract — see [UNITY_ADAPTER_V1.md](./UNITY_ADAPTER_V1.md) when present.
+**Strategic positioning (declared):** Host adapters aim to make projected 4D lineage inspectable and cinematic inside mainstream DCC/game engines. That is product strategy, not a claim that Unreal (or any host) uniquely ships a complete 4D engine, nor that studios “will love” any unfinished surface.
+
+Parity note: Unity’s `FourDAdapter` follows the same consume-only contract — see [UNITY_ADAPTER_V1.md](./UNITY_ADAPTER_V1.md). Unity subsystem parity (Sequencer-analogue, debugger, live projection) is **roadmap** for Unity — not implemented in this change.
 
 ---
 
@@ -31,15 +36,16 @@ Parity note: Unity’s `FourDAdapter` follows the same consume-only contract —
 | Runtime module | `FourDAdapterRuntime` |
 | Editor module | `FourDAdapterEditor` |
 
-### Directory layout
+### Directory layout (v1 + v1.1 stubs)
 
 ```
-Plugins/FourDAdapter/
+unreal/FourDAdapter/
   FourDAdapter.uplugin
   README.md
+  Content/Materials/README.md          # declared MF_* / M_FourD* names
   Source/
     FourDAdapterRuntime/
-      FourDAdapterRuntime.Build.cs
+      FourDAdapterRuntime.Build.cs     # optional MovieScene deps commented
       Public/
         FourDAdapterRuntime.h
         FourDSceneLoader.h
@@ -48,31 +54,35 @@ Plugins/FourDAdapter/
         FourDMaterialMapper.h
         FourDBlueprintLibrary.h
         FourDScene3DTypes.h
-      Private/
-        FourDAdapterRuntimeModule.cpp
-        FourDSceneLoader.cpp
-        FourDLineageRegistry.cpp
-        FourDMaterialMapper.cpp
-        FourDBlueprintLibrary.cpp
+        A4DWorldActor.h                # v1.1 skeleton
+        FourDVisualizationComponent.h  # v1.1 skeleton
+        UScene3DAsset.h                # v1.1 skeleton
+        ULineageBundleAsset.h          # v1.1 skeleton
+        UMovieScene4DTrack.h           # v1.1 skeleton
+        UMovieScene4DSection.h         # v1.1 skeleton
+        MovieScene4DTrackTemplate.h    # v1.1 skeleton
+        FourDSequencerController.h     # v1.1 skeleton
+        UFourDLiveLinkClient.h         # v1.1 skeleton
+      Private/ … matching .cpp stubs
     FourDAdapterEditor/
       FourDAdapterEditor.Build.cs
       Public/
         FourDAdapterEditor.h
         FourDImporterCommands.h
         FourDImporterStyle.h
-      Private/
-        FourDImporterEditorModule.cpp
-        FourDImporterWindow.cpp
-        FourDSliceControllerPanel.cpp
-        FourDLineageDetailsCustomization.cpp
-        FourDMaterialDetailsCustomization.cpp
+        FourDDebuggerCommands.h        # v1.1 skeleton
+        FourDDebuggerStyle.h           # v1.1 skeleton
+        SFourDDebuggerPanel.h          # v1.1 skeleton
+        SFourDWAxisWidget.h            # v1.1 skeleton
+        FourDViewportOverlay.h         # v1.1 skeleton
+      Private/ … matching .cpp stubs
 ```
 
 **Repo path (skeleton):** `unreal/FourDAdapter/` — peer of `unreal/GovernedEnginePlugin/`, intended to be copied or enabled as `Project/Plugins/FourDAdapter/`. Engine version is left flexible in `.uplugin`; open against a local UE install to verify.
 
 ---
 
-## 3. Runtime module design
+## 3. Runtime module design (v1)
 
 ### 3.1 `UFourDSceneLoader`
 
@@ -86,168 +96,48 @@ Plugins/FourDAdapter/
 - Create `UMaterialInstance` assets for materials
 - Register lineage with `UFourDLineageRegistry`
 
-**Core API (skeleton stubs):**
-
-```cpp
-UCLASS()
-class FOURDADAPTERRUNTIME_API UFourDSceneLoader : public UObject
-{
-	GENERATED_BODY()
-
-public:
-	UFUNCTION(BlueprintCallable, Category = "4D Adapter")
-	bool LoadSceneFromFile(const FString& ScenePath, FScene3D& OutScene);
-
-	UFUNCTION(BlueprintCallable, Category = "4D Adapter")
-	AActor* SpawnNodeActor(const FScene3DNode& Node, UWorld* World);
-
-	UStaticMesh* CreateStaticMesh(const FScene3DMesh& Mesh);
-	UMaterialInstance* CreateMaterialInstance(const FScene3DMaterial& Mat);
-};
-```
+**Core API (skeleton stubs):** see headers under `FourDAdapterRuntime/Public/`.
 
 ### 3.2 `FFourDLineageEntry` / `UFourDLineageRegistry`
 
-**Purpose:** Maintain mapping from Unreal objects to lineage entries; query for editor tools and Blueprints.
-
-```cpp
-USTRUCT(BlueprintType)
-struct FOURDADAPTERRUNTIME_API FFourDLineageEntry
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly, Category = "4D Adapter")
-	int32 LineageId = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "4D Adapter")
-	int32 Node4D = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "4D Adapter")
-	int32 Mesh4D = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "4D Adapter")
-	int32 Camera4D = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "4D Adapter")
-	int32 Slice3D = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "4D Adapter")
-	float WMin = 0.f;
-
-	UPROPERTY(BlueprintReadOnly, Category = "4D Adapter")
-	float WMax = 0.f;
-
-	UPROPERTY(BlueprintReadOnly, Category = "4D Adapter")
-	FString ProjectionType;
-};
-
-UCLASS()
-class FOURDADAPTERRUNTIME_API UFourDLineageRegistry : public UObject
-{
-	GENERATED_BODY()
-
-public:
-	static UFourDLineageRegistry* Get(UWorld* World);
-
-	void RegisterLineage(UObject* Object, const FFourDLineageEntry& Entry);
-	bool GetLineage(UObject* Object, FFourDLineageEntry& OutEntry) const;
-	void QueryByWBand(float WMin, float WMax, TArray<UObject*>& OutObjects) const;
-};
-```
+Maintain mapping from Unreal objects to lineage entries; query for editor tools and Blueprints.
 
 ### 3.3 `UFourDMaterialMapper`
 
-**Purpose:** Map 4D material properties to Unreal material parameters (W-depth encoding, ghosting opacity, visualization modes).
-
-```cpp
-UCLASS()
-class FOURDADAPTERRUNTIME_API UFourDMaterialMapper : public UObject
-{
-	GENERATED_BODY()
-
-public:
-	void ApplyWEncoding(UMaterialInstance* MatInst, float WDepth);
-	void ApplyGhosting(UMaterialInstance* MatInst, float GhostOpacity);
-};
-```
+Map 4D material properties to Unreal material parameters (W-depth encoding, ghosting opacity, visualization modes). Material *function* names: [UNREAL_MATERIAL_FUNCTIONS.md](./UNREAL_MATERIAL_FUNCTIONS.md).
 
 ### 3.4 `UFourDBlueprintLibrary`
 
-Exposes W-aware helpers to Blueprints (skeleton):
-
-```cpp
-UCLASS()
-class FOURDADAPTERRUNTIME_API UFourDBlueprintLibrary : public UBlueprintFunctionLibrary
-{
-	GENERATED_BODY()
-
-public:
-	UFUNCTION(BlueprintCallable, Category = "4D Adapter")
-	static bool GetLineageForActor(AActor* Actor, FFourDLineageEntry& OutEntry);
-
-	UFUNCTION(BlueprintCallable, Category = "4D Adapter")
-	static void SetWSlice(UObject* WorldContextObject, float WMin, float WMax);
-
-	UFUNCTION(BlueprintCallable, Category = "4D Adapter")
-	static void SetGhosting(UObject* WorldContextObject, bool bEnabled, int32 NeighborCount, float OpacityFalloff);
-
-	UFUNCTION(BlueprintCallable, Category = "4D Adapter")
-	static void SetWDepthMode(UObject* WorldContextObject, int32 Mode);
-};
-```
+Exposes W-aware helpers to Blueprints (**skeleton**).
 
 ---
 
 ## 4. Material graph integration (**declared**)
 
-No `.uasset` materials ship in this skeleton. The following names and parameters are **declared** for a future Content package.
+No `.uasset` materials ship in this skeleton. Names and parameters are **declared** for a future Content package — see [UNREAL_MATERIAL_FUNCTIONS.md](./UNREAL_MATERIAL_FUNCTIONS.md) and `Content/Materials/README.md`.
 
-### 4.1 `M_FourDBase`
-
-| Parameter | Type | Notes |
-| --- | --- | --- |
-| `BaseColor` | Vector | |
-| `WDepth` | Scalar | |
-| `WGradientTex` | Texture2D | |
-| `GhostOpacity` | Scalar | |
-| `WDepthMode` | Scalar | `0`=off, `1`=heatmap, `2`=contour |
-
-**Conceptual graph:** sample `WGradientTex` by `WDepth` → multiply `BaseColor`; multiply opacity by `GhostOpacity`; if heatmap/contour mode, override color mapping.
-
-### 4.2 `M_FourDGhost`
-
-Derived from `M_FourDBase` — lower opacity via `GhostOpacity`; optional desaturation/blur for ghosted neighbor slices.
-
-### 4.3 `M_FourDDepth`
-
-Specialized W-depth visualization driven by `WDepth` / `WDepthMode`.
+| Asset (declared) | Role |
+| --- | --- |
+| `M_FourDBase` | BaseColor × WDepth × GhostOpacity × WDepthMode |
+| `M_FourDGhost` | Neighbor-slice ghosting |
+| `M_FourDDepth` | W-depth viz specialization |
+| `MF_WDepthGradient` | Gradient sample by W |
+| `MF_WGhostOpacity` | Opacity falloff |
+| `MF_WHeatmap` | Heatmap remap |
+| `MF_WContourBands` | Contour banding |
 
 ---
 
-## 5. Editor module design (**declared** / stubs)
+## 5. Editor module design (v1 — **declared** / stubs)
 
-### 5.1 `FFourDImporterEditorModule`
-
-Register menus, commands, panels, and details customizations:
-
-- “Import 4D Projection” menu / content-browser entry
-- Register `SFourDImporterWindow` and `SFourDSliceControllerPanel`
-- Register lineage and material details customizations
-
-### 5.2 `SFourDImporterWindow`
-
-File pickers for `scene3D` + `lineageBundle`, “Import Projection” button, summary counts. Calls `UFourDSceneLoader`, spawns into the current level, populates `UFourDLineageRegistry`.
-
-### 5.3 `SFourDSliceControllerPanel`
-
-Global W-slice / visualization controller: W slider or WMin/WMax, ghosting toggle, neighbor count, opacity falloff, W-depth mode dropdown. Queries registry; adjusts material instance params; optionally hides out-of-band objects.
-
-### 5.4 Details customizations
-
-| Class | Shows |
-| --- | --- |
-| `FFourDLineageDetailsCustomization` | Node4D / Mesh4D / Camera4D / Slice3D, W band, projection type |
-| `FFourDMaterialDetailsCustomization` | WDepth, WGradientTex, GhostOpacity, WDepthMode |
+| Surface | Status | Notes |
+| --- | --- | --- |
+| `FFourDImporterEditorModule` | **skeleton** | menus/commands register; UI not interactive |
+| `SFourDImporterWindow` | **skeleton** | file pickers declared |
+| `SFourDSliceControllerPanel` | **skeleton** | W-slice UI declared |
+| Details customizations | **skeleton** | lineage / material fields |
+| `SFourDDebuggerPanel` (v1.1) | **skeleton** | [UNREAL_4D_DEBUGGER.md](./UNREAL_4D_DEBUGGER.md) |
+| Viewport overlay (v1.1) | **skeleton** | [UNREAL_SUBSYSTEM_ENHANCEMENTS.md](./UNREAL_SUBSYSTEM_ENHANCEMENTS.md) |
 
 ---
 
@@ -255,33 +145,69 @@ Global W-slice / visualization controller: W slider or WMin/WMax, ghosting toggl
 
 1. Install / enable `FourDAdapter` plugin.
 2. Open FourD Importer window.
-3. Select `scene3D` and `lineageBundle` files (PLP outputs).
-4. Click **Import Projection** → Actors, meshes, materials created.
-5. Open **4D Slice Controller** panel; adjust W-slice, ghosting, W-depth mode.
-6. Inspect an Actor’s Details → lineage fields.
-7. Drive W-slice from Blueprints / Sequencer (cinematics or interactive).
+3. Select `scene3D` and `lineageBundle` files (PLP outputs) — or bind `UScene3DAsset` / `ULineageBundleAsset` (**declared**).
+4. Click **Import Projection** → Actors, meshes, materials created (when implemented).
+5. Place `A4DWorldActor` and attach `UFourDVisualizationComponent` (**declared**).
+6. Open **4D Slice Controller** / **4D Debugger** panels; adjust W-slice, ghosting, W-depth mode.
+7. Drive W-slice from Blueprints / Sequencer 4D track (**declared** — no evaluation evidence).
+8. Optionally connect `UFourDLiveLinkClient` (**declared**).
 
 ---
 
-## 7. Extension points (v2+ / **roadmap**)
+## 7. v1.1 subsystem enhancements (**declared**)
+
+These extend the import plugin toward a first-class Unreal subsystem. All runtime behavior below is **declared** or **skeleton** until a local UE compile proves otherwise.
+
+| Enhancement | Doc | Code stub | Status |
+| --- | --- | --- | --- |
+| Overview / map | This section + [UNREAL_SUBSYSTEM_ENHANCEMENTS.md](./UNREAL_SUBSYSTEM_ENHANCEMENTS.md) | — | **declared** |
+| Sequencer 4D track + template + controller | [UNREAL_SEQUENCER_4D_TRACK.md](./UNREAL_SEQUENCER_4D_TRACK.md) | `UMovieScene4DTrack` / `Section` / `FMovieScene4DTrackTemplate` / `UFourDSequencerController` | **skeleton** · live scrub preview **roadmap** |
+| Material functions | [UNREAL_MATERIAL_FUNCTIONS.md](./UNREAL_MATERIAL_FUNCTIONS.md) | Content README only | **declared** |
+| Compute W-encoding | [UNREAL_W_ENCODING_COMPUTE.md](./UNREAL_W_ENCODING_COMPUTE.md) | — | **declared** / **roadmap** |
+| 4D Debugger Slate tab | [UNREAL_4D_DEBUGGER.md](./UNREAL_4D_DEBUGGER.md) | `SFourDDebuggerPanel` / `SFourDWAxisWidget` + commands/style | **skeleton** |
+| Live link (`ProjectionRequest`/`Response`) | [UNREAL_LIVE_PROJECTION.md](./UNREAL_LIVE_PROJECTION.md) | `UFourDLiveLinkClient` | **skeleton** |
+| `A4DWorldActor` | Subsystem doc | `A4DWorldActor.*` | **skeleton** |
+| `UFourDVisualizationComponent` | Subsystem doc | SetWSlice/Ghosting/WDepthMode + events | **skeleton** |
+| Viewport overlay | Subsystem doc | `FourDViewportOverlay.*` | **skeleton** |
+| W-aware selection | Subsystem doc | declared API on registry / debugger | **declared** |
+| `UScene3DAsset` / `ULineageBundleAsset` | Subsystem doc | headers | **skeleton** |
+| Multi-projection | Subsystem doc | declared | **declared** / **roadmap** |
+| Performance (instanced ghosting, GPU W-depth, async load, Nanite) | Subsystem doc | — | **roadmap** |
+| UX polish (tooltips, example levels, quickstart) | Subsystem doc | — | **declared** / **roadmap** |
+
+### 7.1 What v1.1 does **not** claim
+
+- Sequencer live scrub preview, keyframing UI, or cinematic playback of W/time
+- Nanite-backed projected meshes or working `CS_WEncoding`
+- Working WebSocket/TCP live bridge against a production PLP server
+- Editor Slate panels beyond stub registration / empty Construct
+- Any CI Unreal build
+
+---
+
+## 8. Extension points (v2+ / **roadmap**)
 
 - Runtime W-navigation for gameplay
-- Multi-projection management (cameras / ObservationModes)
-- Sequencer integration for W-axis animation
-- Bidirectional live updates with the 4D Engine
+- Full multi-projection session management
+- Bidirectional live edits (host → WorldDocument) — out of scope for consume-only v1/v1.1
+- Marketplace packaging / sample project
 
 ---
 
-## 8. Status table (evidence-bound)
+## 9. Status table (evidence-bound)
 
 | Surface | Status | Evidence |
 | --- | --- | --- |
-| Design doc (this file) | **declared** | `docs/4d-engine/v1/adapters/UNREAL_ADAPTER_V1.md` |
-| Plugin descriptor + Build.cs | **skeleton** | `unreal/FourDAdapter/FourDAdapter.uplugin`, `*.Build.cs` |
-| Runtime UCLASS/USTRUCT stubs | **skeleton** | headers + empty / NotImplemented cpp |
-| Editor module registration stubs | **skeleton** | `FourDImporterEditorModule.cpp` et al. |
-| Material assets `M_FourD*` | **declared** | no `.uasset` in repo |
-| Importer / Slice UI behavior | **declared** | stubs only; not exercised |
+| Design doc (this file + v1.1 docs) | **declared** | `docs/4d-engine/v1/adapters/UNREAL_*.md` |
+| Plugin descriptor + Build.cs | **skeleton** | `unreal/FourDAdapter/` |
+| Runtime UCLASS/USTRUCT stubs (v1) | **skeleton** | headers + NotImplemented cpp |
+| Runtime v1.1 stubs (world actor, viz, assets, Sequencer, live client) | **skeleton** | new headers/cpp; no UE compile |
+| Editor module registration stubs | **skeleton** | importer + debugger tab spawner stub |
+| Material assets `M_FourD*` / `MF_*` | **declared** | `Content/Materials/README.md` only |
+| Sequencer track evaluation / live preview | **roadmap** | stubs + design; no MovieScene dep enabled |
+| Live link transport | **skeleton** / **roadmap** | `UFourDLiveLinkClient` stub; no proven handshake |
+| Compute W-encoding (`CS_WEncoding`) | **roadmap** | [UNREAL_W_ENCODING_COMPUTE.md](./UNREAL_W_ENCODING_COMPUTE.md) |
+| Nanite / GPU W-depth / async load | **roadmap** | design prose only |
 | UE compile / CI | **not claimed** | no Unreal toolchain gate in CI |
 | Computes 4D / PLP projection | **out of scope** | consumes PLP only |
 
@@ -290,6 +216,11 @@ Global W-slice / visualization controller: W slider or WMin/WMax, ghosting toggl
 ## Cross-links
 
 - Index: [../README.md](../README.md)
-- PLP: [../plp/PLP_V1.md](../plp/PLP_V1.md) (when present)
-- Unity adapter: [UNITY_ADAPTER_V1.md](./UNITY_ADAPTER_V1.md) (when present)
+- PLP: [../plp/PLP_V1.md](../plp/PLP_V1.md)
+- Unity adapter: [UNITY_ADAPTER_V1.md](./UNITY_ADAPTER_V1.md)
 - Plugin README: [`unreal/FourDAdapter/README.md`](../../../unreal/FourDAdapter/README.md)
+- Subsystem map: [UNREAL_SUBSYSTEM_ENHANCEMENTS.md](./UNREAL_SUBSYSTEM_ENHANCEMENTS.md)
+- Sequencer: [UNREAL_SEQUENCER_4D_TRACK.md](./UNREAL_SEQUENCER_4D_TRACK.md)
+- Materials: [UNREAL_MATERIAL_FUNCTIONS.md](./UNREAL_MATERIAL_FUNCTIONS.md) · [UNREAL_W_ENCODING_COMPUTE.md](./UNREAL_W_ENCODING_COMPUTE.md)
+- Debugger: [UNREAL_4D_DEBUGGER.md](./UNREAL_4D_DEBUGGER.md)
+- Live link: [UNREAL_LIVE_PROJECTION.md](./UNREAL_LIVE_PROJECTION.md)

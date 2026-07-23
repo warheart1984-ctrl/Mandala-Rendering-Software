@@ -37,6 +37,10 @@ FourDAdapter/
 5. Expose settings ScriptableObject / defaults (stub).
 6. Editor importer window + slice controller stubs (no production UX claimed).
 
+## Parity with Unreal v1.1 (**roadmap**)
+
+Unreal documents Sequencer-analogue tracks, debugger, live `ProjectionRequest` bridge, and viz components under [UNREAL_ADAPTER_V1.md](./UNREAL_ADAPTER_V1.md) §7. Unity subsystem parity is **roadmap** — not implemented in the Unreal v1.1 stub land.
+
 ## Non-goals
 
 - Implementing SO(4) or WorldDocument simulation inside Unity.
