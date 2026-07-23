@@ -9,7 +9,7 @@
 import {
   Timeline,
   TimelinePlayer,
-} from "../../4d-renderer/src/timeline/TimelineEditor.js";
+} from "../../mrs/packages/renderer-core/src/timeline/TimelineEditor.js";
 
 const target = { rotation: { theta: 0 } };
 const timeline = new Timeline(4, 30);

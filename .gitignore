@@ -9,8 +9,10 @@ dist/
 build/
 output/
 4d-renderer/output/
-# Local Windows junction → mrs/packages/renderer-core/src (npm run link:mrs-shim)
+# Optional/legacy local junction → mrs/packages/renderer-core/src (npm run link:mrs-shim)
 4d-renderer/src/
+# Leftover shim copy — canonical clients live under mrs/packages/renderer-core/clients
+4d-renderer/clients/
 examples/comparisons/out/
 4d-renderer/node_modules/
 cssv/node_modules/

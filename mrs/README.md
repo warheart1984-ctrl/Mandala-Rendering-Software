@@ -14,7 +14,21 @@ pnpm workspace for the Mathematical Reality Substrate (MRS) renderer and ChatGPT
 
 ## Migration note
 
-`G:\New folder\4d-renderer` is a **compatibility shim**: `src/` junctions to `packages/renderer-core/src` so root `npm` scripts and `examples/**` imports keep resolving. Prefer `@mrs/renderer-core` for new work.
+Root `4d-renderer/` is a **compatibility shim**: `package.json` `exports`/`main`/`bin` point at `packages/renderer-core/src` (no junction required). Root examples and scripts import `mrs/packages/renderer-core/src/...` directly. Prefer `@mrs/renderer-core` for new work. Optional legacy: `npm run link:mrs-shim` (Windows junction) if you still need a local `4d-renderer/src` path.
+
+## Native deps (`canvas` / `esbuild`)
+
+pnpm 10 ignores dependency build scripts unless allowlisted. This monorepo sets `pnpm.onlyBuiltDependencies` to `canvas` and `esbuild` in `mrs/package.json` so postinstall native builds run on `pnpm install`.
+
+**Windows:** `canvas` still needs a working Visual Studio C++ build toolchain (or a prebuilt binary matching your Node ABI). If install skips or fails the native build, `@mrs/renderer-core` CLI PNG export and canvas tutorials will fail until `canvas` loads; Browser Canvas2D paths do not need node-canvas.
+
+If a prior install left stale `ignoredBuilds` in `node_modules/.modules.yaml`, run:
+
+```bash
+npx pnpm@10.24.0 rebuild canvas esbuild
+```
+
+That clears ignore tracking when `onlyBuiltDependencies` already lists those packages.
 
 ## RT4D math audit — normalization fixes
 

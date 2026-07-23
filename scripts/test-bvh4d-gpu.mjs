@@ -2,10 +2,10 @@
 /**
  * Smoke: pack BVH4D + GPU-shaped CPU traverse against Hypersphere.
  */
-import { Hypersphere } from "../4d-renderer/src/render/rt4d/geometry/hypersurface.js";
-import { BVH4D } from "../4d-renderer/src/render/rt4d/accel/BVH4D.js";
-import { packBVH4D, intersectAABB4D, traverseBVH4DPacked } from "../4d-renderer/src/render/rt4d/accel/gpu/index.js";
-import { vec4 } from "../4d-renderer/src/render/rt4d/math/vec4.js";
+import { Hypersphere } from "../mrs/packages/renderer-core/src/render/rt4d/geometry/hypersurface.js";
+import { BVH4D } from "../mrs/packages/renderer-core/src/render/rt4d/accel/BVH4D.js";
+import { packBVH4D, intersectAABB4D, traverseBVH4DPacked } from "../mrs/packages/renderer-core/src/render/rt4d/accel/gpu/index.js";
+import { vec4 } from "../mrs/packages/renderer-core/src/render/rt4d/math/vec4.js";
 
 const sphere = new Hypersphere(vec4(0, 0, 0, 0), 1);
 sphere.materialId = "s";

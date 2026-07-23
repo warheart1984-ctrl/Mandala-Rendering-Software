@@ -16,12 +16,12 @@
  * Unity default: ws://127.0.0.1:9490  (path /mrs_inspector is documentary; ws ignores path)
  */
 
-import { LiveLinkServer } from "../4d-renderer/src/live-link/LiveLinkServer.js";
+import { LiveLinkServer } from "../mrs/packages/renderer-core/src/live-link/LiveLinkServer.js";
 import {
   MRSInspector4D,
   createDefaultSceneBinding,
   defaultMeshesRoot,
-} from "../4d-renderer/src/inspector/index.js";
+} from "../mrs/packages/renderer-core/src/inspector/index.js";
 
 function parseArgs(argv) {
   const out = { port: 9490, host: "127.0.0.1" };

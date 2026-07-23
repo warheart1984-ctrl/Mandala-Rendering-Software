@@ -16,7 +16,7 @@
     "test:4d-renderer": "node scripts/test-4d-renderer.mjs",
     "test:solid-play": "node scripts/test-host-solid-play.mjs",
     "export:surfaces": "node scripts/export-surface-meshes.mjs",
-    "render:4d": "node 4d-renderer/src/cli.js render",
+    "render:4d": "node mrs/packages/renderer-core/src/cli.js render",
     "render:hcl-baseline": "node scripts/render-hyper-caustic-baseline.mjs --write-hashes",
     "test:bvh4d-gpu": "node scripts/test-bvh4d-gpu.mjs",
     "test:inspector4d": "node scripts/test-inspector4d.mjs",
@@ -27,8 +27,7 @@
     "examples:gallery": "node examples/gallery/generate.mjs",
     "examples:bench": "node examples/benchmarks/bench-render.mjs",
     "test:examples": "node scripts/test-examples-smoke.mjs",
-    "link:mrs-shim": "node scripts/link-mrs-shim.mjs",
-    "postinstall": "node scripts/link-mrs-shim.mjs"
+    "link:mrs-shim": "node scripts/link-mrs-shim.mjs"
   },
   "dependencies": {
     "4d-renderer": "file:./4d-renderer",

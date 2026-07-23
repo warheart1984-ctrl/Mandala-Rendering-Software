@@ -13,5 +13,11 @@
     "start:server": "pnpm --filter @mrs/chatgpt-app-server start",
     "test:renderer": "pnpm --filter @mrs/renderer-core test",
     "dev:server": "pnpm --filter @mrs/chatgpt-app-server start"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "canvas",
+      "esbuild"
+    ]
   }
 }

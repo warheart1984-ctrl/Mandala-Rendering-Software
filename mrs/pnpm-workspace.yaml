@@ -2,3 +2,8 @@ packages:
   - "packages/*"
   - "apps/chatgpt-mrs/server"
   - "apps/chatgpt-mrs/web"
+
+# pnpm 10: allow native postinstall for these deps (also mirrored in package.json pnpm.onlyBuiltDependencies).
+onlyBuiltDependencies:
+  - canvas
+  - esbuild

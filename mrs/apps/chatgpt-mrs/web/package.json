@@ -12,6 +12,7 @@
   "dependencies": {
     "@mrs/renderer-web": "workspace:*",
     "@mrs/scene-schema": "workspace:*",
+    "@openai/apps-sdk-ui": "^0.2.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

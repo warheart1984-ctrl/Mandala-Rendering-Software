@@ -1,7 +1,7 @@
 /**
  * Browser host adapter for package `4d-renderer`.
  *
- * SoT for math / projection / surfaces / draw: `4d-renderer/src/*`
+ * SoT for math / projection / surfaces / draw: `mrs/packages/renderer-core/src/*`
  * This module preserves the TesseractRenderer API expected by CSE, TimelinePlayer,
  * EvidenceService, SceneGraph, and export provenance.
  */
@@ -10,7 +10,7 @@ import {
   getRenderProfile,
   getSurface,
   sampleSurface,
-} from "../4d-renderer/src/index.js";
+} from "../mrs/packages/renderer-core/src/index.js";
 
 const DEFAULT_WEIGHTS = { xw: 0.7, yz: 1.1, zw: 1.5, yw: 2.0 };
 

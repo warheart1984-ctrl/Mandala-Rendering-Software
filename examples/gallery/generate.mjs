@@ -9,12 +9,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createCanvas } from "../lib/node-canvas.mjs";
-import { CanvasRenderer } from "../../4d-renderer/src/render/canvas-renderer.js";
+import { CanvasRenderer } from "../../mrs/packages/renderer-core/src/render/canvas-renderer.js";
 import {
   getSurface,
   sampleSurface,
   listSurfaces,
-} from "../../4d-renderer/src/surfaces/index.js";
+} from "../../mrs/packages/renderer-core/src/surfaces/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, "images");

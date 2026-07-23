@@ -14,7 +14,7 @@ const artifactsDir = join(validationDir, "artifacts");
 const baselinePath = join(validationDir, "baseline.json");
 const writeHashes = process.argv.includes("--write-hashes");
 
-const rt4dUrl = pathToFileURL(join(root, "4d-renderer", "src", "render", "rt4d", "index.js")).href;
+const rt4dUrl = pathToFileURL(join(root, "mrs", "packages", "renderer-core", "src", "render", "rt4d", "index.js")).href;
 const { createHyperCausticLens, renderRT4DFrame } = await import(rt4dUrl);
 
 const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
@@ -52,7 +52,7 @@ writePpm(ppmPath, pixels, width, height);
 let pngWritten = false;
 try {
   const { createRequire } = await import("node:module");
-  const requireFromPkg = createRequire(join(root, "4d-renderer", "package.json"));
+  const requireFromPkg = createRequire(join(root, "mrs", "packages", "renderer-core", "package.json"));
   const { createCanvas } = requireFromPkg("canvas");
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");

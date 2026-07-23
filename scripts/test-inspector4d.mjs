@@ -10,11 +10,11 @@ import {
   resultToWire,
   createDefaultSceneBinding,
   DEFAULT_SCENE_ID,
-} from "../4d-renderer/src/inspector/index.js";
-import { createDefaultInspectorTestMesh } from "../4d-renderer/src/inspector/defaultTestMesh.js";
-import { LiveLinkServer } from "../4d-renderer/src/live-link/LiveLinkServer.js";
+} from "../mrs/packages/renderer-core/src/inspector/index.js";
+import { createDefaultInspectorTestMesh } from "../mrs/packages/renderer-core/src/inspector/defaultTestMesh.js";
+import { LiveLinkServer } from "../mrs/packages/renderer-core/src/live-link/LiveLinkServer.js";
 
-const require = createRequire(new URL("../4d-renderer/src/live-link/LiveLinkServer.js", import.meta.url));
+const require = createRequire(new URL("../mrs/packages/renderer-core/src/live-link/LiveLinkServer.js", import.meta.url));
 const { WebSocket } = require("ws");
 
 const mesh = createDefaultInspectorTestMesh();

@@ -1,42 +1,37 @@
 {
   "name": "4d-renderer",
   "version": "1.0.0",
-  "description": "Compatibility shim → @mrs/renderer-core (mrs/packages/renderer-core). src/ is a junction.",
+  "description": "Compatibility shim → @mrs/renderer-core. Re-exports only; no junction required.",
   "type": "module",
-  "main": "src/index.js",
-  "types": "../mrs/packages/renderer-core/types.d.ts",
+  "main": "./index.js",
+  "types": "./../mrs/packages/renderer-core/types.d.ts",
   "exports": {
-    ".": "./src/index.js",
-    "./surfaces": "./src/surfaces/index.js",
-    "./math": "./src/math/index.js",
-    "./render/canvas": "./src/render/canvas-renderer.js",
-    "./inspector": "./src/inspector/index.js",
-    "./live-link": "./src/live-link/index.js",
-    "./rt4d": "./src/render/rt4d/index.js",
-    "./rt4d/math": "./src/render/rt4d/math/index.js",
-    "./rt4d/geometry": "./src/render/rt4d/geometry/index.js",
-    "./rt4d/material": "./src/render/rt4d/material/index.js",
-    "./rt4d/integrator": "./src/render/rt4d/integrator/index.js",
-    "./rt4d/accel": "./src/render/rt4d/accel/index.js",
-    "./rt4d/output": "./src/render/rt4d/output/index.js",
-    "./rt4d/scene": "./src/render/rt4d/scene/index.js",
-    "./math/*": "./src/math/*",
-    "./surfaces/*": "./src/surfaces/*",
-    "./render/*": "./src/render/*",
-    "./pipeline/*": "./src/pipeline/*"
+    ".": "./index.js",
+    "./surfaces": "./surfaces.js",
+    "./math": "./math.js",
+    "./render/canvas": "./render-canvas.js",
+    "./inspector": "./inspector.js",
+    "./live-link": "./live-link.js",
+    "./rt4d": "./rt4d.js",
+    "./rt4d/math": "./rt4d-math.js",
+    "./rt4d/geometry": "./rt4d-geometry.js",
+    "./rt4d/material": "./rt4d-material.js",
+    "./rt4d/integrator": "./rt4d-integrator.js",
+    "./rt4d/accel": "./rt4d-accel.js",
+    "./rt4d/output": "./rt4d-output.js",
+    "./rt4d/scene": "./rt4d-scene.js",
+    "./pipeline/ExportManager": "./ExportManager.js"
   },
   "bin": {
-    "4d-render": "src/cli.js"
+    "4d-render": "../mrs/packages/renderer-core/src/cli.js"
   },
   "scripts": {
-    "render": "node src/cli.js render",
-    "list": "node src/cli.js list",
-    "test": "node src/cli.js render --surface tesseract --single --width 320 --height 240 --output output/test",
-    "test:frames": "node src/cli.js render --surface clifford-torus --frames 8 --fps 8 --width 320 --height 240 --mode wireframe --resolution 16 --output output/test"
+    "render": "node ../mrs/packages/renderer-core/src/cli.js render",
+    "list": "node ../mrs/packages/renderer-core/src/cli.js list",
+    "test": "node ../mrs/packages/renderer-core/src/cli.js render --surface tesseract --single --width 320 --height 240 --output output/test",
+    "test:frames": "node ../mrs/packages/renderer-core/src/cli.js render --surface clifford-torus --frames 8 --fps 8 --width 320 --height 240 --mode wireframe --resolution 16 --output output/test"
   },
   "dependencies": {
-    "canvas": "^3.1.0",
-    "commander": "^13.1.0",
-    "ws": "^8.21.1"
+    "@mrs/renderer-core": "file:../mrs/packages/renderer-core"
   }
 }

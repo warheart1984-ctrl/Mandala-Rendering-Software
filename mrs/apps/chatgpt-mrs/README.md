@@ -73,7 +73,7 @@ Add the public `/mcp` URL as a ChatGPT custom MCP / app connector (per current O
 | `@modelcontextprotocol/sdk` | `^1.29.0` (resolved with ext-apps peer) | ext-apps 1.7.x peer; examples also cite `^1.12.1` |
 | `@modelcontextprotocol/ext-apps` | `^1.0.1` (resolved **1.7.4**) | openai-apps-sdk-examples / mcp_app_basics |
 | SSE transport pattern | kitchen_sink_server_node | GET `/mcp` + POST `/mcp/messages` |
-| `@openai/apps-sdk-ui` | **not installed** | declared gap — minimal `Badge`/`Button` in `web/src/ui.tsx` |
+| `@openai/apps-sdk-ui` | **0.2.2** (installed) | `web/src/ui.tsx` wraps official Badge/Button; CSS via `@openai/apps-sdk-ui/css` |
 
 ## Env
 

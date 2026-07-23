@@ -1,6 +1,6 @@
 # 4d-renderer
 
-Standalone **4D → 3D → 2D** parametric surface + discrete mesh renderer.
+Standalone **4D Ã¢â€ â€™ 3D Ã¢â€ â€™ 2D** parametric surface + discrete mesh renderer.
 
 **Browser SoT** for the 4DCE host: math, projection, surfaces, and canvas draw live here.
 The constitutional engine (`js/renderer.js`) adapts this package; it does not reimplement the pipeline.
@@ -28,13 +28,13 @@ npm run serve
 
 Self-contained showcase of the five surfaces via `CanvasRenderer` (+ optional
 `HyperplaneSlicer`). Declared/not-wired panels list bloom, shadows, mic, browser
-GLTF — see [`examples/README.md`](../examples/README.md).
+GLTF Ã¢â‚¬â€ see [`examples/README.md`](../examples/README.md).
 
 ## Browser (4DCE host)
 
 From repo root (`npm start` / `npm run serve`):
 
-- Adapter: `js/renderer.js` → imports `4d-renderer/src/index.js`
+- Adapter: `js/renderer.js` → imports `mrs/packages/renderer-core/src/index.js`
 - Default surface: `tesseract` (world `FourDRenderer.surfaceId`)
 - Governed movie remains **WebM** via `js/export.js` (MediaRecorder), not FFmpeg
 
@@ -48,10 +48,10 @@ Switch surface in world JSON:
 
 ## CLI (Node)
 
-Requires `npm install` inside `4d-renderer/` (pulls `canvas` + `commander`).
+Requires `npm install` / `pnpm install` so `canvas` + `commander` resolve (from this package or the `mrs/` workspace).
 
 ```bash
-cd 4d-renderer
+cd mrs/packages/renderer-core
 npm install
 npm run list
 npm run render -- --surface clifford-torus --frames 60 --fps 30 --mode wireframe
@@ -93,14 +93,14 @@ returns the verified execution receipt to the renderer runtime.
 |------|--------|
 | Browser canvas draw | **wired** to this package |
 | CLI PNG / optional MP4 | **in this package** |
-| Unity / Unreal wireframe + solid | **partial** — `*.mesh.json` faces; MeshFilter / ProceduralMesh; `npm run test:solid-play` |
+| Unity / Unreal wireframe + solid | **partial** Ã¢â‚¬â€ `*.mesh.json` faces; MeshFilter / ProceduralMesh; `npm run test:solid-play` |
 
 ## Shared meshes for engine hosts
 
 ```bash
 # From repo root
 npm run export:surfaces
-# → engine/surfaces/meshes/*.mesh.json
+# Ã¢â€ â€™ engine/surfaces/meshes/*.mesh.json
 # Unity: StreamingAssets/surfaces/  |  Unreal: Content/Surfaces/
 ```
 

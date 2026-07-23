@@ -13,7 +13,7 @@ import {
   SurfaceComposition,
   OP_UNION,
   OP_BLEND,
-} from "../../4d-renderer/src/surfaces/composition.js";
+} from "../../mrs/packages/renderer-core/src/surfaces/composition.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.resolve(__dirname, "../../output/examples-export");

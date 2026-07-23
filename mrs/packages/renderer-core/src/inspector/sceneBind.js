@@ -15,9 +15,19 @@ export const SCENE_SCHEMA_VERSION = "1.1";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Repo-relative default: engine/surfaces/meshes (shared with Unity SurfaceMeshLoader). */
+/** Repo-root `engine/surfaces/meshes` (shared with Unity SurfaceMeshLoader). */
 export function defaultMeshesRoot() {
-  return path.resolve(__dirname, "../../../engine/surfaces/meshes");
+  // Walk up from this file until we find the repo meshes dir (works from
+  // mrs/packages/renderer-core/src/inspector and any deeper nest).
+  let dir = __dirname;
+  for (let i = 0; i < 8; i++) {
+    const candidate = path.join(dir, "engine", "surfaces", "meshes");
+    if (fs.existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return path.resolve(__dirname, "../../../../../engine/surfaces/meshes");
 }
 
 /**

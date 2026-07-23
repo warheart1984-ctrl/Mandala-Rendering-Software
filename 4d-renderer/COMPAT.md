@@ -1,9 +1,9 @@
 ﻿# 4d-renderer (compatibility shim)
 
-Canonical package moved to `mrs/packages/renderer-core` (`@mrs/renderer-core`).
+Canonical package: `mrs/packages/renderer-core` (`@mrs/renderer-core`).
 
-- `src/` is a directory junction → `../mrs/packages/renderer-core/src`
-- Prefer imports from `@mrs/renderer-core` inside the `mrs/` workspace
-- Root scripts that still use `4d-renderer/src/...` keep working via the junction
+- Thin re-export modules (`index.js`, `inspector.js`, …) forward to `@mrs/renderer-core` subpaths.
+- **No Windows junction required** for clones or CI. Prefer `@mrs/renderer-core` or `mrs/packages/renderer-core/src/...` imports.
+- Optional legacy: `npm run link:mrs-shim` recreates a local `4d-renderer/src` junction only if you still need deep `4d-renderer/src/...` filesystem paths.
 
 See `mrs/README.md`.

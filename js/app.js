@@ -6,7 +6,7 @@ import {
   downloadBlob,
 } from "./export.js";
 import { bootEngine } from "./engine/boot.js";
-import { SharedFramePreview } from "../4d-renderer/src/gpu/SharedFramePreview.js";
+import { SharedFramePreview } from "../mrs/packages/renderer-core/src/gpu/SharedFramePreview.js";
 
 const canvas = document.getElementById("stage");
 const statusEl = document.getElementById("export-status");

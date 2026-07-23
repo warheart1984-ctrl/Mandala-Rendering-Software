@@ -5,7 +5,7 @@ This folder is a **static landing stub**. It does **not** claim a deployed URL.
 ## Recommended publish root
 
 Publish the **repository root** (not only `examples/site`) so ES module imports
-like `../../4d-renderer/src/...` from `examples/web-demo.html` resolve.
+like `../../mrs/packages/renderer-core/src/...` from `examples/web-demo.html` resolve.
 
 In GitHub → Settings → Pages:
 

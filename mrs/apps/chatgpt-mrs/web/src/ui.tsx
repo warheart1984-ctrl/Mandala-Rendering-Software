@@ -1,44 +1,52 @@
 /**
- * Minimal UI primitives.
- * Declared dependency gap: `@openai/apps-sdk-ui` was not added — package may be
- * private / unavailable on public npm for this install. Styled similarly to Badge/Button.
+ * Thin wrappers over `@openai/apps-sdk-ui` Badge/Button.
+ * Maps legacy `tone` props used by MRSViewport onto official `color` values.
  */
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import {
+  Badge as SdkBadge,
+  type BadgeProps as SdkBadgeProps,
+} from "@openai/apps-sdk-ui/components/Badge";
+import {
+  Button as SdkButton,
+  type ButtonProps as SdkButtonProps,
+} from "@openai/apps-sdk-ui/components/Button";
+import type { ReactNode } from "react";
+
+export type MrsBadgeTone = "neutral" | "accent" | "warn";
+
+const TONE_TO_COLOR: Record<MrsBadgeTone, NonNullable<SdkBadgeProps["color"]>> = {
+  neutral: "secondary",
+  accent: "info",
+  warn: "warning",
+};
 
 export function Badge({
   children,
   tone = "neutral",
-}: {
+  color,
+  ...rest
+}: Omit<SdkBadgeProps, "children"> & {
   children: ReactNode;
-  tone?: "neutral" | "accent" | "warn";
+  tone?: MrsBadgeTone;
 }) {
-  const colors =
-    tone === "accent"
-      ? "bg-[#1a3a4a] text-[var(--mrs-accent)]"
-      : tone === "warn"
-        ? "bg-[#3a2a1a] text-[#ffb86c]"
-        : "bg-[#1c242c] text-[var(--mrs-muted)]";
   return (
-    <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-xs tracking-wide ${colors}`}
-    >
+    <SdkBadge color={color ?? TONE_TO_COLOR[tone]} size="sm" variant="soft" {...rest}>
       {children}
-    </span>
+    </SdkBadge>
   );
 }
 
 export function Button({
   children,
-  className = "",
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
+  color = "secondary",
+  variant = "outline",
+  ...rest
+}: SdkButtonProps) {
   return (
-    <button
-      type="button"
-      className={`rounded border border-[var(--mrs-border)] bg-[var(--mrs-panel)] px-3 py-1.5 text-sm text-[var(--mrs-fg)] hover:border-[var(--mrs-accent)] disabled:opacity-40 ${className}`}
-      {...props}
-    >
+    <SdkButton color={color} variant={variant} size="sm" pill={false} {...rest}>
       {children}
-    </button>
+    </SdkButton>
   );
 }
+
+export { SdkBadge, SdkButton };

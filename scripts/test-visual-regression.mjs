@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { createCanvas } from "../4d-renderer/node_modules/canvas/index.js";
-import { CanvasRenderer, getRenderProfile, getSurface, sampleSurface } from "../4d-renderer/src/index.js";
-import { isWebGPUSupported, createRendererWithFallback } from "../4d-renderer/src/gpu/WebGPURenderer.js";
-import { createGovernedRenderer, createSovereignXNativeDispatch, discoverBrowserRenderAdapters, routeSovereignXRenderer } from "../4d-renderer/src/gpu/SovereignXRenderAdapter.js";
+import { CanvasRenderer, getRenderProfile, getSurface, sampleSurface } from "../mrs/packages/renderer-core/src/index.js";
+import { isWebGPUSupported, createRendererWithFallback } from "../mrs/packages/renderer-core/src/gpu/WebGPURenderer.js";
+import { createGovernedRenderer, createSovereignXNativeDispatch, discoverBrowserRenderAdapters, routeSovereignXRenderer } from "../mrs/packages/renderer-core/src/gpu/SovereignXRenderAdapter.js";
 import { TesseractRenderer } from "../js/renderer.js";
 import fs from "node:fs";
-import { parseSharedFrame, SHARED_FRAME_HEADER_BYTES, SHARED_FRAME_MAGIC } from "../4d-renderer/src/gpu/SharedFramePreview.js";
+import { parseSharedFrame, SHARED_FRAME_HEADER_BYTES, SHARED_FRAME_MAGIC } from "../mrs/packages/renderer-core/src/gpu/SharedFramePreview.js";
 
 function imageMetrics(surfaceId, profile, t) {
   const width = 320, height = 240;
@@ -49,7 +49,7 @@ const daemonNative=createSovereignXNativeDispatch({sceneId:"scene",scenePath:"sc
 assert.equal((await daemonNative({backend:"vulkan",evidenceRefs:[]})).receipt.jobId,"daemon-job");
 const hostCanvas=createCanvas(320,240); const host=new TesseractRenderer(hostCanvas,{adaptiveQuality:false});host.setSurface("clifford-torus");host.setQuality("performance");
 assert.equal(host.quality,"performance");assert.equal(host.vertices4D.length,19*19);host.setProfile("cinematic");assert.equal(host.renderMode,"solid");host.resetView();assert.equal(host.theta,0);
-const shaderSource=fs.readFileSync(new URL("../4d-renderer/src/gpu/WebGPURenderer.js",import.meta.url),"utf8");
+const shaderSource=fs.readFileSync(new URL("../mrs/packages/renderer-core/src/gpu/WebGPURenderer.js",import.meta.url),"utf8");
 assert.match(shaderSource,/let time = uniforms\[32\]/);assert.match(shaderSource,/fn normal4/);assert.doesNotMatch(shaderSource,/let time = uniforms\[48\]/);
 const both=imageMetrics("clifford-torus","lattice",0.2);assert.ok(both.coverage>0.002,"combined solid + wireframe mode renders");
 const shared=new ArrayBuffer(SHARED_FRAME_HEADER_BYTES+16*2),sharedView=new DataView(shared);[SHARED_FRAME_MAGIC,1,2,2,8,7,1,16].forEach((value,index)=>sharedView.setUint32(index*4,value,true));new Uint8Array(shared,SHARED_FRAME_HEADER_BYTES+16).fill(127);

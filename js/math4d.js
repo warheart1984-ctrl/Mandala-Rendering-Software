@@ -1,13 +1,13 @@
 /**
  * Compatibility shim — 4D math SoT is `4d-renderer`.
- * Prefer importing from `../4d-renderer/src/index.js` in new code.
+ * Prefer importing from `../mrs/packages/renderer-core/src/index.js` in new code.
  */
 import {
   project4Dto3D,
   project3Dto2D,
   project4Dto2D,
   cinematicRotation,
-} from "../4d-renderer/src/index.js";
+} from "../mrs/packages/renderer-core/src/index.js";
 
 export {
   project4Dto3D,

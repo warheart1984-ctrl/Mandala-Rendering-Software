@@ -1,6 +1,6 @@
 /**
  * Smoke: examples suite paths + Node-importable tutorials (no canvas required for import checks).
- * Canvas-dependent tutorials are skipped unless 4d-renderer/node_modules/canvas exists.
+ * Canvas-dependent tutorials are skipped unless a canvas package is found under renderer-core, root, or legacy 4d-renderer.
  */
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -40,8 +40,13 @@ const tl = spawnSync(process.execPath, ["examples/tutorials/timeline-animation.j
 assert.equal(tl.status, 0, tl.stderr || tl.stdout);
 assert.match(tl.stdout, /TimelinePlayer/);
 
-const canvasPath = path.join(root, "4d-renderer", "node_modules", "canvas");
-if (fs.existsSync(canvasPath)) {
+const canvasCandidates = [
+  path.join(root, "mrs", "packages", "renderer-core", "node_modules", "canvas"),
+  path.join(root, "node_modules", "canvas"),
+  path.join(root, "4d-renderer", "node_modules", "canvas"),
+];
+const canvasPath = canvasCandidates.find((p) => fs.existsSync(p));
+if (canvasPath) {
   const basic = spawnSync(process.execPath, ["examples/tutorials/basic-render.js"], {
     cwd: root,
     encoding: "utf8",
@@ -50,7 +55,7 @@ if (fs.existsSync(canvasPath)) {
   assert.match(basic.stdout, /Wrote/);
   console.log("canvas tutorials: ran basic-render.js");
 } else {
-  console.log("canvas tutorials: skipped (no 4d-renderer/node_modules/canvas)");
+  console.log("canvas tutorials: skipped (no canvas package)");
 }
 
 console.log("examples smoke ok");

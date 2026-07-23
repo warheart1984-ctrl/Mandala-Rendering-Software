@@ -8,18 +8,18 @@
  */
 import {
   CanvasRenderer,
-} from "../../4d-renderer/src/render/canvas-renderer.js";
+} from "../../mrs/packages/renderer-core/src/render/canvas-renderer.js";
 import {
   getSurface,
   sampleSurface,
   listSurfaces,
-} from "../../4d-renderer/src/surfaces/index.js";
+} from "../../mrs/packages/renderer-core/src/surfaces/index.js";
 import {
   getRenderProfile,
   renderProfiles,
-} from "../../4d-renderer/src/render/profiles.js";
-import { Camera4D } from "../../4d-renderer/src/camera/Camera4D.js";
-import { HyperplaneSlicer } from "../../4d-renderer/src/render/slicer.js";
+} from "../../mrs/packages/renderer-core/src/render/profiles.js";
+import { Camera4D } from "../../mrs/packages/renderer-core/src/camera/Camera4D.js";
+import { HyperplaneSlicer } from "../../mrs/packages/renderer-core/src/render/slicer.js";
 
 const QUALITY_RES = {
   performance: 16,
