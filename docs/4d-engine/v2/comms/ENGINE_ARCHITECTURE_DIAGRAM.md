@@ -45,6 +45,28 @@ Boxes are **contract regions**. Dashed edges = **roadmap**. Solid edges = **decl
  (SKELETON)
 ```
 
+## Three-column host split (complete description)
+
+After projection, host work fans into **three columns**. Use this layout on slides so marketing overlays cannot collapse “adapter exists” into “RHI done.”
+
+| Column | Name | What flows in | Honest status | Speak-aloud caption |
+| --- | --- | --- | --- | --- |
+| **A** | Adapter lane | `Scene3D` + lineage bundle from PLP / `ShadingOutput3D` | **Skeleton** — FourDAdapter (Unity / Unreal) hybrid-first consumer | “Consumes projected 3D — does not compute 4D.” |
+| **B** | GBuffer / deferred inject | Projected position, normal, radiance, depth toward host deferred or path-tracer feeds | **Declared intent** · Phase 3 **roadmap** | “Blend interface declared; deep RHI not claimed shipped.” |
+| **C** | Nanite / Lumen lane | W-aware geometry stream / GI feed concepts | **Roadmap** — not working paths | “Nanite W-awareness / Lumen W-GI are future work.” |
+
+```
+                    Project4DTo3D
+                          |
+            +-------------+-------------+
+            |             |             |
+         Column A      Column B      Column C
+       FourDAdapter   GBuffer/PT     Nanite/Lumen
+        SKELETON       ROADMAP         ROADMAP
+```
+
+**Design rule:** Column A may be drawn with a solid border (skeleton evidence elsewhere). Columns B and C must use dashed borders and the amber roadmap token. Never ink Column C as a completed product feature.
+
 ## Color / legend (for designers)
 
 | Visual | Meaning |

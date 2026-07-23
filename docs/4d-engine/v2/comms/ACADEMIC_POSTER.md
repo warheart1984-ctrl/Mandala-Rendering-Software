@@ -25,7 +25,9 @@ We describe declared contracts for rendering over \(\mathbb{R}^{4}\): 4D BVH, SO
 
 Diagram: see [`ENGINE_DIAGRAMS.md`](./ENGINE_DIAGRAMS.md).
 
-## Results (targets / declared)
+## Results (targets / declared — not measured outcomes)
+
+> Softened academic framing: this section reports **declared status and design targets**, not experimental results. Full manuscript Results are **to be filled with measured evidence** — see [`ACADEMIC_MANUSCRIPT.md`](./ACADEMIC_MANUSCRIPT.md).
 
 | Item | Poster wording |
 | --- | --- |
@@ -34,8 +36,9 @@ Diagram: see [`ENGINE_DIAGRAMS.md`](./ENGINE_DIAGRAMS.md).
 | Preview budget | **Design target** ≤ 4–6 ms for 4D passes on a future target GPU — **not measured in this work** |
 | Unreal RHI / Nanite / Lumen | **Roadmap** |
 | Validation | Categories T1–T5 **declared**; not presented as a finished v2 GPU CI suite |
+| SO(4) GPU path | Architecture **declared**; partial BVH prior art; full GPU SO(4) **not claimed** |
 
-~~Do not plot fake FPS bars labeled “achieved 5 ms.”~~
+~~Do not plot fake FPS bars labeled “achieved 5 ms.”~~ · Outline: [`ACADEMIC_PAPER_OUTLINE.md`](./ACADEMIC_PAPER_OUTLINE.md)
 
 ## Discussion
 

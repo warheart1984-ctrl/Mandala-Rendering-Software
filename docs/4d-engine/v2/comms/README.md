@@ -32,24 +32,41 @@ If aspirational copy and evidence-bound copy conflict, **evidence-bound + CLAIMS
 | --- | --- | --- |
 | [MARKETING_DECK.md](./MARKETING_DECK.md) | Evidence-bound slide text | Honest titles; see also `aspirational/` |
 | [STUDIO_PITCH.md](./STUDIO_PITCH.md) | Evidence-bound overview | Integration status marked honestly |
+| [STUDIO_INTEGRATION_GUIDE.md](./STUDIO_INTEGRATION_GUIDE.md) | Declared / planned steps | Links FourDAdapter skeleton + PLP + v2 RFCs |
+| [STUDIO_PARTNERSHIP_PROPOSAL.md](./STUDIO_PARTNERSHIP_PROPOSAL.md) | Strategic draft | Timelines **aspirational** |
 | [RESEARCH_ABSTRACT.md](./RESEARCH_ABSTRACT.md) | Evidence-bound abstract | “Declared architecture…” |
+| [ACADEMIC_POSTER.md](./ACADEMIC_POSTER.md) | Poster text | Results = targets / declared |
+| [ACADEMIC_PAPER_OUTLINE.md](./ACADEMIC_PAPER_OUTLINE.md) | 8–12 page structure | Expands poster |
+| [ACADEMIC_MANUSCRIPT.md](./ACADEMIC_MANUSCRIPT.md) | ~12-page prose summaries | Results **to be filled with measured evidence** |
+| [SIGGRAPH_COURSE_NOTES.md](./SIGGRAPH_COURSE_NOTES.md) | Course outline | Acceptance / date TBD |
 | [API_REFERENCE_MANUAL.md](./API_REFERENCE_MANUAL.md) | **Declared API sketch** | Not an implemented SDK |
+| [ENGINE_SDK_DOCUMENTATION.md](./ENGINE_SDK_DOCUMENTATION.md) | SDK narrative sketch | Links Shader ABI + API manual |
+| [TECHNICAL_FAQ.md](./TECHNICAL_FAQ.md) | Honest Q&A | Q6: architecture declared; partial BVH; not full GPU SO(4) |
+| [BRANDING_PACKAGE.md](./BRANDING_PACKAGE.md) | Declared brand positioning | Identity, pillars, voice, taglines |
+| [PRESS_KIT.md](./PRESS_KIT.md) | Redlined key messages | Contact TBD |
+| [PRESS_RELEASE.md](./PRESS_RELEASE.md) | Draft for when evidence supports launch | Not a live launch claim |
 | [WEBSITE_COPY.md](./WEBSITE_COPY.md) | Public copy + inline redlines | |
+| [INVESTOR_BRIEF.md](./INVESTOR_BRIEF.md) | Strategic draft | Not audited financials |
 | [LAUNCH_TRAILER_SCRIPT.md](./LAUNCH_TRAILER_SCRIPT.md) | Creative brief | Not a shipped trailer claim |
+| [CINEMATIC_DEMO_SCRIPT.md](./CINEMATIC_DEMO_SCRIPT.md) | “Beyond the Axis” brief | Creative / declared |
+| [MULTI_WORLD_CINEMATIC_BIBLE.md](./MULTI_WORLD_CINEMATIC_BIBLE.md) | Director guide | Creative / declared |
 | [TECHNICAL_BLOG_SERIES.md](./TECHNICAL_BLOG_SERIES.md) | Five outlines | Educational; label status per post |
 | [ENGINE_DIAGRAMS.md](./ENGINE_DIAGRAMS.md) | ASCII pipeline diagrams | Technical; OK |
-| [PRESS_KIT.md](./PRESS_KIT.md) | Redlined key messages | Contact TBD |
-| [INVESTOR_BRIEF.md](./INVESTOR_BRIEF.md) | Strategic draft | Not audited financials |
-| [ACADEMIC_POSTER.md](./ACADEMIC_POSTER.md) | Poster text | Results = targets / declared |
-| [ENGINE_ARCHITECTURE_DIAGRAM.md](./ENGINE_ARCHITECTURE_DIAGRAM.md) | Graphical description | Technical; OK |
+| [ENGINE_ARCHITECTURE_DIAGRAM.md](./ENGINE_ARCHITECTURE_DIAGRAM.md) | Graphical + three-column host split | Technical; OK |
 | [CLAIMS_REDLINE.md](./CLAIMS_REDLINE.md) | Redline summary | Required companion |
+
+### Aspirational mirrors (punchy)
+
+See [`aspirational/README.md`](./aspirational/README.md) — includes press release, branding taglines, partnership proposal, technical FAQ paraphrases, plus earlier deck/pitch/website drafts.
 
 ## Explicit non-claims (folder-wide)
 
 - Not “the world’s first” 4D renderer or architecture.  
 - Not production-ready Unreal RHI / Nanite / Lumen 4D.  
 - Not measured real-time 4–6 ms SLA.  
+- Not a full GPU SO(4) path yet (architecture declared; BVH partial).  
 - Not a full tooling suite that exists today.  
+- Not a shipped SDK (declared sketches only).  
 - Not a live `press@…` inbox unless replaced with a verified contact (use **TBD**).
 
 ## Related technical sources (evidence anchors)
@@ -59,4 +76,6 @@ If aspirational copy and evidence-bound copy conflict, **evidence-bound + CLAIMS
 - Shader ABI: [`../shader-abi/SHADER_ABI.md`](../shader-abi/SHADER_ABI.md)  
 - Performance targets: [`../performance/PERFORMANCE_MODEL_AND_GPU_BUDGET.md`](../performance/PERFORMANCE_MODEL_AND_GPU_BUDGET.md)  
 - Roadmap: [`../roadmap/ENGINE_INTEGRATION_ROADMAP.md`](../roadmap/ENGINE_INTEGRATION_ROADMAP.md)  
+- PLP: [`../v1/plp/PLP_V1.md`](../../v1/plp/PLP_V1.md)  
+- Unreal adapter: [`../v1/adapters/UNREAL_ADAPTER_V1.md`](../../v1/adapters/UNREAL_ADAPTER_V1.md) · `unreal/FourDAdapter/`  
 - Scorecard: [`docs/scorecards/fourd-renderer-v2.md`](../../../scorecards/fourd-renderer-v2.md)
