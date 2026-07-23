@@ -1,5 +1,7 @@
 # 4D Rendering System (4DRS) — Mandala / MRS
 
+**Start here:** [`docs/START_HERE_MRS_30_MIN.md`](docs/START_HERE_MRS_30_MIN.md) — practical onboarding in ~30 minutes (commands, layout, role paths). Not marketing.
+
 Published title: **4D Rendering System v1.0**  
 Formal engine name: **RT4D** (*Ray Tracer for Four Dimensions*)  
 Official validation scene: **Hyper-Caustic Lens**

@@ -1,5 +1,7 @@
 # 4D Engine v1 — index
 
+> **New to the repo?** Start with [`docs/START_HERE_MRS_30_MIN.md`](../../START_HERE_MRS_30_MIN.md) (~30 minutes: demo, validate, tests, role paths).
+
 > **Drive-G-1 / Drive-G-2:** This tree declares constitutional architecture and formats.  
 > It does **not** claim that a complete 4D engine, editor, physics stack, or host adapters are implemented.  
 > Status tags: **constitutional / declared** · **partial** · **skeleton** · **roadmap**.

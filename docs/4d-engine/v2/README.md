@@ -1,5 +1,7 @@
 # FourDRenderer v2.0 — documentation index
 
+> **New to the repo?** Start with [`docs/START_HERE_MRS_30_MIN.md`](../../START_HERE_MRS_30_MIN.md) (~30 minutes: demo, validate, tests, role paths).
+
 > **Drive-G-1 / Drive-G-2:** This tree is an architecture and RFC suite.  
 > Status tags: **draft** · **declared** · **partial** · **skeleton** · **roadmap**.  
 > It does **not** claim production Unreal RHI mods, Nanite/Lumen 4D paths, or SO(4) BSDF enforcement on GPU unless an Evidence row says otherwise.
