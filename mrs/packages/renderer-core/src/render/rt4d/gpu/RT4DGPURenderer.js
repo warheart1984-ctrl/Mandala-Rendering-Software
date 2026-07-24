@@ -1,6 +1,7 @@
 /**
  * RT4D GPU Path Tracer — main orchestrator.
  * Multi-dispatch compute pipeline: raygen → BVH → shade (loop) → accumulate
+ * Phase B: engineMode "wavefront" routes to WavefrontPipelineAdapter.
  */
 import { BufferPool, StagingBuffer } from "./bufferPool.js";
 import { serializeScene } from "./sceneSerializer.js";
@@ -9,6 +10,7 @@ import { RAYGEN_WGSL, SHADE_WGSL, ACCUM_WGSL } from "./shaders.js";
 
 // BVH WGSL is loaded from the accel/gpu module as a string
 import { BVH4D_WGSL_SOURCE } from "../accel/gpu/index.js";
+import { renderWavefrontFrame } from "../pipeline/WavefrontPipelineAdapter.js";
 
 const WORKGROUP_SIZE = 64;
 
@@ -18,6 +20,9 @@ export class RT4DGPURenderer {
     this.height = options.height ?? 480;
     this.maxDepth = options.maxDepth ?? 4;
     this.samplesPerPixel = options.samplesPerPixel ?? 16;
+    /** @type {"legacy"|"wavefront"} */
+    this.engineMode = options.engineMode === "wavefront" ? "wavefront" : "legacy";
+    this._wavefrontLast = null;
 
     this.device = null;
     this.bindGroupMgr = null;
@@ -137,6 +142,31 @@ export class RT4DGPURenderer {
   }
 
   async render(scene, camera, options = {}) {
+    const mode = options.engineMode ?? this.engineMode;
+    if (mode === "wavefront") {
+      const quality =
+        options.quality ??
+        (this.samplesPerPixel >= 8 ? "ultra" : this.samplesPerPixel >= 4 ? "high" : "baseline");
+      const result = await renderWavefrontFrame(options.worldId ?? "rt4d-gpu-wavefront", {
+        quality,
+        host: options.host ?? "browser",
+        width: options.width ?? this.width,
+        height: options.height ?? this.height,
+        seed: options.seed ?? 0x4d5253,
+        runConformance: options.runConformance !== false,
+        allowLiveGpu: options.allowLiveGpu !== false,
+      });
+      this._wavefrontLast = result;
+      return {
+        pixels: result.pixels,
+        width: result.width,
+        height: result.height,
+        engineMode: "wavefront",
+        evidence: result.evidence,
+        conformance: result.conformance,
+      };
+    }
+
     if (!this.device) await this.init();
     if (!this.sceneBuffers) this.serializeScene(scene, camera);
 

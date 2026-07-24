@@ -30,13 +30,19 @@ export { Projector4D, AOVCollector } from "./output/projector.js";
 export { Scene4D } from "./scene/Scene4D.js";
 export { createHyperCausticLens } from "./scene/TestHyperCausticLens.js";
 
-export { renderRT4DFrame, renderRT4DFrameGPU } from "./RT4DRenderer.js";
+export { renderRT4DFrame, renderRT4DFrameGPU, renderRT4DFrameWavefront } from "./RT4DRenderer.js";
 export { RT4DGPURenderer } from "./gpu/RT4DGPURenderer.js";
 export {
   createRt4dWavefrontPipeline,
   GpuWavefrontQueue,
   WAVEFRONT_QUALITY_DEFAULTS,
+  DefaultWavefrontScheduler,
+  StubWavefrontKernels,
 } from "./gpu/wavefront/index.js";
 export { renderWavefrontFrame } from "./pipeline/WavefrontPipelineAdapter.js";
 export { selectWavefrontConfig } from "./pipeline/WavefrontConfigSelector.js";
+export { selectQualityProfile } from "./pipeline/QualitySelector.js";
+export { selectConformanceProfile } from "./pipeline/ConformanceSelector.js";
+export { runCPUConformanceGate, buildTinyReferenceFrame, hashBytes } from "./pipeline/CPUConformanceGate.js";
+export { createWavefrontCssvWriter } from "./pipeline/WavefrontCssvWriter.js";
 export { createRhi, WebGpuRhi, RHI_BACKENDS } from "../rhi/RhiFactory.js";

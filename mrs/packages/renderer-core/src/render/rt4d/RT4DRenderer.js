@@ -2,8 +2,12 @@ import { PathTracer4D, SampleAccumulator } from "./integrator/PathTracer4D.js";
 import { Projector4D } from "./output/projector.js";
 import { vec4 } from "./math/vec4.js";
 import { RT4DGPURenderer } from "./gpu/RT4DGPURenderer.js";
+import { renderWavefrontFrame } from "./pipeline/WavefrontPipelineAdapter.js";
 
 export async function renderRT4DFrame(scene4D, camera4D, options = {}) {
+  if (options.engineMode === "wavefront") {
+    return renderRT4DFrameWavefront(scene4D, camera4D, options);
+  }
   const width = options.width ?? camera4D.width;
   const height = options.height ?? camera4D.height;
   const samples = options.samples ?? 64;
@@ -47,6 +51,10 @@ function fracSin(s) {
 let _gpuRenderer = null;
 
 export async function renderRT4DFrameGPU(scene4D, camera4D, options = {}) {
+  if (options.engineMode === "wavefront") {
+    return renderRT4DFrameWavefront(scene4D, camera4D, options);
+  }
+
   if (!navigator?.gpu) {
     console.warn("WebGPU not available, falling back to CPU path tracer");
     return renderRT4DFrame(scene4D, camera4D, options);
@@ -75,4 +83,42 @@ export async function renderRT4DFrameGPU(scene4D, camera4D, options = {}) {
   const raster = proj.rasterize(result.pixels, width, height);
 
   return { pixels: raster, width, height, samples: options.samples ?? 16, gpu: true };
+}
+
+/**
+ * Phase B wavefront route — stub-visible frame via RHI (not full path tracing).
+ * @param {object} _scene4D
+ * @param {object} camera4D
+ * @param {object} options
+ */
+export async function renderRT4DFrameWavefront(_scene4D, camera4D, options = {}) {
+  const width = options.width ?? camera4D?.width ?? 8;
+  const height = options.height ?? camera4D?.height ?? 8;
+  const quality =
+    options.quality ??
+    (options.samples >= 8 ? "ultra" : options.samples >= 4 ? "high" : "baseline");
+
+  const result = await renderWavefrontFrame(options.worldId ?? "rt4d-wavefront", {
+    quality,
+    host: options.host ?? "browser",
+    width,
+    height,
+    seed: options.seed ?? 0x4d5253,
+    runConformance: options.runConformance !== false,
+    allowLiveGpu: options.allowLiveGpu,
+    cssvPath: options.cssvPath,
+    onEvidence: options.onEvidence,
+  });
+
+  return {
+    pixels: result.pixels,
+    width: result.width,
+    height: result.height,
+    samples: result.config.samplesPerPixel,
+    gpu: result.rhiMode === "live",
+    engineMode: "wavefront",
+    evidence: result.evidence,
+    conformance: result.conformance,
+    dispatchLog: result.dispatchLog,
+  };
 }

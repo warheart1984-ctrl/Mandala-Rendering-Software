@@ -2,12 +2,13 @@ import { WebGpuRhi } from "./webgpu/WebGpuRhi.js";
 
 /**
  * @param {import("./RhiTypes.js").RhiBackend} backend
+ * @param {object} [options] — forwarded to WebGpuRhi
  * @returns {import("./RhiContract.js").Rhi}
  */
-export function createRhi(backend) {
+export function createRhi(backend, options = {}) {
   switch (backend) {
     case "webgpu":
-      return new WebGpuRhi();
+      return new WebGpuRhi(options);
     case "vulkan":
     case "dx12":
       throw new Error(
