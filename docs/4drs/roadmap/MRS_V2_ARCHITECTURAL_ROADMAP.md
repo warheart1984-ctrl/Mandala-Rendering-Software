@@ -21,9 +21,10 @@
 
 | Phase | Intent | Status |
 | --- | --- | --- |
-| **A** | Docs + declared contracts | **declared** (this land) |
-| **B** | WebGPU wavefront interfaces + CPU conformance spike | **partial stubs** under `renderer-core` (queues/RHI stub; no live GPU kernels) |
-| **C+** | Multi-GPU, Vulkan/DX12, substrate, hosts, WorldDocument v2, Genblaze ops | **roadmap** |
+| **A** | Docs + declared contracts | **declared** |
+| **B** | WebGPU wavefront interfaces + CPU conformance spike | **partial stubs** |
+| **C** | Scaffolding: multi-GPU arbitrator, Vulkan/DX12 stubs, wave/curvature/force CPU helpers, WorldBinding/FrameLoop, WD/PLP+wave | **declared / skeleton / partial** |
+| **C+** | Live multi-GPU, native RHI, full PLP enforcement | **roadmap** |
 
 ---
 
@@ -132,6 +133,22 @@ Separate product track — **not** named “RT4D v2.0”:
 4. Conformance check vs CPU `PathTracer4D` on a tiny scene (tolerance / hash gate).
 
 **Out of Phase B:** multi-GPU, Vulkan/DX12 native plugins, CKL hard-fail, host adapter v2.
+
+---
+
+## Phase C — File scaffolding (declared / skeleton)
+
+| Artifact | Path | Maturity |
+| --- | --- | --- |
+| MultiGpuArbitrator | `.../rhi/MultiGpuArbitrator.js` | **declared** (`"single"`) |
+| Vulkan/Dx12 RHI | `VulkanRhi.js`, `Dx12Rhi.js` | **declared** (throw-on-use) |
+| Wave/curvature/force | `.../rt4d/physics/` | **skeleton** (CPU; not B2) |
+| WorldBinding / prepareWorld | `world/WorldBinding.js`, `WorldOrchestrator.js` | **skeleton** |
+| PlpValidator | `rt4d/plp/PlpValidator.js` | **skeleton** (wave rules) |
+| FrameLoop | `rt4d/FrameLoop.js` | **skeleton** (browser; Node tick-only) |
+| WGSL kernels | `wavefront/kernels/*.wgsl` | **declared** |
+
+Wave tiling across GPUs: **docs only** — not implemented.
 
 ---
 

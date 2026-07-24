@@ -45,4 +45,14 @@ export { selectQualityProfile } from "./pipeline/QualitySelector.js";
 export { selectConformanceProfile } from "./pipeline/ConformanceSelector.js";
 export { runCPUConformanceGate, buildTinyReferenceFrame, hashBytes } from "./pipeline/CPUConformanceGate.js";
 export { createWavefrontCssvWriter } from "./pipeline/WavefrontCssvWriter.js";
-export { createRhi, WebGpuRhi, RHI_BACKENDS } from "../rhi/RhiFactory.js";
+export { createRhi, WebGpuRhi, VulkanRhi, Dx12Rhi, MultiGpuArbitrator, RHI_BACKENDS } from "../rhi/RhiFactory.js";
+export {
+  CurvatureField,
+  ForceField,
+  WaveField,
+  fromWorldWaveConfig,
+  stepWaveField,
+} from "./physics/index.js";
+export { HdrCanvas } from "./gallery/index.js";
+export { prepareWorld, bindWorld, validateWorldDocumentV2, PlpValidator } from "./WorldOrchestrator.js";
+export { FrameLoop } from "./FrameLoop.js";
