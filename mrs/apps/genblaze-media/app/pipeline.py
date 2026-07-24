@@ -14,8 +14,14 @@ from pathlib import Path
 from typing import Any, Callable
 
 from app.config import NVIDIA_SETUP_HELP, Settings
+from app.image_quality import assess_image_bytes, extract_nvidia_warnings
+from app.prompt_sanitize import sanitize_prompt
 
 logger = logging.getLogger(__name__)
+
+
+class GenerationQualityError(Exception):
+    """NIM returned a blank/invalid still or an explicit refusal warning."""
 
 
 @dataclass
@@ -32,6 +38,8 @@ class GenerateResult:
     created_at: str
     dry_run: bool
     detail: str | None = None
+    prompt_sanitized: bool = False
+    quality: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -188,33 +196,113 @@ def probe_b2(settings: Settings) -> dict[str, Any]:
             close()
 
 
-def generate_image(settings: Settings, prompt: str) -> GenerateResult:
-    """Run Genblaze NVIDIA image step and persist assets + manifest to B2.
+def _read_local_image_bytes(output_dir: Path) -> bytes | None:
+    """Prefer the NVIDIA-written file under ``output_dir`` (still present pre-rmtree)."""
+    if not output_dir.is_dir():
+        return None
+    candidates = sorted(
+        [
+            p
+            for p in output_dir.iterdir()
+            if p.is_file() and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}
+        ],
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        return None
+    return candidates[0].read_bytes()
 
-    Live mode requires NVIDIA_API_KEY. Dry-run writes a tiny PNG + manifest only
-    when GENBLAZE_DRY_RUN=1 (unit tests / offline demos — not for Devpost live).
-    """
-    prompt = (prompt or "").strip()
-    if not prompt:
-        raise ValueError("prompt is required")
 
-    created_at = _utc_now()
-    run_id = str(uuid.uuid4())
+def _read_backend_object_bytes(backend: Any, asset_key: str) -> bytes | None:
+    """Best-effort download of the uploaded object for quality checks."""
+    getters = ("get_bytes", "get", "download_bytes", "read")
+    for name in getters:
+        fn = getattr(backend, name, None)
+        if not callable(fn):
+            continue
+        try:
+            raw = fn(asset_key)
+        except TypeError:
+            try:
+                raw = fn(key=asset_key)
+            except Exception:  # noqa: BLE001
+                continue
+        except Exception:  # noqa: BLE001
+            continue
+        if isinstance(raw, (bytes, bytearray)):
+            return bytes(raw)
+        # Some backends return (bytes, meta) or a response object.
+        if isinstance(raw, tuple) and raw and isinstance(raw[0], (bytes, bytearray)):
+            return bytes(raw[0])
+        body = getattr(raw, "body", None) or getattr(raw, "data", None)
+        if isinstance(body, (bytes, bytearray)):
+            return bytes(body)
+        read = getattr(raw, "read", None)
+        if callable(read):
+            try:
+                data = read()
+                if isinstance(data, (bytes, bytearray)):
+                    return bytes(data)
+            except Exception:  # noqa: BLE001
+                pass
+    return None
 
-    if settings.dry_run:
-        return _dry_run_generate(settings, prompt, run_id, created_at)
 
-    if not settings.nvidia_configured:
-        raise RuntimeError(NVIDIA_SETUP_HELP)
+def _presign_preview(backend: Any, settings: Settings, asset_key: str, asset_url: str | None) -> str | None:
+    try:
+        from genblaze_s3 import URLPolicy
 
+        preview = backend.get_url(
+            asset_key,
+            policy=URLPolicy.PRESIGNED,
+            expires_in=settings.presign_expires_seconds,
+        )
+        return getattr(preview, "url", None) or str(preview)
+    except Exception:
+        try:
+            ps = backend.presigned_get(
+                asset_key, expires_in=settings.presign_expires_seconds
+            )
+            return getattr(ps, "url", None) or str(ps)
+        except Exception:
+            return asset_url
+
+
+def _collect_step_warnings(step: Any) -> list[str]:
+    """Surface NVIDIA warning/refusal fields when Genblaze left them on the step."""
+    warnings: list[str] = []
+    payload = getattr(step, "provider_payload", None)
+    if isinstance(payload, dict):
+        warnings.extend(extract_nvidia_warnings(payload))
+        nvidia = payload.get("nvidia")
+        if isinstance(nvidia, dict):
+            warnings.extend(extract_nvidia_warnings(nvidia))
+            body = nvidia.get("body") or nvidia.get("response")
+            if isinstance(body, dict):
+                warnings.extend(extract_nvidia_warnings(body))
+    # Deduplicate
+    seen: set[str] = set()
+    out: list[str] = []
+    for w in warnings:
+        if w not in seen:
+            seen.add(w)
+            out.append(w)
+    return out
+
+
+def _run_live_once(
+    *,
+    settings: Settings,
+    prompt: str,
+    timeouts: Any,
+    http_client: Any,
+    output_dir: Path,
+) -> tuple[GenerateResult, bytes | None, list[str]]:
+    """One Genblaze→B2 attempt. Returns result, image bytes (if found), warnings."""
     from genblaze_core import KeyStrategy, Modality, ObjectStorageSink, Pipeline
     from genblaze_nvidia import NvidiaImageProvider
 
-    from app.nvidia_http import NvidiaGenaiTimeouts, build_nvidia_genai_client
-
-    timeouts = NvidiaGenaiTimeouts.from_env()
-    http_client = build_nvidia_genai_client(settings.nvidia_api_key or "", timeouts)
-    output_dir = _nvidia_output_dir()
     provider = NvidiaImageProvider(
         api_key=settings.nvidia_api_key,
         http_timeout=timeouts.http_timeout,
@@ -223,111 +311,235 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
         output_dir=output_dir,
     )
     transfer_failures: list[BaseException] = []
+    backend = build_backend(settings)
+    try:
+        sink = ObjectStorageSink(
+            backend,
+            prefix=settings.storage_prefix,
+            key_strategy=KeyStrategy.HIERARCHICAL,
+        )
+        transfer = getattr(sink, "_transfer", None)
+        if transfer is not None:
+            existing = list(getattr(transfer, "_allowed_roots", None) or [])
+            transfer._allowed_roots = [*existing, output_dir]  # noqa: SLF001
+        get_failures = _wrap_asset_transfer(sink)
+        try:
+            result = (
+                Pipeline("mrs-concept-media")
+                .step(
+                    provider,
+                    model=settings.image_model,
+                    prompt=prompt,
+                    modality=Modality.IMAGE,
+                )
+                .run(sink=sink, timeout=timeouts.pipeline_timeout)
+            )
+        except Exception as exc:  # noqa: BLE001 — attach transfer cause then re-raise
+            transfer_failures = get_failures()
+            if transfer_failures or "asset transfer" in str(exc).lower():
+                _reraise_with_transfer_cause(exc, transfer_failures)
+            raise
+
+        asset_url = None
+        asset_sha = None
+        asset_key = None
+        warnings: list[str] = []
+        steps = getattr(getattr(result, "run", None), "steps", None) or []
+        if steps:
+            warnings = _collect_step_warnings(steps[0])
+            assets = getattr(steps[0], "assets", None) or []
+            if assets:
+                a0 = assets[0]
+                asset_url = getattr(a0, "url", None)
+                asset_sha = getattr(a0, "sha256", None)
+                asset_key = _extract_asset_key(asset_url, settings.b2_bucket)
+            step_err = getattr(steps[0], "error", None)
+            if not assets and step_err:
+                raise RuntimeError(f"generation failed: {step_err}")
+
+        if not asset_key and not asset_url:
+            raise RuntimeError(
+                "generation produced no assets (check NVIDIA_API_KEY, model access, "
+                "and network to ai.api.nvidia.com)"
+            )
+
+        manifest = getattr(result, "manifest", None)
+        manifest_uri = getattr(manifest, "manifest_uri", None) if manifest else None
+        manifest_key = _extract_asset_key(manifest_uri, settings.b2_bucket)
+
+        preview = (
+            _presign_preview(backend, settings, asset_key, asset_url)
+            if asset_key
+            else asset_url
+        )
+
+        image_bytes = _read_local_image_bytes(output_dir)
+        if image_bytes is None and asset_key:
+            image_bytes = _read_backend_object_bytes(backend, asset_key)
+
+        gen = GenerateResult(
+            run_id=getattr(getattr(result, "run", None), "run_id", None) or str(uuid.uuid4()),
+            prompt=prompt,
+            model=settings.image_model,
+            provider="nvidia-image",
+            status="ok",
+            asset_key=asset_key,
+            manifest_key=manifest_key,
+            asset_sha256=asset_sha,
+            preview_url=preview,
+            created_at=_utc_now(),
+            dry_run=False,
+        )
+        return gen, image_bytes, warnings
+    finally:
+        close = getattr(backend, "close", None)
+        if callable(close):
+            close()
+        # Do not close http_client here — owned by generate_image().
+        close_p = getattr(provider, "close", None)
+        if callable(close_p):
+            # Injected client: Genblaze may skip closing httpx; still safe.
+            try:
+                close_p()
+            except Exception:  # noqa: BLE001
+                pass
+
+
+def generate_image(settings: Settings, prompt: str) -> GenerateResult:
+    """Run Genblaze NVIDIA image step and persist assets + manifest to B2.
+
+    Live mode requires NVIDIA_API_KEY. Dry-run writes a tiny PNG + manifest only
+    when GENBLAZE_DRY_RUN=1 (unit tests / offline demos — not for Devpost live).
+
+    Before upload success is returned to the client, stills are checked for
+    near-black / tiny / undecodable payloads (common FLUX.1-schnell NIM blank
+    for photoreal people). Trailing user meta-commentary is stripped; if the
+    first still is blank and sanitizing changed the prompt, one retry is attempted.
+    """
+    raw_prompt = (prompt or "").strip()
+    if not raw_prompt:
+        raise ValueError("prompt is required")
+
+    cleaned = sanitize_prompt(raw_prompt)
+    if not cleaned:
+        raise ValueError(
+            "prompt is empty after removing trailing commentary "
+            "(e.g. 'Ok this not good'). Describe the scene only."
+        )
+    prompt_sanitized = cleaned != raw_prompt
+    if prompt_sanitized:
+        logger.info("Will retry with sanitized prompt if the first still is blank")
+
+    created_at = _utc_now()
+    run_id = str(uuid.uuid4())
+
+    if settings.dry_run:
+        result = _dry_run_generate(settings, cleaned, run_id, created_at)
+        result.prompt_sanitized = prompt_sanitized
+        if prompt_sanitized:
+            result.detail = (
+                (result.detail + " · " if result.detail else "")
+                + "prompt sanitized (meta-commentary stripped)"
+            )
+        return result
+
+    if not settings.nvidia_configured:
+        raise RuntimeError(NVIDIA_SETUP_HELP)
+
+    from app.nvidia_http import NvidiaGenaiTimeouts, build_nvidia_genai_client
+
+    timeouts = NvidiaGenaiTimeouts.from_env()
+    http_client = build_nvidia_genai_client(settings.nvidia_api_key or "", timeouts)
+    output_dir = _nvidia_output_dir()
 
     try:
-        backend = build_backend(settings)
-        try:
-            sink = ObjectStorageSink(
-                backend,
-                prefix=settings.storage_prefix,
-                key_strategy=KeyStrategy.HIERARCHICAL,
+        # Attempt 1: raw prompt. Attempt 2 (only if blank + sanitize changed text): cleaned.
+        attempt_prompts: list[str] = [raw_prompt]
+        last_quality_reason: str | None = None
+        last_warnings: list[str] = []
+
+        for attempt_idx, attempt_prompt in enumerate(attempt_prompts):
+            attempt_dir = output_dir / f"attempt-{attempt_idx}"
+            attempt_dir.mkdir(parents=True, exist_ok=True)
+            gen, image_bytes, warnings = _run_live_once(
+                settings=settings,
+                prompt=attempt_prompt,
+                timeouts=timeouts,
+                http_client=http_client,
+                output_dir=attempt_dir,
             )
-            # Belt-and-suspenders: keep this run's dir on the transfer allowlist.
-            transfer = getattr(sink, "_transfer", None)
-            if transfer is not None:
-                existing = list(getattr(transfer, "_allowed_roots", None) or [])
-                transfer._allowed_roots = [*existing, output_dir]  # noqa: SLF001
-            get_failures = _wrap_asset_transfer(sink)
-            try:
-                result = (
-                    Pipeline("mrs-concept-media")
-                    .step(
-                        provider,
-                        model=settings.image_model,
-                        prompt=prompt,
-                        modality=Modality.IMAGE,
+            last_warnings = warnings
+            gen.prompt_sanitized = attempt_prompt != raw_prompt
+            gen.created_at = created_at
+
+            if warnings:
+                joined = " | ".join(warnings)
+                lower = joined.lower()
+                if any(
+                    tok in lower
+                    for tok in (
+                        "nsfw",
+                        "safety",
+                        "blocked",
+                        "refus",
+                        "content policy",
+                        "not allowed",
                     )
-                    .run(sink=sink, timeout=timeouts.pipeline_timeout)
-                )
-            except Exception as exc:  # noqa: BLE001 — attach transfer cause then re-raise
-                transfer_failures = get_failures()
-                if transfer_failures or "asset transfer" in str(exc).lower():
-                    _reraise_with_transfer_cause(exc, transfer_failures)
-                raise
-
-            asset_url = None
-            asset_sha = None
-            asset_key = None
-            steps = getattr(getattr(result, "run", None), "steps", None) or []
-            if steps:
-                assets = getattr(steps[0], "assets", None) or []
-                if assets:
-                    a0 = assets[0]
-                    asset_url = getattr(a0, "url", None)
-                    asset_sha = getattr(a0, "sha256", None)
-                    asset_key = _extract_asset_key(asset_url, settings.b2_bucket)
-                step_err = getattr(steps[0], "error", None)
-                if not assets and step_err:
-                    raise RuntimeError(f"generation failed: {step_err}")
-
-            if not asset_key and not asset_url:
-                raise RuntimeError(
-                    "generation produced no assets (check NVIDIA_API_KEY, model access, "
-                    "and network to ai.api.nvidia.com)"
+                ):
+                    raise GenerationQualityError(
+                        "NVIDIA refused or safety-blocked this prompt: " + joined
+                    )
+                gen.detail = (gen.detail + " · " if gen.detail else "") + (
+                    "nvidia warnings: " + joined
                 )
 
-            manifest = getattr(result, "manifest", None)
-            manifest_uri = getattr(manifest, "manifest_uri", None) if manifest else None
-            manifest_key = _extract_asset_key(manifest_uri, settings.b2_bucket)
+            if image_bytes is None:
+                gen.detail = (gen.detail + " · " if gen.detail else "") + (
+                    "image quality check skipped (bytes unavailable after transfer)"
+                )
+                return gen
 
-            preview = None
-            if asset_key:
-                try:
-                    from genblaze_s3 import URLPolicy
+            assessment = assess_image_bytes(image_bytes)
+            gen.quality = {
+                "ok": assessment.ok,
+                "byte_len": assessment.byte_len,
+                "width": assessment.width,
+                "height": assessment.height,
+                "mean_luminance": assessment.mean_luminance,
+                "unique_colors": assessment.unique_colors,
+                "format": assessment.format,
+            }
+            if assessment.ok:
+                if gen.prompt_sanitized:
+                    note = "prompt sanitized (meta-commentary stripped) on retry"
+                    gen.detail = (gen.detail + " · " if gen.detail else "") + note
+                return gen
 
-                    preview = backend.get_url(
-                        asset_key,
-                        policy=URLPolicy.PRESIGNED,
-                        expires_in=settings.presign_expires_seconds,
-                    )
-                    # PresignedURL value object may redact in str(); prefer .url
-                    preview = getattr(preview, "url", None) or str(preview)
-                except Exception:
-                    # Fallback helper name across versions
-                    try:
-                        ps = backend.presigned_get(
-                            asset_key, expires_in=settings.presign_expires_seconds
-                        )
-                        preview = getattr(ps, "url", None) or str(ps)
-                    except Exception:
-                        preview = asset_url
-
-            return GenerateResult(
-                run_id=getattr(getattr(result, "run", None), "run_id", None) or run_id,
-                prompt=prompt,
-                model=settings.image_model,
-                provider="nvidia-image",
-                status="ok",
-                asset_key=asset_key,
-                manifest_key=manifest_key,
-                asset_sha256=asset_sha,
-                preview_url=preview,
-                created_at=created_at,
-                dry_run=False,
+            last_quality_reason = assessment.reason
+            logger.warning(
+                "Blank/near-black still from NVIDIA (attempt %s): %s",
+                attempt_idx,
+                assessment.reason,
             )
-        finally:
-            close = getattr(backend, "close", None)
-            if callable(close):
-                close()
+            # One retry: if first attempt somehow used the raw (unsanitized)
+            # prompt, try the cleaned form once.
+            if (
+                attempt_idx == 0
+                and attempt_prompt == raw_prompt
+                and cleaned != raw_prompt
+            ):
+                attempt_prompts.append(cleaned)
+
+        warn_suffix = ""
+        if last_warnings:
+            warn_suffix = " NVIDIA fields: " + " | ".join(last_warnings)
+        raise GenerationQualityError(
+            (last_quality_reason or "NVIDIA returned an unusable blank still.")
+            + warn_suffix
+        )
     finally:
-        # We own the injected httpx client; Genblaze skips close when injected.
-        try:
-            close_p = getattr(provider, "close", None)
-            if callable(close_p):
-                close_p()
-        finally:
-            http_client.close()
-            shutil.rmtree(output_dir, ignore_errors=True)
+        http_client.close()
+        shutil.rmtree(output_dir, ignore_errors=True)
 
 
 def _dry_run_generate(

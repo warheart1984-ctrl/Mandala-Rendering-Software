@@ -49,6 +49,17 @@
       line-height: 1.45;
       max-width: 38rem;
     }
+    .tips {
+      color: var(--muted);
+      margin: -0.75rem 0 1.5rem;
+      padding: 0.75rem 0.9rem;
+      border-left: 3px solid var(--accent);
+      background: rgba(0, 0, 0, 0.22);
+      font-size: 0.92rem;
+      line-height: 1.45;
+      max-width: 40rem;
+    }
+    .tips strong { color: var(--ink); font-weight: 600; }
     label {
       display: block;
       font-weight: 600;
@@ -196,6 +207,12 @@
       Prompt → NVIDIA NIM (FLUX.1-schnell via Genblaze) → private Backblaze B2 with SHA-256 manifest
       → optional semantic index (nv-embedcode). The still is a mood / reference plate for the 4D renderer —
       FLUX does not simulate 4D worlds.
+    </p>
+    <p class="tips" role="note">
+      <strong>Prompt tips (FLUX.1-schnell):</strong>
+      abstract geometry, mandalas, tesseracts, neon grids, and studio-lit objects usually work.
+      Photoreal people / faces / skin often return blank black stills on this NIM path — describe the
+      object and light, not a portrait. Do not append feedback like “ok this not good” into the prompt.
     </p>
 
     <form id="gen-form">

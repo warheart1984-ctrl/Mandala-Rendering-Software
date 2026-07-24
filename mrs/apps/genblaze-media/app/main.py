@@ -12,7 +12,7 @@ from app.config import NVIDIA_SETUP_HELP, get_settings
 from app.embeddings import cosine_similarity, embed_texts, embedding_summary
 from app.index_store import AssetIndex
 from app.nvidia_http import NvidiaGenaiTimeouts
-from app.pipeline import generate_image, probe_b2
+from app.pipeline import GenerationQualityError, generate_image, probe_b2
 
 APP_DIR = Path(__file__).resolve().parent.parent
 INDEX_PATH = APP_DIR / "data" / "recent-assets.json"
@@ -85,6 +85,9 @@ def api_generate(body: GenerateRequest) -> dict:
         result = generate_image(settings, body.prompt)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except GenerationQualityError as exc:
+        # Blank/near-black NIM still or explicit safety refusal — not a missing key.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RuntimeError as exc:
         # Missing NVIDIA key or B2 config — 503 with setup text.
         # Transfer/sink failures are re-raised as non-RuntimeError (see pipeline).
@@ -100,7 +103,9 @@ def api_generate(body: GenerateRequest) -> dict:
     entry = result.to_dict()
     if body.embed and settings.nvidia_configured and not settings.dry_run:
         try:
-            vector = embed_texts(settings, [body.prompt])[0]
+            # Embed the sanitized prompt we actually sent to NIM when available.
+            embed_text = entry.get("prompt") or body.prompt
+            vector = embed_texts(settings, [embed_text])[0]
             summary = embedding_summary(vector)
             summary["model"] = settings.embed_model
             entry["embedding"] = summary
