@@ -1,0 +1,10 @@
+# Production deps only (pytest stays in requirements.txt for local/CI)
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-dotenv==1.1.1
+pydantic==2.11.7
+httpx==0.28.1
+genblaze-core==0.3.7
+genblaze-s3==0.3.6
+genblaze-nvidia==0.3.2
+boto3==1.39.14
