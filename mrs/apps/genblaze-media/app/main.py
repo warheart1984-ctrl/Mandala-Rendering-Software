@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from app.config import NVIDIA_SETUP_HELP, get_settings
 from app.embeddings import cosine_similarity, embed_texts, embedding_summary
 from app.index_store import AssetIndex
+from app.nvidia_http import NvidiaGenaiTimeouts
 from app.pipeline import generate_image, probe_b2
 
 APP_DIR = Path(__file__).resolve().parent.parent
@@ -53,6 +54,7 @@ def health() -> dict:
             b2_probe = probe_b2(settings)
         except Exception as exc:  # noqa: BLE001 — surface to health JSON
             b2_error = str(exc)
+    nvidia_timeouts = NvidiaGenaiTimeouts.from_env()
     return {
         "status": "ok",
         "service": "mrs-genblaze-media",
@@ -66,6 +68,13 @@ def health() -> dict:
         "b2_probe": b2_probe,
         "b2_error": b2_error,
         "nvidia_help": None if settings.nvidia_configured else NVIDIA_SETUP_HELP,
+        "nvidia_timeouts": {
+            "http_read_seconds": nvidia_timeouts.http_timeout,
+            "nvcf_poll_seconds": nvidia_timeouts.nvcf_poll_seconds,
+            "nvcf_wait_seconds": nvidia_timeouts.nvcf_timeout,
+            "pipeline_seconds": nvidia_timeouts.pipeline_timeout,
+            "connect_seconds": nvidia_timeouts.connect_timeout,
+        },
     }
 
 

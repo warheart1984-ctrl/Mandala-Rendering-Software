@@ -42,7 +42,7 @@ try:
             "Content-Type": "application/json",
         },
         json=payload,
-        timeout=180.0,
+        timeout=600.0,
     )
 except httpx.TimeoutException as exc:
     print(f"flux_timeout {exc}", file=sys.stderr)

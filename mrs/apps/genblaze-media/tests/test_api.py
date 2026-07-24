@@ -114,3 +114,50 @@ def test_resolve_repo_root_docker_shallow(tmp_path):
 
     # Simulate /app with no monorepo parents deep enough / no mrs layout
     assert resolve_repo_root(tmp_path) == tmp_path
+
+
+def test_nvidia_timeouts_defaults(monkeypatch):
+    from app.nvidia_http import NvidiaGenaiTimeouts, build_nvidia_genai_client
+
+    for key in (
+        "GENBLAZE_HTTP_TIMEOUT",
+        "GENBLAZE_NVCF_TIMEOUT",
+        "GENBLAZE_PIPELINE_TIMEOUT",
+        "GENBLAZE_NVCF_POLL_SECONDS",
+        "GENBLAZE_CONNECT_TIMEOUT",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    cfg = NvidiaGenaiTimeouts.from_env()
+    assert cfg.http_timeout == 600.0
+    assert cfg.nvcf_timeout == 600.0
+    assert cfg.pipeline_timeout == 720
+    assert cfg.nvcf_poll_seconds == 90
+    assert cfg.connect_timeout == 30.0
+
+    client = build_nvidia_genai_client("nvapi-test", cfg)
+    try:
+        assert client.headers["NVCF-POLL-SECONDS"] == "90"
+        assert client.timeout.read == 600.0
+        assert client.timeout.connect == 30.0
+    finally:
+        client.close()
+
+
+def test_nvidia_timeouts_http_floors_above_poll(monkeypatch):
+    from app.nvidia_http import NvidiaGenaiTimeouts
+
+    monkeypatch.setenv("GENBLAZE_NVCF_POLL_SECONDS", "120")
+    monkeypatch.setenv("GENBLAZE_HTTP_TIMEOUT", "100")  # too low vs poll
+    cfg = NvidiaGenaiTimeouts.from_env()
+    assert cfg.nvcf_poll_seconds == 120
+    assert cfg.http_timeout == 150.0  # poll + 30
+
+
+def test_health_includes_nvidia_timeouts(client):
+    r = client.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert "nvidia_timeouts" in body
+    assert body["nvidia_timeouts"]["http_read_seconds"] >= 90
+    assert body["nvidia_timeouts"]["nvcf_poll_seconds"] <= 300

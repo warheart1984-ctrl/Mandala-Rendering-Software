@@ -314,7 +314,7 @@
       const prompt = document.getElementById("prompt").value.trim();
       if (!prompt) return;
       goBtn.disabled = true;
-      setStatus("Generating…");
+      setStatus("Generating… (FLUX may take 1–3 min on cold start)");
       preview.hidden = true;
       try {
         const res = await fetch("/api/generate", {

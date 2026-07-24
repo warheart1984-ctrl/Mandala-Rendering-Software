@@ -33,3 +33,11 @@ services:
         value: black-forest-labs/flux.1-schnell
       - key: GENBLAZE_STORAGE_PREFIX
         value: genblaze-media
+      - key: GENBLAZE_HTTP_TIMEOUT
+        value: "600"
+      - key: GENBLAZE_NVCF_TIMEOUT
+        value: "600"
+      - key: GENBLAZE_PIPELINE_TIMEOUT
+        value: "720"
+      - key: GENBLAZE_NVCF_POLL_SECONDS
+        value: "90"

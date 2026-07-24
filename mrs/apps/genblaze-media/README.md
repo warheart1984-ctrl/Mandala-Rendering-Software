@@ -98,7 +98,7 @@ With **valid** B2 keys (no NVIDIA): health `b2_probe` should list under the stor
 | --- | --- |
 | `InvalidAccessKeyId` on ListObjects | B2 key ID / application key in `.env` rejected by the S3 API — refresh a **non-master** bucket-scoped key |
 | Genblaze `HeadBucket` 403 | Common with bucket-scoped keys; this app skips that preflight when `B2_REGION` is set |
-| NIM generate timeout | NVIDIA free tier / network can time out on first call — retry; confirm `NVIDIA_API_KEY` at [build.nvidia.com](https://build.nvidia.com/) |
+| NIM generate timeout | Was: sync POST read timeout (`The read operation timed out`). Fix: `NVCF-POLL-SECONDS` + longer httpx read (defaults 90 / 600) so cold starts return 202 then poll |
 | `GENBLAZE_DRY_RUN=1` | Offline unit-test path only — not for Devpost live demos |
 ## API sketch
 

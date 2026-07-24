@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
 import hashlib
 import json
 import uuid
@@ -132,88 +130,108 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
     from genblaze_core import KeyStrategy, Modality, ObjectStorageSink, Pipeline
     from genblaze_nvidia import NvidiaImageProvider
 
-    backend = build_backend(settings)
+    from app.nvidia_http import NvidiaGenaiTimeouts, build_nvidia_genai_client
+
+    timeouts = NvidiaGenaiTimeouts.from_env()
+    http_client = build_nvidia_genai_client(settings.nvidia_api_key or "", timeouts)
+    provider = NvidiaImageProvider(
+        api_key=settings.nvidia_api_key,
+        http_timeout=timeouts.http_timeout,
+        nvcf_timeout=timeouts.nvcf_timeout,
+        http_client=http_client,
+    )
+
     try:
-        sink = ObjectStorageSink(
-            backend,
-            prefix=settings.storage_prefix,
-            key_strategy=KeyStrategy.HIERARCHICAL,
-        )
-        result = (
-            Pipeline("mrs-concept-media")
-            .step(
-                NvidiaImageProvider(http_timeout=float(os.getenv("GENBLAZE_HTTP_TIMEOUT") or "300"), nvcf_timeout=float(os.getenv("GENBLAZE_NVCF_TIMEOUT") or "300")),
-                model=settings.image_model,
-                prompt=prompt,
-                modality=Modality.IMAGE,
+        backend = build_backend(settings)
+        try:
+            sink = ObjectStorageSink(
+                backend,
+                prefix=settings.storage_prefix,
+                key_strategy=KeyStrategy.HIERARCHICAL,
             )
-            .run(sink=sink, timeout=int(float(os.getenv("GENBLAZE_PIPELINE_TIMEOUT") or "420")))
-        )
-
-        asset_url = None
-        asset_sha = None
-        asset_key = None
-        steps = getattr(getattr(result, "run", None), "steps", None) or []
-        if steps:
-            assets = getattr(steps[0], "assets", None) or []
-            if assets:
-                a0 = assets[0]
-                asset_url = getattr(a0, "url", None)
-                asset_sha = getattr(a0, "sha256", None)
-                asset_key = _extract_asset_key(asset_url, settings.b2_bucket)
-            step_err = getattr(steps[0], "error", None)
-            if not assets and step_err:
-                raise RuntimeError(f"generation failed: {step_err}")
-
-        if not asset_key and not asset_url:
-            raise RuntimeError(
-                "generation produced no assets (check NVIDIA_API_KEY, model access, "
-                "and network to ai.api.nvidia.com)"
-            )
-
-        manifest = getattr(result, "manifest", None)
-        manifest_uri = getattr(manifest, "manifest_uri", None) if manifest else None
-        manifest_key = _extract_asset_key(manifest_uri, settings.b2_bucket)
-
-        preview = None
-        if asset_key:
-            try:
-                from genblaze_s3 import URLPolicy
-
-                preview = backend.get_url(
-                    asset_key,
-                    policy=URLPolicy.PRESIGNED,
-                    expires_in=settings.presign_expires_seconds,
+            result = (
+                Pipeline("mrs-concept-media")
+                .step(
+                    provider,
+                    model=settings.image_model,
+                    prompt=prompt,
+                    modality=Modality.IMAGE,
                 )
-                # PresignedURL value object may redact in str(); prefer .url
-                preview = getattr(preview, "url", None) or str(preview)
-            except Exception:
-                # Fallback helper name across versions
-                try:
-                    ps = backend.presigned_get(
-                        asset_key, expires_in=settings.presign_expires_seconds
-                    )
-                    preview = getattr(ps, "url", None) or str(ps)
-                except Exception:
-                    preview = asset_url
+                .run(sink=sink, timeout=timeouts.pipeline_timeout)
+            )
 
-        return GenerateResult(
-            run_id=getattr(getattr(result, "run", None), "run_id", None) or run_id,
-            prompt=prompt,
-            model=settings.image_model,
-            provider="nvidia-image",
-            status="ok",
-            asset_key=asset_key,
-            manifest_key=manifest_key,
-            asset_sha256=asset_sha,
-            preview_url=preview,
-            created_at=created_at,
-            dry_run=False,
-        )
+            asset_url = None
+            asset_sha = None
+            asset_key = None
+            steps = getattr(getattr(result, "run", None), "steps", None) or []
+            if steps:
+                assets = getattr(steps[0], "assets", None) or []
+                if assets:
+                    a0 = assets[0]
+                    asset_url = getattr(a0, "url", None)
+                    asset_sha = getattr(a0, "sha256", None)
+                    asset_key = _extract_asset_key(asset_url, settings.b2_bucket)
+                step_err = getattr(steps[0], "error", None)
+                if not assets and step_err:
+                    raise RuntimeError(f"generation failed: {step_err}")
+
+            if not asset_key and not asset_url:
+                raise RuntimeError(
+                    "generation produced no assets (check NVIDIA_API_KEY, model access, "
+                    "and network to ai.api.nvidia.com)"
+                )
+
+            manifest = getattr(result, "manifest", None)
+            manifest_uri = getattr(manifest, "manifest_uri", None) if manifest else None
+            manifest_key = _extract_asset_key(manifest_uri, settings.b2_bucket)
+
+            preview = None
+            if asset_key:
+                try:
+                    from genblaze_s3 import URLPolicy
+
+                    preview = backend.get_url(
+                        asset_key,
+                        policy=URLPolicy.PRESIGNED,
+                        expires_in=settings.presign_expires_seconds,
+                    )
+                    # PresignedURL value object may redact in str(); prefer .url
+                    preview = getattr(preview, "url", None) or str(preview)
+                except Exception:
+                    # Fallback helper name across versions
+                    try:
+                        ps = backend.presigned_get(
+                            asset_key, expires_in=settings.presign_expires_seconds
+                        )
+                        preview = getattr(ps, "url", None) or str(ps)
+                    except Exception:
+                        preview = asset_url
+
+            return GenerateResult(
+                run_id=getattr(getattr(result, "run", None), "run_id", None) or run_id,
+                prompt=prompt,
+                model=settings.image_model,
+                provider="nvidia-image",
+                status="ok",
+                asset_key=asset_key,
+                manifest_key=manifest_key,
+                asset_sha256=asset_sha,
+                preview_url=preview,
+                created_at=created_at,
+                dry_run=False,
+            )
+        finally:
+            close = getattr(backend, "close", None)
+            if callable(close):
+                close()
     finally:
-        close = getattr(backend, "close", None)
-        if callable(close):
-            close()
+        # We own the injected httpx client; Genblaze skips close when injected.
+        try:
+            close_p = getattr(provider, "close", None)
+            if callable(close_p):
+                close_p()
+        finally:
+            http_client.close()
 
 
 def _dry_run_generate(
