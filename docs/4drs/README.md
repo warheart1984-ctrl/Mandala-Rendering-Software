@@ -6,13 +6,14 @@
 | [SPEC-v1.0.md](./SPEC-v1.0.md) | Published specification |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Module architecture |
 | [First-4D-Renderer.md](./First-4D-Renderer.md) | Technical note |
-| [api/rt4d-v1.0-freeze.md](./api/rt4d-v1.0-freeze.md) | Stable API freeze |
+| [api/rt4d-v1.0-freeze.md](./api/rt4d-v1.0-freeze.md) | Stable API freeze (CPU RT4D v1.0) |
+| [api/mrs-v2.0-freeze.md](./api/mrs-v2.0-freeze.md) | MRS v2.0 architectural / export freeze |
 | [validation/Hyper-Caustic-Lens.md](./validation/Hyper-Caustic-Lens.md) | Official validation scene |
 | [substrate/](./substrate/) | Math foundations, MRS-CRC, MRS-IC, BVH GPU, Unity live-link, 4D Inspector |
 | [contracts/](./contracts/) | Canonical MRS-IC v1.1 / v1.2 |
 | [inspector/](./inspector/) | 4D Inspector documentation index |
 | [RELEASE_NOTES_v1.0.md](./RELEASE_NOTES_v1.0.md) | GitHub / Zenodo release notes |
-| [roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md](./roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md) | MRS v2.0 umbrella (**declared / roadmap**) |
+| [roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md](./roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md) | MRS v2.0 umbrella (**contracts frozen** · capability roadmap) |
 | [constitution/](./constitution/) | 4D Engine v1 constitution mirror → [`docs/4d-engine/v1/`](../4d-engine/v1/README.md) |
 
 Charter: [`../../constitution/CHARTER.md`](../../constitution/CHARTER.md)  

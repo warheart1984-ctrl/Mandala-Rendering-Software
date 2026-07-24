@@ -1,10 +1,12 @@
 # MRS v2.0 — Architectural Roadmap
 
 **Product:** SovereignX.CIEMS.Engine.RT4D — Four-Dimensional Constitutional Renderer  
-**Status:** **roadmap / declared** (Drive-G-1)  
-**Updated:** 2026-07-24
+**Status:** **v2.0 contracts frozen** (2026-07-24) · remaining capability = **roadmap** (Drive-G-1)  
+**Updated:** 2026-07-24  
+**Freeze:** [`docs/4drs/api/mrs-v2.0-freeze.md`](../api/mrs-v2.0-freeze.md)
 
-> This document is an **umbrella index**. It does **not** claim wavefront queues, multi-GPU, Vulkan/DX12 RT4D backends, full curvature tensors, Nanite/Lumen bridges, or a self-serve commercial platform are implemented. Upgrade a row only when code + tests (or schemas + probes) prove it.
+> This document is an **umbrella index**. It does **not** claim wavefront queues, multi-GPU, Vulkan/DX12 RT4D backends, full curvature tensors, Nanite/Lumen bridges, or a self-serve commercial platform are implemented. Upgrade a row only when code + tests (or schemas + probes) prove it.  
+> **Freeze** locks contract names, module paths, and public export names for the v2.0 generation — not production completeness of GPU / multi-GPU / native RHI.
 
 ## Relationship to other tracks
 
@@ -13,7 +15,8 @@
 | RT4D GPU evolution | Path-tracer / GPU core (v2–v4) | [`docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](../../4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md) |
 | FourDRenderer / hosts | Engine contracts, Unreal/Unity phases | [`docs/4d-engine/v2/roadmap/ENGINE_INTEGRATION_ROADMAP.md`](../../4d-engine/v2/roadmap/ENGINE_INTEGRATION_ROADMAP.md) |
 | Genblaze concept media | FLUX → B2 MVP (**not** 4D render) | [`docs/ops/GENBLAZE_MEDIA_V2_ROADMAP.md`](../../ops/GENBLAZE_MEDIA_V2_ROADMAP.md) |
-| 4DRS v1.0 | Frozen CPU / API surface | [`docs/4drs/README.md`](../README.md) |
+| 4DRS v1.0 | Frozen CPU / API surface | [`docs/4drs/README.md`](../README.md) · [`api/rt4d-v1.0-freeze.md`](../api/rt4d-v1.0-freeze.md) |
+| MRS v2.0 freeze | Frozen contracts / exports | [`docs/4drs/api/mrs-v2.0-freeze.md`](../api/mrs-v2.0-freeze.md) |
 
 **Path remapping:** proposed `engine/rt4d/...` trees land under `@mrs/renderer-core` — see Phase B layout below. Do not fork a parallel engine root.
 
@@ -21,10 +24,10 @@
 
 | Phase | Intent | Status |
 | --- | --- | --- |
-| **A** | Docs + declared contracts | **declared** |
-| **B** | WebGPU wavefront interfaces + CPU conformance spike | **partial stubs** |
-| **C** | Scaffolding: multi-GPU arbitrator, Vulkan/DX12 stubs, wave/curvature/force CPU helpers, WorldBinding/FrameLoop, WD/PLP+wave | **declared / skeleton / partial** |
-| **C+** | Live multi-GPU, native RHI, full PLP enforcement | **roadmap** |
+| **A** | Docs + declared contracts | **frozen** (v2.0) |
+| **B** | WebGPU wavefront interfaces + CPU conformance spike | **frozen surface** · **partial stubs** |
+| **C** | Scaffolding: multi-GPU arbitrator, Vulkan/DX12 stubs, wave/curvature/force CPU helpers, WorldBinding/FrameLoop, WD/PLP+wave | **frozen scaffolding** · **skeleton / partial** |
+| **C+** | Live multi-GPU, native RHI, full PLP enforcement | **roadmap** (post–v2.0 freeze) |
 
 ---
 
@@ -163,7 +166,7 @@ Wave tiling across GPUs: **docs only** — not implemented.
 
 ## Summary (Drive-G-1)
 
-> MRS v2.0 **plans** a constitutional 4D cinematic platform: wavefront path tracing behind a host-agnostic RHI, eventual multi-GPU with CSSV evidence, richer MRS-CRC substrate, host adapters, and Genblaze concept-media. **Contracts and MVP media exist or are declared; the GPU / RHI / hosts / commercial factory remains early.**
+> MRS v2.0 **freezes** the architectural contracts and public export surface for wavefront/RHI scaffolding. It **plans** a constitutional 4D cinematic platform: wavefront path tracing behind a host-agnostic RHI, eventual multi-GPU with CSSV evidence, richer MRS-CRC substrate, host adapters, and Genblaze concept-media. **Contracts and MVP media exist or are declared; the GPU / RHI / hosts / commercial factory remains early.**
 
 ## Scorecards
 
