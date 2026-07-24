@@ -291,6 +291,63 @@ def _collect_step_warnings(step: Any) -> list[str]:
     return out
 
 
+_SAFETY_TOKENS = (
+    "nsfw",
+    "safety",
+    "blocked",
+    "refus",
+    "content policy",
+    "not allowed",
+)
+
+
+def _looks_like_safety_block(warnings: list[str]) -> bool:
+    """True when NVIDIA warning text suggests an explicit refusal/block."""
+    if not warnings:
+        return False
+    lower = " | ".join(warnings).lower()
+    return any(tok in lower for tok in _SAFETY_TOKENS)
+
+
+def _best_effort_delete_keys(settings: Settings, *keys: str | None) -> None:
+    """Delete rejected B2 objects after a blank/safety reject (best-effort).
+
+    Opens a fresh backend because ``_run_live_once`` already closed its own.
+    Failures are logged; callers still raise ``GenerationQualityError``.
+    """
+    to_delete = [k for k in keys if k]
+    if not to_delete or not settings.b2_configured:
+        return
+    backend = None
+    try:
+        backend = build_backend(settings)
+        for key in to_delete:
+            try:
+                backend.delete(key)
+                logger.info("Deleted rejected B2 object after quality fail: %s", key)
+            except Exception as exc:  # noqa: BLE001 — best-effort cleanup
+                logger.warning(
+                    "Failed to delete rejected B2 object %s: %s: %s",
+                    key,
+                    type(exc).__name__,
+                    exc,
+                )
+    except Exception as exc:  # noqa: BLE001 — best-effort cleanup
+        logger.warning(
+            "Could not open B2 backend to delete rejected assets: %s: %s",
+            type(exc).__name__,
+            exc,
+        )
+    finally:
+        if backend is not None:
+            close = getattr(backend, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:  # noqa: BLE001
+                    pass
+
+
 def _run_live_once(
     *,
     settings: Settings,
@@ -395,14 +452,11 @@ def _run_live_once(
         close = getattr(backend, "close", None)
         if callable(close):
             close()
-        # Do not close http_client here — owned by generate_image().
-        close_p = getattr(provider, "close", None)
-        if callable(close_p):
-            # Injected client: Genblaze may skip closing httpx; still safe.
-            try:
-                close_p()
-            except Exception:  # noqa: BLE001
-                pass
+        # Never close the injected httpx client here — generate_image() owns it
+        # for the whole retry loop. NvidiaClient.close() skips non-owned clients,
+        # but we still avoid provider.close() so a future Genblaze change cannot
+        # tear down the shared client between attempts.
+        # (http_client.close() runs only in generate_image's outer finally.)
 
 
 def generate_image(settings: Settings, prompt: str) -> GenerateResult:
@@ -413,8 +467,9 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
 
     Before upload success is returned to the client, stills are checked for
     near-black / tiny / undecodable payloads (common FLUX.1-schnell NIM blank
-    for photoreal people). Trailing user meta-commentary is stripped; if the
-    first still is blank and sanitizing changed the prompt, one retry is attempted.
+    for photoreal people). Trailing user meta-commentary is stripped up front
+    so the first FLUX call uses the cleaned prompt. Rejected blank uploads are
+    best-effort deleted from B2 so they are not left as successful objects.
     """
     raw_prompt = (prompt or "").strip()
     if not raw_prompt:
@@ -428,7 +483,7 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
         )
     prompt_sanitized = cleaned != raw_prompt
     if prompt_sanitized:
-        logger.info("Will retry with sanitized prompt if the first still is blank")
+        logger.info("Using sanitized prompt (meta-commentary stripped) for first attempt")
 
     created_at = _utc_now()
     run_id = str(uuid.uuid4())
@@ -453,10 +508,12 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
     output_dir = _nvidia_output_dir()
 
     try:
-        # Attempt 1: raw prompt. Attempt 2 (only if blank + sanitize changed text): cleaned.
-        attempt_prompts: list[str] = [raw_prompt]
+        # Prefer cleaned prompt first so meta-commentary does not burn a FLUX call.
+        # If we somehow still ran the raw text and it blanked, retry once with cleaned.
+        attempt_prompts: list[str] = [cleaned]
         last_quality_reason: str | None = None
         last_warnings: list[str] = []
+        last_gen: GenerateResult | None = None
 
         for attempt_idx, attempt_prompt in enumerate(attempt_prompts):
             attempt_dir = output_dir / f"attempt-{attempt_idx}"
@@ -469,31 +526,23 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                 output_dir=attempt_dir,
             )
             last_warnings = warnings
-            gen.prompt_sanitized = attempt_prompt != raw_prompt
+            last_gen = gen
+            gen.prompt_sanitized = attempt_prompt != raw_prompt or prompt_sanitized
             gen.created_at = created_at
 
-            if warnings:
+            if warnings and not _looks_like_safety_block(warnings):
                 joined = " | ".join(warnings)
-                lower = joined.lower()
-                if any(
-                    tok in lower
-                    for tok in (
-                        "nsfw",
-                        "safety",
-                        "blocked",
-                        "refus",
-                        "content policy",
-                        "not allowed",
-                    )
-                ):
-                    raise GenerationQualityError(
-                        "NVIDIA refused or safety-blocked this prompt: " + joined
-                    )
                 gen.detail = (gen.detail + " · " if gen.detail else "") + (
                     "nvidia warnings: " + joined
                 )
 
             if image_bytes is None:
+                if _looks_like_safety_block(warnings):
+                    _best_effort_delete_keys(settings, gen.asset_key, gen.manifest_key)
+                    raise GenerationQualityError(
+                        "NVIDIA refused or safety-blocked this prompt (no usable image): "
+                        + " | ".join(warnings)
+                    )
                 gen.detail = (gen.detail + " · " if gen.detail else "") + (
                     "image quality check skipped (bytes unavailable after transfer)"
                 )
@@ -510,8 +559,15 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                 "format": assessment.format,
             }
             if assessment.ok:
+                # Soft safety-ish warning strings must not discard a usable still.
+                if warnings:
+                    joined = " | ".join(warnings)
+                    if "nvidia warnings:" not in (gen.detail or ""):
+                        gen.detail = (gen.detail + " · " if gen.detail else "") + (
+                            "nvidia warnings: " + joined
+                        )
                 if gen.prompt_sanitized:
-                    note = "prompt sanitized (meta-commentary stripped) on retry"
+                    note = "prompt sanitized (meta-commentary stripped)"
                     gen.detail = (gen.detail + " · " if gen.detail else "") + note
                 return gen
 
@@ -521,8 +577,17 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                 attempt_idx,
                 assessment.reason,
             )
-            # One retry: if first attempt somehow used the raw (unsanitized)
-            # prompt, try the cleaned form once.
+            # Remove blank JPEG/manifest from B2 so they are not left as "ok".
+            _best_effort_delete_keys(settings, gen.asset_key, gen.manifest_key)
+
+            if _looks_like_safety_block(warnings):
+                raise GenerationQualityError(
+                    "NVIDIA refused or safety-blocked this prompt (blank/unusable still): "
+                    + " | ".join(warnings)
+                )
+
+            # Legacy retry: only if a caller path still queued the raw prompt
+            # first and cleaning differs (sanitize-first normally skips this).
             if (
                 attempt_idx == 0
                 and attempt_prompt == raw_prompt
@@ -533,6 +598,10 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
         warn_suffix = ""
         if last_warnings:
             warn_suffix = " NVIDIA fields: " + " | ".join(last_warnings)
+        # Keys already deleted on the blank path above; delete again if last_gen
+        # somehow skipped cleanup (defensive).
+        if last_gen is not None:
+            _best_effort_delete_keys(settings, last_gen.asset_key, last_gen.manifest_key)
         raise GenerationQualityError(
             (last_quality_reason or "NVIDIA returned an unusable blank still.")
             + warn_suffix

@@ -321,3 +321,281 @@ def test_extract_nvidia_warnings():
     )
     assert any("SAFETY" in w for w in warns)
     assert any("filtered" in w for w in warns)
+
+
+def test_blank_reject_deletes_b2_keys(monkeypatch):
+    """Rejected blank stills must best-effort delete asset + manifest from B2."""
+    import io
+    from unittest.mock import MagicMock
+
+    from PIL import Image
+
+    from app.pipeline import GenerationQualityError, GenerateResult, generate_image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (1024, 1024), (0, 0, 0)).save(buf, format="JPEG", quality=90)
+    blank_jpeg = buf.getvalue()
+
+    settings = _offline_settings(
+        nvidia_api_key="nvapi-test",
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+    )
+
+    gen = GenerateResult(
+        run_id="run-blank",
+        prompt="person with tesseract",
+        model=settings.image_model,
+        provider="nvidia-image",
+        status="ok",
+        asset_key="genblaze-media/x/blank.jpg",
+        manifest_key="genblaze-media/x/manifest.json",
+        asset_sha256="abc",
+        preview_url=None,
+        created_at="2026-01-01T00:00:00+00:00",
+        dry_run=False,
+    )
+
+    deleted: list[str] = []
+
+    def fake_run_live_once(**_kwargs):
+        return gen, blank_jpeg, []
+
+    def fake_delete_keys(_settings, *keys):
+        deleted.extend([k for k in keys if k])
+
+    mock_http = MagicMock()
+    mock_http.close = MagicMock()
+
+    monkeypatch.setattr("app.pipeline._run_live_once", fake_run_live_once)
+    monkeypatch.setattr("app.pipeline._best_effort_delete_keys", fake_delete_keys)
+    monkeypatch.setattr(
+        "app.pipeline._nvidia_output_dir",
+        lambda: __import__("pathlib").Path(__import__("tempfile").mkdtemp()),
+    )
+    monkeypatch.setattr(
+        "app.nvidia_http.build_nvidia_genai_client",
+        lambda *_a, **_k: mock_http,
+    )
+
+    with pytest.raises(GenerationQualityError):
+        generate_image(settings, "person with tesseract")
+
+    assert "genblaze-media/x/blank.jpg" in deleted
+    assert "genblaze-media/x/manifest.json" in deleted
+    mock_http.close.assert_called_once()
+
+
+def test_run_live_once_does_not_close_injected_http_client(monkeypatch, tmp_path):
+    """Shared httpx client must survive per-attempt cleanup for sanitize retries."""
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    from app.pipeline import _run_live_once
+
+    settings = _offline_settings(
+        nvidia_api_key="nvapi-test",
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+    )
+
+    http_client = MagicMock()
+    backend = MagicMock()
+    backend.close = MagicMock()
+    backend.get_url = MagicMock(side_effect=Exception("no presign"))
+    backend.presigned_get = MagicMock(side_effect=Exception("no presign"))
+
+    out = tmp_path / "attempt-0"
+    out.mkdir()
+    (out / "still.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 64)
+
+    asset = SimpleNamespace(
+        url=f"https://s3.example/{settings.b2_bucket}/genblaze-media/k.png",
+        sha256="deadbeef",
+    )
+    step = SimpleNamespace(assets=[asset], error=None, provider_payload=None)
+    run = SimpleNamespace(run_id="r1", steps=[step])
+    result = SimpleNamespace(run=run, manifest=SimpleNamespace(manifest_uri=None))
+
+    class FakePipeline:
+        def __init__(self, _name):
+            pass
+
+        def step(self, *_a, **_k):
+            return self
+
+        def run(self, **_k):
+            return result
+
+    class FakeProvider:
+        def __init__(self, **_kwargs):
+            pass
+
+        def close(self):
+            # Old bug: pipeline called provider.close() which could tear down
+            # a shared httpx client. Current code must not invoke this.
+            http_client.close()
+
+    monkeypatch.setattr("app.pipeline.build_backend", lambda _s: backend)
+    monkeypatch.setattr("genblaze_core.Pipeline", FakePipeline)
+    monkeypatch.setattr(
+        "genblaze_core.ObjectStorageSink",
+        lambda *a, **k: MagicMock(_transfer=None),
+    )
+    monkeypatch.setattr("genblaze_nvidia.NvidiaImageProvider", FakeProvider)
+
+    timeouts = SimpleNamespace(
+        http_timeout=1.0,
+        nvcf_timeout=1.0,
+        pipeline_timeout=1,
+    )
+
+    # Call twice with the same client — must not close between attempts.
+    for _ in range(2):
+        gen, _bytes, _warns = _run_live_once(
+            settings=settings,
+            prompt="cyan cube",
+            timeouts=timeouts,
+            http_client=http_client,
+            output_dir=out,
+        )
+        assert gen.status == "ok"
+
+    http_client.close.assert_not_called()
+    assert backend.close.call_count == 2
+
+
+def test_soft_safety_warning_keeps_usable_still(monkeypatch):
+    """Soft warning tokens must not discard a non-blank image."""
+    import io
+    from unittest.mock import MagicMock
+
+    from PIL import Image
+
+    from app.pipeline import GenerateResult, generate_image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (256, 256), (40, 120, 200)).save(buf, format="PNG")
+    good_png = buf.getvalue()
+
+    settings = _offline_settings(
+        nvidia_api_key="nvapi-test",
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+    )
+    gen = GenerateResult(
+        run_id="run-ok",
+        prompt="cyan cube",
+        model=settings.image_model,
+        provider="nvidia-image",
+        status="ok",
+        asset_key="genblaze-media/x/ok.png",
+        manifest_key=None,
+        asset_sha256="abc",
+        preview_url=None,
+        created_at="2026-01-01T00:00:00+00:00",
+        dry_run=False,
+    )
+    deleted: list[str] = []
+    mock_http = MagicMock()
+
+    monkeypatch.setattr(
+        "app.pipeline._run_live_once",
+        lambda **_k: (gen, good_png, ["safety filter note: low risk"]),
+    )
+    monkeypatch.setattr(
+        "app.pipeline._best_effort_delete_keys",
+        lambda _s, *keys: deleted.extend([k for k in keys if k]),
+    )
+    monkeypatch.setattr(
+        "app.pipeline._nvidia_output_dir",
+        lambda: __import__("pathlib").Path(__import__("tempfile").mkdtemp()),
+    )
+    monkeypatch.setattr(
+        "app.nvidia_http.build_nvidia_genai_client",
+        lambda *_a, **_k: mock_http,
+    )
+
+    out = generate_image(settings, "cyan cube")
+    assert out.status == "ok"
+    assert out.quality and out.quality["ok"] is True
+    assert deleted == []
+    assert "nvidia warnings" in (out.detail or "")
+    mock_http.close.assert_called_once()
+
+
+def test_sanitize_first_attempt_uses_cleaned_prompt(monkeypatch):
+    from unittest.mock import MagicMock
+
+    from app.pipeline import GenerateResult, generate_image
+
+    settings = _offline_settings(
+        nvidia_api_key="nvapi-test",
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+    )
+    seen: list[str] = []
+
+    def fake_run(**kwargs):
+        seen.append(kwargs["prompt"])
+        gen = GenerateResult(
+            run_id="r",
+            prompt=kwargs["prompt"],
+            model=settings.image_model,
+            provider="nvidia-image",
+            status="ok",
+            asset_key=None,
+            manifest_key=None,
+            asset_sha256=None,
+            preview_url=None,
+            created_at="2026-01-01T00:00:00+00:00",
+            dry_run=False,
+        )
+        # bytes unavailable → skip quality, return ok
+        return gen, None, []
+
+    mock_http = MagicMock()
+    monkeypatch.setattr("app.pipeline._run_live_once", fake_run)
+    monkeypatch.setattr(
+        "app.pipeline._nvidia_output_dir",
+        lambda: __import__("pathlib").Path(__import__("tempfile").mkdtemp()),
+    )
+    monkeypatch.setattr(
+        "app.nvidia_http.build_nvidia_genai_client",
+        lambda *_a, **_k: mock_http,
+    )
+
+    raw = "A glowing cyan 4D tesseract on a table. Ok this not good."
+    generate_image(settings, raw)
+    assert len(seen) == 1
+    assert "not good" not in seen[0].lower()
+    assert "tesseract" in seen[0].lower()
+    mock_http.close.assert_called_once()
+
+
+def test_best_effort_delete_keys_calls_backend_delete(monkeypatch):
+    from unittest.mock import MagicMock
+
+    from app.pipeline import _best_effort_delete_keys
+
+    settings = _offline_settings(
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+    )
+    backend = MagicMock()
+    monkeypatch.setattr("app.pipeline.build_backend", lambda _s: backend)
+    _best_effort_delete_keys(settings, "a.jpg", None, "m.json")
+    assert backend.delete.call_count == 2
+    backend.delete.assert_any_call("a.jpg")
+    backend.delete.assert_any_call("m.json")
+    backend.close.assert_called_once()

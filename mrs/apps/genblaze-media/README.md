@@ -100,7 +100,7 @@ With **valid** B2 keys (no NVIDIA): health `b2_probe` should list under the stor
 | Genblaze `HeadBucket` 403 | Common with bucket-scoped keys; this app skips that preflight when `B2_REGION` is set |
 | NIM generate timeout | Was: sync POST read timeout (`The read operation timed out`). Fix: `NVCF-POLL-SECONDS` + longer httpx read (defaults 90 / 600) so cold starts return 202 then poll |
 | `asset transfer(s) failed; manifest was not uploaded` | NVIDIA FLUX returns base64; Genblaze writes `file://` under CWD (`/app` in Docker). `AssetTransfer` only allowlists system temp — transfer fails and SinkError omits the cause. Fix: write NVIDIA payloads under `tempfile` + surface underlying transfer exception in the API detail |
-| Solid black / empty JPEG after “success” | Observed: valid ~6 KiB 1024² JPEG, mean luminance 0, one color — common when FLUX.1-schnell NIM blanks photoreal-people prompts. Pipeline now rejects near-black stills with HTTP **422** and strips trailing meta-commentary (“ok this not good”) |
+| Solid black / empty JPEG after “success” | Observed: valid ~6 KiB 1024² JPEG, mean luminance 0, one color — common when FLUX.1-schnell NIM blanks photoreal-people prompts. Pipeline rejects near-black stills with HTTP **422**, strips trailing meta-commentary before the first FLUX call, and best-effort deletes the rejected B2 asset/manifest so blank JPEGs are not left as successful objects |
 | `GENBLAZE_DRY_RUN=1` | Offline unit-test path only — not for Devpost live demos |
 ## API sketch
 
