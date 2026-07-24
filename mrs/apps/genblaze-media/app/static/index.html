@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MRS · Genblaze Concept Media</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #0e1412;
+      --bg1: #16201c;
+      --ink: #e8f0ea;
+      --muted: #9bb0a3;
+      --accent: #3d9b6e;
+      --warn: #c9a227;
+      --err: #c45c5c;
+      --line: #2a3a32;
+      --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+      --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #1f3a2e 0%, transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, #243528 0%, transparent 50%),
+        linear-gradient(165deg, var(--bg0), var(--bg1));
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: clamp(1.75rem, 4vw, 2.35rem);
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+    .lede {
+      color: var(--muted);
+      margin: 0 0 1.75rem;
+      line-height: 1.45;
+      max-width: 38rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 6rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--ink);
+      font: inherit;
+      resize: vertical;
+    }
+    .row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.85rem;
+    }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 6px;
+      padding: 0.7rem 1.15rem;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #04140c;
+    }
+    button.secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    #status {
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+    }
+    #status.err { color: var(--err); }
+    #status.warn { color: var(--warn); }
+    .result, .assets {
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+    }
+    .result img {
+      display: block;
+      max-width: 100%;
+      margin-top: 0.75rem;
+      border-radius: 4px;
+    }
+    .meta {
+      font-size: 0.85rem;
+      color: var(--muted);
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .asset {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .asset:last-child { border-bottom: 0; }
+    .asset img {
+      max-width: 180px;
+      margin-top: 0.5rem;
+      border-radius: 4px;
+    }
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .portals {
+      margin-top: 2.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+    }
+    .portals h2 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.35rem;
+    }
+    .portals > .lede {
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .portal-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.85rem;
+    }
+    .portal-list li {
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .portal-list li:last-child { border-bottom: 0; }
+    .portal-list strong {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 0.2rem;
+    }
+    .portal-list .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--warn);
+      margin-bottom: 0.35rem;
+    }
+    .portal-list p {
+      margin: 0 0 0.55rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .portal-list a {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+      margin-right: 0.85rem;
+    }
+    .portal-list a:hover { text-decoration: underline; }
+    .portal-list code {
+      font-size: 0.8rem;
+      color: var(--ink);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Mandala · Genblaze</h1>
+    <p class="lede">
+      Provenanced concept stills for MRS / 4D scene authoring.
+      Prompt → NVIDIA NIM (FLUX.1-schnell via Genblaze) → private Backblaze B2 with SHA-256 manifest
+      → optional semantic index (nv-embedcode). The still is a mood / reference plate for the 4D renderer —
+      FLUX does not simulate 4D worlds.
+    </p>
+
+    <form id="gen-form">
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt" name="prompt" required maxlength="2000"
+        placeholder="e.g. isometric concept of a translucent 4D torus mandala, cool studio light"></textarea>
+      <div class="row">
+        <button type="submit" id="go">Generate</button>
+        <button type="button" class="secondary" id="refresh">Refresh assets</button>
+      </div>
+    </form>
+
+    <div id="status"></div>
+
+    <section class="result" id="result" hidden>
+      <h2>Latest</h2>
+      <div class="meta" id="result-meta"></div>
+      <img id="preview" alt="Generated concept" hidden />
+    </section>
+
+    <section class="assets">
+      <h2>Recent</h2>
+      <div id="assets-list" class="meta">Loading…</div>
+    </section>
+
+    <section class="assets" aria-labelledby="search-heading">
+      <h2 id="search-heading">Semantic search</h2>
+      <p class="lede">
+        Uses NVIDIA <code>nv-embedcode-7b-v1</code> embeddings over recent prompts
+        (not chat). Generate at least one live asset first so vectors are indexed.
+      </p>
+      <form id="search-form">
+        <label for="search-q">Query</label>
+        <textarea id="search-q" name="query" maxlength="2000"
+          placeholder="e.g. translucent mandala torus"></textarea>
+        <div class="row">
+          <button type="submit" id="search-go">Search</button>
+        </div>
+      </form>
+      <div id="search-results" class="meta"></div>
+    </section>
+
+    <footer>
+      Storage: Backblaze B2 (private bucket → presigned GET). Orchestration: Genblaze.
+      Image: NVIDIA NIM FLUX. Embeddings: NVIDIA nv-embedcode. Operator readiness ≠ commercial self-serve.
+    </footer>
+  </main>
+  <script>
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+    const resultMeta = document.getElementById("result-meta");
+    const preview = document.getElementById("preview");
+    const assetsList = document.getElementById("assets-list");
+    const goBtn = document.getElementById("go");
+    const searchResults = document.getElementById("search-results");
+
+    function setStatus(msg, kind) {
+      statusEl.textContent = msg || "";
+      statusEl.className = kind || "";
+    }
+
+    function renderEntry(el, entry) {
+      const lines = [
+        "run: " + (entry.run_id || "—"),
+        "model: " + (entry.model || "—"),
+        "provider: " + (entry.provider || "—"),
+        "asset: " + (entry.asset_key || "—"),
+        "manifest: " + (entry.manifest_key || "—"),
+        "sha256: " + (entry.asset_sha256 || "—"),
+        "created: " + (entry.created_at || "—"),
+      ];
+      if (entry.embedding) {
+        lines.push(
+          "embed: " + (entry.embedding.model || "") +
+          " · dims " + (entry.embedding.dims || "—")
+        );
+      }
+      if (entry.embedding_error) lines.push("embed error: " + entry.embedding_error);
+      if (entry.dry_run) lines.push("mode: dry-run (not live NIM)");
+      if (entry.detail) lines.push(entry.detail);
+      el.textContent = lines.join("\n");
+    }
+
+    async function loadAssets() {
+      try {
+        const res = await fetch("/api/assets?limit=12");
+        const data = await res.json();
+        const assets = data.assets || [];
+        if (!assets.length) {
+          assetsList.textContent = "No local index entries yet.";
+          return;
+        }
+        assetsList.innerHTML = "";
+        for (const a of assets) {
+          const div = document.createElement("div");
+          div.className = "asset";
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          meta.textContent = (a.prompt || "").slice(0, 120) + "\n" + (a.asset_key || "");
+          div.appendChild(meta);
+          if (a.preview_url) {
+            const img = document.createElement("img");
+            img.src = a.preview_url;
+            img.alt = "asset preview";
+            div.appendChild(img);
+          }
+          assetsList.appendChild(div);
+        }
+      } catch (err) {
+        assetsList.textContent = "Failed to load assets: " + err;
+      }
+    }
+
+    document.getElementById("gen-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const prompt = document.getElementById("prompt").value.trim();
+      if (!prompt) return;
+      goBtn.disabled = true;
+      setStatus("Generating…");
+      preview.hidden = true;
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, embed: true }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = data.detail || res.statusText;
+          setStatus(typeof detail === "string" ? detail : JSON.stringify(detail), "err");
+          return;
+        }
+        resultEl.hidden = false;
+        renderEntry(resultMeta, data);
+        if (data.preview_url) {
+          preview.src = data.preview_url;
+          preview.hidden = false;
+        }
+        setStatus(data.dry_run ? "Dry-run complete (not live NIM)." : "Done.", data.dry_run ? "warn" : "");
+        await loadAssets();
+      } catch (err) {
+        setStatus(String(err), "err");
+      } finally {
+        goBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("search-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const query = document.getElementById("search-q").value.trim();
+      if (!query) return;
+      searchResults.textContent = "Searching…";
+      try {
+        const res = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, limit: 8 }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = data.detail || res.statusText;
+          searchResults.textContent = typeof detail === "string" ? detail : JSON.stringify(detail);
+          return;
+        }
+        const rows = data.results || [];
+        if (!rows.length) {
+          searchResults.textContent = "No embedded assets yet — generate live first.";
+          return;
+        }
+        searchResults.textContent = rows
+          .map((r) => (r.score.toFixed(3) + "  " + (r.prompt || "").slice(0, 100)))
+          .join("\n");
+      } catch (err) {
+        searchResults.textContent = String(err);
+      }
+    });
+
+    document.getElementById("refresh").addEventListener("click", () => loadAssets());
+
+    fetch("/health").then(r => r.json()).then(h => {
+      if (!h.nvidia_configured && !h.dry_run) {
+        setStatus(h.nvidia_help || "NVIDIA_API_KEY not configured — generate will return 503 until set.", "warn");
+      } else if (h.b2_error) {
+        setStatus("B2 probe error: " + h.b2_error, "err");
+      } else if (h.b2_configured) {
+        setStatus("Ready · B2 " + h.b2_bucket + " · image " + h.image_model + " · embed " + h.embed_model);
+      }
+    }).catch(() => {});
+
+    loadAssets();
+  </script>
+</body>
+</html>

@@ -32,7 +32,10 @@
     "b2:smoke": "node mrs/packages/storage-b2/scripts/smoke.mjs",
     "b2:list": "node mrs/packages/storage-b2/scripts/list.mjs",
     "b2:upload": "node mrs/packages/storage-b2/scripts/upload.mjs",
-    "b2:download": "node mrs/packages/storage-b2/scripts/download.mjs"
+    "b2:download": "node mrs/packages/storage-b2/scripts/download.mjs",
+    "genblaze:media": "cd mrs/apps/genblaze-media && python -m uvicorn app.main:app --host 0.0.0.0 --port 8787",
+    "flux:smoke": "node mrs/apps/genblaze-media/scripts/flux-smoke.mjs",
+    "flux:smoke:py": "cd mrs/apps/genblaze-media && .venv/Scripts/python.exe scripts/flux_smoke.py"
   },
   "dependencies": {
     "4d-renderer": "file:./4d-renderer",

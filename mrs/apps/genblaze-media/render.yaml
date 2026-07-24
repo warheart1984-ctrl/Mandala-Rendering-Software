@@ -1,0 +1,31 @@
+# Render Blueprint — free web service for MRS Genblaze Media MVP
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: mrs-genblaze-media
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Root Dir in Render dashboard should be: mrs/apps/genblaze-media
+    # Or deploy from that directory.
+    healthCheckPath: /health
+    envVars:
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: B2_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_APP_KEY
+        sync: false
+      - key: B2_BUCKET
+        sync: false
+      - key: B2_REGION
+        sync: false
+      - key: B2_ENDPOINT
+        sync: false
+      - key: GENBLAZE_IMAGE_MODEL
+        value: black-forest-labs/flux.1-schnell
+      - key: GENBLAZE_STORAGE_PREFIX
+        value: genblaze-media

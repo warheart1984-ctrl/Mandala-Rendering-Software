@@ -64,9 +64,14 @@ Always verify against current Backblaze docs when enabling encryption, CORS, or 
 | Path | Status |
 | --- | --- |
 | `@mrs/storage-b2` client + CLI scripts | **Present** (scaffold) |
+| Genblaze concept-media MVP (`mrs/apps/genblaze-media`) | **Declared / prepared** — FastAPI + Genblaze → B2; see [app README](../../mrs/apps/genblaze-media/README.md) |
 | Automatic upload from every render | **Not wired** (optional helper only) |
 | Gallery / `export_4d_scene` cloud publish | **Declared hook** — see below |
 | Cloud rendering marketplace | **Not claimed** |
+
+### Genblaze media path (hackathon MVP)
+
+`mrs/apps/genblaze-media` **declares** a thin public API + UI that runs Genblaze (`genblaze-nvidia` / NIM FLUX) and persists assets + SHA-256 manifests via `genblaze-s3` into the operator B2 bucket. It does **not** claim Genblaze renders 4D or that MRS historically included Genblaze. Env dual-export: MRS `B2_APPLICATION_KEY` ↔ Genblaze `B2_APP_KEY`. Live generate needs `NVIDIA_API_KEY`; without it the service still boots and can probe B2 credentials.
 
 ### Integration hooks (declared)
 
@@ -181,4 +186,5 @@ npm run smoke
 
 - Start here: [`docs/START_HERE_MRS_30_MIN.md`](../START_HERE_MRS_30_MIN.md)
 - Package README: [`mrs/packages/storage-b2/README.md`](../../mrs/packages/storage-b2/README.md)
+- Genblaze media MVP: [`mrs/apps/genblaze-media/README.md`](../../mrs/apps/genblaze-media/README.md)
 - Root capability snapshot: [`README.md`](../../README.md)

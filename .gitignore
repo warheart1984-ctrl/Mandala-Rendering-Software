@@ -54,6 +54,9 @@ credentials.json
 .vs/
 *.swp
 
+# Upstream reference clone (pip packages remain the runtime dependency)
+vendor/
+
 # Python / local envs (hygiene)
 .venv/
 __pycache__/

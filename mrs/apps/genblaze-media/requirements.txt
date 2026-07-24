@@ -1,0 +1,16 @@
+# Pinned for Backblaze Genblaze hackathon MVP (Python >= 3.11)
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-dotenv==1.1.1
+pydantic==2.11.7
+httpx==0.28.1
+
+# Genblaze stack (NVIDIA NIM image + B2/S3 storage)
+# genblaze-nvidia 0.3.2 needs genblaze-core >=0.3.6 (local_file_url)
+genblaze-core==0.3.7
+genblaze-s3==0.3.6
+genblaze-nvidia==0.3.2
+
+# Explicit boto3 for health/list helpers (also pulled by genblaze-s3)
+boto3==1.39.14
+pytest==8.4.1
