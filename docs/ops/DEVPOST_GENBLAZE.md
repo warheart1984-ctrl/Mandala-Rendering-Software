@@ -21,6 +21,8 @@ Evidence-bound copy for the Backblaze Generative AI Media Hackathon. Paste only 
 
 This is **concept media for MRS / 4D scene authoring** — Genblaze does **not** render 4D; MRS remains the 4D renderer.
 
+v2 ops themes (durable search, authoring bridge, CI): [`GENBLAZE_MEDIA_V2_ROADMAP.md`](./GENBLAZE_MEDIA_V2_ROADMAP.md) — **planned**, distinct from RT4D GPU v2.
+
 ### Hook to the 4D stack (honest)
 
 1. Judge/operator generates a FLUX still via this app (NIM GenAI `flux.1-schnell`).

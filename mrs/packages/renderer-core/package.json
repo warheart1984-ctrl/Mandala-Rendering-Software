@@ -37,7 +37,8 @@
     "render": "node src/cli.js render",
     "list": "node src/cli.js list",
     "test": "node src/cli.js render --surface tesseract --single --width 320 --height 240 --output output/test",
-    "test:frames": "node src/cli.js render --surface clifford-torus --frames 8 --fps 8 --width 320 --height 240 --mode wireframe --resolution 16 --output output/test"
+    "test:frames": "node src/cli.js render --surface clifford-torus --frames 8 --fps 8 --width 320 --height 240 --mode wireframe --resolution 16 --output output/test",
+    "test:wavefront": "node --test src/render/rt4d/gpu/wavefront/wavefront.phaseb.test.js"
   },
   "dependencies": {
     "canvas": "^3.1.0",

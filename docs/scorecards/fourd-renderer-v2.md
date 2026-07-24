@@ -2,8 +2,8 @@
 
 > Template alignment: Drive-G maturity dimensions.  
 > Project id: `fourd-renderer-v2`  
-> Updated: 2026-07-23  
-> Evidence anchor: `docs/4d-engine/v2/` RFC suite + MRS/RT4D/Engine v1 cross-links
+> Updated: 2026-07-24  
+> Evidence anchor: `docs/4d-engine/v2/` RFC suite + MRS/RT4D/Engine v1 cross-links + MRS v2 umbrella
 
 ## Snapshot
 
@@ -11,8 +11,8 @@
 | --- | --- |
 | Project ID | `fourd-renderer-v2` |
 | Repository path | `G:\New folder` |
-| Review date | 2026-07-23 |
-| Reviewer | agent session (docs land) |
+| Review date | 2026-07-24 |
+| Reviewer | agent session (MRS v2 docs land) |
 
 ## Dimension ratings
 
@@ -57,5 +57,6 @@ npm run validate:world-document
 ## Cross-links
 
 - Index: [`docs/4d-engine/v2/README.md`](../4d-engine/v2/README.md)  
+- MRS v2 umbrella: [`docs/4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md`](../4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md)  
 - Engine v1 scorecard: [`docs/scorecards/4d-engine-v1.md`](./4d-engine-v1.md)  
 - Charter: [`constitution/CHARTER.md`](../../constitution/CHARTER.md)

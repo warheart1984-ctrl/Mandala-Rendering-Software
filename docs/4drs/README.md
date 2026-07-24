@@ -12,9 +12,11 @@
 | [contracts/](./contracts/) | Canonical MRS-IC v1.1 / v1.2 |
 | [inspector/](./inspector/) | 4D Inspector documentation index |
 | [RELEASE_NOTES_v1.0.md](./RELEASE_NOTES_v1.0.md) | GitHub / Zenodo release notes |
+| [roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md](./roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md) | MRS v2.0 umbrella (**declared / roadmap**) |
 | [constitution/](./constitution/) | 4D Engine v1 constitution mirror → [`docs/4d-engine/v1/`](../4d-engine/v1/README.md) |
 
 Charter: [`../../constitution/CHARTER.md`](../../constitution/CHARTER.md)  
 4D Engine v1 (declared): [`../4d-engine/v1/README.md`](../4d-engine/v1/README.md)  
 RT4D GPU evolution (v2–v4 **roadmap**): [`../4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](../4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md)  
+Genblaze media v2 (**ops roadmap**, not RT4D): [`../ops/GENBLAZE_MEDIA_V2_ROADMAP.md`](../ops/GENBLAZE_MEDIA_V2_ROADMAP.md)  
 Engine code: [`../../mrs/packages/renderer-core/src/render/rt4d/`](../../mrs/packages/renderer-core/src/render/rt4d/) (`@mrs/renderer-core`)
