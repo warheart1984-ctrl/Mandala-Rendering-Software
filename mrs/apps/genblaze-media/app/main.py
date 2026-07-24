@@ -1,18 +1,19 @@
-"""FastAPI entry: health, generate, assets list, thin UI."""
+"""FastAPI entry: health, generate (image + video), assets list, thin UI."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 from app.config import APP_DIR, NVIDIA_SETUP_HELP, get_settings
 from app.embeddings import cosine_similarity, embed_texts, embedding_summary
 from app.index_store import AssetIndex
-from app.nvidia_http import NvidiaGenaiTimeouts
+from app.nvidia_http import NvidiaGenaiTimeouts, NvidiaVideoTimeouts
 from app.pipeline import GenerationQualityError, generate_image, probe_b2
+from app.pipeline_video import generate_video
 from app.preview_cache import (
     get_preview_path,
     is_run_id,
@@ -42,14 +43,32 @@ def _prefer_local_preview(row: dict) -> dict:
     return row
 
 
+def _default_modality(row: dict) -> str:
+    """Infer modality for older index rows that omit the field."""
+    explicit = row.get("modality")
+    if explicit in {"image", "video"}:
+        return explicit
+    provider = str(row.get("provider") or "")
+    if provider.endswith("video") or "video" in provider:
+        return "video"
+    return "image"
+
+
+def _with_modality(row: dict) -> dict:
+    row = dict(row)
+    row["modality"] = _default_modality(row)
+    return row
+
+
 app = FastAPI(
     title="MRS Genblaze Media",
     description=(
         "Provenanced generative concept media for Mandala Rendering System / "
-        "4D scene authoring. Prompt → NVIDIA NIM (via Genblaze) → Backblaze B2 "
-        "assets + SHA-256 manifest. Does not claim Genblaze renders 4D."
+        "4D scene authoring. Prompt → NVIDIA NIM FLUX (stills) or Cosmos (video) "
+        "via Genblaze → Backblaze B2 assets + SHA-256 manifest. "
+        "Does not claim Genblaze renders 4D."
     ),
-    version="0.1.0",
+    version="0.2.0",
 )
 
 _index = AssetIndex(INDEX_PATH)
@@ -84,6 +103,7 @@ def health() -> dict:
     elif settings.b2_configured:
         b2_probe_skipped = True
     nvidia_timeouts = NvidiaGenaiTimeouts.from_env()
+    video_timeouts = NvidiaVideoTimeouts.from_env()
     return {
         "status": "ok",
         "service": "mrs-genblaze-media",
@@ -92,6 +112,11 @@ def health() -> dict:
         "b2_bucket": settings.b2_bucket if settings.b2_configured else None,
         "b2_region": settings.b2_region if settings.b2_configured else None,
         "image_model": settings.image_model,
+        "video_model": settings.video_model,
+        "video_enabled": settings.video_enabled,
+        "video_available": settings.video_available,
+        "cmm_id": "CMM-NIM-Cosmos-v1.0",
+        "domain_id": "CH-GNMD-v1.0",
         "embed_model": settings.embed_model,
         "dry_run": settings.dry_run,
         "b2_probe_on_health": settings.b2_probe_on_health,
@@ -106,21 +131,30 @@ def health() -> dict:
             "pipeline_seconds": nvidia_timeouts.pipeline_timeout,
             "connect_seconds": nvidia_timeouts.connect_timeout,
         },
+        "video_timeouts": {
+            "http_read_seconds": video_timeouts.http_timeout,
+            "nvcf_poll_seconds": video_timeouts.nvcf_poll_seconds,
+            "nvcf_wait_seconds": video_timeouts.nvcf_timeout,
+            "pipeline_seconds": video_timeouts.pipeline_timeout,
+            "connect_seconds": video_timeouts.connect_timeout,
+        },
     }
 
 
-@app.post("/api/generate")
-def api_generate(body: GenerateRequest) -> dict:
+def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
+    """Shared generate path: image or video → embed → index → response-local preview."""
     settings = get_settings()
     try:
-        result = generate_image(settings, body.prompt)
+        result = generate_video(settings, body.prompt) if video else generate_image(
+            settings, body.prompt
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except GenerationQualityError as exc:
-        # Blank/near-black NIM still or explicit safety refusal — not a missing key.
+        # Blank/near-black NIM still or unusable video — not a missing key.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RuntimeError as exc:
-        # Missing NVIDIA key or B2 config — 503 with setup text.
+        # Missing NVIDIA key, video disabled, or B2 config — 503 with setup text.
         # Transfer/sink failures are re-raised as non-RuntimeError (see pipeline).
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
@@ -132,6 +166,8 @@ def api_generate(body: GenerateRequest) -> dict:
         raise HTTPException(status_code=502, detail=f"generation failed: {detail}") from exc
 
     entry = result.to_dict()
+    entry["modality"] = "video" if video else entry.get("modality") or "image"
+    # Persist cloud/synthetic preview_url only — never rewrite to /api/preview before index.
     if body.embed and settings.nvidia_configured and not settings.dry_run:
         try:
             # Embed the sanitized prompt we actually sent to NIM when available.
@@ -152,16 +188,42 @@ def api_generate(body: GenerateRequest) -> dict:
     return _prefer_local_preview(public)
 
 
+@app.post("/api/generate")
+def api_generate(body: GenerateRequest) -> dict:
+    return _run_generate_common(body, video=False)
+
+
+@app.post("/api/generate-video")
+def api_generate_video(body: GenerateRequest) -> dict:
+    return _run_generate_common(body, video=True)
+
+
 @app.get("/api/assets")
-def api_assets(limit: int = Query(default=20, ge=1, le=50)) -> dict:
-    assets = _index.list_recent(limit=limit)
+def api_assets(
+    limit: int = Query(default=20, ge=1, le=50),
+    modality: str | None = Query(
+        default=None,
+        description='Optional filter: "image" or "video".',
+    ),
+) -> dict:
+    if modality is not None and modality not in {"image", "video"}:
+        raise HTTPException(
+            status_code=400,
+            detail='modality must be "image" or "video" when provided',
+        )
+    assets = _index.list_recent(limit=max(limit * 3, 50) if modality else limit)
     # Strip full vectors from list responses; prefer local preview cache over B2.
     cleaned = []
     for a in assets:
         row = {k: v for k, v in a.items() if k != "embedding_vector"}
         if "embedding_vector" in a:
             row["embedding_stored"] = True
+        row = _with_modality(row)
+        if modality and row["modality"] != modality:
+            continue
         cleaned.append(_prefer_local_preview(row))
+        if len(cleaned) >= limit:
+            break
     return {"assets": cleaned}
 
 
@@ -219,6 +281,7 @@ def api_search(body: SearchRequest) -> dict:
                 "preview_url": preview_row.get("preview_url"),
                 "preview_source": preview_row.get("preview_source"),
                 "model": asset.get("model"),
+                "modality": _default_modality(asset),
                 "created_at": asset.get("created_at"),
             }
         )
@@ -228,6 +291,21 @@ def api_search(body: SearchRequest) -> dict:
         "embed_model": settings.embed_model,
         "results": scored[: body.limit],
     }
+
+
+@app.get("/media/stills")
+def media_stills() -> RedirectResponse:
+    return RedirectResponse(url="/#stills", status_code=302)
+
+
+@app.get("/media/nvidia")
+def media_nvidia() -> RedirectResponse:
+    return RedirectResponse(url="/#stills", status_code=302)
+
+
+@app.get("/media/nim-cosmos")
+def media_nim_cosmos() -> RedirectResponse:
+    return RedirectResponse(url="/#nim-cosmos", status_code=302)
 
 
 @app.get("/", response_class=HTMLResponse)

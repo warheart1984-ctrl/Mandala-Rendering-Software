@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,6 +25,8 @@ def _offline_settings(**overrides) -> Settings:
         b2_endpoint="https://s3.us-east-005.backblazeb2.com",
         storage_prefix="genblaze-media",
         image_model="black-forest-labs/flux.1-schnell",
+        video_model="nvidia/cosmos-2.0-diffusion-text2world",
+        video_enabled=True,
         embed_model="nvidia/nv-embedcode-7b-v1",
         embed_url="https://integrate.api.nvidia.com/v1/embeddings",
         embed_timeout_seconds=60.0,
@@ -73,6 +76,13 @@ def test_health_ok(client):
     assert body["b2_probe_skipped"] is False
     assert body["b2_probe"] is None
     assert body["embed_model"] == "nvidia/nv-embedcode-7b-v1"
+    assert body["video_model"] == "nvidia/cosmos-2.0-diffusion-text2world"
+    assert body["video_enabled"] is True
+    assert body["video_available"] is True  # dry-run + enabled
+    assert body["cmm_id"] == "CMM-NIM-Cosmos-v1.0"
+    assert body["domain_id"] == "CH-GNMD-v1.0"
+    assert "video_timeouts" in body
+    assert body["video_timeouts"]["pipeline_seconds"] >= 600
 
 
 def test_health_skips_b2_list_by_default(monkeypatch, tmp_path):
@@ -872,3 +882,206 @@ def test_best_effort_delete_keys_calls_backend_delete(monkeypatch):
     backend.delete.assert_any_call("a.jpg")
     backend.delete.assert_any_call("m.json")
     backend.close.assert_called_once()
+
+def test_generate_video_dry_run(client):
+    r = client.post("/api/generate-video", json={"prompt": "unit test cosmos world"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["modality"] == "video"
+    assert body["dry_run"] is True
+    assert body["run_id"]
+    assert body["asset_key"]
+    assert body["manifest_key"]
+    assert body["asset_sha256"]
+    assert body.get("preview_url")
+    # Dry-run does not invent duration/resolution.
+    assert "duration_seconds" not in body
+    assert "resolution" not in body
+    run_id = body["run_id"]
+    prev = client.get(f"/api/preview/{run_id}")
+    assert prev.status_code == 200
+    assert "video" in prev.headers.get("content-type", "")
+    assert len(prev.content) > 0
+
+
+def test_generate_video_stores_cloud_url_not_local_path(client):
+    """Index must retain synthetic/cloud preview_url; local swap is response-only."""
+    from app import main as main_mod
+
+    r = client.post("/api/generate-video", json={"prompt": "index keeps cloud video url"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get("preview_url", "").startswith("/api/preview/")
+    assert body.get("preview_source") == "local-cache"
+
+    stored = main_mod._index.list_recent(1)[0]
+    stored_url = stored.get("preview_url")
+    assert stored_url is not None
+    assert not str(stored_url).startswith("/api/preview/")
+    assert stored.get("modality") == "video"
+
+
+def test_generate_video_requires_nvidia_when_not_dry(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "app.main.get_settings",
+        lambda: _offline_settings(
+            nvidia_api_key=None,
+            b2_key_id="id",
+            b2_app_key="key",
+            b2_bucket="bucket",
+            dry_run=False,
+            video_enabled=True,
+        ),
+    )
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "recent-video.json")
+    c = TestClient(app)
+    r = c.post("/api/generate-video", json={"prompt": "should fail"})
+    assert r.status_code == 503
+    assert "NVIDIA_API_KEY" in r.json()["detail"]
+
+
+def test_generate_video_disabled(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "app.main.get_settings",
+        lambda: _offline_settings(video_enabled=False, dry_run=True),
+    )
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "recent-video-off.json")
+    c = TestClient(app)
+    r = c.post("/api/generate-video", json={"prompt": "disabled"})
+    assert r.status_code == 503
+    detail = r.json()["detail"]
+    assert "VIDEO_ENABLED" in detail or "disabled" in detail.lower()
+
+
+def test_rejected_video_deletes_b2_keys(monkeypatch):
+    """Unusable video clips must best-effort delete asset + manifest from B2."""
+    from unittest.mock import MagicMock
+
+    from app.pipeline import GenerationQualityError
+    from app.pipeline_video import VideoGenerateResult, generate_video
+
+    settings = _offline_settings(
+        nvidia_api_key="nvapi-test",
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+        video_enabled=True,
+    )
+
+    gen = VideoGenerateResult(
+        run_id="run-bad-video",
+        prompt="neon grid world",
+        model=settings.video_model,
+        provider="nvidia-video",
+        status="ok",
+        asset_key="genblaze-media/x/bad.mp4",
+        manifest_key="genblaze-media/x/bad-manifest.json",
+        asset_sha256="abc",
+        preview_url=None,
+        created_at="2026-01-01T00:00:00+00:00",
+        dry_run=False,
+        modality="video",
+    )
+    # Too small / no ftyp → assess_video_bytes fails.
+    junk = b"not-a-video"
+
+    deleted: list[str] = []
+
+    def fake_run_live_video(**_kwargs):
+        return gen, junk
+
+    def fake_delete_keys(_settings, *keys):
+        deleted.extend([k for k in keys if k])
+
+    mock_http = MagicMock()
+    mock_http.close = MagicMock()
+
+    monkeypatch.setattr("app.pipeline_video._run_live_video", fake_run_live_video)
+    monkeypatch.setattr("app.pipeline_video._best_effort_delete_keys", fake_delete_keys)
+    monkeypatch.setattr(
+        "app.pipeline_video._nvidia_output_dir",
+        lambda: __import__("pathlib").Path(__import__("tempfile").mkdtemp()),
+    )
+    monkeypatch.setattr(
+        "app.nvidia_http.build_nvidia_genai_client",
+        lambda *_a, **_k: mock_http,
+    )
+
+    with pytest.raises(GenerationQualityError):
+        generate_video(settings, "neon grid world")
+
+    assert "genblaze-media/x/bad.mp4" in deleted
+    assert "genblaze-media/x/bad-manifest.json" in deleted
+    mock_http.close.assert_called_once()
+
+
+def test_assets_modality_filter(client):
+    client.post("/api/generate", json={"prompt": "still asset"})
+    client.post("/api/generate-video", json={"prompt": "video asset"})
+    all_assets = client.get("/api/assets").json()["assets"]
+    assert all(a.get("modality") in {"image", "video"} for a in all_assets)
+    videos = client.get("/api/assets?modality=video").json()["assets"]
+    assert videos
+    assert all(a["modality"] == "video" for a in videos)
+    images = client.get("/api/assets?modality=image").json()["assets"]
+    assert images
+    assert all(a["modality"] == "image" for a in images)
+
+
+def test_media_anchor_redirects(client):
+    for path, dest in (
+        ("/media/stills", "/#stills"),
+        ("/media/nvidia", "/#stills"),
+        ("/media/nim-cosmos", "/#nim-cosmos"),
+    ):
+        r = client.get(path, follow_redirects=False)
+        assert r.status_code == 302
+        assert r.headers["location"] == dest
+
+
+def test_no_story_forge_imports():
+    app_dir = Path(__file__).resolve().parents[1] / "app"
+    offenders = []
+    for path in app_dir.glob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        if "story_forge" in text:
+            offenders.append(path.name)
+    assert offenders == [], f"story_forge referenced in: {offenders}"
+
+
+def test_video_dry_run_reports_modality_in_health(client):
+    r = client.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["video_model"]
+    assert body["video_enabled"] is True
+    assert "video_timeouts" in body
+
+
+def test_extract_optional_video_meta_never_invents():
+    from types import SimpleNamespace
+
+    from app.pipeline_video import _extract_optional_video_meta
+
+    assert _extract_optional_video_meta(SimpleNamespace()) == (None, None)
+    assert _extract_optional_video_meta(SimpleNamespace(provider_payload=None)) == (
+        None,
+        None,
+    )
+    assert _extract_optional_video_meta(
+        SimpleNamespace(provider_payload={"unrelated": 1})
+    ) == (None, None)
+    d, res = _extract_optional_video_meta(
+        SimpleNamespace(
+            provider_payload={"duration_seconds": 4.0, "width": 1280, "height": 720}
+        )
+    )
+    assert d == 4.0
+    assert res == "1280x720"

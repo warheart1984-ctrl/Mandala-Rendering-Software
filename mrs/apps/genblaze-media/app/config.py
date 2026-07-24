@@ -89,6 +89,8 @@ class Settings:
     b2_endpoint: str | None
     storage_prefix: str
     image_model: str
+    video_model: str
+    video_enabled: bool
     embed_model: str
     embed_url: str
     embed_timeout_seconds: float
@@ -106,6 +108,11 @@ class Settings:
     @property
     def b2_configured(self) -> bool:
         return bool(self.b2_key_id and self.b2_app_key and self.b2_bucket)
+
+    @property
+    def video_available(self) -> bool:
+        """Operator can attempt Cosmos video (flag on + NVIDIA key, or dry-run)."""
+        return self.video_enabled and (self.nvidia_configured or self.dry_run)
 
 
 def get_settings() -> Settings:
@@ -139,6 +146,13 @@ def get_settings() -> Settings:
         "no",
         "off",
     }
+    # Default ON: Cosmos text-to-video path (CMM-NIM-Cosmos). Set 0 to hide/disable.
+    video_enabled = (os.getenv("GENBLAZE_VIDEO_ENABLED") or "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
 
     return Settings(
         nvidia_api_key=(
@@ -159,6 +173,11 @@ def get_settings() -> Settings:
         image_model=(
             os.getenv("GENBLAZE_IMAGE_MODEL") or "black-forest-labs/flux.1-schnell"
         ).strip(),
+        video_model=(
+            os.getenv("GENBLAZE_VIDEO_MODEL")
+            or "nvidia/cosmos-2.0-diffusion-text2world"
+        ).strip(),
+        video_enabled=video_enabled,
         embed_model=(
             os.getenv("NVIDIA_EMBED_MODEL") or "nvidia/nv-embedcode-7b-v1"
         ).strip(),
