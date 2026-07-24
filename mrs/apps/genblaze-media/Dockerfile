@@ -16,10 +16,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GENBLAZE_CONNECT_TIMEOUT=30
 
 # System deps kept minimal; genblaze/boto3 are pure wheels on slim
-# legacy-resolver: genblaze-core 0.3.7 declares pillow<12; we pin Pillow==12.3.0 for CVE fixes
+# genblaze-core 0.3.7 declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
 COPY requirements-docker.txt .
 RUN pip install --upgrade pip \
- && pip install --use-deprecated=legacy-resolver -r requirements-docker.txt
+ && pip install -r requirements-docker.txt \
+ && pip install --no-deps Pillow==12.3.0
 
 COPY app ./app
 
