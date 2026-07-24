@@ -53,3 +53,10 @@ credentials.json
 .idea/
 .vs/
 *.swp
+
+# Python / local envs (hygiene)
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+*.pyc

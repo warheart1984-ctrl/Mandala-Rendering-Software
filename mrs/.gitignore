@@ -10,3 +10,9 @@ node_modules/
 packages/renderer-core/output/
 apps/chatgpt-mrs/server/smoke*.log
 apps/chatgpt-mrs/server/smoke.pid
+
+# Python / build caches (hygiene)
+.venv/
+__pycache__/
+.pytest_cache/
+dist/
