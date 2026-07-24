@@ -37,3 +37,6 @@ services:
         value: "720"
       - key: GENBLAZE_NVCF_POLL_SECONDS
         value: "90"
+      # Default off: Render healthCheckPath=/health must not ListObjects (Class C).
+      - key: B2_PROBE_ON_HEALTH
+        value: "0"

@@ -71,7 +71,7 @@ Always verify against current Backblaze docs when enabling encryption, CORS, or 
 
 ### Genblaze media path (hackathon MVP)
 
-`mrs/apps/genblaze-media` **declares** a thin public API + UI that runs Genblaze (`genblaze-nvidia` / NIM FLUX) and persists assets + SHA-256 manifests via `genblaze-s3` into the operator B2 bucket. It does **not** claim Genblaze renders 4D or that MRS historically included Genblaze. Env dual-export: MRS `B2_APPLICATION_KEY` ↔ Genblaze `B2_APP_KEY`. Live generate needs `NVIDIA_API_KEY`; without it the service still boots and can probe B2 credentials.
+`mrs/apps/genblaze-media` **declares** a thin public API + UI that runs Genblaze (`genblaze-nvidia` / NIM FLUX) and persists assets + SHA-256 manifests via `genblaze-s3` into the operator B2 bucket. It does **not** claim Genblaze renders 4D or that MRS historically included Genblaze. Env dual-export: MRS `B2_APPLICATION_KEY` ↔ Genblaze `B2_APP_KEY`. Live generate needs `NVIDIA_API_KEY`; without it the service still boots. Optional B2 list probe on `/health` is **off by default** (`B2_PROBE_ON_HEALTH=0`) so Render/UI health polls do not burn Class C ListObjects — see [B2 free-tier demo playbook](./B2_FREE_TIER_DEMO_PLAYBOOK.md).
 
 ### Integration hooks (declared)
 
@@ -185,6 +185,7 @@ npm run smoke
 ## Cross-links
 
 - Start here: [`docs/START_HERE_MRS_30_MIN.md`](../START_HERE_MRS_30_MIN.md)
+- **Free-tier / Class C demo day:** [`docs/ops/B2_FREE_TIER_DEMO_PLAYBOOK.md`](./B2_FREE_TIER_DEMO_PLAYBOOK.md)
 - Package README: [`mrs/packages/storage-b2/README.md`](../../mrs/packages/storage-b2/README.md)
 - Genblaze media MVP: [`mrs/apps/genblaze-media/README.md`](../../mrs/apps/genblaze-media/README.md)
 - Root capability snapshot: [`README.md`](../../README.md)
