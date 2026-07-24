@@ -74,6 +74,8 @@ If `NVIDIA_API_KEY` is missing, `/health` still boots and reports setup help; `P
 4. Deploy. Service binds `0.0.0.0:$PORT` via the Dockerfile `CMD`.
 5. Open the public `https://….onrender.com/` URL for judges; hit `/health` first.
 
+Production image installs from `requirements-docker.txt` with `pip install --use-deprecated=legacy-resolver` so the explicit `Pillow==12.3.0` pin is not blocked by `genblaze-core==0.3.7`’s declared `pillow<12` (same approach as local `requirements.txt`). Redeploy after merge for the pin to take effect on Render.
+
 Free tiers may cold-start; first generate can take longer than subsequent ones.
 
 ### Railway / Fly

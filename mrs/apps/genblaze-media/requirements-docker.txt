@@ -1,4 +1,6 @@
 # Production deps only (pytest stays in requirements.txt for local/CI)
+# Install via Dockerfile: pip install --use-deprecated=legacy-resolver -r requirements-docker.txt
+# (genblaze-core 0.3.7 declares pillow<12; Pillow 12.3.0 is required for CVE fixes)
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
 python-dotenv==1.2.2
@@ -8,3 +10,5 @@ genblaze-core==0.3.7
 genblaze-s3==0.3.6
 genblaze-nvidia==0.3.2
 boto3==1.39.14
+# Blank/near-black still detection (app/image_quality.py) — must match requirements.txt pin
+Pillow==12.3.0
