@@ -176,6 +176,149 @@ describe("RT4D Phase B wavefront / RHI", () => {
     assert.ok(ACCUMULATE_WGSL && ACCUMULATE_WGSL.includes("@compute"));
   });
 
+  it("stub getFramePixels returns non-black pixels after dispatch", async () => {
+    const rhi = new WebGpuRhi({ allowLiveGpu: false, frameWidth: 4, frameHeight: 4, seed: 0x4d5253 });
+    await rhi.selectDevice();
+    const frame = await rhi.createTexture(4, 4, "rgba8");
+    const paths = await rhi.createBuffer(64, "storage");
+    await rhi.dispatchKernel("rt4d_wavefront_generate", 1, 1, 1, { frame, paths });
+    await rhi.dispatchKernel("rt4d_wavefront_accumulate", 1, 1, 1, { frame, paths });
+    const pixels = await rhi.getFramePixels();
+    assert.equal(pixels.length, 4 * 4 * 4);
+    assert.ok(pixels.some((v) => v !== 0), "stub kernels must fill host pixels");
+  });
+
+  it("live getFramePixels maps GPU frame into host before decode (mock device)", async () => {
+    if (typeof globalThis.GPUBufferUsage === "undefined") {
+      globalThis.GPUBufferUsage = {
+        MAP_READ: 1,
+        COPY_DST: 2,
+        COPY_SRC: 4,
+        STORAGE: 8,
+        UNIFORM: 16,
+      };
+    }
+    if (typeof globalThis.GPUMapMode === "undefined") {
+      globalThis.GPUMapMode = { READ: 1 };
+    }
+    if (typeof globalThis.GPUShaderStage === "undefined") {
+      globalThis.GPUShaderStage = { COMPUTE: 4 };
+    }
+
+    /** @param {number} size */
+    function makeBuf(size) {
+      const data = new Uint8Array(size);
+      return {
+        size,
+        _data: data,
+        destroy() {},
+        async mapAsync() {
+          this._mapped = data;
+        },
+        getMappedRange() {
+          return this._mapped.buffer.slice(
+            this._mapped.byteOffset,
+            this._mapped.byteOffset + this._mapped.byteLength
+          );
+        },
+        unmap() {},
+      };
+    }
+
+    const mockDevice = {
+      createBuffer({ size }) {
+        return makeBuf(size);
+      },
+      createBindGroupLayout() {
+        return {};
+      },
+      createBindGroup() {
+        return {};
+      },
+      createShaderModule() {
+        return {};
+      },
+      createPipelineLayout() {
+        return {};
+      },
+      createComputePipeline() {
+        return {};
+      },
+      queue: {
+        writeBuffer(buf, offset, src) {
+          const bytes =
+            src instanceof ArrayBuffer
+              ? new Uint8Array(src)
+              : new Uint8Array(src.buffer, src.byteOffset, src.byteLength);
+          buf._data.set(bytes, offset);
+        },
+        submit(cmds) {
+          for (const cmd of cmds) {
+            if (typeof cmd._apply === "function") cmd._apply();
+          }
+        },
+        async onSubmittedWorkDone() {},
+      },
+      createCommandEncoder() {
+        /** @type {Array<() => void>} */
+        const ops = [];
+        return {
+          copyBufferToBuffer(src, srcOffset, dst, dstOffset, size) {
+            ops.push(() => {
+              dst._data.set(src._data.subarray(srcOffset, srcOffset + size), dstOffset);
+            });
+          },
+          beginComputePass() {
+            return {
+              setPipeline() {},
+              setBindGroup() {},
+              dispatchWorkgroups() {},
+              end() {},
+            };
+          },
+          finish() {
+            return {
+              _apply() {
+                for (const op of ops) op();
+              },
+            };
+          },
+        };
+      },
+    };
+
+    const rhi = new WebGpuRhi({
+      allowLiveGpu: false,
+      gpuDevice: mockDevice,
+      frameWidth: 2,
+      frameHeight: 2,
+    });
+    await rhi.selectDevice();
+    assert.equal(rhi.mode, "live");
+
+    const frame = await rhi.createTexture(2, 2, "rgba8");
+    const tex = rhi._textures.get(frame.id);
+    assert.ok(tex?.gpu);
+
+    // Simulate GPU-only write: host stays zero, GPU storage has packed RGBA.
+    const gpuU32 = new Uint32Array(tex.gpu._data.buffer, tex.gpu._data.byteOffset, 4);
+    gpuU32[0] = ((255 << 24) | (10 << 16) | (20 << 8) | 30) >>> 0;
+    gpuU32[1] = ((255 << 24) | (40 << 16) | (50 << 8) | 60) >>> 0;
+    gpuU32[2] = ((255 << 24) | (70 << 16) | (80 << 8) | 90) >>> 0;
+    gpuU32[3] = ((255 << 24) | (100 << 16) | (110 << 8) | 120) >>> 0;
+    rhi._frameGpuDirty = true;
+
+    assert.equal(tex.host[0], 0, "host must be empty before readback");
+
+    const pixels = await rhi.getFramePixels();
+    assert.equal(pixels[0], 10);
+    assert.equal(pixels[1], 20);
+    assert.equal(pixels[2], 30);
+    assert.equal(pixels[3], 255);
+    assert.equal(pixels[4], 40);
+    assert.equal(rhi._frameGpuDirty, false);
+  });
+
   it("CPU PathTracer4D still traces Hyper-Caustic Lens (conformance oracle)", () => {
     const { scene, camera } = createHyperCausticLens({ width: 32, height: 24 });
     const tracer = new PathTracer4D({

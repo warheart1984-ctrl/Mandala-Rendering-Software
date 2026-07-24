@@ -88,9 +88,12 @@ export async function createRt4dWavefrontPipeline(backend = "webgpu", options = 
         },
       ]);
       await scheduler.runFrame(config);
+      if (typeof rhi.ensureFrameReadback === "function") {
+        await rhi.ensureFrameReadback();
+      }
     },
-    /** @returns {Uint8ClampedArray} */
-    getPixels() {
+    /** @returns {Promise<Uint8ClampedArray>} */
+    async getPixels() {
       if (typeof rhi.getFramePixels === "function") {
         return rhi.getFramePixels();
       }
