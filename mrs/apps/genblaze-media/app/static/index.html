@@ -319,6 +319,17 @@
             const img = document.createElement("img");
             img.src = a.preview_url;
             img.alt = "asset preview";
+            img.onerror = () => {
+              img.replaceWith(
+                Object.assign(document.createElement("div"), {
+                  className: "meta",
+                  textContent:
+                    "Preview failed to load. Often Backblaze free-tier transaction cap " +
+                    "(AccessDenied). Wait for daily reset, or generate again after deploy " +
+                    "so /api/preview local cache can serve the still.",
+                })
+              );
+            };
             div.appendChild(img);
           }
           assetsList.appendChild(div);
@@ -357,6 +368,14 @@
         if (data.preview_url) {
           preview.src = data.preview_url;
           preview.hidden = false;
+          preview.onerror = () => {
+            setStatus(
+              "Image metadata OK but preview failed — usually B2 free-tier " +
+                "transaction cap (AccessDenied on download). Caps reset ~00:00 GMT; " +
+                "after that, generate once and keep the tab open.",
+              "err"
+            );
+          };
         }
         setStatus(data.dry_run ? "Dry-run complete (not live NIM)." : "Done.", data.dry_run ? "warn" : "");
         await loadAssets();

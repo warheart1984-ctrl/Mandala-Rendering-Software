@@ -26,6 +26,12 @@ Cite: [B2 transaction pricing](https://www.backblaze.com/cloud-storage/transacti
 
 **Pricing wording:** Backblaze’s transaction page labels Class A/B/C as free for listed call types in the developer table; free allotments and **operator-set data caps** (e.g. “2,500 max per day” in the caps UI) are what block $0 accounts. Prefer the **console counters** over memorized dollar rates.
 
+**Symptom — broken image icon after “successful” generate:** The UI lists run/asset/manifest/sha256 (local index), but `<img>` hits the B2 **presigned GET** and receives XML:
+
+`AccessDenied` · `Transaction cap exceeded, see the Caps & Alerts page to increase your cap`
+
+That is **not** a FLUX failure. Objects may already be in the bucket; **downloads are blocked until the daily cap resets**. Genblaze Media prefers same-origin `/api/preview/{run_id}` from an ephemeral local cache after each generate so the UI can show the still without a B2 GET (until the Render instance restarts).
+
 ---
 
 ## What burns Class C in *this* stack

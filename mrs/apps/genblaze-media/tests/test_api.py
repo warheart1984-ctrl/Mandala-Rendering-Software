@@ -159,6 +159,13 @@ def test_generate_dry_run(client):
     assert body["status"] == "ok"
     assert body["prompt"] == "unit test mandala concept"
     assert body["asset_sha256"]
+    # Same-origin preview cache so UI does not need B2 GET.
+    assert body.get("preview_url", "").startswith("/api/preview/")
+    run_id = body["run_id"]
+    prev = client.get(f"/api/preview/{run_id}")
+    assert prev.status_code == 200
+    assert prev.headers["content-type"].startswith("image/")
+    assert len(prev.content) > 0
 
 
 def test_assets_after_generate(client):
@@ -168,6 +175,21 @@ def test_assets_after_generate(client):
     assets = r.json()["assets"]
     assert len(assets) >= 1
     assert assets[0]["prompt"] == "listed asset"
+    assert assets[0].get("preview_source") == "local-cache"
+    assert assets[0]["preview_url"].startswith("/api/preview/")
+
+
+def test_preview_cache_helpers(tmp_path):
+    from app.preview_cache import get_preview_path, local_preview_url, put_preview
+
+    run_id = "11111111-1111-1111-1111-111111111111"
+    png = bytes.fromhex(
+        "89504e470d0a1a0a0000000d49484452000000010000000108000000003a7e9b55"
+        "0000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082"
+    )
+    assert put_preview(tmp_path, run_id, png) is not None
+    assert get_preview_path(tmp_path, run_id) is not None
+    assert local_preview_url(run_id) == f"/api/preview/{run_id}"
 
 
 def test_generate_requires_nvidia_when_not_dry(monkeypatch, tmp_path):
