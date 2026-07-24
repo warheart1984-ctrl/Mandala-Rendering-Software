@@ -16,7 +16,7 @@ import { WavefrontEvidence } from "./WavefrontEvidence.js";
 import { PathTracer4D } from "../../integrator/PathTracer4D.js";
 import { createHyperCausticLens } from "../../scene/TestHyperCausticLens.js";
 import { renderRT4DFrame, renderRT4DFrameWavefront } from "../../RT4DRenderer.js";
-import { GENERATE_WGSL, EXTEND_WGSL, SHADE_WGSL, ACCUMULATE_WGSL } from "./kernels/index.js";
+import { GENERATE_WGSL, EXTEND_WGSL, SHADE_WGSL, ACCUMULATE_WGSL, WAVE_UPDATE_WGSL } from "./kernels/index.js";
 
 describe("RT4D Phase B wavefront / RHI", () => {
   it("createRhi webgpu works; vulkan/dx12 construct but methods throw", async () => {
@@ -62,7 +62,7 @@ describe("RT4D Phase B wavefront / RHI", () => {
     assert.equal(cfg.enableDenoiser, true);
   });
 
-  it("scheduler stage order is generate→extend→shade→accumulate", async () => {
+  it("scheduler stage order is generateΓåÆextendΓåÆshadeΓåÆaccumulate", async () => {
     const rhi = createRhi("webgpu", { allowLiveGpu: false, frameWidth: 4, frameHeight: 4 });
     await rhi.selectDevice();
     const frameTexture = await rhi.createTexture(4, 4, "rgba8");
@@ -178,6 +178,7 @@ describe("RT4D Phase B wavefront / RHI", () => {
     assert.ok(EXTEND_WGSL && EXTEND_WGSL.includes("extend") || EXTEND_WGSL.includes("@compute"));
     assert.ok(SHADE_WGSL && SHADE_WGSL.includes("@compute"));
     assert.ok(ACCUMULATE_WGSL && ACCUMULATE_WGSL.includes("@compute"));
+    assert.ok(WAVE_UPDATE_WGSL && WAVE_UPDATE_WGSL.includes("psiNext"));
   });
 
   it("stub getFramePixels returns non-black pixels after dispatch", async () => {
