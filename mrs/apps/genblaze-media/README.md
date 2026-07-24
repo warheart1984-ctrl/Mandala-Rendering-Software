@@ -25,7 +25,7 @@ python -m venv .venv
 # Unix:
 # source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install --use-deprecated=legacy-resolver -r requirements.txt
 ```
 
 Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-media/.env`:
@@ -83,7 +83,7 @@ Same Docker image: set the env vars, expose `$PORT`, health path `/health`.
 ## Verify
 
 ```bash
-pip install -r requirements.txt
+pip install --use-deprecated=legacy-resolver -r requirements.txt
 pytest -q
 # live process
 uvicorn app.main:app --host 127.0.0.1 --port 8787
