@@ -12,12 +12,13 @@
 | --- | --- | --- |
 | [RT4D_EVOLUTION_ROADMAP.md](./RT4D_EVOLUTION_ROADMAP.md) | Master index + status table | **declared / roadmap** |
 | [RT4D_V2_GPU_CORE.md](./RT4D_V2_GPU_CORE.md) | Wavefront queues, adaptive sampling, temporal accumulation | **roadmap** |
-| [RT4D_V2_WAVEFRONT_CONTRACT.md](./RT4D_V2_WAVEFRONT_CONTRACT.md) | Declared wavefront APIs + renderer-core layout | **declared / roadmap** |
-| [RT4D_V2_RHI_CONTRACT.md](./RT4D_V2_RHI_CONTRACT.md) | Host-agnostic RHI (WebGPU first) | **declared / roadmap** |
+| [RT4D_V2_WAVEFRONT_CONTRACT.md](./RT4D_V2_WAVEFRONT_CONTRACT.md) | Declared wavefront APIs + renderer-core layout | **frozen contract** (v2.0) · impl **partial stubs** |
+| [RT4D_V2_RHI_CONTRACT.md](./RT4D_V2_RHI_CONTRACT.md) | Host-agnostic RHI (WebGPU first) | **frozen contract** (v2.0) · WebGPU **partial** |
 | [RT4D_V3_IMAGE_QUALITY.md](./RT4D_V3_IMAGE_QUALITY.md) | 4D-aware denoising, advanced integrators, robust temporal | **roadmap** |
 | [RT4D_V4_SCALE_AND_BACKENDS.md](./RT4D_V4_SCALE_AND_BACKENDS.md) | Multi-GPU, backend parity, engine integration tier | **roadmap** |
-| [RT4D_V4_MULTI_GPU_CONTRACT.md](./RT4D_V4_MULTI_GPU_CONTRACT.md) | Multi-GPU arbitrator + CSSV metrics | **declared / roadmap** |
-| MRS v2 umbrella | [`docs/4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md`](../../4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md) | **declared / roadmap** |
+| [RT4D_V4_MULTI_GPU_CONTRACT.md](./RT4D_V4_MULTI_GPU_CONTRACT.md) | Multi-GPU arbitrator + CSSV metrics | **frozen contract text** · live multi-GPU **roadmap** |
+| MRS v2 umbrella | [`docs/4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md`](../../4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md) | **v2.0 contracts frozen** · capability roadmap |
+| MRS v2.0 freeze | [`docs/4drs/api/mrs-v2.0-freeze.md`](../../4drs/api/mrs-v2.0-freeze.md) | Architectural / export freeze |
 | Scorecard | [`docs/scorecards/rt4d.md`](../../scorecards/rt4d.md) | Drive-G-2 (mostly early / roadmap) |
 
 ## Version status table
@@ -25,7 +26,7 @@
 | Version | Theme | Status | Code evidence today |
 | --- | --- | --- | --- |
 | **v1.0** (4DRS publish) | CPU path engine + API freeze + HCL | **partial** (CPU) · GPU **skeleton** | `PathTracer4D`, `BVH4D`, `renderRT4DFrame`; WebGPU orchestrator + WGSL/CUDA sketches |
-| **v2.0** | GPU core: queues, adaptive spp, temporal | **roadmap** | Not present as wavefront/adaptive/temporal RT4D pipelines |
+| **v2.0** | GPU core: queues, adaptive spp, temporal | **contracts frozen** · full pipelines **roadmap** | Wavefront/RHI **stubs/partial** under `gpu/wavefront/` + `rhi/`; not production path tracing |
 | **v3.0** | Image quality & stability | **roadmap** | CPU has limited MIS helpers; no integrated 4D denoiser |
 | **v4.0** | Scale & backends | **roadmap** | WebGPU path **partial/skeleton**; Vulkan/DX RT4D backends **not present** |
 
