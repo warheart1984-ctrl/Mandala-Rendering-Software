@@ -96,6 +96,7 @@ class Settings:
     presign_expires_seconds: int
     dry_run: bool
     b2_probe_on_health: bool
+    abstract_retry_on_blank: bool
     dotenv_loaded: tuple[str, ...]
 
     @property
@@ -130,6 +131,14 @@ def get_settings() -> Settings:
         "true",
         "yes",
     }
+    # Default ON: one FLUX retry with abstract rewrite after near-black people blanks.
+    # Set GENBLAZE_ABSTRACT_RETRY=0 to save NIM/B2 Class C when over free-tier caps.
+    abstract_retry = (os.getenv("GENBLAZE_ABSTRACT_RETRY") or "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
 
     return Settings(
         nvidia_api_key=(
@@ -162,6 +171,7 @@ def get_settings() -> Settings:
         presign_expires_seconds=int(os.getenv("GENBLAZE_PRESIGN_EXPIRES") or "3600"),
         dry_run=dry,
         b2_probe_on_health=b2_probe,
+        abstract_retry_on_blank=abstract_retry,
         dotenv_loaded=tuple(loaded),
     )
 

@@ -15,6 +15,7 @@ from typing import Any, Callable
 
 from app.config import NVIDIA_SETUP_HELP, Settings
 from app.image_quality import assess_image_bytes, extract_nvidia_warnings
+from app.prompt_rewrite import looks_like_people_prompt, rewrite_as_abstract_geometry
 from app.prompt_sanitize import sanitize_prompt
 
 logger = logging.getLogger(__name__)
@@ -468,8 +469,11 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
     Before upload success is returned to the client, stills are checked for
     near-black / tiny / undecodable payloads (common FLUX.1-schnell NIM blank
     for photoreal people). Trailing user meta-commentary is stripped up front
-    so the first FLUX call uses the cleaned prompt. Rejected blank uploads are
-    best-effort deleted from B2 so they are not left as successful objects.
+    so the first FLUX call uses the cleaned prompt. When a people-like prompt
+    blanks and ``GENBLAZE_ABSTRACT_RETRY`` is on (default), one more attempt
+    rewrites toward abstract geometry / mandala / tesseract (no faces/skin).
+    Rejected blank uploads are best-effort deleted from B2 so they are not left
+    as successful objects.
     """
     raw_prompt = (prompt or "").strip()
     if not raw_prompt:
@@ -509,11 +513,11 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
 
     try:
         # Prefer cleaned prompt first so meta-commentary does not burn a FLUX call.
-        # If we somehow still ran the raw text and it blanked, retry once with cleaned.
         attempt_prompts: list[str] = [cleaned]
         last_quality_reason: str | None = None
         last_warnings: list[str] = []
         last_gen: GenerateResult | None = None
+        abstract_retry_used = False
 
         for attempt_idx, attempt_prompt in enumerate(attempt_prompts):
             attempt_dir = output_dir / f"attempt-{attempt_idx}"
@@ -529,6 +533,10 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
             last_gen = gen
             gen.prompt_sanitized = attempt_prompt != raw_prompt or prompt_sanitized
             gen.created_at = created_at
+            if abstract_retry_used and attempt_idx > 0:
+                gen.detail = (gen.detail + " · " if gen.detail else "") + (
+                    "abstract geometry retry after blank still"
+                )
 
             if warnings and not _looks_like_safety_block(warnings):
                 joined = " | ".join(warnings)
@@ -566,7 +574,7 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                         gen.detail = (gen.detail + " · " if gen.detail else "") + (
                             "nvidia warnings: " + joined
                         )
-                if gen.prompt_sanitized:
+                if gen.prompt_sanitized and "prompt sanitized" not in (gen.detail or ""):
                     note = "prompt sanitized (meta-commentary stripped)"
                     gen.detail = (gen.detail + " · " if gen.detail else "") + note
                 return gen
@@ -594,6 +602,23 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                 and cleaned != raw_prompt
             ):
                 attempt_prompts.append(cleaned)
+                continue
+
+            # Photoreal-people blanks: one abstract geometry rewrite (costs a
+            # second FLUX + B2 write; disable with GENBLAZE_ABSTRACT_RETRY=0).
+            if (
+                settings.abstract_retry_on_blank
+                and not abstract_retry_used
+                and looks_like_people_prompt(cleaned)
+            ):
+                rewritten = rewrite_as_abstract_geometry(cleaned)
+                if rewritten and rewritten.lower() != attempt_prompt.lower():
+                    abstract_retry_used = True
+                    logger.info(
+                        "Retrying blank still with abstract rewrite: %s",
+                        rewritten[:160],
+                    )
+                    attempt_prompts.append(rewritten)
 
         warn_suffix = ""
         if last_warnings:

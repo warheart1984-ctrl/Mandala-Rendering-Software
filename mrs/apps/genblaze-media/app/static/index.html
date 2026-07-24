@@ -212,7 +212,9 @@
       <strong>Prompt tips (FLUX.1-schnell):</strong>
       abstract geometry, mandalas, tesseracts, neon grids, and studio-lit objects usually work.
       Photoreal people / faces / skin often return blank black stills on this NIM path — describe the
-      object and light, not a portrait. Do not append feedback like “ok this not good” into the prompt.
+      object and light, not a portrait. If a people-like prompt blanks, the service retries once with an
+      abstract rewrite (disable with <code>GENBLAZE_ABSTRACT_RETRY=0</code>). Do not append feedback like
+      “ok this not good” into the prompt.
     </p>
 
     <form id="gen-form">
@@ -330,8 +332,13 @@
       ev.preventDefault();
       const prompt = document.getElementById("prompt").value.trim();
       if (!prompt) return;
+      const peopleHint = /\b(person|people|human|man|woman|girl|boy|face|skin|portrait|photoreal)\b/i.test(prompt);
       goBtn.disabled = true;
-      setStatus("Generating… (FLUX may take 1–3 min on cold start)");
+      setStatus(
+        peopleHint
+          ? "Generating… people/faces often blank on FLUX.1-schnell — will auto-retry abstract if needed (1–3+ min)"
+          : "Generating… (FLUX may take 1–3 min on cold start)"
+      );
       preview.hidden = true;
       try {
         const res = await fetch("/api/generate", {
