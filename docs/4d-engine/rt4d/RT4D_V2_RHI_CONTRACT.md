@@ -1,7 +1,8 @@
 # RT4D v2 — RHI contract (WebGPU first)
 
-> **Status:** **declared / roadmap** (Drive-G-1).  
-> Phase B implements a **WebGPU** backend stub that satisfies this contract. Vulkan / DX12 backends are **RT4D v4 / Engine Phase 3+**.  
+> **Status:** **partial** (Drive-G-1).  
+> Phase B **code spike landed** for `createRhi("webgpu")`: buffer/texture create, upload, `readBuffer` (mapAsync when live), and `dispatchKernel` with compute pipeline + bind groups when `navigator.gpu` is available; otherwise a deterministic CPU stub fills a gradient/hash frame.  
+> Vulkan / DX12 backends remain **roadmap** (RT4D v4 / Engine Phase 3+) and throw on factory call.  
 > Parent GPU core: [`RT4D_V2_GPU_CORE.md`](./RT4D_V2_GPU_CORE.md) · Scale: [`RT4D_V4_SCALE_AND_BACKENDS.md`](./RT4D_V4_SCALE_AND_BACKENDS.md)
 
 ## Planned layout
@@ -11,7 +12,7 @@ mrs/packages/renderer-core/src/render/rhi/
   RhiTypes.js
   RhiContract.js      # JSDoc / typedef surface
   RhiFactory.js
-  webgpu/WebGpuRhi.js
+  webgpu/WebGpuRhi.js   # Phase B: stub + optional live WebGPU
   vulkan/VulkanRhi.js   # roadmap — not Phase B
   dx12/Dx12Rhi.js       # roadmap — not Phase B
 ```
@@ -68,10 +69,10 @@ Wavefront kernels call **only** this API.
 ## Factory
 
 ```ts
-function createRhi(backend: RhiBackend): Rhi;
+function createRhi(backend: RhiBackend, options?: object): Rhi;
 ```
 
-Phase B: `createRhi("webgpu")` returns a stub/partial WebGPU implementation.  
+Phase B: `createRhi("webgpu")` returns a WebGPU RHI (stub and/or live).  
 Calling `vulkan` / `dx12` before backends exist must throw a clear “not implemented / roadmap” error.
 
 ## Host selection (illustrative — not shipped bridges)
@@ -86,4 +87,5 @@ Calling `vulkan` / `dx12` before backends exist must throw a clear “not implem
 - [ ] Vulkan RT4D RHI implemented  
 - [ ] DX12 RT4D RHI implemented  
 - [ ] Backend parity WebGPU ↔ Vulkan ↔ DX12 achieved  
-- Host `VulkanRenderDevice` preview path is **not** this RT4D RHI.
+- Host `VulkanRenderDevice` preview path is **not** this RT4D RHI.  
+- Live WebGPU path is **optional** — headless CI uses the CPU stub.

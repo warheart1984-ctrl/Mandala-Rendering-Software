@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/cssv/rt4d/cssv-wavefront-schema.json",
+  "title": "CSSVWavefrontFrame",
+  "description": "Optional Phase B wavefront evidence record (record-optional; not CKL-enforced).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema", "frameId", "quality", "backend"],
+  "properties": {
+    "schema": { "type": "string", "const": "cssv-wavefront" },
+    "frameId": { "type": "string", "minLength": 1 },
+    "quality": {
+      "type": "string",
+      "enum": ["baseline", "high", "ultra"]
+    },
+    "backend": { "type": "string" },
+    "startedAtSeq": { "type": "number" },
+    "finishedSeq": { "type": "number" },
+    "kernels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "startedSeq": { "type": "number" },
+          "finishedSeq": { "type": ["number", "null"] }
+        }
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "properties": {
+        "passed": { "type": "boolean" },
+        "candidateHash": { "type": "string" },
+        "referenceHash": { "type": "string" }
+      }
+    }
+  }
+}
