@@ -8,6 +8,7 @@ data/*.json
 .env
 .env.*
 !.env.example
-_*.py
-_*.json
-_*.txt
+# Local scratch dumps only (do not ignore app/__init__.py)
+_scratch_*.py
+_scratch_*.json
+_scratch_*.txt
