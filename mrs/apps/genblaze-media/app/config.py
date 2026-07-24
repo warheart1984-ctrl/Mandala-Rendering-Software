@@ -9,16 +9,41 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 APP_DIR = Path(__file__).resolve().parent.parent
-REPO_ROOT = APP_DIR.parents[2]  # mrs/apps/genblaze-media -> repo root
+
+
+def resolve_repo_root(app_dir: Path = APP_DIR) -> Path:
+    """Locate monorepo root when present; otherwise the app dir (Docker image).
+
+    Local layout: ``<repo>/mrs/apps/genblaze-media`` → parents[2] is repo root.
+    Docker layout: app lives at ``/app`` with no monorepo parents — use ``app_dir``.
+    """
+    try:
+        candidate = app_dir.parents[2]
+    except IndexError:
+        return app_dir
+    if (candidate / "mrs" / "apps" / "genblaze-media").is_dir():
+        return candidate
+    if (candidate / ".git").exists():
+        return candidate
+    return app_dir
+
+
+REPO_ROOT = resolve_repo_root()
 
 
 def _load_dotenv_files() -> list[str]:
     """Load repo-root `.env` then app-local `.env` without clobbering process env.
 
     Uses override=False so deploy-host / test monkeypatches win over file values.
+    On Render, secrets come from the dashboard env — dotenv files are optional.
     """
     loaded: list[str] = []
+    seen: set[Path] = set()
     for path in (REPO_ROOT / ".env", APP_DIR / ".env"):
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
         if path.is_file():
             load_dotenv(path, override=False)
             loaded.append(str(path))

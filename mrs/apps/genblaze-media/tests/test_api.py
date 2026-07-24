@@ -107,3 +107,10 @@ def test_generate_requires_nvidia_when_not_dry(monkeypatch, tmp_path):
 def test_cosine_similarity_unit():
     assert cosine_similarity([1.0, 0.0], [1.0, 0.0]) == pytest.approx(1.0)
     assert cosine_similarity([1.0, 0.0], [0.0, 1.0]) == pytest.approx(0.0)
+
+
+def test_resolve_repo_root_docker_shallow(tmp_path):
+    from app.config import resolve_repo_root
+
+    # Simulate /app with no monorepo parents deep enough / no mrs layout
+    assert resolve_repo_root(tmp_path) == tmp_path
