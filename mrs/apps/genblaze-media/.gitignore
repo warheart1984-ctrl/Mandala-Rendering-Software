@@ -5,6 +5,8 @@ __pycache__/
 .mypy_cache/
 *.egg-info/
 data/*.json
+# Ephemeral local preview stills (served via /api/preview/{run_id}); never commit
+data/preview-cache/
 .env
 .env.*
 !.env.example
