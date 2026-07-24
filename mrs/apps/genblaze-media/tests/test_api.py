@@ -238,3 +238,86 @@ def test_api_generate_surfaces_transfer_cause(monkeypatch, tmp_path):
     detail = r.json()["detail"]
     assert "asset transfer" in detail
     assert "Access denied" in detail or "underlying" in detail
+
+
+def test_sanitize_strips_meta_commentary():
+    from app.prompt_sanitize import sanitize_prompt
+
+    raw = (
+        "A glowing cyan 4D tesseract on a table, neon grid. Ok this not good ."
+    )
+    cleaned = sanitize_prompt(raw)
+    assert "not good" not in cleaned.lower()
+    assert "tesseract" in cleaned.lower()
+    assert "glowing glowing" not in sanitize_prompt("glowing glowing cyan cube").lower()
+
+
+def test_assess_rejects_solid_black_jpeg():
+    import io
+
+    from PIL import Image
+
+    from app.image_quality import assess_image_bytes
+
+    buf = io.BytesIO()
+    Image.new("RGB", (1024, 1024), (0, 0, 0)).save(buf, format="JPEG", quality=90)
+    data = buf.getvalue()
+    assessment = assess_image_bytes(data)
+    assert assessment.is_blank
+    assert assessment.mean_luminance is not None
+    assert assessment.mean_luminance < 1.0
+
+
+def test_assess_accepts_non_black_png():
+    import io
+
+    from PIL import Image
+
+    from app.image_quality import assess_image_bytes
+
+    buf = io.BytesIO()
+    Image.new("RGB", (256, 256), (40, 120, 200)).save(buf, format="PNG")
+    assessment = assess_image_bytes(buf.getvalue())
+    assert assessment.ok
+
+
+def test_api_generate_blank_image_returns_422(monkeypatch, tmp_path):
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+    from app.pipeline import GenerationQualityError
+
+    monkeypatch.setattr(
+        "app.main.get_settings",
+        lambda: _offline_settings(
+            nvidia_api_key="nvapi-test",
+            b2_key_id="id",
+            b2_app_key="key",
+            b2_bucket="bucket",
+            dry_run=False,
+        ),
+    )
+    main_mod._index = AssetIndex(tmp_path / "recent-blank.json")
+
+    def boom(_settings, _prompt):
+        raise GenerationQualityError(
+            "NVIDIA returned a near-black / empty still (mean luminance 0.00)"
+        )
+
+    monkeypatch.setattr("app.main.generate_image", boom)
+    c = TestClient(app)
+    r = c.post("/api/generate", json={"prompt": "person holding tesseract"})
+    assert r.status_code == 422
+    assert "near-black" in r.json()["detail"]
+
+
+def test_extract_nvidia_warnings():
+    from app.image_quality import extract_nvidia_warnings
+
+    warns = extract_nvidia_warnings(
+        {
+            "artifacts": [{"finishReason": "SAFETY", "base64": "xx"}],
+            "warning": "filtered",
+        }
+    )
+    assert any("SAFETY" in w for w in warns)
+    assert any("filtered" in w for w in warns)

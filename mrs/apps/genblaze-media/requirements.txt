@@ -13,4 +13,6 @@ genblaze-nvidia==0.3.2
 
 # Explicit boto3 for health/list helpers (also pulled by genblaze-s3)
 boto3==1.39.14
+# Blank/near-black still detection after NIM decode
+Pillow==11.3.0
 pytest==8.4.1
