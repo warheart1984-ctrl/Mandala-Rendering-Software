@@ -1,7 +1,9 @@
 # Pinned for Backblaze Genblaze hackathon MVP (Python >= 3.11)
+# Install: pip install --use-deprecated=legacy-resolver -r requirements.txt
+# (genblaze-core 0.3.7 declares pillow<12; Pillow 12.3.0 is required for CVE fixes)
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
-python-dotenv==1.1.1
+python-dotenv==1.2.2
 pydantic==2.11.7
 httpx==0.28.1
 
@@ -14,5 +16,5 @@ genblaze-nvidia==0.3.2
 # Explicit boto3 for health/list helpers (also pulled by genblaze-s3)
 boto3==1.39.14
 # Blank/near-black still detection after NIM decode
-Pillow==11.3.0
-pytest==8.4.1
+Pillow==12.3.0
+pytest==9.1.1
