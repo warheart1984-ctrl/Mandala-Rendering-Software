@@ -41,6 +41,7 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `GENBLAZE_IMAGE_MODEL` | optional; default `black-forest-labs/flux.1-schnell` |
 | `GENBLAZE_STORAGE_PREFIX` | optional; default `genblaze-media` |
 | `GENBLAZE_DRY_RUN` | `1` only for unit tests / offline mocks — **not** live demos |
+| `B2_PROBE_ON_HEALTH` | default **off** — when `1`, `/health` runs a ListObjects probe (B2 **Class C**). Keep `0` on Render/demo day |
 
 Get a free NIM key: [build.nvidia.com](https://build.nvidia.com/).
 
@@ -72,7 +73,7 @@ If `NVIDIA_API_KEY` is missing, `/health` still boots and reports setup help; `P
 2. New **Web Service** → Docker → set **Root Directory** to `mrs/apps/genblaze-media` (or use the Blueprint `render.yaml` from that folder).
 3. Set env vars (names above; values only in the dashboard — never commit).
 4. Deploy. Service binds `0.0.0.0:$PORT` via the Dockerfile `CMD`.
-5. Open the public `https://….onrender.com/` URL for judges; hit `/health` first.
+5. Open the public `https://….onrender.com/` URL for judges; hit `/health` first (ensure `B2_PROBE_ON_HEALTH=0` so health checks do not ListObjects).
 
 Production image installs from `requirements-docker.txt`, then overlays `Pillow==12.3.0` with `pip install --no-deps` so the CVE pin is not blocked by `genblaze-core==0.3.7`’s declared `pillow<12` (modern pip cannot satisfy both in one resolve). Redeploy after merge for the pin to take effect on Render.
 
@@ -92,7 +93,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8787
 curl -s http://127.0.0.1:8787/health
 ```
 
-With **valid** B2 keys (no NVIDIA): health `b2_probe` should list under the storage prefix. With NVIDIA + B2: one `POST /api/generate`, then `npm run b2:list -- genblaze-media` from repo root (Node scripts need B2_* exported or loaded into the shell).
+With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without listing by default. To list under the storage prefix once, set `B2_PROBE_ON_HEALTH=1` briefly, then turn it off. With NVIDIA + B2: one `POST /api/generate`, then prefer a local download / saved presigned URL over repeated `npm run b2:list` (lists burn Class C).
 
 ### Known operator pitfalls (evidence-bound)
 
@@ -108,7 +109,7 @@ With **valid** B2 keys (no NVIDIA): health `b2_probe` should list under the stor
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| GET | `/health` | Boots always; reports NVIDIA/B2 flags + optional B2 list probe |
+| GET | `/health` | Boots always; NVIDIA/B2 flags; ListObjects probe only if `B2_PROBE_ON_HEALTH=1` |
 | POST | `/api/generate` | Live Genblaze→B2 or 503 if no NVIDIA key |
 | GET | `/api/assets` | Local recent index (capped) |
 | GET | `/` | Single-page UI |
@@ -116,6 +117,7 @@ With **valid** B2 keys (no NVIDIA): health `b2_probe` should list under the stor
 ## Cross-links
 
 - Operator B2 notes: [`docs/ops/BACKBLAZE_B2_S3.md`](../../../docs/ops/BACKBLAZE_B2_S3.md)
+- **Free-tier / Class C demo day:** [`docs/ops/B2_FREE_TIER_DEMO_PLAYBOOK.md`](../../../docs/ops/B2_FREE_TIER_DEMO_PLAYBOOK.md)
 - Genblaze media v2 (**ops roadmap**): [`docs/ops/GENBLAZE_MEDIA_V2_ROADMAP.md`](../../../docs/ops/GENBLAZE_MEDIA_V2_ROADMAP.md)
 - Scorecard: [`docs/scorecards/genblaze-media.md`](../../../docs/scorecards/genblaze-media.md)
 - Node B2 scaffold: [`mrs/packages/storage-b2`](../../packages/storage-b2)

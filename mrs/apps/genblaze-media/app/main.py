@@ -49,11 +49,16 @@ def health() -> dict:
     settings = get_settings()
     b2_probe: dict | None = None
     b2_error: str | None = None
-    if settings.b2_configured:
+    b2_probe_skipped: bool = False
+    # ListObjects on every /health burns B2 Class C (Render healthCheckPath + UI).
+    # Default off; set B2_PROBE_ON_HEALTH=1 to list under the storage prefix.
+    if settings.b2_configured and settings.b2_probe_on_health:
         try:
             b2_probe = probe_b2(settings)
         except Exception as exc:  # noqa: BLE001 — surface to health JSON
             b2_error = str(exc)
+    elif settings.b2_configured:
+        b2_probe_skipped = True
     nvidia_timeouts = NvidiaGenaiTimeouts.from_env()
     return {
         "status": "ok",
@@ -65,6 +70,8 @@ def health() -> dict:
         "image_model": settings.image_model,
         "embed_model": settings.embed_model,
         "dry_run": settings.dry_run,
+        "b2_probe_on_health": settings.b2_probe_on_health,
+        "b2_probe_skipped": b2_probe_skipped,
         "b2_probe": b2_probe,
         "b2_error": b2_error,
         "nvidia_help": None if settings.nvidia_configured else NVIDIA_SETUP_HELP,

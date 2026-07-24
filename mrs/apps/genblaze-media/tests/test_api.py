@@ -30,6 +30,7 @@ def _offline_settings(**overrides) -> Settings:
         store_full_embeddings=True,
         presign_expires_seconds=3600,
         dry_run=True,
+        b2_probe_on_health=False,
         dotenv_loaded=(),
     )
     base.update(overrides)
@@ -55,7 +56,92 @@ def test_health_ok(client):
     assert body["service"] == "mrs-genblaze-media"
     assert body["nvidia_configured"] is False
     assert body["b2_configured"] is False
+    assert body["b2_probe_on_health"] is False
+    assert body["b2_probe_skipped"] is False
+    assert body["b2_probe"] is None
     assert body["embed_model"] == "nvidia/nv-embedcode-7b-v1"
+
+
+def test_health_skips_b2_list_by_default(monkeypatch, tmp_path):
+    """With B2 configured but probe flag off, /health must not call ListObjects."""
+    called = {"probe": False}
+
+    def _fake_probe(_settings):
+        called["probe"] = True
+        return {"ok": True, "sample_keys": []}
+
+    monkeypatch.setattr(
+        "app.main.get_settings",
+        lambda: _offline_settings(
+            b2_key_id="id",
+            b2_app_key="key",
+            b2_bucket="bucket",
+            b2_probe_on_health=False,
+        ),
+    )
+    monkeypatch.setattr("app.main.probe_b2", _fake_probe)
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "health-skip.json")
+    c = TestClient(app)
+    r = c.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["b2_configured"] is True
+    assert body["b2_probe_on_health"] is False
+    assert body["b2_probe_skipped"] is True
+    assert body["b2_probe"] is None
+    assert called["probe"] is False
+
+
+def test_health_probes_b2_when_flagged(monkeypatch, tmp_path):
+    called = {"probe": False}
+
+    def _fake_probe(_settings):
+        called["probe"] = True
+        return {"ok": True, "sample_keys": ["genblaze-media/x.jpg"], "count_listed": 1}
+
+    monkeypatch.setattr(
+        "app.main.get_settings",
+        lambda: _offline_settings(
+            b2_key_id="id",
+            b2_app_key="key",
+            b2_bucket="bucket",
+            b2_probe_on_health=True,
+        ),
+    )
+    monkeypatch.setattr("app.main.probe_b2", _fake_probe)
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "health-probe.json")
+    c = TestClient(app)
+    r = c.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["b2_probe_on_health"] is True
+    assert body["b2_probe_skipped"] is False
+    assert body["b2_probe"]["ok"] is True
+    assert called["probe"] is True
+
+
+def test_b2_probe_on_health_env_default_off(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.delenv("B2_PROBE_ON_HEALTH", raising=False)
+    monkeypatch.setenv("GENBLAZE_DRY_RUN", "1")
+    settings = get_settings()
+    assert settings.b2_probe_on_health is False
+
+
+def test_b2_probe_on_health_env_opt_in(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("B2_PROBE_ON_HEALTH", "1")
+    monkeypatch.setenv("GENBLAZE_DRY_RUN", "1")
+    settings = get_settings()
+    assert settings.b2_probe_on_health is True
 
 
 def test_ui_served(client):

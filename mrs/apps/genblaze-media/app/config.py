@@ -95,6 +95,7 @@ class Settings:
     store_full_embeddings: bool
     presign_expires_seconds: int
     dry_run: bool
+    b2_probe_on_health: bool
     dotenv_loaded: tuple[str, ...]
 
     @property
@@ -118,6 +119,13 @@ def get_settings() -> Settings:
 
     dry = (os.getenv("GENBLAZE_DRY_RUN") or "").strip().lower() in {"1", "true", "yes"}
     store_full = (os.getenv("NVIDIA_STORE_FULL_EMBEDDINGS") or "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    # Default OFF: /health ListObjects is a Class C burn (Render probes + UI loads).
+    # Opt in with B2_PROBE_ON_HEALTH=1 only when debugging credentials.
+    b2_probe = (os.getenv("B2_PROBE_ON_HEALTH") or "").strip().lower() in {
         "1",
         "true",
         "yes",
@@ -153,6 +161,7 @@ def get_settings() -> Settings:
         store_full_embeddings=store_full,
         presign_expires_seconds=int(os.getenv("GENBLAZE_PRESIGN_EXPIRES") or "3600"),
         dry_run=dry,
+        b2_probe_on_health=b2_probe,
         dotenv_loaded=tuple(loaded),
     )
 
