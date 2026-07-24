@@ -11,7 +11,7 @@ import { createWavefrontCssvWriter } from "./WavefrontCssvWriter.js";
  *   import { renderWavefrontFrame } from "@mrs/renderer-core/rt4d";
  *   const frame = await renderWavefrontFrame("world-id", { quality: "baseline", host: "browser" });
  *
- * Phase C (skeleton): optional worldDoc / worldContext → prepareWorld + CPU wave step.
+ * Phase C (skeleton): optional worldDoc / worldContext ΓåÆ prepareWorld + CPU wave step.
  *
  * @param {string} worldId
  * @param {object} opts
@@ -21,8 +21,8 @@ import { createWavefrontCssvWriter } from "./WavefrontCssvWriter.js";
  * @param {number} [opts.width]
  * @param {number} [opts.height]
  * @param {number} [opts.seed]
- * @param {boolean} [opts.runConformance] — default true; logs only
- * @param {string} [opts.cssvPath] — optional Node JSONL path
+ * @param {boolean} [opts.runConformance] ΓÇö default true; logs only
+ * @param {string} [opts.cssvPath] ΓÇö optional Node JSONL path
  * @param {object} [opts.worldDoc]
  * @param {object} [opts.worldContext]
  * @param {boolean} [opts.stepWave=true]
