@@ -15,9 +15,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GENBLAZE_NVCF_POLL_SECONDS=90 \
     GENBLAZE_CONNECT_TIMEOUT=30
 
+# genblaze-core 0.3.7 declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
 COPY mrs/apps/genblaze-media/requirements-docker.txt .
 RUN pip install --upgrade pip \
- && pip install -r requirements-docker.txt
+ && pip install -r requirements-docker.txt \
+ && pip install --no-deps Pillow==12.3.0
 
 COPY mrs/apps/genblaze-media/app ./app
 
