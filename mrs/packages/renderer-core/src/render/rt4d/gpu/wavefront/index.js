@@ -5,4 +5,4 @@ export { DefaultWavefrontScheduler } from "./WavefrontScheduler.js";
 export { WavefrontDenoiserStub } from "./WavefrontDenoiser.js";
 export { WavefrontEvidence } from "./WavefrontEvidence.js";
 export { createRt4dWavefrontPipeline } from "./WavefrontPipeline.js";
-export { WAVEFRONT_WGSL } from "./kernels/index.js";
+export { WAVEFRONT_WGSL, WAVE_UPDATE_WGSL } from "./kernels/index.js";

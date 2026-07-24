@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/schemas/world-document-v2.json",
+  "title": "WorldDocumentV2",
+  "description": "WorldDocument v2 — declared Phase C (Drive-G-1). Runtime validators partial skeleton only.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "metadata", "lineage", "geometry", "materials", "render"],
+  "properties": {
+    "version": { "type": "string", "const": "2.0" },
+    "metadata": { "type": "object", "additionalProperties": true },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "geometry": { "type": "object", "additionalProperties": true },
+    "materials": { "type": "object", "additionalProperties": true },
+    "curvature": { "type": "object", "additionalProperties": true },
+    "physics": { "type": "object", "additionalProperties": true },
+    "wave": {
+      "type": "object",
+      "description": "Optional scalar wave layer — local CPU/GPU sketch; not B2.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "gridSize": {
+          "type": "object",
+          "properties": {
+            "nx": { "type": "integer", "minimum": 1 },
+            "ny": { "type": "integer", "minimum": 1 },
+            "nz": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "c": { "type": "number" },
+        "dt": { "type": "number" },
+        "beta": { "type": "number" },
+        "gamma": { "type": "number" },
+        "waveDir": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "z": { "type": "number" }
+          },
+          "additionalProperties": false
+        },
+        "initialState": { "type": "array", "items": { "type": "number" } }
+      },
+      "additionalProperties": true
+    },
+    "render": { "type": "object", "additionalProperties": true },
+    "rhi": { "type": "object", "additionalProperties": true }
+  }
+}

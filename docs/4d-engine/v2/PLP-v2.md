@@ -1,16 +1,23 @@
-# PLP v2 — declared validation intent
+# PLP v2 — Platform-Level Protocol
 
-> **Status:** **declared / roadmap** (Drive-G-1).  
-> v1: [`docs/4d-engine/v1/plp/PLP_V1.md`](../v1/plp/PLP_V1.md) · Code today: `projectWorld` **skeleton**  
-> Umbrella: [`docs/4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md`](../../4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md) § VI
+> **Status:** **declared / Phase C** (Drive-G-1). Minimal `PlpValidator` skeleton exists for wave + required fields; not a full gate.
 
-## Planned work
+## Stage 2 — wave (when `wave.enabled`)
 
-1. `projectWorld` v2 validation pipeline for WorldDocument v2 fields.  
-2. Constitutional inheritance hooks (declared articles → host probes).  
-3. Fixtures + golden checks before claiming enforcement.
+- `gridSize.nx|ny|nz` positive integers  
+- `c > 0`, `dt > 0` finite  
+- `beta` / `gamma` finite when present  
+- `waveDir` finite and non-zero  
+
+## Stage 5 — wave safety (declared)
+
+- No NaN/Inf in coupling helpers  
+- Backend-neutral (no RHI-hard dependency in the document)  
+- GPU wave step remains **roadmap**
+
+Code: `mrs/packages/renderer-core/src/render/rt4d/plp/PlpValidator.js` (**skeleton**).
 
 ## Non-claims
 
-- [ ] PLP v2 implemented  
-- [ ] Constitutional inheritance machine-enforced  
+- [ ] Full PLP v2 constitutional enforcement  
+- [ ] Host adapters cannot bypass validation  
