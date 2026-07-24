@@ -86,10 +86,16 @@ def api_generate(body: GenerateRequest) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
-        # Missing NVIDIA key or B2 config — 503 with setup text
+        # Missing NVIDIA key or B2 config — 503 with setup text.
+        # Transfer/sink failures are re-raised as non-RuntimeError (see pipeline).
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=f"generation failed: {exc}") from exc
+        # Include chained transfer cause when present (Genblaze SinkError omits it).
+        detail = str(exc)
+        cause = exc.__cause__ or exc.__context__
+        if cause is not None and str(cause) and str(cause) not in detail:
+            detail = f"{detail}; cause: {type(cause).__name__}: {cause}"
+        raise HTTPException(status_code=502, detail=f"generation failed: {detail}") from exc
 
     entry = result.to_dict()
     if body.embed and settings.nvidia_configured and not settings.dry_run:

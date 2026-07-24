@@ -161,3 +161,80 @@ def test_health_includes_nvidia_timeouts(client):
     assert "nvidia_timeouts" in body
     assert body["nvidia_timeouts"]["http_read_seconds"] >= 90
     assert body["nvidia_timeouts"]["nvcf_poll_seconds"] <= 300
+
+
+def test_nvidia_output_dir_under_temp():
+    from app.pipeline import _nvidia_output_dir
+    import tempfile
+    from pathlib import Path
+
+    d = _nvidia_output_dir()
+    try:
+        temp_root = Path(tempfile.gettempdir()).resolve()
+        assert d.resolve().is_relative_to(temp_root)
+        assert d.is_dir()
+    finally:
+        import shutil
+
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def test_format_transfer_failures():
+    from app.pipeline import _format_transfer_failures
+
+    assert _format_transfer_failures([]) == ""
+    msg = _format_transfer_failures([RuntimeError("Access denied: outside allowed")])
+    assert "RuntimeError" in msg
+    assert "Access denied" in msg
+
+
+def test_reraise_with_transfer_cause_preserves_type():
+    from app.pipeline import _reraise_with_transfer_cause
+
+    class SinkError(Exception):
+        pass
+
+    with pytest.raises(SinkError, match="underlying transfer error") as ei:
+        _reraise_with_transfer_cause(
+            SinkError("1/1 asset transfer(s) failed; manifest was not uploaded"),
+            [RuntimeError("Access denied: local file path /app/x.png is outside allowed")],
+        )
+    assert ei.value.__cause__ is not None
+    assert "Access denied" in str(ei.value.__cause__)
+
+
+def test_api_generate_surfaces_transfer_cause(monkeypatch, tmp_path):
+    """502 detail must include underlying transfer error, not only SinkError text."""
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    monkeypatch.setattr(
+        "app.main.get_settings",
+        lambda: _offline_settings(
+            nvidia_api_key="nvapi-test",
+            b2_key_id="id",
+            b2_app_key="key",
+            b2_bucket="bucket",
+            dry_run=False,
+        ),
+    )
+    main_mod._index = AssetIndex(tmp_path / "recent-xfer.json")
+
+    class SinkError(Exception):
+        pass
+
+    def boom(_settings, _prompt):
+        err = SinkError(
+            "Run abc: 1/1 asset transfer(s) failed; manifest was not uploaded; "
+            "underlying transfer error: StorageError: Access denied: outside allowed"
+        )
+        err.__cause__ = RuntimeError("Access denied: outside allowed")
+        raise err
+
+    monkeypatch.setattr("app.main.generate_image", boom)
+    c = TestClient(app)
+    r = c.post("/api/generate", json={"prompt": "surface transfer"})
+    assert r.status_code == 502
+    detail = r.json()["detail"]
+    assert "asset transfer" in detail
+    assert "Access denied" in detail or "underlying" in detail

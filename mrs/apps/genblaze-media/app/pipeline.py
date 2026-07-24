@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+import shutil
+import tempfile
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Any
+from pathlib import Path
+from typing import Any, Callable
 
 from app.config import NVIDIA_SETUP_HELP, Settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -83,6 +89,80 @@ def build_backend(settings: Settings):
     return backend
 
 
+def _nvidia_output_dir() -> Path:
+    """Temp dir for NVIDIA base64 → file:// assets (must be under Genblaze allowlist).
+
+    ``NvidiaImageProvider`` defaults ``output_dir`` to CWD. On Docker that is
+    ``/app``, which ``AssetTransfer`` rejects (only ``tempfile.gettempdir()``
+    and ``/tmp`` are allowlisted). Writing under the system temp dir keeps
+    ``file://`` assets readable for the Genblaze→B2 transfer step.
+    """
+    root = Path(tempfile.gettempdir()).resolve() / "mrs-genblaze-nvidia"
+    root.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix="run-", dir=str(root)))
+
+
+def _format_transfer_failures(failures: list[BaseException]) -> str:
+    """Compact underlying transfer exceptions for API/UI detail strings."""
+    if not failures:
+        return ""
+    parts: list[str] = []
+    for exc in failures[:3]:
+        parts.append(f"{type(exc).__name__}: {exc}")
+    extra = len(failures) - len(parts)
+    if extra > 0:
+        parts.append(f"(+{extra} more)")
+    return "; ".join(parts)
+
+
+def _wrap_asset_transfer(sink: Any) -> Callable[[], list[BaseException]]:
+    """Record AssetTransfer exceptions; Genblaze SinkError omits the cause.
+
+    Returns a zero-arg getter for the captured failure list.
+    """
+    transfer = getattr(getattr(sink, "_transfer", None), "transfer", None)
+    if not callable(transfer):
+        return lambda: []
+
+    captured: list[BaseException] = []
+    original = transfer
+
+    def wrapped(asset: Any, **kwargs: Any) -> Any:
+        try:
+            return original(asset, **kwargs)
+        except BaseException as exc:  # noqa: BLE001 — re-raise after capture
+            captured.append(exc)
+            logger.warning(
+                "Asset transfer failed for %s: %s: %s",
+                getattr(asset, "asset_id", "?"),
+                type(exc).__name__,
+                exc,
+            )
+            raise
+
+    sink._transfer.transfer = wrapped  # noqa: SLF001 — intentional error capture
+    return lambda: list(captured)
+
+
+def _reraise_with_transfer_cause(exc: BaseException, failures: list[BaseException]) -> None:
+    """Re-raise ``exc`` with underlying B2/transfer detail in the message.
+
+    Keeps the original exception type when possible so FastAPI still maps
+    Genblaze ``SinkError`` to HTTP 502 (not 503, which is reserved for missing
+    NVIDIA/B2 config via ``RuntimeError``).
+    """
+    detail = _format_transfer_failures(failures)
+    if not detail:
+        raise exc
+    message = f"{exc}; underlying transfer error: {detail}"
+    cause = failures[0] if failures else exc
+    try:
+        raised: BaseException = type(exc)(message)
+    except Exception:  # noqa: BLE001 — exotic constructors
+        raised = Exception(message)
+    raise raised from cause
+
+
 
 def probe_b2(settings: Settings) -> dict[str, Any]:
     """List a few objects to prove credentials load (no generation)."""
@@ -134,12 +214,15 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
 
     timeouts = NvidiaGenaiTimeouts.from_env()
     http_client = build_nvidia_genai_client(settings.nvidia_api_key or "", timeouts)
+    output_dir = _nvidia_output_dir()
     provider = NvidiaImageProvider(
         api_key=settings.nvidia_api_key,
         http_timeout=timeouts.http_timeout,
         nvcf_timeout=timeouts.nvcf_timeout,
         http_client=http_client,
+        output_dir=output_dir,
     )
+    transfer_failures: list[BaseException] = []
 
     try:
         backend = build_backend(settings)
@@ -149,16 +232,28 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                 prefix=settings.storage_prefix,
                 key_strategy=KeyStrategy.HIERARCHICAL,
             )
-            result = (
-                Pipeline("mrs-concept-media")
-                .step(
-                    provider,
-                    model=settings.image_model,
-                    prompt=prompt,
-                    modality=Modality.IMAGE,
+            # Belt-and-suspenders: keep this run's dir on the transfer allowlist.
+            transfer = getattr(sink, "_transfer", None)
+            if transfer is not None:
+                existing = list(getattr(transfer, "_allowed_roots", None) or [])
+                transfer._allowed_roots = [*existing, output_dir]  # noqa: SLF001
+            get_failures = _wrap_asset_transfer(sink)
+            try:
+                result = (
+                    Pipeline("mrs-concept-media")
+                    .step(
+                        provider,
+                        model=settings.image_model,
+                        prompt=prompt,
+                        modality=Modality.IMAGE,
+                    )
+                    .run(sink=sink, timeout=timeouts.pipeline_timeout)
                 )
-                .run(sink=sink, timeout=timeouts.pipeline_timeout)
-            )
+            except Exception as exc:  # noqa: BLE001 — attach transfer cause then re-raise
+                transfer_failures = get_failures()
+                if transfer_failures or "asset transfer" in str(exc).lower():
+                    _reraise_with_transfer_cause(exc, transfer_failures)
+                raise
 
             asset_url = None
             asset_sha = None
@@ -232,6 +327,7 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                 close_p()
         finally:
             http_client.close()
+            shutil.rmtree(output_dir, ignore_errors=True)
 
 
 def _dry_run_generate(
