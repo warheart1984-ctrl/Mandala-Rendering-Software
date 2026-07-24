@@ -116,6 +116,8 @@ With **valid** B2 keys (no NVIDIA): health `b2_probe` should list under the stor
 ## Cross-links
 
 - Operator B2 notes: [`docs/ops/BACKBLAZE_B2_S3.md`](../../../docs/ops/BACKBLAZE_B2_S3.md)
+- Genblaze media v2 (**ops roadmap**): [`docs/ops/GENBLAZE_MEDIA_V2_ROADMAP.md`](../../../docs/ops/GENBLAZE_MEDIA_V2_ROADMAP.md)
+- Scorecard: [`docs/scorecards/genblaze-media.md`](../../../docs/scorecards/genblaze-media.md)
 - Node B2 scaffold: [`mrs/packages/storage-b2`](../../packages/storage-b2)
 - Genblaze upstream: https://github.com/backblaze-labs/genblaze
 - Local shallow clone (reference only, gitignored): `vendor/genblaze` — see `examples/b2_storage_pipeline.py`

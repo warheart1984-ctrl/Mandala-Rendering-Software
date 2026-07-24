@@ -88,3 +88,7 @@ Goal: make Nanite **W-aware enough not to fight projection** — not a claim of 
 | 2–6 | **roadmap** |
 | Nanite / Lumen | **roadmap** |
 | FourDAdapter hybrid | **skeleton** (v1) |
+
+## MRS v2 umbrella
+
+Studio-facing index (Drive-G-1): [`docs/4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md`](../../../4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md). Host / Unreal phases remain owned by this document; RT4D GPU wavefront/RHI contracts live under [`docs/4d-engine/rt4d/`](../../rt4d/RT4D_EVOLUTION_ROADMAP.md).

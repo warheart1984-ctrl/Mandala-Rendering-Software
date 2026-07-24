@@ -79,7 +79,11 @@ Until then, keep status **roadmap**.
 
 ## Cross-links
 
+- Multi-GPU contract: [`RT4D_V4_MULTI_GPU_CONTRACT.md`](./RT4D_V4_MULTI_GPU_CONTRACT.md)  
+- RHI contract: [`RT4D_V2_RHI_CONTRACT.md`](./RT4D_V2_RHI_CONTRACT.md)  
+- CKL (declared): [`constitution/CKL_MULTI_GPU.md`](../../../constitution/CKL_MULTI_GPU.md)  
 - Prior: [`RT4D_V3_IMAGE_QUALITY.md`](./RT4D_V3_IMAGE_QUALITY.md)  
 - FourDRenderer v2 index: [`../v2/README.md`](../v2/README.md)  
 - Host adapter indexes: [`../v1/adapters/UNREAL_ADAPTER_V1.md`](../v1/adapters/UNREAL_ADAPTER_V1.md), [`../v1/adapters/UNITY_ADAPTER_V1.md`](../v1/adapters/UNITY_ADAPTER_V1.md)  
+- MRS v2 umbrella: [`docs/4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md`](../../4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md)  
 - Scorecard: [`docs/scorecards/rt4d.md`](../../scorecards/rt4d.md)

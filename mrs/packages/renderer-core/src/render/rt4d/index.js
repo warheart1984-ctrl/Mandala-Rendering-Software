@@ -32,3 +32,11 @@ export { createHyperCausticLens } from "./scene/TestHyperCausticLens.js";
 
 export { renderRT4DFrame, renderRT4DFrameGPU } from "./RT4DRenderer.js";
 export { RT4DGPURenderer } from "./gpu/RT4DGPURenderer.js";
+export {
+  createRt4dWavefrontPipeline,
+  GpuWavefrontQueue,
+  WAVEFRONT_QUALITY_DEFAULTS,
+} from "./gpu/wavefront/index.js";
+export { renderWavefrontFrame } from "./pipeline/WavefrontPipelineAdapter.js";
+export { selectWavefrontConfig } from "./pipeline/WavefrontConfigSelector.js";
+export { createRhi, WebGpuRhi, RHI_BACKENDS } from "../rhi/RhiFactory.js";

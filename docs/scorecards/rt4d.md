@@ -2,8 +2,8 @@
 
 > Template alignment: Drive-G maturity dimensions.  
 > Project id: `rt4d`  
-> Updated: 2026-07-23  
-> Evidence anchor: `docs/4d-engine/rt4d/` roadmap + `mrs/packages/renderer-core/src/render/rt4d/` + `docs/4drs/`
+> Updated: 2026-07-24  
+> Evidence anchor: `docs/4d-engine/rt4d/` roadmap + contracts + `mrs/packages/renderer-core/src/render/rt4d/` + `docs/4drs/`
 
 ## Snapshot
 
@@ -11,16 +11,16 @@
 | --- | --- |
 | Project ID | `rt4d` |
 | Repository path | `G:\New folder` |
-| Review date | 2026-07-23 |
-| Reviewer | agent session (roadmap land) |
+| Review date | 2026-07-24 |
+| Reviewer | agent session (MRS v2 docs land) |
 
 ## Dimension ratings
 
 | Dimension | Rating | Audience | Evidence |
 | --- | --- | --- | --- |
-| Constitutional model | Early / declared | Architects | 4DRS naming + API freeze docs; GPU evolution roadmap **declared** |
-| Governance methodology | Early | Operators | Charter evidence tags; HCL validation factory **enforced**; GPU gates not machine-enforced |
-| Reference implementation | Partial (CPU) · Early skeleton (GPU) | Developers | `PathTracer4D`, `BVH4D`, HCL; WebGPU/CUDA sketches; v2–v4 features **roadmap** |
+| Constitutional model | Early / declared | Architects | 4DRS naming + API freeze; GPU evolution + wavefront/RHI contracts **declared** |
+| Governance methodology | Early | Operators | Charter evidence tags; HCL validation **enforced**; GPU/CKL multi-GPU gates not machine-enforced |
+| Reference implementation | Partial (CPU) · Early skeleton (GPU) | Developers | `PathTracer4D`, `BVH4D`, HCL; WebGPU/CUDA sketches; wavefront Phase B stubs **roadmap/partial** |
 | Platform engineering | Early / roadmap | Operators | No multi-GPU; Vulkan/DX RT4D backends **not present**; adapters hybrid-first **skeleton** |
 | Commercial operations | Roadmap | Business | No self-serve RT4D product claimed |
 
@@ -37,7 +37,7 @@
 
 ## Non-claims (explicit)
 
-- [ ] Wavefront / path queues implemented  
+- [ ] Wavefront / path queues production-complete  
 - [ ] Adaptive sampling / temporal accumulation implemented  
 - [ ] 4D-aware denoising implemented  
 - [ ] Production-grade images at low spp (as delivered fact)  
@@ -47,16 +47,16 @@
 
 ## Verification commands
 
-Documentation land — optional existing smokes:
-
 ```bash
 npm run render:hcl-baseline
-# optional: scripts/test-bvh4d-gpu.mjs when present
+# Phase B: node --test mrs/packages/renderer-core/src/render/rt4d/gpu/wavefront/*.test.js
 ```
 
 ## Cross-links
 
 - Roadmap index: [`docs/4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md`](../4d-engine/rt4d/RT4D_EVOLUTION_ROADMAP.md)  
+- Wavefront contract: [`RT4D_V2_WAVEFRONT_CONTRACT.md`](../4d-engine/rt4d/RT4D_V2_WAVEFRONT_CONTRACT.md)  
+- MRS v2 umbrella: [`docs/4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md`](../4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md)  
 - 4DRS package: [`docs/4drs/README.md`](../4drs/README.md)  
 - FourDRenderer v2 scorecard: [`docs/scorecards/fourd-renderer-v2.md`](./fourd-renderer-v2.md)  
 - Charter: [`constitution/CHARTER.md`](../../constitution/CHARTER.md)

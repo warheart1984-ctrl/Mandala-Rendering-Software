@@ -78,6 +78,9 @@ Until then, keep status **roadmap**.
 
 ## Cross-links
 
+- Wavefront API contract: [`RT4D_V2_WAVEFRONT_CONTRACT.md`](./RT4D_V2_WAVEFRONT_CONTRACT.md)  
+- RHI contract (WebGPU first): [`RT4D_V2_RHI_CONTRACT.md`](./RT4D_V2_RHI_CONTRACT.md)  
+- MRS v2 umbrella: [`docs/4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md`](../../4drs/roadmap/MRS_V2_ARCHITECTURAL_ROADMAP.md)  
 - BVH GPU substrate: [`docs/4drs/substrate/BVH4D_GPU.md`](../../4drs/substrate/BVH4D_GPU.md)  
 - FourDRenderer v2 shading/transport (related contracts): [`../v2/shading-transport/SHADING_AND_TRANSPORT_RFC.md`](../v2/shading-transport/SHADING_AND_TRANSPORT_RFC.md)  
 - Next: [`RT4D_V3_IMAGE_QUALITY.md`](./RT4D_V3_IMAGE_QUALITY.md)
