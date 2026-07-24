@@ -5,14 +5,20 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
-from app.config import NVIDIA_SETUP_HELP, get_settings
+from app.config import APP_DIR, NVIDIA_SETUP_HELP, get_settings
 from app.embeddings import cosine_similarity, embed_texts, embedding_summary
 from app.index_store import AssetIndex
 from app.nvidia_http import NvidiaGenaiTimeouts
 from app.pipeline import GenerationQualityError, generate_image, probe_b2
+from app.preview_cache import (
+    get_preview_path,
+    is_run_id,
+    local_preview_url,
+    media_type_for_path,
+)
 
 APP_DIR = Path(__file__).resolve().parent.parent
 INDEX_PATH = APP_DIR / "data" / "recent-assets.json"
@@ -131,14 +137,42 @@ def api_generate(body: GenerateRequest) -> dict:
 @app.get("/api/assets")
 def api_assets(limit: int = Query(default=20, ge=1, le=50)) -> dict:
     assets = _index.list_recent(limit=limit)
-    # Strip full vectors from list responses
+    # Strip full vectors from list responses; prefer local preview cache over B2.
     cleaned = []
     for a in assets:
         row = {k: v for k, v in a.items() if k != "embedding_vector"}
         if "embedding_vector" in a:
             row["embedding_stored"] = True
+        run_id = row.get("run_id")
+        if isinstance(run_id, str) and get_preview_path(APP_DIR, run_id):
+            row["preview_url"] = local_preview_url(run_id)
+            row["preview_source"] = "local-cache"
+        elif row.get("preview_url"):
+            row["preview_source"] = "b2-presign"
         cleaned.append(row)
     return {"assets": cleaned}
+
+
+@app.get("/api/preview/{run_id}")
+def api_preview(run_id: str):
+    """Same-origin preview bytes from ephemeral disk cache (avoids B2 GET)."""
+    if not is_run_id(run_id):
+        raise HTTPException(status_code=400, detail="invalid run_id")
+    path = get_preview_path(APP_DIR, run_id)
+    if path is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "preview not in local cache on this instance "
+                "(Render disk is ephemeral; B2 free-tier caps may also block "
+                "presigned downloads until daily reset)"
+            ),
+        )
+    return FileResponse(
+        path,
+        media_type=media_type_for_path(path),
+        headers={"Cache-Control": "private, max-age=3600"},
+    )
 
 
 @app.post("/api/search")

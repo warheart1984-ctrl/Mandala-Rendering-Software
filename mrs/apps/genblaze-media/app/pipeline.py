@@ -13,8 +13,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from app.config import NVIDIA_SETUP_HELP, Settings
+from app.config import APP_DIR, NVIDIA_SETUP_HELP, Settings
 from app.image_quality import assess_image_bytes, extract_nvidia_warnings
+from app.preview_cache import local_preview_url, put_preview
 from app.prompt_rewrite import looks_like_people_prompt, rewrite_as_abstract_geometry
 from app.prompt_sanitize import sanitize_prompt
 
@@ -44,6 +45,17 @@ class GenerateResult:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+def _attach_local_preview(gen: GenerateResult, image_bytes: bytes | None) -> None:
+    """Prefer same-origin preview so UI works when B2 free-tier caps block GETs."""
+    if not image_bytes or not gen.run_id:
+        return
+    if put_preview(APP_DIR, gen.run_id, image_bytes):
+        gen.preview_url = local_preview_url(gen.run_id)
+        note = "local preview cache (UI avoids B2 download)"
+        if note not in (gen.detail or ""):
+            gen.detail = (gen.detail + " · " if gen.detail else "") + note
 
 
 def _utc_now() -> str:
@@ -577,6 +589,7 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                 if gen.prompt_sanitized and "prompt sanitized" not in (gen.detail or ""):
                     note = "prompt sanitized (meta-commentary stripped)"
                     gen.detail = (gen.detail + " · " if gen.detail else "") + note
+                _attach_local_preview(gen, image_bytes)
                 return gen
 
             last_quality_reason = assessment.reason
@@ -659,7 +672,7 @@ def _dry_run_generate(
     }
 
     if not settings.b2_configured:
-        return GenerateResult(
+        gen = GenerateResult(
             run_id=run_id,
             prompt=prompt,
             model="dry-run/mock",
@@ -673,6 +686,8 @@ def _dry_run_generate(
             dry_run=True,
             detail="B2 not configured; dry-run stayed local-only (no upload).",
         )
+        _attach_local_preview(gen, png)
+        return gen
 
     backend = build_backend(settings)
     try:
@@ -690,7 +705,7 @@ def _dry_run_generate(
             preview = getattr(ps, "url", None) or str(ps)
         except Exception:
             preview = None
-        return GenerateResult(
+        gen = GenerateResult(
             run_id=run_id,
             prompt=prompt,
             model="dry-run/mock",
@@ -703,6 +718,8 @@ def _dry_run_generate(
             created_at=created_at,
             dry_run=True,
         )
+        _attach_local_preview(gen, png)
+        return gen
     finally:
         close = getattr(backend, "close", None)
         if callable(close):
