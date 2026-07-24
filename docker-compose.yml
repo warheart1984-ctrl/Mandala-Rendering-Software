@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  # 4D Rendering System (4DRS) - Full stack
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.4drs
+    container_name: 4drs-hackathon
+    ports:
+      # Browser host: 4D renderer + cinematics
+      - "8080:8080"
+      # CSSV dashboard + API
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      # Backblaze B2 S3-Compatible API configuration
+      # Copy from .env or override here
+      B2_KEY_ID: ${B2_KEY_ID:-}
+      B2_APPLICATION_KEY: ${B2_APPLICATION_KEY:-}
+      B2_BUCKET: ${B2_BUCKET:-your-mrs-assets-bucket}
+      B2_REGION: ${B2_REGION:-us-west-004}
+      B2_ENDPOINT: ${B2_ENDPOINT:-https://s3.us-west-004.backblazeb2.com}
+      B2_FORCE_PATH_STYLE: ${B2_FORCE_PATH_STYLE:-true}
+      # Optional: Genblaze media (NVIDIA API)
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      GENBLAZE_IMAGE_MODEL: ${GENBLAZE_IMAGE_MODEL:-black-forest-labs/flux.1-schnell}
+      GENBLAZE_DRY_RUN: ${GENBLAZE_DRY_RUN:-0}
+    volumes:
+      # Mount .env for local development (optional)
+      - ./.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # Optional: Separate Genblaze media service (if needed for hackathon)
+  # genblaze-media:
+  #   build:
+  #     context: ./mrs/apps/genblaze-media
+  #     dockerfile: Dockerfile
+  #   container_name: genblaze-media
+  #   ports:
+  #     - "8787:8787"
+  #   environment:
+  #     NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+  #     GENBLAZE_IMAGE_MODEL: ${GENBLAZE_IMAGE_MODEL:-black-forest-labs/flux.1-schnell}
+  #     GENBLAZE_STORAGE_PREFIX: ${GENBLAZE_STORAGE_PREFIX:-genblaze-media}
+  #   depends_on:
+  #     - app

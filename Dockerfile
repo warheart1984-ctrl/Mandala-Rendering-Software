@@ -1,5 +1,5 @@
-# Render default: Dockerfile Path ./Dockerfile, Root Directory empty (repo root).
-# Builds the Genblaze media hackathon app from mrs/apps/genblaze-media.
+# Default Dockerfile for Render (hackathon App URL).
+# Builds Genblaze media: prompt → FLUX → B2.
 FROM python:3.12-slim
 
 WORKDIR /app

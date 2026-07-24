@@ -1,0 +1,35 @@
+# Render Blueprint — Genblaze media (hackathon App URL)
+# https://render.com/docs/blueprint-spec
+#
+# Dashboard equivalent:
+#   Dockerfile Path: ./Dockerfile
+#   Root Directory: (empty — repo root)
+#   Health Check: /health
+services:
+  - type: web
+    name: mandala-rendering-system-mrs
+    runtime: docker
+    plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: B2_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_APP_KEY
+        sync: false
+      - key: B2_BUCKET
+        sync: false
+      - key: B2_REGION
+        sync: false
+      - key: B2_ENDPOINT
+        sync: false
+      - key: GENBLAZE_IMAGE_MODEL
+        value: black-forest-labs/flux.1-schnell
+      - key: GENBLAZE_STORAGE_PREFIX
+        value: genblaze-media
