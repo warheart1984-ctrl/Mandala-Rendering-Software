@@ -41,6 +41,9 @@ def _guess_ext(data: bytes) -> str:
         return ".jpg"
     if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return ".webp"
+    # ISO BMFF / MP4 (ftyp box at offset 4)
+    if len(data) >= 8 and data[4:8] == b"ftyp":
+        return ".mp4"
     return ".bin"
 
 
@@ -52,6 +55,8 @@ def media_type_for_path(path: Path) -> str:
         return "image/jpeg"
     if ext == ".webp":
         return "image/webp"
+    if ext == ".mp4":
+        return "video/mp4"
     return "application/octet-stream"
 
 

@@ -43,6 +43,12 @@
       letter-spacing: -0.02em;
       margin: 0 0 0.35rem;
     }
+    h2 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.35rem;
+      margin: 0 0 0.5rem;
+    }
     .lede {
       color: var(--muted);
       margin: 0 0 1.75rem;
@@ -60,6 +66,12 @@
       max-width: 40rem;
     }
     .tips strong { color: var(--ink); font-weight: 600; }
+    section.path {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--line);
+      scroll-margin-top: 1.25rem;
+    }
     label {
       display: block;
       font-weight: 600;
@@ -99,20 +111,20 @@
       border: 1px solid var(--line);
     }
     button:disabled { opacity: 0.55; cursor: wait; }
-    #status {
+    .status {
       margin-top: 1rem;
       color: var(--muted);
       font-size: 0.95rem;
       white-space: pre-wrap;
     }
-    #status.err { color: var(--err); }
-    #status.warn { color: var(--warn); }
+    .status.err { color: var(--err); }
+    .status.warn { color: var(--warn); }
     .result, .assets {
       margin-top: 1.75rem;
       padding-top: 1.25rem;
       border-top: 1px solid var(--line);
     }
-    .result img {
+    .result img, .result video {
       display: block;
       max-width: 100%;
       margin-top: 0.75rem;
@@ -129,7 +141,7 @@
       border-bottom: 1px solid var(--line);
     }
     .asset:last-child { border-bottom: 0; }
-    .asset img {
+    .asset img, .asset video {
       max-width: 180px;
       margin-top: 0.5rem;
       border-radius: 4px;
@@ -139,100 +151,74 @@
       font-size: 0.8rem;
       color: var(--muted);
     }
-    .portals {
-      margin-top: 2.25rem;
-      padding-top: 1.25rem;
-      border-top: 1px solid var(--line);
-    }
-    .portals h2 {
-      font-family: var(--font-display);
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0 0 0.35rem;
-    }
-    .portals > .lede {
-      margin-bottom: 1rem;
-      font-size: 0.95rem;
-    }
-    .portal-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      gap: 0.85rem;
-    }
-    .portal-list li {
-      padding: 0.85rem 0;
-      border-bottom: 1px solid var(--line);
-    }
-    .portal-list li:last-child { border-bottom: 0; }
-    .portal-list strong {
-      display: block;
-      font-size: 1.05rem;
-      margin-bottom: 0.2rem;
-    }
-    .portal-list .tag {
-      display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--warn);
-      margin-bottom: 0.35rem;
-    }
-    .portal-list p {
-      margin: 0 0 0.55rem;
-      color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
-    .portal-list a {
-      color: var(--accent);
-      font-weight: 600;
-      text-decoration: none;
-      margin-right: 0.85rem;
-    }
-    .portal-list a:hover { text-decoration: underline; }
-    .portal-list code {
-      font-size: 0.8rem;
-      color: var(--ink);
-    }
   </style>
 </head>
 <body>
   <main>
     <h1>Mandala · Genblaze</h1>
     <p class="lede">
-      Provenanced concept stills for MRS / 4D scene authoring.
-      Prompt → NVIDIA NIM (FLUX.1-schnell via Genblaze) → private Backblaze B2 with SHA-256 manifest
-      → optional semantic index (nv-embedcode). The still is a mood / reference plate for the 4D renderer —
-      FLUX does not simulate 4D worlds.
-    </p>
-    <p class="tips" role="note">
-      <strong>Prompt tips (FLUX.1-schnell):</strong>
-      abstract geometry, mandalas, tesseracts, neon grids, and studio-lit objects usually work.
-      Photoreal people / faces / skin often return blank black stills on this NIM path — describe the
-      object and light, not a portrait. If a people-like prompt blanks, the service retries once with an
-      abstract rewrite (disable with <code>GENBLAZE_ABSTRACT_RETRY=0</code>). Do not append feedback like
-      “ok this not good” into the prompt.
+      Provenanced concept media for MRS / 4D scene authoring.
+      Prompt → NVIDIA NIM (FLUX stills or Cosmos video via Genblaze) → private Backblaze B2 with SHA-256 manifest
+      → optional semantic index (nv-embedcode). Concept plates for the 4D renderer —
+      NIM does not simulate 4D worlds.
     </p>
 
-    <form id="gen-form">
-      <label for="prompt">Prompt</label>
-      <textarea id="prompt" name="prompt" required maxlength="2000"
-        placeholder="e.g. isometric concept of a translucent 4D torus mandala, cool studio light"></textarea>
-      <div class="row">
-        <button type="submit" id="go">Generate</button>
-        <button type="button" class="secondary" id="refresh">Refresh assets</button>
-      </div>
-    </form>
+    <section class="path" id="stills">
+      <h2>NIM FLUX · stills</h2>
+      <p class="tips" role="note">
+        <strong>Prompt tips (FLUX.1-schnell):</strong>
+        abstract geometry, mandalas, tesseracts, neon grids, and studio-lit objects usually work.
+        Photoreal people / faces / skin often return blank black stills on this NIM path — describe the
+        object and light, not a portrait. If a people-like prompt blanks, the service retries once with an
+        abstract rewrite (disable with <code>GENBLAZE_ABSTRACT_RETRY=0</code>). Do not append feedback like
+        “ok this not good” into the prompt.
+      </p>
 
-    <div id="status"></div>
+      <form id="gen-form">
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" name="prompt" required maxlength="2000"
+          placeholder="e.g. isometric concept of a translucent 4D torus mandala, cool studio light"></textarea>
+        <div class="row">
+          <button type="submit" id="go">Generate</button>
+          <button type="button" class="secondary" id="refresh">Refresh assets</button>
+        </div>
+      </form>
 
-    <section class="result" id="result" hidden>
-      <h2>Latest</h2>
-      <div class="meta" id="result-meta"></div>
-      <img id="preview" alt="Generated concept" hidden />
+      <div id="status" class="status"></div>
+
+      <section class="result" id="result" hidden>
+        <h2>Latest still</h2>
+        <div class="meta" id="result-meta"></div>
+        <img id="preview" alt="Generated concept" hidden />
+      </section>
+    </section>
+
+    <section class="path" id="nim-cosmos">
+      <h2>NIM Cosmos · video (CMM-NIM-Cosmos)</h2>
+      <p class="tips" role="note">
+        <strong>Prompt tips (Cosmos text-to-world):</strong>
+        abstract / world-scale scenes (landscapes, geometry, light) work better than portraits.
+        People and faces may blank or degrade. <strong>NVCF cold-start:</strong> Cosmos is often slower than
+        FLUX on the first hit after Render or NIM idle — even with 600s+ timeouts, expect longer
+        first-request latency; keep this tab open. Larger mp4 objects cost more B2 Class C traffic.
+      </p>
+
+      <form id="video-form">
+        <label for="video-prompt">Video prompt</label>
+        <textarea id="video-prompt" name="prompt" required maxlength="2000"
+          placeholder="e.g. slow orbit around a translucent mandala torus in cool studio light"></textarea>
+        <div class="row">
+          <button type="submit" id="video-go">Generate video</button>
+        </div>
+      </form>
+
+      <div id="video-status" class="status"></div>
+
+      <section class="result" id="video-result" hidden>
+        <h2>Latest video</h2>
+        <div class="meta" id="video-result-meta"></div>
+        <video id="video-preview" controls hidden></video>
+      </section>
     </section>
 
     <section class="assets">
@@ -259,7 +245,9 @@
 
     <footer>
       Storage: Backblaze B2 (private bucket → presigned GET). Orchestration: Genblaze.
-      Image: NVIDIA NIM FLUX. Embeddings: NVIDIA nv-embedcode. Operator readiness ≠ commercial self-serve.
+      Image: NVIDIA NIM FLUX (stills). Video: NVIDIA NIM Cosmos (CMM-NIM-Cosmos).
+      Embeddings: NVIDIA nv-embedcode. Operator readiness ≠ commercial self-serve.
+      Anchors: <code>/media/stills</code> · <code>/media/nim-cosmos</code>.
     </footer>
   </main>
   <script>
@@ -270,15 +258,21 @@
     const assetsList = document.getElementById("assets-list");
     const goBtn = document.getElementById("go");
     const searchResults = document.getElementById("search-results");
+    const videoStatusEl = document.getElementById("video-status");
+    const videoResultEl = document.getElementById("video-result");
+    const videoResultMeta = document.getElementById("video-result-meta");
+    const videoPreview = document.getElementById("video-preview");
+    const videoGoBtn = document.getElementById("video-go");
 
-    function setStatus(msg, kind) {
-      statusEl.textContent = msg || "";
-      statusEl.className = kind || "";
+    function setStatus(el, msg, kind) {
+      el.textContent = msg || "";
+      el.className = "status" + (kind ? " " + kind : "");
     }
 
     function renderEntry(el, entry) {
       const lines = [
         "run: " + (entry.run_id || "—"),
+        "modality: " + (entry.modality || "—"),
         "model: " + (entry.model || "—"),
         "provider: " + (entry.provider || "—"),
         "asset: " + (entry.asset_key || "—"),
@@ -286,6 +280,9 @@
         "sha256: " + (entry.asset_sha256 || "—"),
         "created: " + (entry.created_at || "—"),
       ];
+      if (entry.duration_seconds != null) lines.push("duration_s: " + entry.duration_seconds);
+      if (entry.resolution) lines.push("resolution: " + entry.resolution);
+      if (entry.cmm_id) lines.push("cmm: " + entry.cmm_id);
       if (entry.embedding) {
         lines.push(
           "embed: " + (entry.embedding.model || "") +
@@ -296,6 +293,15 @@
       if (entry.dry_run) lines.push("mode: dry-run (not live NIM)");
       if (entry.detail) lines.push(entry.detail);
       el.textContent = lines.join("\n");
+    }
+
+    function previewFailMessage(isVideo) {
+      return (
+        "Preview failed to load. Often Backblaze free-tier transaction cap " +
+        "(AccessDenied), or local cache pruned after Render restart. " +
+        "Wait for daily B2 reset, or generate again so /api/preview can serve the " +
+        (isVideo ? "clip" : "still") + "."
+      );
     }
 
     async function loadAssets() {
@@ -313,24 +319,38 @@
           div.className = "asset";
           const meta = document.createElement("div");
           meta.className = "meta";
-          meta.textContent = (a.prompt || "").slice(0, 120) + "\n" + (a.asset_key || "");
+          const mod = a.modality || "image";
+          meta.textContent =
+            "[" + mod + "] " + (a.prompt || "").slice(0, 120) + "\n" + (a.asset_key || "");
           div.appendChild(meta);
           if (a.preview_url) {
-            const img = document.createElement("img");
-            img.src = a.preview_url;
-            img.alt = "asset preview";
-            img.onerror = () => {
-              img.replaceWith(
-                Object.assign(document.createElement("div"), {
-                  className: "meta",
-                  textContent:
-                    "Preview failed to load. Often Backblaze free-tier transaction cap " +
-                    "(AccessDenied). Wait for daily reset, or generate again after deploy " +
-                    "so /api/preview local cache can serve the still.",
-                })
-              );
-            };
-            div.appendChild(img);
+            if (mod === "video") {
+              const vid = document.createElement("video");
+              vid.src = a.preview_url;
+              vid.controls = true;
+              vid.onerror = () => {
+                vid.replaceWith(
+                  Object.assign(document.createElement("div"), {
+                    className: "meta",
+                    textContent: previewFailMessage(true),
+                  })
+                );
+              };
+              div.appendChild(vid);
+            } else {
+              const img = document.createElement("img");
+              img.src = a.preview_url;
+              img.alt = "asset preview";
+              img.onerror = () => {
+                img.replaceWith(
+                  Object.assign(document.createElement("div"), {
+                    className: "meta",
+                    textContent: previewFailMessage(false),
+                  })
+                );
+              };
+              div.appendChild(img);
+            }
           }
           assetsList.appendChild(div);
         }
@@ -346,9 +366,11 @@
       const peopleHint = /\b(person|people|human|man|woman|girl|boy|face|skin|portrait|photoreal)\b/i.test(prompt);
       goBtn.disabled = true;
       setStatus(
+        statusEl,
         peopleHint
           ? "Generating… people/faces often blank on FLUX.1-schnell — will auto-retry abstract if needed (1–3+ min)"
-          : "Generating… (FLUX may take 1–3 min on cold start)"
+          : "Generating… (FLUX may take 1–3 min on cold start)",
+        ""
       );
       preview.hidden = true;
       try {
@@ -360,7 +382,7 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           const detail = data.detail || res.statusText;
-          setStatus(typeof detail === "string" ? detail : JSON.stringify(detail), "err");
+          setStatus(statusEl, typeof detail === "string" ? detail : JSON.stringify(detail), "err");
           return;
         }
         resultEl.hidden = false;
@@ -370,6 +392,7 @@
           preview.hidden = false;
           preview.onerror = () => {
             setStatus(
+              statusEl,
               "Image metadata OK but preview failed — usually B2 free-tier " +
                 "transaction cap (AccessDenied on download). Caps reset ~00:00 GMT; " +
                 "after that, generate once and keep the tab open.",
@@ -377,12 +400,71 @@
             );
           };
         }
-        setStatus(data.dry_run ? "Dry-run complete (not live NIM)." : "Done.", data.dry_run ? "warn" : "");
+        setStatus(statusEl, data.dry_run ? "Dry-run complete (not live NIM)." : "Done.", data.dry_run ? "warn" : "");
         await loadAssets();
       } catch (err) {
-        setStatus(String(err), "err");
+        setStatus(statusEl, String(err), "err");
       } finally {
         goBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("video-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const prompt = document.getElementById("video-prompt").value.trim();
+      if (!prompt) return;
+      videoGoBtn.disabled = true;
+      setStatus(
+        videoStatusEl,
+        "Generating video… Cosmos NVCF cold-start can take several minutes after Render/NIM idle. Keep this tab open.",
+        ""
+      );
+      videoPreview.hidden = true;
+      videoPreview.removeAttribute("src");
+      try {
+        const res = await fetch("/api/generate-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, embed: true }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = data.detail || res.statusText;
+          let msg = typeof detail === "string" ? detail : JSON.stringify(detail);
+          if (res.status === 503) {
+            msg += "\n(Video disabled, missing NVIDIA key, or model not available on this key.)";
+          } else if (res.status === 502) {
+            msg +=
+              "\n(Upstream/transfer failure — Cosmos cold start or B2 caps are common causes.)";
+          }
+          setStatus(videoStatusEl, msg, "err");
+          return;
+        }
+        videoResultEl.hidden = false;
+        renderEntry(videoResultMeta, data);
+        if (data.preview_url) {
+          videoPreview.src = data.preview_url;
+          videoPreview.hidden = false;
+          videoPreview.onerror = () => {
+            setStatus(
+              videoStatusEl,
+              "Video metadata OK but preview failed — local cache pruned or B2 free-tier " +
+                "transaction cap. Caps reset ~00:00 GMT; regenerate after deploy so " +
+                "/api/preview can serve the mp4.",
+              "err"
+            );
+          };
+        }
+        setStatus(
+          videoStatusEl,
+          data.dry_run ? "Dry-run video stub (not live NIM Cosmos)." : "Video done.",
+          data.dry_run ? "warn" : ""
+        );
+        await loadAssets();
+      } catch (err) {
+        setStatus(videoStatusEl, String(err), "err");
+      } finally {
+        videoGoBtn.disabled = false;
       }
     });
 
@@ -409,7 +491,10 @@
           return;
         }
         searchResults.textContent = rows
-          .map((r) => (r.score.toFixed(3) + "  " + (r.prompt || "").slice(0, 100)))
+          .map((r) => (
+            r.score.toFixed(3) + "  [" + (r.modality || "?") + "]  " +
+            (r.prompt || "").slice(0, 100)
+          ))
           .join("\n");
       } catch (err) {
         searchResults.textContent = String(err);
@@ -420,11 +505,21 @@
 
     fetch("/health").then(r => r.json()).then(h => {
       if (!h.nvidia_configured && !h.dry_run) {
-        setStatus(h.nvidia_help || "NVIDIA_API_KEY not configured — generate will return 503 until set.", "warn");
+        setStatus(statusEl, h.nvidia_help || "NVIDIA_API_KEY not configured — generate will return 503 until set.", "warn");
       } else if (h.b2_error) {
-        setStatus("B2 probe error: " + h.b2_error, "err");
+        setStatus(statusEl, "B2 probe error: " + h.b2_error, "err");
       } else if (h.b2_configured) {
-        setStatus("Ready · B2 " + h.b2_bucket + " · image " + h.image_model + " · embed " + h.embed_model);
+        setStatus(
+          statusEl,
+          "Ready · B2 " + h.b2_bucket +
+            " · image " + h.image_model +
+            " · video " + (h.video_model || "—") +
+            (h.video_enabled === false ? " (disabled)" : "") +
+            " · embed " + h.embed_model
+        );
+      }
+      if (h.video_enabled === false) {
+        setStatus(videoStatusEl, "Video path disabled (GENBLAZE_VIDEO_ENABLED=0).", "warn");
       }
     }).catch(() => {});
 

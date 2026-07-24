@@ -8,6 +8,7 @@ Thin **FastAPI** service: user prompt → **Genblaze** (`genblaze-nvidia` + `gen
 | Genblaze 4D render | **Not claimed** — Genblaze generates 2D (NIM FLUX); MRS remains the 4D renderer |
 | Operator deploy | **Prepared** — Dockerfile + `render.yaml` (Render free web) |
 | Live NIM generate | **Requires** `NVIDIA_API_KEY` at runtime |
+| NIM Cosmos video (CMM-NIM-Cosmos) | **Prepared** operator path (`/api/generate-video`); Cosmos model must be available on the key; constitutional docs **declared** not enforced |
 | B2 persistence | **Tests** path via `genblaze-s3` / dual-exported `B2_APP_KEY` |
 
 ## Product story (honest)
@@ -39,6 +40,9 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `B2_REGION` | e.g. `us-east-005` |
 | `B2_ENDPOINT` | optional; defaults to `https://s3.<region>.backblazeb2.com` |
 | `GENBLAZE_IMAGE_MODEL` | optional; default `black-forest-labs/flux.1-schnell` |
+| `GENBLAZE_VIDEO_MODEL` | optional; default `nvidia/cosmos-2.0-diffusion-text2world` (try `nvidia/cosmos-1.0-7b-diffusion-text2world` if 2.0 fails on the key) |
+| `GENBLAZE_VIDEO_ENABLED` | default **on**; set `0` to disable `/api/generate-video` |
+| `GENBLAZE_VIDEO_HTTP_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_TIMEOUT` / `GENBLAZE_VIDEO_PIPELINE_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_POLL_SECONDS` | Cosmos video timeouts (defaults 900 / 900 / 1200 / 120) |
 | `GENBLAZE_STORAGE_PREFIX` | optional; default `genblaze-media` |
 | `GENBLAZE_DRY_RUN` | `1` only for unit tests / offline mocks — **not** live demos |
 | `B2_PROBE_ON_HEALTH` | default **off** — when `1`, `/health` runs a ListObjects probe (B2 **Class C**). Keep `0` on Render/demo day |
@@ -58,10 +62,12 @@ Or from repo root (after venv + deps):
 npm run genblaze:media
 ```
 
-- UI: http://127.0.0.1:8787/
+- UI: http://127.0.0.1:8787/ (stills `#stills`, Cosmos video `#nim-cosmos`)
 - Health: http://127.0.0.1:8787/health
-- `POST /api/generate` body: `{"prompt":"…"}`
-- `GET /api/assets` — recent entries from local JSON index
+- `POST /api/generate` body: `{"prompt":"…"}` (FLUX stills)
+- `POST /api/generate-video` body: `{"prompt":"…"}` (Cosmos video)
+- `GET /media/nim-cosmos` → 302 `/#nim-cosmos`
+- `GET /api/assets` — recent entries from local JSON index (`?modality=video` optional)
 
 If `NVIDIA_API_KEY` is missing, `/health` still boots and reports setup help; `POST /api/generate` returns **503** with instructions (unless `GENBLAZE_DRY_RUN=1`).
 
@@ -110,10 +116,27 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| GET | `/health` | Boots always; NVIDIA/B2 flags; ListObjects probe only if `B2_PROBE_ON_HEALTH=1` |
-| POST | `/api/generate` | Live Genblaze→B2 or 503 if no NVIDIA key |
-| GET | `/api/assets` | Local recent index (capped) |
-| GET | `/` | Single-page UI |
+| GET | `/health` | Boots always; NVIDIA/B2 flags; video model flags; ListObjects probe only if `B2_PROBE_ON_HEALTH=1` |
+| POST | `/api/generate` | Live Genblaze FLUX→B2 or 503 if no NVIDIA key |
+| POST | `/api/generate-video` | Live Genblaze Cosmos→B2; 503 if video disabled / no NVIDIA key |
+| GET | `/api/assets` | Local recent index (capped); optional `?modality=image\|video` |
+| GET | `/media/stills` · `/media/nvidia` · `/media/nim-cosmos` | 302 into SPA hash anchors |
+| GET | `/` | Single-page UI (stills + Cosmos sections) |
+
+## NIM Cosmos Video Path (CMM-NIM-Cosmos)
+
+Operator path for text-to-video via NVIDIA NIM Cosmos (`app/pipeline_video.py`). **No Story Forge lineage.** Constitutional docs under `docs/constitutional/` are **declared**, not runtime-enforced (JCR/CEL/Arena/Sovereign IDE are not hosted here).
+
+| Concern | Honest status |
+| --- | --- |
+| Live generate | Requires `NVIDIA_API_KEY` **and** Cosmos model access on that key |
+| Default model | `nvidia/cosmos-2.0-diffusion-text2world` — if unavailable, try `nvidia/cosmos-1.0-7b-diffusion-text2world` |
+| Timeouts | Video defaults are higher than FLUX (see `.env.example`); first hit after Render/NIM idle can still feel slow |
+| NVCF cold-start | Cosmos is often **slower than FLUX** on cold start even with 600s+ timeouts — expect longer first-request latency; keep the browser tab open |
+| B2 cost | Larger mp4 objects burn more **Class C** (list/download) traffic than stills |
+| Render | Ephemeral disk + request timeouts / cold starts — regenerate after restart for local `/api/preview` cache |
+| Optional meta | `duration_seconds` / `resolution` only when the provider payload reports them (never invented) |
+| Docs | `docs/constitutional/CMM-NIM-Cosmos-v1.0.md`, `CH-GNMD-v1.0.md`, `ACP-NIM-Cosmos-v1.0.md` (ACP stages = roadmap only) |
 
 ## Cross-links
 

@@ -85,15 +85,62 @@ class NvidiaGenaiTimeouts:
         )
 
 
+# Cosmos / NIM video: colder queues and longer diffusion than FLUX stills.
+DEFAULT_VIDEO_HTTP_TIMEOUT = 900.0
+DEFAULT_VIDEO_NVCF_TIMEOUT = 900.0
+DEFAULT_VIDEO_PIPELINE_TIMEOUT = 1200
+DEFAULT_VIDEO_NVCF_POLL_SECONDS = 120
+
+
+@dataclass(frozen=True)
+class NvidiaVideoTimeouts:
+    """Timeouts and NVCF long-poll window for Cosmos text-to-video."""
+
+    http_timeout: float
+    nvcf_timeout: float
+    pipeline_timeout: int
+    nvcf_poll_seconds: int
+    connect_timeout: float
+
+    @classmethod
+    def from_env(cls) -> NvidiaVideoTimeouts:
+        poll = _env_int(
+            "GENBLAZE_VIDEO_NVCF_POLL_SECONDS",
+            DEFAULT_VIDEO_NVCF_POLL_SECONDS,
+            lo=0,
+            hi=300,
+        )
+        http = _env_float("GENBLAZE_VIDEO_HTTP_TIMEOUT", DEFAULT_VIDEO_HTTP_TIMEOUT)
+        min_http = float(poll) + 30.0
+        if http < min_http:
+            http = min_http
+        return cls(
+            http_timeout=http,
+            nvcf_timeout=_env_float(
+                "GENBLAZE_VIDEO_NVCF_TIMEOUT", DEFAULT_VIDEO_NVCF_TIMEOUT
+            ),
+            pipeline_timeout=int(
+                _env_float(
+                    "GENBLAZE_VIDEO_PIPELINE_TIMEOUT",
+                    float(DEFAULT_VIDEO_PIPELINE_TIMEOUT),
+                )
+            ),
+            nvcf_poll_seconds=poll,
+            connect_timeout=_env_float(
+                "GENBLAZE_CONNECT_TIMEOUT", DEFAULT_CONNECT_TIMEOUT
+            ),
+        )
+
+
 def build_nvidia_genai_client(
     api_key: str,
-    timeouts: NvidiaGenaiTimeouts | None = None,
+    timeouts: NvidiaGenaiTimeouts | NvidiaVideoTimeouts | None = None,
     *,
     gen_base_url: str | None = None,
 ) -> httpx.Client:
-    """Build an httpx client for Genblaze ``NvidiaImageProvider(http_client=…)``.
+    """Build an httpx client for Genblaze NVIDIA image/video providers.
 
-    Sets ``NVCF-POLL-SECONDS`` so queued/cold FLUX returns 202 for polling
+    Sets ``NVCF-POLL-SECONDS`` so queued/cold NIM returns 202 for polling
     instead of holding one sync read until the transport times out.
     """
     cfg = timeouts or NvidiaGenaiTimeouts.from_env()
@@ -112,7 +159,7 @@ def build_nvidia_genai_client(
         "Authorization": f"Bearer {api_key}",
         "Accept": "application/json",
         "Content-Type": "application/json",
-        # Cap sync hold; Genblaze image provider already polls on 202.
+        # Cap sync hold; Genblaze providers already poll on 202.
         "NVCF-POLL-SECONDS": str(cfg.nvcf_poll_seconds),
     }
     return httpx.Client(base_url=base, headers=headers, timeout=timeout)
