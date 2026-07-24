@@ -141,6 +141,8 @@ export class WebGpuRhi {
     this.dispatchLog = [];
     this._paramsGpu = null;
     this._bindGroupLayout = null;
+    /** True when live GPU wrote frame storage that has not been mapped into host yet. */
+    this._frameGpuDirty = false;
 
     for (const [name, code] of Object.entries(DEFAULT_KERNEL_WGSL)) {
       this.registerKernel(name, code);
@@ -292,22 +294,60 @@ export class WebGpuRhi {
     this._dispatchStub(kernelName, bindings);
   }
 
-  /** @returns {Uint8ClampedArray} */
-  getFramePixels() {
+  /**
+   * Copy live GPU frame/path storage into the CPU host mirrors used by getFramePixels.
+   * No-op in stub mode or when host already matches GPU.
+   */
+  async ensureFrameReadback() {
+    if (!this._frameGpuDirty || !this._gpuDevice || this.mode !== "live") {
+      return;
+    }
     for (const tex of this._textures.values()) {
-      const n = tex.width * tex.height;
-      const out = new Uint8ClampedArray(n * 4);
-      const u32 = new Uint32Array(tex.host.buffer, tex.host.byteOffset, Math.min(n, tex.host.byteLength >> 2));
-      for (let i = 0; i < n && i < u32.length; i++) {
-        const c = u32[i] >>> 0;
-        out[i * 4] = (c >>> 16) & 0xff;
-        out[i * 4 + 1] = (c >>> 8) & 0xff;
-        out[i * 4 + 2] = c & 0xff;
-        out[i * 4 + 3] = (c >>> 24) & 0xff || 255;
+      if (tex.gpu) {
+        await this._mapReadInto(tex.gpu, tex.host);
       }
-      return out;
+    }
+    for (const buf of this._buffers.values()) {
+      if (buf.gpu) {
+        await this._mapReadInto(buf.gpu, buf.host);
+      }
+    }
+    this._frameGpuDirty = false;
+  }
+
+  /**
+   * Decode packed RGBA8 host frame into clamped pixels.
+   * Live path: maps GPU → staging → host first so callers see kernel output (not an empty buffer).
+   * @returns {Promise<Uint8ClampedArray>}
+   */
+  async getFramePixels() {
+    await this.ensureFrameReadback();
+    for (const tex of this._textures.values()) {
+      return this._decodeHostTexture(tex);
     }
     return new Uint8ClampedArray(0);
+  }
+
+  /**
+   * @param {{ width: number, height: number, host: Uint8Array }} tex
+   * @returns {Uint8ClampedArray}
+   */
+  _decodeHostTexture(tex) {
+    const n = tex.width * tex.height;
+    const out = new Uint8ClampedArray(n * 4);
+    const u32 = new Uint32Array(
+      tex.host.buffer,
+      tex.host.byteOffset,
+      Math.min(n, tex.host.byteLength >> 2)
+    );
+    for (let i = 0; i < n && i < u32.length; i++) {
+      const c = u32[i] >>> 0;
+      out[i * 4] = (c >>> 16) & 0xff;
+      out[i * 4 + 1] = (c >>> 8) & 0xff;
+      out[i * 4 + 2] = c & 0xff;
+      out[i * 4 + 3] = (c >>> 24) & 0xff || 255;
+    }
+    return out;
   }
 
   async _tryInitLiveGpu() {
@@ -414,6 +454,12 @@ export class WebGpuRhi {
     pass.end();
     device.queue.submit([encoder.finish()]);
     await device.queue.onSubmittedWorkDone();
+    this._frameGpuDirty = true;
+
+    // After accumulate, read GPU frame into the CPU mirror getFramePixels returns.
+    if (kernelName === "rt4d_wavefront_accumulate") {
+      await this.ensureFrameReadback();
+    }
   }
 
   _resolveBufferGpu(handle) {

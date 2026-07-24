@@ -49,7 +49,7 @@ export async function renderWavefrontFrame(worldId, opts) {
   });
 
   await pipeline.renderFrame(worldId, config);
-  const pixels = pipeline.getPixels();
+  const pixels = await pipeline.getPixels();
 
   let conformance = null;
   if (opts.runConformance !== false) {
