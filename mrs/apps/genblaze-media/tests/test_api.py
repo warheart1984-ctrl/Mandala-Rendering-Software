@@ -31,6 +31,7 @@ def _offline_settings(**overrides) -> Settings:
         presign_expires_seconds=3600,
         dry_run=True,
         b2_probe_on_health=False,
+        abstract_retry_on_blank=True,
         dotenv_loaded=(),
     )
     base.update(overrides)
@@ -428,6 +429,7 @@ def test_blank_reject_deletes_b2_keys(monkeypatch):
         b2_app_key="key",
         b2_bucket="bucket",
         dry_run=False,
+        abstract_retry_on_blank=False,
     )
 
     gen = GenerateResult(
@@ -471,6 +473,102 @@ def test_blank_reject_deletes_b2_keys(monkeypatch):
 
     assert "genblaze-media/x/blank.jpg" in deleted
     assert "genblaze-media/x/manifest.json" in deleted
+    mock_http.close.assert_called_once()
+
+
+def test_abstract_rewrite_helpers():
+    from app.prompt_rewrite import looks_like_people_prompt, rewrite_as_abstract_geometry
+
+    assert looks_like_people_prompt("a woman holding a glowing tesseract")
+    assert not looks_like_people_prompt("neon mandala tesseract wireframe")
+    rewritten = rewrite_as_abstract_geometry("photoreal person with a cyan tesseract")
+    assert "person" not in rewritten.lower()
+    assert "tesseract" in rewritten.lower()
+    assert "no faces" in rewritten.lower() or "no people" in rewritten.lower()
+
+
+def test_blank_people_prompt_retries_abstract(monkeypatch):
+    """Near-black people still → one abstract rewrite attempt that can succeed."""
+    import io
+    from unittest.mock import MagicMock
+
+    from PIL import Image
+
+    from app.pipeline import GenerateResult, generate_image
+
+    blank_buf = io.BytesIO()
+    Image.new("RGB", (1024, 1024), (0, 0, 0)).save(blank_buf, format="JPEG", quality=90)
+    blank_jpeg = blank_buf.getvalue()
+
+    ok_buf = io.BytesIO()
+    Image.new("RGB", (256, 256), (40, 180, 220)).save(ok_buf, format="PNG")
+    ok_png = ok_buf.getvalue()
+
+    settings = _offline_settings(
+        nvidia_api_key="nvapi-test",
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+        abstract_retry_on_blank=True,
+    )
+
+    seen_prompts: list[str] = []
+    call_n = {"n": 0}
+
+    def fake_run_live_once(**kwargs):
+        call_n["n"] += 1
+        seen_prompts.append(kwargs["prompt"])
+        if call_n["n"] == 1:
+            gen = GenerateResult(
+                run_id="run-1",
+                prompt=kwargs["prompt"],
+                model=settings.image_model,
+                provider="nvidia-image",
+                status="ok",
+                asset_key="genblaze-media/x/blank.jpg",
+                manifest_key="genblaze-media/x/blank-manifest.json",
+                asset_sha256="abc",
+                preview_url=None,
+                created_at="2026-01-01T00:00:00+00:00",
+                dry_run=False,
+            )
+            return gen, blank_jpeg, []
+        gen = GenerateResult(
+            run_id="run-2",
+            prompt=kwargs["prompt"],
+            model=settings.image_model,
+            provider="nvidia-image",
+            status="ok",
+            asset_key="genblaze-media/x/ok.png",
+            manifest_key="genblaze-media/x/ok-manifest.json",
+            asset_sha256="def",
+            preview_url=None,
+            created_at="2026-01-01T00:00:00+00:00",
+            dry_run=False,
+        )
+        return gen, ok_png, []
+
+    mock_http = MagicMock()
+    mock_http.close = MagicMock()
+    monkeypatch.setattr("app.pipeline._run_live_once", fake_run_live_once)
+    monkeypatch.setattr("app.pipeline._best_effort_delete_keys", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        "app.pipeline._nvidia_output_dir",
+        lambda: __import__("pathlib").Path(__import__("tempfile").mkdtemp()),
+    )
+    monkeypatch.setattr(
+        "app.nvidia_http.build_nvidia_genai_client",
+        lambda *_a, **_k: mock_http,
+    )
+
+    result = generate_image(settings, "photoreal woman holding a cyan tesseract")
+    assert call_n["n"] == 2
+    assert "woman" in seen_prompts[0].lower()
+    assert "person" not in seen_prompts[1].lower()
+    assert "woman" not in seen_prompts[1].lower()
+    assert "abstract geometry retry" in (result.detail or "")
+    assert result.asset_key == "genblaze-media/x/ok.png"
     mock_http.close.assert_called_once()
 
 
