@@ -24,6 +24,24 @@ APP_DIR = Path(__file__).resolve().parent.parent
 INDEX_PATH = APP_DIR / "data" / "recent-assets.json"
 STATIC_UI = Path(__file__).resolve().parent / "static" / "index.html"
 
+
+def _prefer_local_preview(row: dict) -> dict:
+    """Choose local cache vs stored cloud URL at response time.
+
+    Index entries keep the B2 (or other cloud) ``preview_url`` when present.
+    When a same-origin cache file exists for ``run_id``, swap the response URL
+    to ``/api/preview/{run_id}`` so the UI works under B2 free-tier caps without
+    discarding the cloud fallback from the on-disk index.
+    """
+    run_id = row.get("run_id")
+    if isinstance(run_id, str) and get_preview_path(APP_DIR, run_id):
+        row["preview_url"] = local_preview_url(run_id)
+        row["preview_source"] = "local-cache"
+    elif row.get("preview_url"):
+        row["preview_source"] = "b2-presign"
+    return row
+
+
 app = FastAPI(
     title="MRS Genblaze Media",
     description=(
@@ -131,7 +149,7 @@ def api_generate(body: GenerateRequest) -> dict:
     public = {k: v for k, v in entry.items() if k != "embedding_vector"}
     if "embedding_vector" in entry:
         public["embedding_stored"] = True
-    return public
+    return _prefer_local_preview(public)
 
 
 @app.get("/api/assets")
@@ -143,13 +161,7 @@ def api_assets(limit: int = Query(default=20, ge=1, le=50)) -> dict:
         row = {k: v for k, v in a.items() if k != "embedding_vector"}
         if "embedding_vector" in a:
             row["embedding_stored"] = True
-        run_id = row.get("run_id")
-        if isinstance(run_id, str) and get_preview_path(APP_DIR, run_id):
-            row["preview_url"] = local_preview_url(run_id)
-            row["preview_source"] = "local-cache"
-        elif row.get("preview_url"):
-            row["preview_source"] = "b2-presign"
-        cleaned.append(row)
+        cleaned.append(_prefer_local_preview(row))
     return {"assets": cleaned}
 
 
@@ -192,13 +204,20 @@ def api_search(body: SearchRequest) -> dict:
         if not isinstance(vec, list) or not vec:
             continue
         score = cosine_similarity(query_vec, vec)
+        preview_row = _prefer_local_preview(
+            {
+                "run_id": asset.get("run_id"),
+                "preview_url": asset.get("preview_url"),
+            }
+        )
         scored.append(
             {
                 "score": round(score, 6),
                 "run_id": asset.get("run_id"),
                 "prompt": asset.get("prompt"),
                 "asset_key": asset.get("asset_key"),
-                "preview_url": asset.get("preview_url"),
+                "preview_url": preview_row.get("preview_url"),
+                "preview_source": preview_row.get("preview_source"),
                 "model": asset.get("model"),
                 "created_at": asset.get("created_at"),
             }

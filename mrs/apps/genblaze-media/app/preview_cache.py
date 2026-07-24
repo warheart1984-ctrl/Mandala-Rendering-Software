@@ -10,6 +10,7 @@ Render's filesystem is ephemeral; cache is best-effort for the current instance.
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -17,9 +18,14 @@ _RUN_ID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
 
+# Override the on-disk cache location (used by tests to keep writes out of the
+# repository working tree, and by operators who mount a scratch volume).
+_ENV_CACHE_DIR = "GENBLAZE_PREVIEW_CACHE_DIR"
+
 
 def cache_dir(app_dir: Path) -> Path:
-    path = app_dir / "data" / "preview-cache"
+    override = os.getenv(_ENV_CACHE_DIR)
+    path = Path(override) if override else app_dir / "data" / "preview-cache"
     path.mkdir(parents=True, exist_ok=True)
     return path
 

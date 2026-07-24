@@ -15,7 +15,7 @@ from typing import Any, Callable
 
 from app.config import APP_DIR, NVIDIA_SETUP_HELP, Settings
 from app.image_quality import assess_image_bytes, extract_nvidia_warnings
-from app.preview_cache import local_preview_url, put_preview
+from app.preview_cache import put_preview
 from app.prompt_rewrite import looks_like_people_prompt, rewrite_as_abstract_geometry
 from app.prompt_sanitize import sanitize_prompt
 
@@ -48,11 +48,16 @@ class GenerateResult:
 
 
 def _attach_local_preview(gen: GenerateResult, image_bytes: bytes | None) -> None:
-    """Prefer same-origin preview so UI works when B2 free-tier caps block GETs."""
+    """Cache still bytes for same-origin ``/api/preview`` without discarding B2 URL.
+
+    Must not overwrite ``gen.preview_url``: that field is persisted in the
+    recent-assets index and is the cloud fallback after prune / restart.
+    ``api_assets`` / ``api_generate`` prefer the local URL at response time when
+    the cache file is present.
+    """
     if not image_bytes or not gen.run_id:
         return
     if put_preview(APP_DIR, gen.run_id, image_bytes):
-        gen.preview_url = local_preview_url(gen.run_id)
         note = "local preview cache (UI avoids B2 download)"
         if note not in (gen.detail or ""):
             gen.detail = (gen.detail + " · " if gen.detail else "") + note
@@ -543,7 +548,12 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
             )
             last_warnings = warnings
             last_gen = gen
-            gen.prompt_sanitized = attempt_prompt != raw_prompt or prompt_sanitized
+            # `prompt_sanitized` means meta-commentary was stripped from the raw
+            # prompt (cleaned != raw_prompt). The abstract-geometry rewrite is a
+            # different transform with its own detail note, so don't let it flip
+            # this flag — otherwise a successful abstract retry is mislabeled as
+            # "meta-commentary stripped" in the note and the API response.
+            gen.prompt_sanitized = prompt_sanitized
             gen.created_at = created_at
             if abstract_retry_used and attempt_idx > 0:
                 gen.detail = (gen.detail + " · " if gen.detail else "") + (
