@@ -20,12 +20,12 @@ DEFAULT_GEN_BASE_URL = "https://ai.api.nvidia.com/v1"
 
 # Before (app defaults): http=300, nvcf=300, pipeline=420, no NVCF-POLL-SECONDS.
 # After: longer read + explicit poll window so cold starts become 202→poll.
-# Poll default 120 (was 90): live Render E2E saw empty 504s around 125–153s;
-# holding the sync window longer (NVIDIA max 300) reduces premature gateway 504s.
+# Poll default 180 (was 120): live Render E2E still saw empty 504s at ~153–245s
+# with poll=120. NVIDIA documents a maximum of 300; Render uses that maximum.
 DEFAULT_HTTP_TIMEOUT = 600.0
 DEFAULT_NVCF_TIMEOUT = 600.0
 DEFAULT_PIPELINE_TIMEOUT = 720
-DEFAULT_NVCF_POLL_SECONDS = 120
+DEFAULT_NVCF_POLL_SECONDS = 180
 DEFAULT_CONNECT_TIMEOUT = 30.0
 # Opt-in empty-504 delayed retry (see pipeline.generate_image). Default OFF —
 # never silently double-bill. Delay gives NIM time to finish cold-starting.
@@ -211,21 +211,33 @@ def probe_genai_model_liveness(
     try:
         resp = http.post(path, json={})
         status = int(resp.status_code)
+        body_len = len(getattr(resp, "content", None) or b"")
         if status == 404:
             liveness = "dead"
         elif status == 400 or 200 <= status < 300:
             liveness = "live"
+        elif status == 504:
+            liveness = "unavailable"
         else:
             liveness = "unknown"
+        note = (
+            "invalid-payload probe (no billed generate when NIM rejects "
+            "empty body as documented)"
+        )
+        if liveness == "unavailable":
+            note = (
+                "warmup got gateway 504 — NIM likely cold, overloaded, or "
+                "unreachable; generate may keep failing until NVIDIA recovers. "
+                "The probe is cheap when NIM rejects `{}`, but gateway timeout "
+                "billing is opaque."
+            )
         return {
             "ran": True,
             "model": model,
             "http_status": status,
             "liveness": liveness,
-            "note": (
-                "invalid-payload probe (no billed generate when NIM rejects "
-                "empty body as documented)"
-            ),
+            "body_bytes": body_len,
+            "note": note,
         }
     except Exception as exc:  # noqa: BLE001 — surface in health/startup logs
         return {

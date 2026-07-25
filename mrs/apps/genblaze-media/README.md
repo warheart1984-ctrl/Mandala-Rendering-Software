@@ -50,10 +50,10 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `SEEDANCE_RESOLUTION` / `SEEDANCE_DURATION` / `SEEDANCE_ASPECT_RATIO` | Seedance request settings; defaults `720p` / `5` / `16:9` (`1080p` not claimed) |
 | `SEEDANCE_GENERATE_AUDIO` / `SEEDANCE_WATERMARK` | optional; defaults `1` / `0` — watermark outcome is gateway/account-dependent and **not guaranteed** |
 | `GENBLAZE_VIDEO_HTTP_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_TIMEOUT` / `GENBLAZE_VIDEO_PIPELINE_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_POLL_SECONDS` | Cosmos video timeouts (defaults 900 / 900 / 1200 / 120) |
-| `GENBLAZE_HTTP_TIMEOUT` / `GENBLAZE_NVCF_TIMEOUT` / `GENBLAZE_PIPELINE_TIMEOUT` / `GENBLAZE_NVCF_POLL_SECONDS` | FLUX stills timeouts (defaults **600 / 600 / 720 / 120**). Raise poll toward **300** on Render if empty 504s persist |
+| `GENBLAZE_HTTP_TIMEOUT` / `GENBLAZE_NVCF_TIMEOUT` / `GENBLAZE_PIPELINE_TIMEOUT` / `GENBLAZE_NVCF_POLL_SECONDS` | FLUX stills timeouts (defaults **600 / 600 / 720 / 180**). Render blueprint uses poll **300** (NVIDIA max) |
 | `GENBLAZE_EMPTY_504_RETRY` | default **off** — set `1` for one delayed server retry after an empty NVIDIA gateway 504 only (may bill a second NIM call; prefer manual wait+retry) |
 | `GENBLAZE_EMPTY_504_RETRY_DELAY` | seconds to wait before that opt-in retry (default **45**, clamped 5–180) |
-| `GENBLAZE_NVIDIA_WARMUP_ON_STARTUP` | default **off** — set `1` to run one invalid-payload genai probe at process start (cheap; not a billed generate when NIM rejects `{}`) |
+| `GENBLAZE_NVIDIA_WARMUP_ON_STARTUP` | default **off** — set `1` to run one invalid-payload genai probe at process start (cheap when NIM rejects `{}`; it can itself return 504 when the gateway is unavailable) |
 | `GENBLAZE_STORAGE_PREFIX` | optional; default `genblaze-media` |
 | `GENBLAZE_DRY_RUN` | `1` only for unit tests / offline mocks — **not** live demos |
 | `B2_PROBE_ON_HEALTH` | default **off** — when `1`, `/health` runs a ListObjects probe (B2 **Class C**). Keep `0` on Render/demo day |
@@ -101,19 +101,45 @@ If `NVIDIA_API_KEY` is missing, `/health` still boots and reports setup help; `P
 4. Deploy. Service binds `0.0.0.0:$PORT` via the Dockerfile `CMD`.
 5. Open the public `https://….onrender.com/` URL for judges; hit `/health` first (ensure `B2_PROBE_ON_HEALTH=0` so health checks do not ListObjects).
 
-**Redeploy required:** code fixes (empty-504 messaging, timeout defaults, ingest routes) do **not** apply to the live Render service until you redeploy that web service. After redeploy, confirm `/health` shows `nvidia_timeouts.nvcf_poll_seconds` ≥ 120 and `image_ingest_routes: true`. Ingest `404`s mean the running image predates those routes — redeploy; do not treat that as an NVIDIA failure.
+**Redeploy required:** code fixes do **not** apply live until you redeploy. After redeploy, confirm `/health` shows `nvidia_timeouts.nvcf_poll_seconds: 300`, `image_ingest_routes: true`, and inspect `nvidia_nim_status` / `nvidia_warmup`.
+
+#### Empty NVIDIA 504 operator playbook
+
+Live evidence on 2026-07-25: startup warmup itself returned `http_status: 504`,
+and generate returned empty 504 after roughly 153–245 seconds. This points
+primarily to NVIDIA gateway/NIM availability. Longer polling can reduce a
+cold-start race, but cannot force an unavailable NIM to respond.
+
+Try these in order:
+
+1. Set `GENBLAZE_NVCF_POLL_SECONDS=300`; keep HTTP/NVCF timeout at `600` and
+   pipeline timeout at `720`.
+2. Keep Render warm with an external cron `GET /health` every 10–14 minutes,
+   avoiding Render sleep on top of NIM cold start.
+3. After a 504, wait 60 seconds and retry once manually.
+4. Optionally set `GENBLAZE_EMPTY_504_RETRY=1` and
+   `GENBLAZE_EMPTY_504_RETRY_DELAY=60`. This may double-bill if the first
+   invocation eventually completed.
+5. Verify the same key can invoke
+   [FLUX.1-schnell on build.nvidia.com](https://build.nvidia.com/black-forest-labs/flux_1-schnell).
+6. `GENBLAZE_DRY_RUN=1` proves the app/B2 path while NIM is down, but is not a
+   live generation demo.
+
+The app has no `prefer_async` switch. Genblaze polls NVCF only after NVIDIA
+returns `202 + NVCF-REQID`. The existing fal/Seedance integration is
+video-only; no secondary fal image backend is currently wired.
 
 **Recommended Render env (dashboard → Environment):**
 
 | Variable | Suggested | Notes |
 | --- | --- | --- |
-| `GENBLAZE_NVCF_POLL_SECONDS` | `120` (try `180`–`300` if empty 504s continue) | NVIDIA max **300**; longer sync hold → more 202→poll, fewer empty 504s |
+| `GENBLAZE_NVCF_POLL_SECONDS` | `300` | NVIDIA maximum; longer sync hold gives NVCF more time to return 202 |
 | `GENBLAZE_HTTP_TIMEOUT` | `600` | Must stay ≥ poll + 30 (app floors this) |
 | `GENBLAZE_NVCF_TIMEOUT` | `600` | NVCF poll wait after 202 |
 | `GENBLAZE_PIPELINE_TIMEOUT` | `720` | Genblaze pipeline ceiling |
 | `GENBLAZE_EMPTY_504_RETRY` | leave unset / `0` | Opt in `1` only if you accept a possible second NIM charge after empty 504 |
-| `GENBLAZE_EMPTY_504_RETRY_DELAY` | `45` | Used only when empty-504 retry is on |
-| `GENBLAZE_NVIDIA_WARMUP_ON_STARTUP` | `1` (optional) | One cheap invalid-payload probe at boot; not a billed FLUX generate when NIM rejects `{}` |
+| `GENBLAZE_EMPTY_504_RETRY_DELAY` | `45`–`60` | Used only when empty-504 retry is on |
+| `GENBLAZE_NVIDIA_WARMUP_ON_STARTUP` | `1` | If warmup also returns 504, treat NIM as unavailable |
 | `B2_PROBE_ON_HEALTH` | `0` | Keep off so Render health checks do not ListObjects |
 
 Production image installs from `requirements-docker.txt`, then overlays `Pillow==12.3.0` with `pip install --no-deps` so the CVE pin is not blocked by `genblaze-core==0.3.7`’s declared `pillow<12` (modern pip cannot satisfy both in one resolve). Redeploy after merge for the pin to take effect on Render.
@@ -142,8 +168,8 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 | --- | --- |
 | `InvalidAccessKeyId` on ListObjects | B2 key ID / application key in `.env` rejected by the S3 API — refresh a **non-master** bucket-scoped key |
 | Genblaze `HeadBucket` 403 | Common with bucket-scoped keys; this app skips that preflight when `B2_REGION` is set |
-| NIM generate timeout | Was: sync POST read timeout (`The read operation timed out`). Fix: `NVCF-POLL-SECONDS` + longer httpx read (defaults **120 / 600**) so cold starts return 202 then poll |
-| `NVIDIA image generate failed (504): {"_raw": ""}` | Upstream gateway returned no diagnostic body (NIM cold start / gateway timeout). API preserves the 504 and tells operators to wait 30–60s and retry **once manually**. Default does **not** auto-retry (avoids surprise double billing). Opt-in: `GENBLAZE_EMPTY_504_RETRY=1` + delay. Optional boot probe: `GENBLAZE_NVIDIA_WARMUP_ON_STARTUP=1`. **Redeploy Render** before expecting this behavior live. |
+| NIM generate timeout | `NVCF-POLL-SECONDS` + longer HTTP read (defaults **180 / 600**; Render **300 / 600**) allow cold starts to return 202 and then poll |
+| `NVIDIA image generate failed (504): {"_raw": ""}` | Upstream gateway returned no diagnostic body. If warmup also returns 504, `/health.nvidia_nim_status` reports unavailable. Raise poll to 300, wait and retry once, or opt into delayed retry with double-bill risk. No fal image fallback is wired. |
 | `asset transfer(s) failed; manifest was not uploaded` | NVIDIA FLUX returns base64; Genblaze writes `file://` under CWD (`/app` in Docker). `AssetTransfer` only allowlists system temp — transfer fails and SinkError omits the cause. Fix: write NVIDIA payloads under `tempfile` + surface underlying transfer exception in the API detail |
 | Solid black / empty JPEG after “success” | Observed: valid ~6 KiB 1024² JPEG, mean luminance 0, one color — common when FLUX.1-schnell NIM blanks photoreal-people prompts. Pipeline rejects near-black stills with HTTP **422**, strips trailing meta-commentary, optionally retries once with an abstract geometry rewrite (`GENBLAZE_ABSTRACT_RETRY`, default on), and best-effort deletes the rejected B2 asset/manifest |
 | Broken image icon / preview errors after successful generate | Metadata + B2 keys exist, but browser GET of the private presigned URL returns **AccessDenied: Transaction cap exceeded** (B2 free-tier daily caps). Fix: serve UI from same-origin `/api/preview/{run_id}` local cache after generate; wait for Caps & Alerts reset (~00:00 GMT) before more B2 traffic |
