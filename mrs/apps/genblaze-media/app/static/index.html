@@ -160,10 +160,12 @@
     <h1>Mandala · Genblaze</h1>
     <p class="lede">
       Provenanced concept stills for MRS / 4D scene authoring.
-      Prompt → NVIDIA NIM FLUX (via Genblaze) → private Backblaze B2 with SHA-256 manifest
-      → optional semantic index (nv-embedcode). Concept plates for the 4D renderer —
-      NIM does not simulate 4D worlds. Cosmos video is an optional operator path
-      (off by default for this demo).
+      Default path: Prompt → NVIDIA NIM FLUX (via Genblaze) → private Backblaze B2
+      with SHA-256 manifest → optional semantic index (nv-embedcode). Optional path:
+      <code>GENBLAZE_IMAGE_BACKEND=rt4d</code> → MRS RT4D path tracer → deterministic
+      procedural 4D still (NOT text-to-image / not diffusion). Concept plates for the
+      4D renderer — FLUX does not simulate 4D worlds. Cosmos video is an optional
+      operator path (off by default for this demo).
     </p>
 
     <p class="lede">
@@ -175,7 +177,7 @@
     </p>
 
     <section class="path" id="stills">
-      <h2>NIM FLUX · stills</h2>
+      <h2>Stills · NIM FLUX or RT4D</h2>
       <p class="tips" role="note">
         <strong>Prompt tips (FLUX.1-schnell):</strong>
         abstract geometry, mandalas, tesseracts, neon grids, and studio-lit objects usually work.
@@ -183,6 +185,18 @@
         object and light, not a portrait. If a people-like prompt blanks, the service retries once with an
         abstract rewrite (disable with <code>GENBLAZE_ABSTRACT_RETRY=0</code>). Do not append feedback like
         “ok this not good” into the prompt.
+      </p>
+      <p class="tips" role="note">
+        <strong>RT4D renderer backend</strong>
+        (<code>GENBLAZE_IMAGE_BACKEND=rt4d</code>, or NVIDIA fallback via
+        <code>GENBLAZE_IMAGE_FALLBACK_TO_RT4D=1</code>):
+        the prompt selects a <em>procedural</em> 4D scene archetype (keyword → surface /
+        palette / camera), then the MRS RT4D CPU path tracer renders a deterministic PNG.
+        Same prompt → same seed → same bytes. This is <strong>not</strong> text-to-image
+        and not photoreal diffusion — it is a seeded 4D render with provenance
+        (seed, scene id, camera, samples) in the manifest. Requires Node.js +
+        <code>renderer-core/scripts/render-still.mjs</code> (not yet in the deployed
+        python:3.12 Docker image).
       </p>
 
       <form id="gen-form">
@@ -257,7 +271,9 @@
 
     <footer>
       Storage: Backblaze B2 (private bucket → presigned GET). Orchestration: Genblaze.
-      Image: NVIDIA NIM FLUX (stills). Video: NVIDIA NIM Cosmos (optional; off by default).
+      Image: NVIDIA NIM FLUX (stills) or optional MRS RT4D renderer
+      (<code>GENBLAZE_IMAGE_BACKEND=rt4d</code> — deterministic procedural 4D, not diffusion).
+      Video: NVIDIA NIM Cosmos (optional; off by default).
       Embeddings: NVIDIA nv-embedcode. Operator readiness ≠ commercial self-serve.
       Anchors: <code>/media/stills</code> · <code>/media/nim-cosmos</code> (video when enabled).
       Render governance reference (docs only, not implemented here): <a href="/cros">/cros</a>.
@@ -529,22 +545,36 @@
       if (cosmosSection) {
         cosmosSection.hidden = !videoOn;
       }
-      if (!h.nvidia_configured && !h.dry_run) {
+      if (!h.nvidia_configured && !h.dry_run && h.image_backend !== "rt4d") {
         setStatus(statusEl, h.nvidia_help || "NVIDIA_API_KEY not configured — generate will return 503 until set.", "warn");
+      } else if (h.image_backend === "rt4d" && h.rt4d && !h.rt4d.available) {
+        setStatus(
+          statusEl,
+          "RT4D backend selected but Node/script unavailable — " +
+            (h.rt4d_note || "see README for Node + render-still.mjs setup."),
+          "warn",
+        );
       } else if (h.b2_error) {
         setStatus(statusEl, "B2 probe error: " + h.b2_error, "err");
       } else if (h.b2_configured) {
+        const backendLabel =
+          h.image_backend === "rt4d"
+            ? "rt4d-render"
+            : ("image " + h.image_model);
         setStatus(
           statusEl,
           "Ready · B2 " + h.b2_bucket +
-            " · image " + h.image_model +
+            " · " + backendLabel +
+            (h.image_fallback_to_rt4d ? " · RT4D fallback on" : "") +
             (videoOn
               ? (" · video " + (h.video_model || "—"))
               : " · video off (stills demo)") +
             " · embed " + h.embed_model
         );
       } else if (!h.dry_run) {
-        setStatus(statusEl, "Ready · image " + h.image_model + (videoOn ? "" : " · video off"), "");
+        const backendLabel =
+          h.image_backend === "rt4d" ? "rt4d-render" : ("image " + h.image_model);
+        setStatus(statusEl, "Ready · " + backendLabel + (videoOn ? "" : " · video off"), "");
       }
     }).catch(() => {});
 

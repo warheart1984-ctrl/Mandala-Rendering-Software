@@ -31,6 +31,23 @@ def resolve_repo_root(app_dir: Path = APP_DIR) -> Path:
 REPO_ROOT = resolve_repo_root()
 
 
+def rt4d_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
+    """Default path to the renderer-core render-still CLI in the monorepo.
+
+    In the app-only Docker image this path will not exist; the provider treats a
+    missing script (or missing node) as ``rt4d_available = False`` and the
+    ``/health`` endpoint reports it, rather than raising at import time.
+    """
+    return (
+        repo_root
+        / "mrs"
+        / "packages"
+        / "renderer-core"
+        / "scripts"
+        / "render-still.mjs"
+    )
+
+
 def _load_dotenv_files() -> list[str]:
     """Load repo-root `.env` then app-local `.env` without clobbering process env.
 
@@ -111,10 +128,30 @@ class Settings:
     empty_504_retry_delay_seconds: float
     nvidia_warmup_on_startup: bool
     dotenv_loaded: tuple[str, ...]
+    # --- RT4D deterministic renderer backend (defaults keep NVIDIA the default) ---
+    image_backend: str = "nvidia"
+    image_fallback_to_rt4d: bool = False
+    rt4d_node_path: str = "node"
+    rt4d_script_path: str | None = None
+    rt4d_width: int = 448
+    rt4d_height: int = 448
+    rt4d_samples: int = 20
+    rt4d_max_depth: int = 5
+    rt4d_timeout_seconds: float = 180.0
 
     @property
     def nvidia_configured(self) -> bool:
         return bool(self.nvidia_api_key)
+
+    @property
+    def rt4d_selected(self) -> bool:
+        """True when RT4D is the primary image backend (GENBLAZE_IMAGE_BACKEND=rt4d)."""
+        return self.image_backend == "rt4d"
+
+    @property
+    def resolved_rt4d_script(self) -> str:
+        """Explicit RT4D_SCRIPT_PATH override, else the monorepo default path."""
+        return self.rt4d_script_path or str(rt4d_default_script_path())
 
     @property
     def seedance_configured(self) -> bool:
@@ -215,6 +252,34 @@ def get_settings() -> Settings:
     else:
         seedance_watermark = wm_raw not in {"0", "false", "no", "off"}
 
+    # --- RT4D deterministic renderer backend -------------------------------
+    backend_choice = (os.getenv("GENBLAZE_IMAGE_BACKEND") or "nvidia").strip().lower()
+    image_backend = "rt4d" if backend_choice in {"rt4d", "renderer", "mrs"} else "nvidia"
+    # Default OFF: explicit opt-in so a blank/504 NVIDIA still falls back to the
+    # deterministic RT4D render instead of surfacing the failure.
+    image_fallback_to_rt4d = (
+        os.getenv("GENBLAZE_IMAGE_FALLBACK_TO_RT4D") or ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    rt4d_node_path = (os.getenv("RT4D_NODE_PATH") or "node").strip() or "node"
+    rt4d_script_override = (os.getenv("RT4D_SCRIPT_PATH") or "").strip() or None
+
+    def _clamp_int(name: str, default: int, lo: int, hi: int) -> int:
+        try:
+            val = int((os.getenv(name) or str(default)).strip() or default)
+        except ValueError:
+            val = default
+        return max(lo, min(hi, val))
+
+    rt4d_width = _clamp_int("RT4D_RENDER_WIDTH", 448, 16, 1024)
+    rt4d_height = _clamp_int("RT4D_RENDER_HEIGHT", 448, 16, 1024)
+    rt4d_samples = _clamp_int("RT4D_SAMPLES", 20, 1, 512)
+    rt4d_max_depth = _clamp_int("RT4D_MAX_DEPTH", 5, 1, 12)
+    try:
+        rt4d_timeout = float((os.getenv("RT4D_TIMEOUT") or "180").strip() or "180")
+    except ValueError:
+        rt4d_timeout = 180.0
+    rt4d_timeout = max(10.0, min(600.0, rt4d_timeout))
+
     return Settings(
         nvidia_api_key=(
             os.getenv("NVIDIA_API_KEY")
@@ -268,6 +333,15 @@ def get_settings() -> Settings:
         empty_504_retry_delay_seconds=empty_504_delay,
         nvidia_warmup_on_startup=nvidia_warmup,
         dotenv_loaded=tuple(loaded),
+        image_backend=image_backend,
+        image_fallback_to_rt4d=image_fallback_to_rt4d,
+        rt4d_node_path=rt4d_node_path,
+        rt4d_script_path=rt4d_script_override,
+        rt4d_width=rt4d_width,
+        rt4d_height=rt4d_height,
+        rt4d_samples=rt4d_samples,
+        rt4d_max_depth=rt4d_max_depth,
+        rt4d_timeout_seconds=rt4d_timeout,
     )
 
 

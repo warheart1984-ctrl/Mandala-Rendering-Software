@@ -44,6 +44,7 @@ class GenerateResult:
     detail: str | None = None
     prompt_sanitized: bool = False
     quality: dict[str, Any] | None = None
+    provenance: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

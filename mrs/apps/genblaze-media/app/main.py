@@ -33,6 +33,11 @@ from app.nvidia_http import (
 )
 from app.pipeline import GenerationQualityError, generate_image, probe_b2
 from app.pipeline_video import generate_video
+from app.rt4d_provider import (
+    RT4D_PROVIDER_ID,
+    generate_image_rt4d,
+    rt4d_availability,
+)
 from app.preview_cache import (
     get_preview_path,
     is_run_id,
@@ -121,13 +126,15 @@ async def _lifespan(_app: FastAPI):
 app = FastAPI(
     title="MRS Genblaze Media",
     description=(
-        "Provenanced generative concept media for Mandala Rendering System / "
-        "4D scene authoring. Prompt → NVIDIA NIM FLUX (stills) or Cosmos (video) "
-        "via Genblaze → Backblaze B2 assets + SHA-256 manifest. "
-        "Image ingest stores operator photos and returns heuristic 4D suggestions — "
-        "does not claim Genblaze renders or reconstructs 4D scenes."
+        "Provenanced concept media for Mandala Rendering System / 4D scene "
+        "authoring. Prompt → NVIDIA NIM FLUX (stills) or Cosmos/Seedance (video) "
+        "via Genblaze → Backblaze B2 assets + SHA-256 manifest. Optional "
+        "GENBLAZE_IMAGE_BACKEND=rt4d uses the MRS RT4D path tracer for "
+        "deterministic procedural 4D stills (NOT text-to-image). "
+        "Image ingest stores operator photos and returns heuristic 4D "
+        "suggestions — does not claim Genblaze renders or reconstructs 4D scenes."
     ),
-    version="0.2.2",
+    version="0.2.3",
     lifespan=_lifespan,
 )
 
@@ -255,8 +262,18 @@ def health() -> dict:
         # Ingest routes ship in app code; a 404 on Render means that deploy
         # predates the ingest commit — redeploy this service to pick them up.
         "image_ingest_routes": True,
-        # Drive-G-1 capability disclosure: Seedance/fal is video-only.
-        "image_backends": ["nvidia-genai"],
+        # Drive-G-1 capability disclosure: NVIDIA FLUX + optional RT4D renderer.
+        # Seedance/fal remains video-only (no fal image fallback).
+        "image_backend": settings.image_backend,
+        "image_backends": ["nvidia-genai", RT4D_PROVIDER_ID],
+        "image_fallback_to_rt4d": settings.image_fallback_to_rt4d,
+        "rt4d": rt4d_availability(settings),
+        "rt4d_note": (
+            "Deterministic procedural 4D path-traced stills via renderer-core. "
+            "NOT text-to-image / not diffusion. Prompt selects a scene archetype; "
+            "seed records variation. Requires Node + render-still.mjs (not yet in "
+            "the python:3.12 Docker image)."
+        ),
         "fal_image_fallback": False,
         "prefer_async": False,
         "async_note": (
@@ -271,12 +288,43 @@ def _format_generation_failure(exc: Exception) -> str:
     return format_generation_failure(exc, warmup=_nvidia_warmup_state)
 
 
+def _dispatch_image(settings: Any, prompt: str):
+    """Select the image backend and, when enabled, fall back to RT4D.
+
+    - ``GENBLAZE_IMAGE_BACKEND=rt4d`` → deterministic RT4D render (no API).
+    - default NVIDIA; if it fails and ``GENBLAZE_IMAGE_FALLBACK_TO_RT4D=1`` and
+      the RT4D CLI/node are available, render deterministically instead of
+      surfacing the NVIDIA failure (blank still, empty 504, etc.).
+    Bad input (``ValueError``) never triggers fallback.
+    """
+    if settings.rt4d_selected:
+        return generate_image_rt4d(settings, prompt)
+    try:
+        return generate_image(settings, prompt)
+    except ValueError:
+        raise
+    except Exception as exc:  # noqa: BLE001 — optional deterministic fallback
+        if settings.image_fallback_to_rt4d and rt4d_availability(settings)["available"]:
+            logger.warning(
+                "NVIDIA image backend failed (%s: %s); falling back to RT4D render",
+                type(exc).__name__,
+                exc,
+            )
+            gen = generate_image_rt4d(settings, prompt)
+            note = f"RT4D fallback after NVIDIA failure ({type(exc).__name__})"
+            gen.detail = (gen.detail + " · " if gen.detail else "") + note
+            return gen
+        raise
+
+
 def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
     """Shared generate path: image or video → embed → index → response-local preview."""
     settings = get_settings()
     try:
-        result = generate_video(settings, body.prompt) if video else generate_image(
-            settings, body.prompt
+        result = (
+            generate_video(settings, body.prompt)
+            if video
+            else _dispatch_image(settings, body.prompt)
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -284,7 +332,7 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
         # Blank/near-black NIM still or unusable video — not a missing key.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RuntimeError as exc:
-        # Missing NVIDIA key, video disabled, or B2 config — 503 with setup text.
+        # Missing NVIDIA/RT4D setup, video disabled, or B2 config — 503 with setup text.
         # Transfer/sink failures are re-raised as non-RuntimeError (see pipeline).
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
