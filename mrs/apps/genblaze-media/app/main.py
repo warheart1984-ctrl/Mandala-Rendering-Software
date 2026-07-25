@@ -434,7 +434,26 @@ async def api_image_ingest(request: Request) -> dict:
     mime: str | None = None
 
     if "multipart/form-data" in content_type:
-        form = await request.form()
+        try:
+            form = await request.form()
+        except (RuntimeError, AssertionError) as exc:
+            # Starlette needs python-multipart for request.form(); missing install
+            # previously surfaced as an unhandled 500 on production file uploads.
+            detail = str(exc).lower()
+            if "python-multipart" in detail or "multipart" in detail:
+                logger.error(
+                    "multipart ingest unavailable (install python-multipart==0.0.31): %s",
+                    exc,
+                )
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "Multipart uploads require python-multipart in the runtime image. "
+                        "Pin python-multipart==0.0.31 in requirements-docker.txt / "
+                        "requirements.txt and redeploy."
+                    ),
+                ) from exc
+            raise
         upload = form.get("file")
         if upload is None:
             raise HTTPException(status_code=400, detail="multipart field 'file' required")
