@@ -108,7 +108,20 @@ polices (this package's own import graph) actually exists.
 CROS does not modify MRS constitutional artifacts. It carries its own constitution under
 `constitution/` and is subordinate to the MRS charter, not a replacement for it.
 
-## VII. Amendment
+## VII. Common lifecycle bridge (SX-PTIG)
+
+CROS lineage sits inside a broader **declared** constitutional lifecycle (Theory → … → Stewardship)
+documented under SX-PTIG. Continuity (preservation) and Acceptance (activation) are **independent**
+guarantees — preservation must not imply acceptance.
+
+- Prose: [`LIFECYCLE.md`](./LIFECYCLE.md)
+- Machine bridge: [`lifecycle-bridge.json`](./lifecycle-bridge.json)
+- PTIG SoT: `mrs/packages/renderer-core/src/gpu/constitution/`
+
+Status: **declared** bridge. CROS validators remain package-local (**partial**). This charter does
+**not** claim CKL enforcement of PTIG or system-wide CI-* gates via JCK/COS/CER/ERS/RAC.
+
+## VIII. Amendment
 
 `constitution/invariants.json` is the source of truth. Changing an invariant's `status` upward
 requires the `evidence` array to cite a test that passes. Adding a replay class requires stating,

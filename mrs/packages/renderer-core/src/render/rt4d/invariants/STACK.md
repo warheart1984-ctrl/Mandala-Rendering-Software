@@ -123,3 +123,4 @@ See [`crossRuntime/CROSS_RUNTIME.md`](./crossRuntime/CROSS_RUNTIME.md) and [`cro
 - Docs mirror: [`docs/4drs/contracts/INVARIANT_STACK.md`](../../../../../../../docs/4drs/contracts/INVARIANT_STACK.md)
 - MRS-IC (inspector invariants — separate): [`docs/4drs/contracts/MRS-IC-v1.2.md`](../../../../../../../docs/4drs/contracts/MRS-IC-v1.2.md)
 - CROS (creative render OS — separate): `mrs/packages/cros/constitution/invariants.json`
+- SX-PTIG lifecycle (continuity ≠ acceptance): [`LIFECYCLE.md`](./LIFECYCLE.md), [`../../../gpu/constitution/SX-PTIG.md`](../../../gpu/constitution/SX-PTIG.md)

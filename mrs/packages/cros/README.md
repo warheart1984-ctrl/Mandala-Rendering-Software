@@ -11,6 +11,7 @@ A focused foundation for a governed cinematic render stack:
 | Piece | Path | Status |
 | --- | --- | --- |
 | Constitution (CI-001..CI-006) | `constitution/` | **design** — prose + machine-readable JSON |
+| Lifecycle bridge (SX-PTIG) | `constitution/LIFECYCLE.md` + `lifecycle-bridge.json` | **declared** — continuity ≠ acceptance; not a runtime gate |
 | Lineage artifact schemas (7) | `schemas/` | **specified** — Draft 2020-12, unit-validated |
 | Dual conformance profiles | `profiles/` | `cros.dcc-offline` **declared**; `cros.gen-ai-nim` **skeleton** |
 | Python package | `src/cros/` | **skeleton / partial** — types, hashing, validators, gen-ai planner |
@@ -58,6 +59,20 @@ CROS refuses a single meaning of "reproducible".
 | `cros.dcc-offline` | `bit-identical`, `deterministic-parameters` | Declared expectations for a future offline path-tracer adapter. **No adapter exists.** |
 | `cros.gen-ai-nim` | `provider-contract` **only** | Pinned model id + params + prompt hash + seed-if-exposed + provider request id + asset SHA-256. Reproducible *within the provider contract*. **Pixel equality is not asserted. Frame-exact claims are a CI-005 failure.** |
 
+## Continuity ≠ acceptance (SX-PTIG bridge)
+
+CROS **links** its lineage to the shared SX-PTIG lifecycle. The bridge is
+**declared**, not a runtime gate, and does **not** claim CKL enforcement of PTIG.
+
+| Guarantee | Role in CROS terms |
+| --- | --- |
+| ContinuityGuarantee | Preserve identity / lineage / provenance (inactive OK) |
+| AcceptanceGuarantee | Activate only with evidence (CI-004) + honest replay class (CI-005) |
+
+See [`constitution/LIFECYCLE.md`](./constitution/LIFECYCLE.md) and
+[`lifecycle-bridge.json`](./constitution/lifecycle-bridge.json). PTIG SoT:
+`mrs/packages/renderer-core/src/gpu/constitution/SX-PTIG.md`.
+
 ## Layout
 
 ```
@@ -66,7 +81,9 @@ mrs/packages/cros/
   pyproject.toml
   constitution/
     CHARTER.md
-    invariants.json
+    LIFECYCLE.md          # SX-PTIG bridge (declared)
+    lifecycle-bridge.json
+    invariants.json       # CI-001..CI-006; runtimeStatus: absent
   schemas/
     creative_intent.schema.json
     render_intent.schema.json
@@ -77,14 +94,16 @@ mrs/packages/cros/
     replay_record.schema.json
     lineage.md
   profiles/
-    cros.dcc-offline.json
-    cros.gen-ai-nim.json
+    cros.dcc-offline.json   # declared
+    cros.gen-ai-nim.json    # skeleton
   src/cros/
     __init__.py
     resources.py      # locate constitution / schemas / profiles
     artifacts.py      # dataclasses, canonical hashing, schema validate
     evidence.py       # RenderEvidence / ReplayRecord builders (CI-004/005)
     adapter.py        # IRenderAdapter Protocol + NullRenderAdapter
+    adapters/
+      seedance.py     # skeleton only — live Seedance HTTP is genblaze-media
     planning.py       # gen-ai plan derivation (CI-002); offline raises
     validation.py     # CI-001..CI-006 checks + lineage walk
     bridge.py         # test-only genblaze-shaped dict → RenderEvidence
@@ -103,7 +122,8 @@ mrs/packages/cros/
 | Gen-ai evidence field enforcement | yes | |
 | Offline DCC planner | | raises `UnsupportedProfileError` |
 | Offline required-field enforcement | | declared, not machine-checked |
-| Any real adapter (NIM, Cycles, …) | | none — `NullRenderAdapter` only |
+| Any real adapter (NIM, Cycles, …) | | none — `NullRenderAdapter`; `adapters/seedance.py` is **skeleton** only |
+| Seedance live HTTP | | owned by genblaze-media (`GENBLAZE_VIDEO_BACKEND=seedance`), not this package |
 | Replay executor | | `verdict: unverified` only |
 | Farm / OIDN / ACES / color mgmt | | absent |
 | Coupling to genblaze-media | none (banned) | optional future HTTP export |

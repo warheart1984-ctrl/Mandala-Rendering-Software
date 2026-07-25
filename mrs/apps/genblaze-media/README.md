@@ -9,6 +9,8 @@ Thin **FastAPI** service: user prompt → **Genblaze** (`genblaze-nvidia` + `gen
 | Operator deploy | **Prepared** — Dockerfile + `render.yaml` (Render free web) |
 | Live NIM generate | **Requires** `NVIDIA_API_KEY` at runtime |
 | NIM Cosmos video (CMM-NIM-Cosmos) | **Prepared** opt-in path (`GENBLAZE_VIDEO_ENABLED=1`); **default off** for the judge stills demo — Cosmos catalog access is key-dependent; docs **declared** not enforced |
+| Seedance 2.0 video (fal) | **Prepared** opt-in path (`GENBLAZE_VIDEO_BACKEND=seedance` + `FAL_KEY`); **fal API is billed** — not Dreamina/Jimeng free credits; default `720p`; watermark/1080p **not guaranteed**; temporal layers **declared** only |
+| CROS (`/cros` page) | **Docs only** — static reference UI; this app does **not** implement or import CROS |
 | B2 persistence | **Tests** path via `genblaze-s3` / dual-exported `B2_APP_KEY` |
 
 ## Product story (honest)
@@ -42,8 +44,14 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `GENBLAZE_IMAGE_MODEL` | optional; default `black-forest-labs/flux.1-schnell` |
 | `GENBLAZE_VIDEO_BACKEND` | optional; `nvidia` (default) or `seedance` |
 | `GENBLAZE_VIDEO_MODEL` | optional; default `nvidia/cosmos-1.0-7b-diffusion-text2world`; fallback `nvidia/cosmos-1.0-12b-diffusion-text2world` when available on the key |
-| `GENBLAZE_VIDEO_ENABLED` | default **off**; set `0` to disable `/api/generate-video` |
+| `GENBLAZE_VIDEO_ENABLED` | default **off** (judge stills demo); set `1` to show the video UI and enable `/api/generate-video` |
+| `FAL_KEY` / `SEEDANCE_API_KEY` | fal.ai credential required only when `GENBLAZE_VIDEO_BACKEND=seedance`; **fal API usage is billed** (Dreamina/Jimeng consumer free credits are a separate product surface) |
+| `SEEDANCE_MODEL` | optional; default `bytedance/seedance-2.0/text-to-video` |
+| `SEEDANCE_RESOLUTION` / `SEEDANCE_DURATION` / `SEEDANCE_ASPECT_RATIO` | Seedance request settings; defaults `720p` / `5` / `16:9` (`1080p` not claimed) |
+| `SEEDANCE_GENERATE_AUDIO` / `SEEDANCE_WATERMARK` | optional; defaults `1` / `0` — watermark outcome is gateway/account-dependent and **not guaranteed** |
 | `GENBLAZE_VIDEO_HTTP_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_TIMEOUT` / `GENBLAZE_VIDEO_PIPELINE_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_POLL_SECONDS` | Cosmos video timeouts (defaults 900 / 900 / 1200 / 120) |
+
+Seedance-only knobs are also listed in [`env.seedance.example`](./env.seedance.example) (not auto-loaded — copy into your real `.env`).
 | `GENBLAZE_STORAGE_PREFIX` | optional; default `genblaze-media` |
 | `GENBLAZE_DRY_RUN` | `1` only for unit tests / offline mocks — **not** live demos |
 | `B2_PROBE_ON_HEALTH` | default **off** — when `1`, `/health` runs a ListObjects probe (B2 **Class C**). Keep `0` on Render/demo day |
@@ -63,16 +71,16 @@ Or from repo root (after venv + deps):
 npm run genblaze:media
 ```
 
-- UI: http://127.0.0.1:8787/ (stills `#stills`; Cosmos `#nim-cosmos` only when `GENBLAZE_VIDEO_ENABLED=1`)
+- UI: http://127.0.0.1:8787/ (stills `#stills`; video `#nim-cosmos` only when `GENBLAZE_VIDEO_ENABLED=1`)
 - Health: http://127.0.0.1:8787/health
 - `POST /api/generate` body: `{"prompt":"…"}` (FLUX stills — **judge demo path**)
-- `POST /api/generate-video` body: `{"prompt":"…"}` (Cosmos video — **503 when video disabled**)
+- `POST /api/generate-video` body: `{"prompt":"…"}` (selected Cosmos or Seedance backend — **503 when video disabled**)
 - `GET /media/nim-cosmos` → 302 `/#nim-cosmos` when enabled, else `/#stills`
 - `GET /api/assets` — recent entries from local JSON index (`?modality=video` optional)
 
 If `NVIDIA_API_KEY` is missing, `/health` still boots and reports setup help; `POST /api/generate` returns **503** with instructions (unless `GENBLAZE_DRY_RUN=1`).
 
-**Judge demo:** leave `GENBLAZE_VIDEO_ENABLED=0` (default). Demo FLUX stills → B2 only. Re-enable video only after `validate_model(..., refresh=True)` reports the Cosmos slug alive on your key.
+**Judge demo:** leave `GENBLAZE_VIDEO_ENABLED=0` (default). Demo FLUX stills → B2 only. Re-enable video only after the selected backend is configured: a live Cosmos catalog result for NVIDIA, or a funded fal.ai key for Seedance.
 
 ## Deploy (App URL)
 
@@ -151,7 +159,6 @@ Operator **opt-in** text-to-video path (`app/pipeline_video.py`). **Default off*
 | --- | --- |
 | Default | `GENBLAZE_VIDEO_ENABLED=0` — UI section hidden; `/api/generate-video` returns 503; `/media/nim-cosmos` → stills |
 | Live generate | Requires `GENBLAZE_VIDEO_ENABLED=1`, `NVIDIA_API_KEY`, **and** Cosmos model access on that key (probe may be DEAD) |
-| Live generate | Requires `NVIDIA_API_KEY` **and** Cosmos model access on that key |
 | Default model | `nvidia/cosmos-1.0-7b-diffusion-text2world`; optional fallback `nvidia/cosmos-1.0-12b-diffusion-text2world` when the upstream probe confirms access |
 | Timeouts | Video defaults are higher than FLUX (see `.env.example`); first hit after Render/NIM idle can still feel slow |
 | NVCF cold-start | Cosmos is often **slower than FLUX** on cold start even with 600s+ timeouts — expect longer first-request latency; keep the browser tab open |
@@ -164,14 +171,21 @@ Operator **opt-in** text-to-video path (`app/pipeline_video.py`). **Default off*
 
 Set `GENBLAZE_VIDEO_BACKEND=seedance`, `GENBLAZE_VIDEO_ENABLED=1`, and
 `FAL_KEY` to use ByteDance Seedance 2.0 through the fal.ai gateway. This is an
-operator opt-in cloud path: no local GPU is required, but fal API usage is
-billed. Free access, watermark behavior, and 1080p availability are
-gateway/account-dependent and are **not claimed** here; the default is `720p`.
+operator opt-in cloud path: no local GPU is required, but **fal API usage is
+billed**. Do **not** treat this as Dreamina / Jimeng / CapCut consumer free
+credits — those are separate product surfaces (see
+[`docs/constitutional/CMM-Seedance-v1.0.md`](./docs/constitutional/CMM-Seedance-v1.0.md)).
+
+| Concern | Honest status |
+| --- | --- |
+| Default resolution | `720p` |
+| Free fal access | **Not claimed** |
+| Watermark / 1080p | Gateway/account-dependent — **not guaranteed** |
+| Temporal layers → 4DRS | **Declared** only — [`docs/SEEDANCE_TEMPORAL_LAYERS.md`](./docs/SEEDANCE_TEMPORAL_LAYERS.md) |
+| CROS adapter | Live HTTP lives here; `mrs/packages/cros` `adapters/seedance.py` is **skeleton** only |
 
 The path emits model ID, prompt hash, provider request ID, asset SHA-256, and
 provider-contract replay metadata before persisting the clip and manifest to B2.
-Binding clips into 4DRS temporal layers remains **declared**, not implemented;
-see `docs/SEEDANCE_TEMPORAL_LAYERS.md`.
 
 ## Cross-links
 
@@ -179,6 +193,9 @@ see `docs/SEEDANCE_TEMPORAL_LAYERS.md`.
 - **Free-tier / Class C demo day:** [`docs/ops/B2_FREE_TIER_DEMO_PLAYBOOK.md`](../../../docs/ops/B2_FREE_TIER_DEMO_PLAYBOOK.md)
 - Genblaze media v2 (**ops roadmap**): [`docs/ops/GENBLAZE_MEDIA_V2_ROADMAP.md`](../../../docs/ops/GENBLAZE_MEDIA_V2_ROADMAP.md)
 - Scorecard: [`docs/scorecards/genblaze-media.md`](../../../docs/scorecards/genblaze-media.md)
+- Seedance constitution (**declared**): [`docs/constitutional/CMM-Seedance-v1.0.md`](./docs/constitutional/CMM-Seedance-v1.0.md)
+- Seedance env fragment: [`env.seedance.example`](./env.seedance.example)
+- CROS package (separate; not implemented by this app): [`mrs/packages/cros`](../../packages/cros)
 - Node B2 scaffold: [`mrs/packages/storage-b2`](../../packages/storage-b2)
 - Genblaze upstream: https://github.com/backblaze-labs/genblaze
 - Local shallow clone (reference only, gitignored): `vendor/genblaze` — see `examples/b2_storage_pipeline.py`
