@@ -40,6 +40,7 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `B2_REGION` | e.g. `us-east-005` |
 | `B2_ENDPOINT` | optional; defaults to `https://s3.<region>.backblazeb2.com` |
 | `GENBLAZE_IMAGE_MODEL` | optional; default `black-forest-labs/flux.1-schnell` |
+| `GENBLAZE_VIDEO_BACKEND` | optional; `nvidia` (default) or `seedance` |
 | `GENBLAZE_VIDEO_MODEL` | optional; default `nvidia/cosmos-1.0-7b-diffusion-text2world`; fallback `nvidia/cosmos-1.0-12b-diffusion-text2world` when available on the key |
 | `GENBLAZE_VIDEO_ENABLED` | default **off**; set `0` to disable `/api/generate-video` |
 | `GENBLAZE_VIDEO_HTTP_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_TIMEOUT` / `GENBLAZE_VIDEO_PIPELINE_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_POLL_SECONDS` | Cosmos video timeouts (defaults 900 / 900 / 1200 / 120) |
@@ -110,6 +111,7 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 | `InvalidAccessKeyId` on ListObjects | B2 key ID / application key in `.env` rejected by the S3 API — refresh a **non-master** bucket-scoped key |
 | Genblaze `HeadBucket` 403 | Common with bucket-scoped keys; this app skips that preflight when `B2_REGION` is set |
 | NIM generate timeout | Was: sync POST read timeout (`The read operation timed out`). Fix: `NVCF-POLL-SECONDS` + longer httpx read (defaults 90 / 600) so cold starts return 202 then poll |
+| `NVIDIA image generate failed (504): {"_raw": ""}` | The upstream gateway returned no diagnostic body, which can occur during a NIM cold start or gateway timeout. The API now preserves the 504 and suggests waiting 30–60 seconds, retrying once, then checking model access/status and timeout settings. It does not auto-retry an ambiguous billed request. |
 | `asset transfer(s) failed; manifest was not uploaded` | NVIDIA FLUX returns base64; Genblaze writes `file://` under CWD (`/app` in Docker). `AssetTransfer` only allowlists system temp — transfer fails and SinkError omits the cause. Fix: write NVIDIA payloads under `tempfile` + surface underlying transfer exception in the API detail |
 | Solid black / empty JPEG after “success” | Observed: valid ~6 KiB 1024² JPEG, mean luminance 0, one color — common when FLUX.1-schnell NIM blanks photoreal-people prompts. Pipeline rejects near-black stills with HTTP **422**, strips trailing meta-commentary, optionally retries once with an abstract geometry rewrite (`GENBLAZE_ABSTRACT_RETRY`, default on), and best-effort deletes the rejected B2 asset/manifest |
 | Broken image icon / preview errors after successful generate | Metadata + B2 keys exist, but browser GET of the private presigned URL returns **AccessDenied: Transaction cap exceeded** (B2 free-tier daily caps). Fix: serve UI from same-origin `/api/preview/{run_id}` local cache after generate; wait for Caps & Alerts reset (~00:00 GMT) before more B2 traffic |
@@ -121,7 +123,7 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 | --- | --- | --- |
 | GET | `/health` | Boots always; NVIDIA/B2 flags; video model flags; ListObjects probe only if `B2_PROBE_ON_HEALTH=1` |
 | POST | `/api/generate` | Live Genblaze FLUX→B2 or 503 if no NVIDIA key |
-| POST | `/api/generate-video` | Live Genblaze Cosmos→B2; 503 if video disabled / no NVIDIA key |
+| POST | `/api/generate-video` | Selected Cosmos or Seedance backend → B2; 503 if disabled or its credential is missing |
 | GET | `/api/assets` | Local recent index (capped); optional `?modality=image\|video` |
 | GET | `/media/stills` · `/media/nvidia` · `/media/nim-cosmos` | 302 into SPA hash anchors |
 | GET | `/` | Single-page UI (stills; Cosmos section hidden unless video enabled) |
@@ -157,6 +159,19 @@ Operator **opt-in** text-to-video path (`app/pipeline_video.py`). **Default off*
 | Render | Blueprint sets `GENBLAZE_VIDEO_ENABLED=0`; ephemeral disk + cold starts apply |
 | Optional meta | `duration_seconds` / `resolution` only when the provider payload reports them (never invented) |
 | Docs | `docs/constitutional/CMM-NIM-Cosmos-v1.0.md`, `CH-GNMD-v1.0.md`, `ACP-NIM-Cosmos-v1.0.md` (ACP stages = roadmap only) |
+
+## Seedance 2.0 cloud video path
+
+Set `GENBLAZE_VIDEO_BACKEND=seedance`, `GENBLAZE_VIDEO_ENABLED=1`, and
+`FAL_KEY` to use ByteDance Seedance 2.0 through the fal.ai gateway. This is an
+operator opt-in cloud path: no local GPU is required, but fal API usage is
+billed. Free access, watermark behavior, and 1080p availability are
+gateway/account-dependent and are **not claimed** here; the default is `720p`.
+
+The path emits model ID, prompt hash, provider request ID, asset SHA-256, and
+provider-contract replay metadata before persisting the clip and manifest to B2.
+Binding clips into 4DRS temporal layers remains **declared**, not implemented;
+see `docs/SEEDANCE_TEMPORAL_LAYERS.md`.
 
 ## Cross-links
 

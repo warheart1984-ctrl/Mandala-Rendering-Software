@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.config import APP_DIR, NVIDIA_SETUP_HELP, Settings
+from app.config import APP_DIR, NVIDIA_SETUP_HELP, SEEDANCE_SETUP_HELP, Settings
 from app.pipeline import (
     GenerationQualityError,
     _best_effort_delete_keys,
@@ -232,14 +232,15 @@ def _validate_video_model(provider: Any, model: str) -> None:
 
 
 def generate_video(settings: Settings, prompt: str) -> VideoGenerateResult:
-    """Run Genblaze NVIDIA video step and persist assets + manifest to B2."""
+    """Run video backend (NVIDIA Cosmos or Seedance) and persist assets + manifest."""
     raw = (prompt or "").strip()
     if not raw:
         raise ValueError("prompt is required")
     if not settings.video_enabled:
         raise RuntimeError(
             "Video path disabled (GENBLAZE_VIDEO_ENABLED=0). "
-            "Re-enable to use CMM-NIM-Cosmos /api/generate-video."
+            "Re-enable to use /api/generate-video "
+            "(GENBLAZE_VIDEO_BACKEND=nvidia|seedance)."
         )
 
     cleaned = sanitize_prompt(raw)
@@ -253,6 +254,9 @@ def generate_video(settings: Settings, prompt: str) -> VideoGenerateResult:
 
     if settings.dry_run:
         return _dry_run_video(settings, cleaned, run_id, created_at)
+
+    if settings.video_backend == "seedance":
+        return _generate_seedance_video(settings, cleaned, raw, created_at, run_id)
 
     if not settings.nvidia_configured:
         raise RuntimeError(NVIDIA_SETUP_HELP)
@@ -297,6 +301,118 @@ def generate_video(settings: Settings, prompt: str) -> VideoGenerateResult:
     finally:
         http_client.close()
         shutil.rmtree(output_dir, ignore_errors=True)
+
+
+def _generate_seedance_video(
+    settings: Settings,
+    cleaned: str,
+    raw: str,
+    created_at: str,
+    run_id: str,
+) -> VideoGenerateResult:
+    """Cloud Seedance 2.0 path (fal gateway). Status: partial."""
+    if not settings.seedance_configured:
+        raise RuntimeError(SEEDANCE_SETUP_HELP)
+
+    from app.seedance_provider import SeedanceVideoProvider
+
+    provider = SeedanceVideoProvider(
+        settings.fal_api_key or "",
+        model_id=settings.seedance_model,
+        resolution=settings.seedance_resolution,
+        duration=settings.seedance_duration,
+        aspect_ratio=settings.seedance_aspect_ratio,
+        generate_audio=settings.seedance_generate_audio,
+        watermark=settings.seedance_watermark,
+    )
+    try:
+        result = provider.generate(cleaned)
+    finally:
+        provider.close()
+
+    assessment = assess_video_bytes(result.video_bytes)
+    if not assessment["ok"]:
+        raise GenerationQualityError(
+            assessment.get("reason") or "Seedance returned an unusable video asset."
+        )
+
+    asset_key = f"{settings.storage_prefix}/seedance/{run_id}/concept.mp4"
+    manifest_key = f"{settings.storage_prefix}/seedance/{run_id}/manifest.json"
+    prompt_sha = result.prompt_sha256
+    manifest = {
+        "schema": "mrs-genblaze-media-video-seedance",
+        "cmm_id": "CMM-Seedance-v1.0",
+        "domain_id": "CH-GNMD-v1.0",
+        "run_id": run_id,
+        "prompt": cleaned,
+        "prompt_sha256": prompt_sha,
+        "model": result.model_id,
+        "provider": result.provider,
+        "provider_request_id": result.provider_request_id,
+        "modality": "video",
+        "asset_sha256": result.asset_sha256,
+        "seed": result.seed,
+        "resolution": result.resolution,
+        "duration": result.duration,
+        "gateway": result.gateway,
+        "replay_class": "provider-contract",
+        "evidence": result.evidence(),
+        "created_at": created_at,
+        "lineage": "new-work-no-story-forge",
+        "temporal_layers": "declared-not-implemented",
+    }
+
+    preview_url: str | None = None
+    if settings.b2_configured:
+        backend = build_backend(settings)
+        try:
+            backend.put(asset_key, result.video_bytes, content_type="video/mp4")
+            backend.put(
+                manifest_key,
+                json.dumps(manifest, indent=2).encode("utf-8"),
+                content_type="application/json",
+            )
+            preview_url = _presign_preview(backend, settings, asset_key, None)
+        finally:
+            close = getattr(backend, "close", None)
+            if callable(close):
+                close()
+    else:
+        preview_url = result.video_url
+
+    detail = "CMM-Seedance-v1.0 substrate (fal cloud video)"
+    if cleaned != raw:
+        detail += " · prompt sanitized (meta-commentary stripped)"
+
+    gen = VideoGenerateResult(
+        run_id=run_id,
+        prompt=cleaned,
+        model=result.model_id,
+        provider=result.provider,
+        status="ok",
+        asset_key=asset_key if settings.b2_configured else None,
+        manifest_key=manifest_key if settings.b2_configured else None,
+        asset_sha256=result.asset_sha256,
+        preview_url=preview_url,
+        created_at=created_at,
+        dry_run=False,
+        modality="video",
+        detail=detail,
+        quality=assessment,
+        duration_seconds=_safe_float_duration(result.duration),
+        resolution=result.resolution,
+        cmm_id="CMM-Seedance-v1.0",
+    )
+    _attach_local_video_preview(gen, result.video_bytes)
+    return gen
+
+
+def _safe_float_duration(raw: str) -> float | None:
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
 
 
 def _run_live_video(
@@ -419,34 +535,54 @@ def _dry_run_video(
     """Upload a tiny MP4 stub + provenance JSON when GENBLAZE_DRY_RUN=1."""
     mp4 = _MINIMAL_MP4
     sha = hashlib.sha256(mp4).hexdigest()
-    asset_key = f"{settings.storage_prefix}/dry-run/{run_id}/concept.mp4"
-    manifest_key = f"{settings.storage_prefix}/dry-run/{run_id}/manifest.json"
+    prompt_sha = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    backend = settings.video_backend
+    if backend == "seedance":
+        model = settings.seedance_model
+        provider = "seedance-video"
+        cmm_id = "CMM-Seedance-v1.0"
+        detail = "dry-run video stub (not live Seedance)"
+        schema = "mrs-genblaze-media-video-dry-run-seedance"
+        prefix = f"{settings.storage_prefix}/dry-run-seedance/{run_id}"
+    else:
+        model = settings.video_model
+        provider = "nvidia-video"
+        cmm_id = "CMM-NIM-Cosmos-v1.0"
+        detail = "dry-run video stub (not live NIM Cosmos)"
+        schema = "mrs-genblaze-media-video-dry-run"
+        prefix = f"{settings.storage_prefix}/dry-run/{run_id}"
+    asset_key = f"{prefix}/concept.mp4"
+    manifest_key = f"{prefix}/manifest.json"
     manifest = {
-        "schema": "mrs-genblaze-media-video-dry-run",
-        "cmm_id": "CMM-NIM-Cosmos-v1.0",
+        "schema": schema,
+        "cmm_id": cmm_id,
         "domain_id": "CH-GNMD-v1.0",
         "run_id": run_id,
         "prompt": prompt,
-        "model": settings.video_model,
-        "provider": "nvidia-video",
+        "prompt_sha256": prompt_sha,
+        "model": model,
+        "provider": provider,
         "modality": "video",
         "asset_sha256": sha,
         "created_at": created_at,
         "lineage": "new-work-no-story-forge",
+        "replay_class": "provider-contract",
+        "temporal_layers": "declared-not-implemented",
+        "video_backend": backend,
     }
     preview_url = None
     if settings.b2_configured:
-        backend = build_backend(settings)
+        backend_store = build_backend(settings)
         try:
-            backend.put(asset_key, mp4, content_type="video/mp4")
-            backend.put(
+            backend_store.put(asset_key, mp4, content_type="video/mp4")
+            backend_store.put(
                 manifest_key,
                 json.dumps(manifest, indent=2).encode("utf-8"),
                 content_type="application/json",
             )
-            preview_url = _presign_preview(backend, settings, asset_key, None)
+            preview_url = _presign_preview(backend_store, settings, asset_key, None)
         finally:
-            close = getattr(backend, "close", None)
+            close = getattr(backend_store, "close", None)
             if callable(close):
                 close()
     else:
@@ -456,8 +592,8 @@ def _dry_run_video(
     gen = VideoGenerateResult(
         run_id=run_id,
         prompt=prompt,
-        model=settings.video_model,
-        provider="nvidia-video",
+        model=model,
+        provider=provider,
         status="ok",
         asset_key=asset_key,
         manifest_key=manifest_key,
@@ -466,8 +602,9 @@ def _dry_run_video(
         created_at=created_at,
         dry_run=True,
         modality="video",
-        detail="dry-run video stub (not live NIM Cosmos)",
+        detail=detail,
         quality=assess_video_bytes(mp4),
+        cmm_id=cmm_id,
     )
     _attach_local_video_preview(gen, mp4)
     return gen
