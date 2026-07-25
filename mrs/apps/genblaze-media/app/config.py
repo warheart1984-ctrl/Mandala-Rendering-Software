@@ -227,14 +227,25 @@ def get_settings() -> Settings:
     nvidia_warmup = (
         os.getenv("GENBLAZE_NVIDIA_WARMUP_ON_STARTUP") or ""
     ).strip().lower() in {"1", "true", "yes", "on"}
-    # Default OFF: judge/demo path is FLUX stills. Cosmos video stays an
-    # operator opt-in (GENBLAZE_VIDEO_ENABLED=1) when the key's catalog is live.
-    video_enabled = (os.getenv("GENBLAZE_VIDEO_ENABLED") or "0").strip().lower() not in {
-        "0",
-        "false",
-        "no",
-        "off",
-    }
+    nvidia_key = (
+        os.getenv("NVIDIA_API_KEY")
+        or os.getenv("NGC_API_KEY")
+        or os.getenv("NVIDIA_NIM_API_KEY")
+        or ""
+    ).strip() or None
+    # CMM-NIM-Cosmos: unset GENBLAZE_VIDEO_ENABLED defaults ON when an NVIDIA
+    # key is present. Explicit 0/false/off disables. Render blueprint pins "0"
+    # for the stills-only judge demo.
+    video_flag = os.getenv("GENBLAZE_VIDEO_ENABLED")
+    if video_flag is None or not str(video_flag).strip():
+        video_enabled = bool(nvidia_key)
+    else:
+        video_enabled = str(video_flag).strip().lower() not in {
+            "0",
+            "false",
+            "no",
+            "off",
+        }
     backend_raw = (os.getenv("GENBLAZE_VIDEO_BACKEND") or "nvidia").strip().lower()
     video_backend = "seedance" if backend_raw in {"seedance", "fal", "bytedance"} else "nvidia"
     fal_key = (
@@ -281,13 +292,7 @@ def get_settings() -> Settings:
     rt4d_timeout = max(10.0, min(600.0, rt4d_timeout))
 
     return Settings(
-        nvidia_api_key=(
-            os.getenv("NVIDIA_API_KEY")
-            or os.getenv("NGC_API_KEY")
-            or os.getenv("NVIDIA_NIM_API_KEY")
-            or ""
-        ).strip()
-        or None,
+        nvidia_api_key=nvidia_key,
         fal_api_key=fal_key,
         b2_key_id=(os.getenv("B2_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID") or "").strip()
         or None,

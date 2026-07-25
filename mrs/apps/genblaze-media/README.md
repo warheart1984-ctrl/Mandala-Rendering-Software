@@ -49,7 +49,7 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `GENBLAZE_IMAGE_MODEL` | optional; default `black-forest-labs/flux.1-schnell` |
 | `GENBLAZE_VIDEO_BACKEND` | optional; `nvidia` (default) or `seedance` |
 | `GENBLAZE_VIDEO_MODEL` | optional; default `nvidia/cosmos-1.0-7b-diffusion-text2world`; fallback `nvidia/cosmos-1.0-12b-diffusion-text2world` when available on the key |
-| `GENBLAZE_VIDEO_ENABLED` | default **off** (judge stills demo); set `1` to show the video UI and enable `/api/generate-video` |
+| `GENBLAZE_VIDEO_ENABLED` | unset → **on** when `NVIDIA_API_KEY` present, else off; explicit `0`/`1` overrides. Render blueprint pins `0` for stills-only judge demo |
 | `FAL_KEY` / `SEEDANCE_API_KEY` | fal.ai credential required only when `GENBLAZE_VIDEO_BACKEND=seedance`; **fal API usage is billed** (Dreamina/Jimeng consumer free credits are a separate product surface) |
 | `SEEDANCE_MODEL` | optional; default `bytedance/seedance-2.0/text-to-video` |
 | `SEEDANCE_RESOLUTION` / `SEEDANCE_DURATION` / `SEEDANCE_ASPECT_RATIO` | Seedance request settings; defaults `720p` / `5` / `16:9` (`1080p` not claimed) |
@@ -132,7 +132,7 @@ Or from repo root (after venv + deps):
 npm run genblaze:media
 ```
 
-- UI: http://127.0.0.1:8787/ (stills `#stills`; video `#nim-cosmos` only when `GENBLAZE_VIDEO_ENABLED=1`)
+- UI: http://127.0.0.1:8787/ (stills `#stills`; video `#nim-cosmos` when video enabled)
 - Health: http://127.0.0.1:8787/health
 - `POST /api/generate` body: `{"prompt":"…"}` (FLUX stills — **judge demo path**)
 - `POST /api/generate-video` body: `{"prompt":"…"}` (selected Cosmos or Seedance backend — **503 when video disabled**)
@@ -146,7 +146,7 @@ npm run genblaze:media
 
 If `NVIDIA_API_KEY` is missing, `/health` still boots and reports setup help; `POST /api/generate` returns **503** with instructions (unless `GENBLAZE_DRY_RUN=1`).
 
-**Judge demo:** leave `GENBLAZE_VIDEO_ENABLED=0` (default). Demo FLUX stills → B2 only. Re-enable video only after the selected backend is configured: a live Cosmos catalog result for NVIDIA, or a funded fal.ai key for Seedance.
+**Judge demo:** pin `GENBLAZE_VIDEO_ENABLED=0` (Render blueprint already does). Demo FLUX stills → B2 only. With a local NVIDIA key and the flag unset, the Cosmos video section defaults **on** per CMM-NIM-Cosmos — disable explicitly for stills-only.
 
 ## Deploy (App URL)
 
@@ -264,12 +264,12 @@ invariants, the seven-artifact lineage chain, and the two conformance profiles
 
 ## NIM Cosmos Video Path (CMM-NIM-Cosmos)
 
-Operator **opt-in** text-to-video path (`app/pipeline_video.py`). **Default off** so the hackathon judge UI is FLUX stills + B2 only. **No Story Forge lineage.** Constitutional docs under `docs/constitutional/` are **declared**, not runtime-enforced (JCR/CEL/Arena/Sovereign IDE are not hosted here).
+Parallel Genblaze/NIM text-to-video path (`app/pipeline_video.py`) on the same site as FLUX stills. **No Story Forge lineage.** When `GENBLAZE_VIDEO_ENABLED` is unset, video defaults **on** if `NVIDIA_API_KEY` is present (plan default). Pin `0` for stills-only. Constitutional docs under `docs/constitutional/` are **declared**, not runtime-enforced (JCR/CEL/Arena/Sovereign IDE are not hosted here).
 
 | Concern | Honest status |
 | --- | --- |
-| Default | `GENBLAZE_VIDEO_ENABLED=0` — UI section hidden; `/api/generate-video` returns 503; `/media/nim-cosmos` → stills |
-| Live generate | Requires `GENBLAZE_VIDEO_ENABLED=1`, `NVIDIA_API_KEY`, **and** Cosmos model access on that key (probe may be DEAD) |
+| Default | Unset + NVIDIA key → video **on**; unset + no key → **off**; explicit `0`/`1` overrides |
+| Live generate | Requires video enabled, `NVIDIA_API_KEY`, **and** Cosmos model access on that key (probe may be DEAD) |
 | Default model | `nvidia/cosmos-1.0-7b-diffusion-text2world`; optional fallback `nvidia/cosmos-1.0-12b-diffusion-text2world` when the upstream probe confirms access |
 | Timeouts | Video defaults are higher than FLUX (see `.env.example`); first hit after Render/NIM idle can still feel slow |
 | NVCF cold-start | Cosmos is often **slower than FLUX** on cold start even with 600s+ timeouts — expect longer first-request latency; keep the browser tab open |

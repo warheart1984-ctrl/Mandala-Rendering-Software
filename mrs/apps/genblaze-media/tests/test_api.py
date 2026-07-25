@@ -203,11 +203,39 @@ def test_video_model_env_default_is_cosmos_1_0_7b(monkeypatch):
     assert settings.video_model == "nvidia/cosmos-1.0-7b-diffusion-text2world"
 
 
-def test_video_enabled_env_default_off(monkeypatch):
+def test_video_enabled_defaults_on_when_nvidia_key_present(monkeypatch):
+    """Plan: GENBLAZE_VIDEO_ENABLED defaults on when NVIDIA key is present."""
     from app import config
 
     monkeypatch.setattr(config, "_load_dotenv_files", lambda: [])
     monkeypatch.delenv("GENBLAZE_VIDEO_ENABLED", raising=False)
+    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-test-key")
+    monkeypatch.delenv("NGC_API_KEY", raising=False)
+    monkeypatch.delenv("NVIDIA_NIM_API_KEY", raising=False)
+    settings = config.get_settings()
+    assert settings.video_enabled is True
+    assert settings.nvidia_configured is True
+
+
+def test_video_enabled_defaults_off_without_nvidia_key(monkeypatch):
+    from app import config
+
+    monkeypatch.setattr(config, "_load_dotenv_files", lambda: [])
+    monkeypatch.delenv("GENBLAZE_VIDEO_ENABLED", raising=False)
+    monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+    monkeypatch.delenv("NGC_API_KEY", raising=False)
+    monkeypatch.delenv("NVIDIA_NIM_API_KEY", raising=False)
+    settings = config.get_settings()
+    assert settings.video_enabled is False
+    assert settings.video_available is False
+
+
+def test_video_enabled_explicit_off_with_nvidia_key(monkeypatch):
+    from app import config
+
+    monkeypatch.setattr(config, "_load_dotenv_files", lambda: [])
+    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-test-key")
+    monkeypatch.setenv("GENBLAZE_VIDEO_ENABLED", "0")
     settings = config.get_settings()
     assert settings.video_enabled is False
     assert settings.video_available is False

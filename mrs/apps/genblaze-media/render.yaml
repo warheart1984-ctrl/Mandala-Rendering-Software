@@ -32,6 +32,23 @@ services:
         value: "0"
       - key: GENBLAZE_STORAGE_PREFIX
         value: genblaze-media
+      # RT4D renderer backend. These take effect only when the service builds
+      # the repo-root Dockerfile with a repo-root context (Root Directory
+      # empty): the app-local Dockerfile above cannot reach
+      # mrs/packages/renderer-core and reports rt4d.available=false.
+      # Off by default; NVIDIA FLUX stays the primary image backend.
+      - key: GENBLAZE_IMAGE_FALLBACK_TO_RT4D
+        value: "0"
+      # Free plan is a shared 0.1 CPU, so keep the CPU path trace small enough
+      # to finish inside the platform request timeout. Raise after measuring.
+      - key: RT4D_RENDER_WIDTH
+        value: "256"
+      - key: RT4D_RENDER_HEIGHT
+        value: "256"
+      - key: RT4D_SAMPLES
+        value: "8"
+      - key: RT4D_TIMEOUT
+        value: "120"
       - key: GENBLAZE_HTTP_TIMEOUT
         value: "600"
       - key: GENBLAZE_NVCF_TIMEOUT

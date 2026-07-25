@@ -13,9 +13,10 @@ HONEST SCOPE (Drive-G-1):
     because it is deterministic and seed-recorded, but it is not a generative
     model and must not be labeled as one.
 
-The CLI (and therefore ``node``) is required. In the app-only Docker image
-neither ``node`` nor the monorepo script are present, so ``rt4d_availability``
-reports ``available: False`` and ``/health`` surfaces it rather than crashing.
+The CLI (and therefore ``node``) is required. Where neither ``node`` nor the
+script is present — the app-local Docker image, or any container predating the
+repo-root Dockerfile's Node layer — ``rt4d_availability`` reports
+``available: False`` and ``/health`` surfaces it rather than crashing.
 """
 
 from __future__ import annotations
@@ -51,8 +52,9 @@ RT4D_SETUP_HELP = (
     "RT4D renderer backend needs Node.js and the renderer-core render-still CLI. "
     "Install Node 18+ (set RT4D_NODE_PATH if not on PATH) and ensure "
     "mrs/packages/renderer-core/scripts/render-still.mjs is present (set "
-    "RT4D_SCRIPT_PATH to override). The deployed Docker image is python:3.12-slim "
-    "and does NOT yet bundle Node — see genblaze-media README to add it."
+    "RT4D_SCRIPT_PATH to override). Containers built from the repo-root "
+    "Dockerfile bundle both; the app-local Dockerfile does not, and a service "
+    "still running an older image needs a redeploy."
 )
 
 
