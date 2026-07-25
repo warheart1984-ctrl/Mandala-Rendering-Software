@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "id": "sx-ptig.lifecycle.v1",
+  "title": "Sovereign X Temporal Idea Governance — Common Constitutional Lifecycle",
+  "version": "0.1.0",
+  "status": "declared",
+  "statusNote": "Epoch classification heuristics are unit-tested (tested). System-wide CI-* mapping into JCK/COS/CER/ERS/RAC is declared only — no CKL/runtime gate enforces PTIG. Drive-G-1: do not claim enforcement.",
+  "capability": "sovereignx.temporal-idea-governance.v1",
+  "statusVocabulary": {
+    "enforced": "Implemented, unit-tested, and invoked on a real deny/accept execution path.",
+    "tested": "Unit tests pass for the stated heuristic; no production gate.",
+    "declared": "Specified in prose/JSON only, or aspirational system-wide framing without implementation proof.",
+    "skeleton": "Stub or type signature only."
+  },
+  "guarantees": [
+    {
+      "id": "ContinuityGuarantee",
+      "title": "Continuity (preservation)",
+      "statement": "No idea loses identity, lineage, provenance, or context. Ideas may remain inactive indefinitely.",
+      "impliesAcceptance": false,
+      "status": "declared",
+      "note": "Preservation must NOT imply constitutional acceptance."
+    },
+    {
+      "id": "AcceptanceGuarantee",
+      "title": "Acceptance (activation)",
+      "statement": "Only evidence-backed ideas become constitutional artifacts when invariants, predicates, and evidence satisfy activation criteria.",
+      "requiresEvidence": true,
+      "status": "declared",
+      "activationCriteriaRefs": [
+        "PI-* pass on ConformanceReport (shape compatible with acceptConformanceReport)",
+        "AcceptanceDecision.verdict in {accept} with optional soft-or-enforce mode",
+        "CROS CI-004/CI-005 evidence and profile-scoped replay honesty where applicable"
+      ]
+    }
+  ],
+  "lifecycle": [
+    { "id": "theory", "label": "Theory / Idea", "guarantee": "ContinuityGuarantee" },
+    { "id": "constitutional_specification", "label": "Constitutional Specification", "guarantee": "ContinuityGuarantee" },
+    { "id": "planning", "label": "Planning", "guarantee": "ContinuityGuarantee" },
+    { "id": "execution", "label": "Execution", "guarantee": "ContinuityGuarantee" },
+    { "id": "evidence", "label": "Evidence", "guarantee": "ContinuityGuarantee", "mayPromote": true },
+    { "id": "replay", "label": "Replay", "guarantee": "ContinuityGuarantee", "mayPromote": true },
+    { "id": "audit", "label": "Audit", "guarantee": "ContinuityGuarantee", "mayActivate": true },
+    { "id": "stewardship", "label": "Stewardship", "guarantee": "AcceptanceGuarantee", "requiresActivation": true }
+  ],
+  "epochs": [
+    {
+      "id": "substrate",
+      "label": "Substrate",
+      "continuityOnly": true,
+      "acceptanceAllowed": false,
+      "status": "tested",
+      "description": "Idea identity and context exist on the substrate. Continuity only — not activated."
+    },
+    {
+      "id": "substration",
+      "label": "Substration",
+      "continuityOnly": true,
+      "acceptanceAllowed": false,
+      "status": "tested",
+      "description": "Idea is bound into substrate records (lineage/provenance placeholders). Continuity only — still inactive."
+    },
+    {
+      "id": "promotion",
+      "label": "Promotion",
+      "continuityOnly": false,
+      "acceptanceAllowed": false,
+      "attachesEvidenceCandidates": true,
+      "status": "tested",
+      "description": "Evidence candidates may be attached. Does not activate; does not imply AcceptanceGuarantee."
+    },
+    {
+      "id": "activation",
+      "label": "Activation",
+      "continuityOnly": false,
+      "acceptanceAllowed": true,
+      "requiresAcceptanceCriteria": true,
+      "status": "tested",
+      "description": "Requires acceptance criteria: PI-* / ConformanceReport / soft-or-enforce AcceptanceDecision. Continuity alone is insufficient."
+    }
+  ],
+  "activityStates": [
+    {
+      "id": "preserved_inactive",
+      "label": "Preserved but inactive",
+      "continuity": true,
+      "accepted": false,
+      "note": "Default for substrate/substration; also valid after promotion without activation."
+    },
+    {
+      "id": "accepted_activated",
+      "label": "Accepted / activated",
+      "continuity": true,
+      "accepted": true,
+      "requiresEpoch": "activation",
+      "note": "Only when AcceptanceGuarantee criteria pass."
+    }
+  ],
+  "routingRules": [
+    {
+      "id": "deny-discard-without-review",
+      "action": "discard",
+      "when": "reviewStatus missing or not reviewed",
+      "decision": "deny",
+      "status": "declared",
+      "note": "Heuristic declared + unit-tested as denied/declared; not a CKL policy in default.policies.json."
+    },
+    {
+      "id": "continuity-without-acceptance",
+      "action": "preserve",
+      "when": "any epoch before activation, or activation criteria unmet",
+      "decision": "preserve_inactive",
+      "status": "tested"
+    },
+    {
+      "id": "acceptance-requires-evidence",
+      "action": "activate",
+      "when": "epoch is activation AND evidence predicates pass",
+      "decision": "accept_activate",
+      "status": "tested"
+    }
+  ],
+  "crossSystemLinks": {
+    "cros": {
+      "path": "mrs/packages/cros/constitution/",
+      "ciIds": ["CI-001", "CI-002", "CI-003", "CI-004", "CI-005", "CI-006"],
+      "status": "declared",
+      "note": "CI-* are CROS package-local invariants (partial validators). Mapping them as system-wide guarantees is declared framing, not enforcement."
+    },
+    "piContracts": {
+      "path": "mrs/packages/renderer-core/src/render/rt4d/invariants/",
+      "ids": ["PI-GEO-LENGTH", "PI-CALC-ENERGY", "PI-TRIG-RADIAL"],
+      "acceptanceHook": "acceptConformanceReport shape (duck-typed reference; no hard import cycle from PTIG)",
+      "status": "declared"
+    },
+    "stack4drs": {
+      "path": "mrs/packages/renderer-core/src/render/rt4d/invariants/STACK.md",
+      "status": "declared"
+    },
+    "systemWideGuaranteeAcronyms": {
+      "status": "declared",
+      "note": "Proposal maps CI-* into JCK, COS, CER, ERS, RAC as system-wide guarantees (not render-only). In-repo expansions found only for CER (content evidence) in genblaze-media constitutional docs. JCK, COS, ERS, RAC appear without expansions — do not invent them. Framing remains declared until code proves enforcement.",
+      "citedTokens": ["JCK", "COS", "CER", "ERS", "RAC"],
+      "knownExpansionsInRepo": {
+        "CER": "content evidence (mrs/apps/genblaze-media/docs/constitutional/CH-GNMD-v1.0.md)"
+      }
+    }
+  },
+  "nonClaims": [
+    "PTIG is not full CKL enforcement.",
+    "Continuity does not imply acceptance.",
+    "Promotion does not activate.",
+    "No Story Forge lineage."
+  ]
+}

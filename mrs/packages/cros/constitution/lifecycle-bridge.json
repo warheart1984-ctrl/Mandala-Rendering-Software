@@ -1,0 +1,41 @@
+{
+  "id": "cros.sx-ptig.lifecycle-bridge.v1",
+  "version": "0.1.0",
+  "status": "declared",
+  "statusNote": "Documentary bridge from CROS CI-* to SX-PTIG lifecycle. Not a runtime gate. Drive-G-1.",
+  "ptigManifest": "mrs/packages/renderer-core/src/gpu/constitution/lifecycle.json",
+  "guarantees": {
+    "ContinuityGuarantee": {
+      "impliesAcceptance": false,
+      "crosAlignment": ["P1", "CI-001"]
+    },
+    "AcceptanceGuarantee": {
+      "requiresEvidence": true,
+      "crosAlignment": ["P4", "CI-004", "CI-005"]
+    }
+  },
+  "lifecycleToCros": [
+    { "lifecycle": "theory", "cros": null, "note": "CreativeIntent precursor — declared" },
+    { "lifecycle": "constitutional_specification", "cros": "RenderIntent", "invariants": ["CI-001"] },
+    { "lifecycle": "planning", "cros": "RenderPlan", "invariants": ["CI-002"] },
+    { "lifecycle": "execution", "cros": ["RenderExecution", "RenderResult"], "invariants": ["CI-003"] },
+    { "lifecycle": "evidence", "cros": "RenderEvidence", "invariants": ["CI-004"] },
+    { "lifecycle": "replay", "cros": "ReplayRecord", "invariants": ["CI-005"] },
+    { "lifecycle": "audit", "cros": "adapter isolation review", "invariants": ["CI-006"] },
+    { "lifecycle": "stewardship", "cros": null, "note": "Activation / stewardship under SX-PTIG AcceptanceGuarantee — declared bridge" }
+  ],
+  "epochs": {
+    "substrate": { "continuityOnly": true },
+    "substration": { "continuityOnly": true },
+    "promotion": { "attachesEvidenceCandidates": true, "acceptanceAllowed": false },
+    "activation": { "requiresAcceptanceCriteria": true }
+  },
+  "systemWideGuaranteeAcronyms": {
+    "status": "declared",
+    "citedTokens": ["JCK", "COS", "CER", "ERS", "RAC"],
+    "knownExpansionsInRepo": {
+      "CER": "content evidence (genblaze-media CH-GNMD-v1.0)"
+    },
+    "note": "Do not invent expansions for JCK/COS/ERS/RAC. Mapping is declared, not enforced."
+  }
+}

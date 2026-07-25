@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
-from app.config import APP_DIR, NVIDIA_SETUP_HELP, get_settings
+from app.config import APP_DIR, NVIDIA_SETUP_HELP, SEEDANCE_SETUP_HELP, get_settings
 from app.embeddings import cosine_similarity, embed_texts, embedding_summary
 from app.index_store import AssetIndex
 from app.nvidia_http import NvidiaGenaiTimeouts, NvidiaVideoTimeouts
@@ -110,14 +110,24 @@ def health() -> dict:
         "status": "ok",
         "service": "mrs-genblaze-media",
         "nvidia_configured": settings.nvidia_configured,
+        "seedance_configured": settings.seedance_configured,
         "b2_configured": settings.b2_configured,
         "b2_bucket": settings.b2_bucket if settings.b2_configured else None,
         "b2_region": settings.b2_region if settings.b2_configured else None,
         "image_model": settings.image_model,
-        "video_model": settings.video_model,
+        "video_model": (
+            settings.seedance_model
+            if settings.video_backend == "seedance"
+            else settings.video_model
+        ),
+        "video_backend": settings.video_backend,
         "video_enabled": settings.video_enabled,
         "video_available": settings.video_available,
-        "cmm_id": "CMM-NIM-Cosmos-v1.0",
+        "cmm_id": (
+            "CMM-Seedance-v1.0"
+            if settings.video_backend == "seedance"
+            else "CMM-NIM-Cosmos-v1.0"
+        ),
         "domain_id": "CH-GNMD-v1.0",
         "embed_model": settings.embed_model,
         "dry_run": settings.dry_run,
@@ -126,6 +136,11 @@ def health() -> dict:
         "b2_probe": b2_probe,
         "b2_error": b2_error,
         "nvidia_help": None if settings.nvidia_configured else NVIDIA_SETUP_HELP,
+        "seedance_help": (
+            None
+            if settings.video_backend != "seedance" or settings.seedance_configured
+            else SEEDANCE_SETUP_HELP
+        ),
         "nvidia_timeouts": {
             "http_read_seconds": nvidia_timeouts.http_timeout,
             "nvcf_poll_seconds": nvidia_timeouts.nvcf_poll_seconds,
@@ -141,6 +156,30 @@ def health() -> dict:
             "connect_seconds": video_timeouts.connect_timeout,
         },
     }
+
+
+def _format_generation_failure(exc: Exception) -> str:
+    """Preserve provider detail and clarify an empty NVIDIA gateway 504."""
+    detail = str(exc).strip() or type(exc).__name__
+    cause = exc.__cause__ or exc.__context__
+    if cause is not None and str(cause) and str(cause) not in detail:
+        detail = f"{detail}; cause: {type(cause).__name__}: {cause}"
+
+    normalized = detail.lower().replace(" ", "")
+    empty_gateway_504 = "504" in normalized and (
+        '"_raw":""' in normalized
+        or "'_raw':''" in normalized
+        or normalized.endswith("(504)")
+    )
+    if empty_gateway_504:
+        detail += (
+            "; NVIDIA returned an empty 504 gateway response. This can occur "
+            "during an upstream NIM cold start or gateway timeout. Wait 30–60 "
+            "seconds and retry once; if it repeats, check model access/status "
+            "and the configured GENBLAZE_HTTP_TIMEOUT / "
+            "GENBLAZE_NVCF_POLL_SECONDS values."
+        )
+    return detail
 
 
 def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
@@ -161,10 +200,7 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
         # Include chained transfer cause when present (Genblaze SinkError omits it).
-        detail = str(exc)
-        cause = exc.__cause__ or exc.__context__
-        if cause is not None and str(cause) and str(cause) not in detail:
-            detail = f"{detail}; cause: {type(cause).__name__}: {cause}"
+        detail = _format_generation_failure(exc)
         raise HTTPException(status_code=502, detail=f"generation failed: {detail}") from exc
 
     entry = result.to_dict()

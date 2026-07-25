@@ -82,6 +82,7 @@ class Settings:
     """Runtime settings (names only; values come from env)."""
 
     nvidia_api_key: str | None
+    fal_api_key: str | None
     b2_key_id: str | None
     b2_app_key: str | None
     b2_bucket: str
@@ -91,6 +92,13 @@ class Settings:
     image_model: str
     video_model: str
     video_enabled: bool
+    video_backend: str
+    seedance_model: str
+    seedance_resolution: str
+    seedance_duration: str
+    seedance_aspect_ratio: str
+    seedance_generate_audio: bool
+    seedance_watermark: bool | None
     embed_model: str
     embed_url: str
     embed_timeout_seconds: float
@@ -106,13 +114,23 @@ class Settings:
         return bool(self.nvidia_api_key)
 
     @property
+    def seedance_configured(self) -> bool:
+        return bool(self.fal_api_key)
+
+    @property
     def b2_configured(self) -> bool:
         return bool(self.b2_key_id and self.b2_app_key and self.b2_bucket)
 
     @property
     def video_available(self) -> bool:
-        """Operator can attempt Cosmos video (flag on + NVIDIA key, or dry-run)."""
-        return self.video_enabled and (self.nvidia_configured or self.dry_run)
+        """Operator can attempt video (flag on + backend credentials, or dry-run)."""
+        if not self.video_enabled:
+            return False
+        if self.dry_run:
+            return True
+        if self.video_backend == "seedance":
+            return self.seedance_configured
+        return self.nvidia_configured
 
 
 def get_settings() -> Settings:
@@ -154,6 +172,22 @@ def get_settings() -> Settings:
         "no",
         "off",
     }
+    backend_raw = (os.getenv("GENBLAZE_VIDEO_BACKEND") or "nvidia").strip().lower()
+    video_backend = "seedance" if backend_raw in {"seedance", "fal", "bytedance"} else "nvidia"
+    fal_key = (
+        os.getenv("FAL_KEY") or os.getenv("SEEDANCE_API_KEY") or os.getenv("FAL_API_KEY") or ""
+    ).strip() or None
+    seedance_audio = (os.getenv("SEEDANCE_GENERATE_AUDIO") or "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+    wm_raw = (os.getenv("SEEDANCE_WATERMARK") or "0").strip().lower()
+    if wm_raw in {"", "default", "omit"}:
+        seedance_watermark: bool | None = None
+    else:
+        seedance_watermark = wm_raw not in {"0", "false", "no", "off"}
 
     return Settings(
         nvidia_api_key=(
@@ -163,6 +197,7 @@ def get_settings() -> Settings:
             or ""
         ).strip()
         or None,
+        fal_api_key=fal_key,
         b2_key_id=(os.getenv("B2_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID") or "").strip()
         or None,
         b2_app_key=(os.getenv("B2_APP_KEY") or os.getenv("B2_APPLICATION_KEY") or "").strip()
@@ -181,6 +216,15 @@ def get_settings() -> Settings:
             or "nvidia/cosmos-1.0-7b-diffusion-text2world"
         ).strip(),
         video_enabled=video_enabled,
+        video_backend=video_backend,
+        seedance_model=(
+            os.getenv("SEEDANCE_MODEL") or "bytedance/seedance-2.0/text-to-video"
+        ).strip(),
+        seedance_resolution=(os.getenv("SEEDANCE_RESOLUTION") or "720p").strip(),
+        seedance_duration=(os.getenv("SEEDANCE_DURATION") or "5").strip(),
+        seedance_aspect_ratio=(os.getenv("SEEDANCE_ASPECT_RATIO") or "16:9").strip(),
+        seedance_generate_audio=seedance_audio,
+        seedance_watermark=False if seedance_watermark is None else seedance_watermark,
         embed_model=(
             os.getenv("NVIDIA_EMBED_MODEL") or "nvidia/nv-embedcode-7b-v1"
         ).strip(),
@@ -203,4 +247,11 @@ NVIDIA_SETUP_HELP = (
     "https://build.nvidia.com/ and set NVIDIA_API_KEY in the repo-root .env "
     "(or the deploy host env). Live generate requires this key; "
     "GENBLAZE_DRY_RUN=1 is for unit tests only."
+)
+
+SEEDANCE_SETUP_HELP = (
+    "Seedance backend selected but FAL_KEY / SEEDANCE_API_KEY is missing. "
+    "Create a key at https://fal.ai/dashboard/keys and set FAL_KEY "
+    "(see env.seedance.example). fal API usage is billed; consumer Dreamina/"
+    "Jimeng free credits are not this API. GENBLAZE_DRY_RUN=1 skips live calls."
 )
