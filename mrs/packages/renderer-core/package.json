@@ -40,7 +40,9 @@
     "test": "node src/cli.js render --surface tesseract --single --width 320 --height 240 --output output/test",
     "test:frames": "node src/cli.js render --surface clifford-torus --frames 8 --fps 8 --width 320 --height 240 --mode wireframe --resolution 16 --output output/test",
     "test:wavefront": "node --test src/render/rt4d/gpu/wavefront/wavefront.phaseb.test.js",
-    "test:phasec": "node --test src/render/rt4d/physics/phasec.scaffold.test.js"
+    "test:phasec": "node --test src/render/rt4d/physics/phasec.scaffold.test.js",
+    "test:render-still": "node --test scripts/test/render-still.test.js",
+    "render-still": "node scripts/render-still.mjs"
   },
   "dependencies": {
     "canvas": "^3.1.0",
