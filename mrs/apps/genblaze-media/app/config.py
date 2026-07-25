@@ -107,6 +107,9 @@ class Settings:
     dry_run: bool
     b2_probe_on_health: bool
     abstract_retry_on_blank: bool
+    empty_504_retry: bool
+    empty_504_retry_delay_seconds: float
+    nvidia_warmup_on_startup: bool
     dotenv_loaded: tuple[str, ...]
 
     @property
@@ -164,6 +167,29 @@ def get_settings() -> Settings:
         "no",
         "off",
     }
+    # Default OFF: one delayed retry after empty NVIDIA gateway 504 only.
+    # Opt in with GENBLAZE_EMPTY_504_RETRY=1 — may bill a second call if the
+    # first eventually completed; prefer manual wait+retry unless operators
+    # accept that risk on cold Render/NIM.
+    empty_504_retry = (os.getenv("GENBLAZE_EMPTY_504_RETRY") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    try:
+        empty_504_delay = float(
+            (os.getenv("GENBLAZE_EMPTY_504_RETRY_DELAY") or "45").strip() or "45"
+        )
+    except ValueError:
+        empty_504_delay = 45.0
+    empty_504_delay = max(5.0, min(180.0, empty_504_delay))
+    # Default OFF: one invalid-payload genai probe at process start (cheap; not
+    # a billed generate when NIM rejects empty body). Set
+    # GENBLAZE_NVIDIA_WARMUP_ON_STARTUP=1 on Render to reduce cold-start 504s.
+    nvidia_warmup = (
+        os.getenv("GENBLAZE_NVIDIA_WARMUP_ON_STARTUP") or ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
     # Default OFF: judge/demo path is FLUX stills. Cosmos video stays an
     # operator opt-in (GENBLAZE_VIDEO_ENABLED=1) when the key's catalog is live.
     video_enabled = (os.getenv("GENBLAZE_VIDEO_ENABLED") or "0").strip().lower() not in {
@@ -238,6 +264,9 @@ def get_settings() -> Settings:
         dry_run=dry,
         b2_probe_on_health=b2_probe,
         abstract_retry_on_blank=abstract_retry,
+        empty_504_retry=empty_504_retry,
+        empty_504_retry_delay_seconds=empty_504_delay,
+        nvidia_warmup_on_startup=nvidia_warmup,
         dotenv_loaded=tuple(loaded),
     )
 

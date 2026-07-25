@@ -6,6 +6,7 @@ uvicorn[standard]==0.35.0
 python-dotenv==1.2.2
 pydantic==2.11.7
 httpx==0.28.1
+python-multipart==0.0.20
 
 # Genblaze stack (NVIDIA NIM image + B2/S3 storage)
 # genblaze-nvidia 0.3.2 needs genblaze-core >=0.3.6 (local_file_url)

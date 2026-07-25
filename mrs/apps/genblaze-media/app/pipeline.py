@@ -7,6 +7,7 @@ import json
 import logging
 import shutil
 import tempfile
+import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ from typing import Any, Callable
 
 from app.config import APP_DIR, NVIDIA_SETUP_HELP, Settings
 from app.image_quality import assess_image_bytes, extract_nvidia_warnings
+from app.nvidia_errors import is_empty_nvidia_gateway_504
 from app.preview_cache import put_preview
 from app.prompt_rewrite import looks_like_people_prompt, rewrite_as_abstract_geometry
 from app.prompt_sanitize import sanitize_prompt
@@ -535,17 +537,47 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
         last_warnings: list[str] = []
         last_gen: GenerateResult | None = None
         abstract_retry_used = False
+        empty_504_retry_used = False
 
-        for attempt_idx, attempt_prompt in enumerate(attempt_prompts):
+        def _attempt_live(attempt_idx: int, attempt_prompt: str) -> tuple[GenerateResult, bytes | None, list[str]]:
             attempt_dir = output_dir / f"attempt-{attempt_idx}"
             attempt_dir.mkdir(parents=True, exist_ok=True)
-            gen, image_bytes, warnings = _run_live_once(
+            return _run_live_once(
                 settings=settings,
                 prompt=attempt_prompt,
                 timeouts=timeouts,
                 http_client=http_client,
                 output_dir=attempt_dir,
             )
+
+        attempt_idx = 0
+        while attempt_idx < len(attempt_prompts):
+            attempt_prompt = attempt_prompts[attempt_idx]
+            try:
+                gen, image_bytes, warnings = _attempt_live(attempt_idx, attempt_prompt)
+            except Exception as exc:  # noqa: BLE001 — classify empty 504 then re-raise
+                # Opt-in: one delayed retry after empty gateway 504 only.
+                # Safe-ish only when no asset was returned (exception path —
+                # nothing uploaded yet). Still may double-bill if NIM completed
+                # after the gateway timed out; default remains OFF.
+                if (
+                    settings.empty_504_retry
+                    and not empty_504_retry_used
+                    and is_empty_nvidia_gateway_504(exc)
+                ):
+                    empty_504_retry_used = True
+                    delay = settings.empty_504_retry_delay_seconds
+                    logger.warning(
+                        "Empty NVIDIA gateway 504; waiting %.0fs then one retry "
+                        "(GENBLAZE_EMPTY_504_RETRY=1). First call may still bill.",
+                        delay,
+                    )
+                    time.sleep(delay)
+                    attempt_prompts.append(attempt_prompt)
+                    attempt_idx += 1
+                    continue
+                raise
+
             last_warnings = warnings
             last_gen = gen
             # `prompt_sanitized` means meta-commentary was stripped from the raw
@@ -555,10 +587,17 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
             # "meta-commentary stripped" in the note and the API response.
             gen.prompt_sanitized = prompt_sanitized
             gen.created_at = created_at
-            if abstract_retry_used and attempt_idx > 0:
-                gen.detail = (gen.detail + " · " if gen.detail else "") + (
-                    "abstract geometry retry after blank still"
+            if empty_504_retry_used and attempt_idx > 0:
+                note = (
+                    f"empty-504 delayed retry after "
+                    f"{settings.empty_504_retry_delay_seconds:.0f}s"
                 )
+                if note not in (gen.detail or ""):
+                    gen.detail = (gen.detail + " · " if gen.detail else "") + note
+            if abstract_retry_used and attempt_idx > 0:
+                note = "abstract geometry retry after blank still"
+                if note not in (gen.detail or ""):
+                    gen.detail = (gen.detail + " · " if gen.detail else "") + note
 
             if warnings and not _looks_like_safety_block(warnings):
                 joined = " | ".join(warnings)
@@ -625,6 +664,7 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                 and cleaned != raw_prompt
             ):
                 attempt_prompts.append(cleaned)
+                attempt_idx += 1
                 continue
 
             # Photoreal-people blanks: one abstract geometry rewrite (costs a
@@ -642,6 +682,8 @@ def generate_image(settings: Settings, prompt: str) -> GenerateResult:
                         rewritten[:160],
                     )
                     attempt_prompts.append(rewritten)
+
+            attempt_idx += 1
 
         warn_suffix = ""
         if last_warnings:

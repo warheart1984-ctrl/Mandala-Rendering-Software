@@ -7,6 +7,8 @@ __pycache__/
 data/*.json
 # Ephemeral local preview stills (served via /api/preview/{run_id}); never commit
 data/preview-cache/
+# Operator photo ingest store (POST /api/image/ingest); never commit uploads
+data/ingested/
 .env
 .env.*
 !.env.example

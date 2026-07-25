@@ -43,6 +43,9 @@ def _offline_settings(**overrides) -> Settings:
         dry_run=True,
         b2_probe_on_health=False,
         abstract_retry_on_blank=True,
+        empty_504_retry=False,
+        empty_504_retry_delay_seconds=45.0,
+        nvidia_warmup_on_startup=False,
         dotenv_loaded=(),
     )
     base.update(overrides)
@@ -416,12 +419,12 @@ def test_nvidia_timeouts_defaults(monkeypatch):
     assert cfg.http_timeout == 600.0
     assert cfg.nvcf_timeout == 600.0
     assert cfg.pipeline_timeout == 720
-    assert cfg.nvcf_poll_seconds == 90
+    assert cfg.nvcf_poll_seconds == 120
     assert cfg.connect_timeout == 30.0
 
     client = build_nvidia_genai_client("nvapi-test", cfg)
     try:
-        assert client.headers["NVCF-POLL-SECONDS"] == "90"
+        assert client.headers["NVCF-POLL-SECONDS"] == "120"
         assert client.timeout.read == 600.0
         assert client.timeout.connect == 30.0
     finally:
@@ -553,7 +556,162 @@ def test_api_generate_explains_empty_nvidia_504(monkeypatch, tmp_path):
     assert "empty 504 gateway response" in detail
     assert "cold start" in detail
     assert "retry once" in detail
-    assert "NVCF_POLL_SECONDS" in detail
+    assert "GENBLAZE_NVCF_POLL_SECONDS" in detail
+    assert "GENBLAZE_EMPTY_504_RETRY" in detail
+
+
+def test_is_empty_nvidia_gateway_504_variants():
+    from app.nvidia_errors import format_generation_failure, is_empty_nvidia_gateway_504
+
+    assert is_empty_nvidia_gateway_504(
+        'NVIDIA image generate failed (504): {"_raw": ""}'
+    )
+    assert is_empty_nvidia_gateway_504(
+        "NVIDIA image generate failed (504): {'_raw': ''}"
+    )
+    assert is_empty_nvidia_gateway_504("NVIDIA NVCF status 504: {\"_raw\": \"\"}")
+    assert not is_empty_nvidia_gateway_504(
+        "NVIDIA image generate failed (504): model overloaded, try later"
+    )
+    assert not is_empty_nvidia_gateway_504("NVIDIA image generate failed (400): bad prompt")
+    msg = format_generation_failure(
+        Exception('NVIDIA image generate failed (504): {"_raw": ""}')
+    )
+    assert "empty 504 gateway response" in msg
+    assert "GENBLAZE_EMPTY_504_RETRY" in msg
+
+
+def test_empty_504_retry_opt_in(monkeypatch, tmp_path):
+    """With GENBLAZE_EMPTY_504_RETRY=1, one delayed retry after empty 504."""
+    import io
+    from types import SimpleNamespace
+
+    from PIL import Image
+
+    from app.pipeline import GenerateResult, generate_image
+
+    settings = _offline_settings(
+        nvidia_api_key="nvapi-test",
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+        empty_504_retry=True,
+        empty_504_retry_delay_seconds=0.01,
+        abstract_retry_on_blank=False,
+    )
+    calls: list[str] = []
+    buf = io.BytesIO()
+    Image.new("RGB", (256, 256), (40, 120, 200)).save(buf, format="PNG")
+    png = buf.getvalue()
+
+    def boom_then_ok(*, settings, prompt, timeouts, http_client, output_dir):
+        calls.append(prompt)
+        if len(calls) == 1:
+            raise Exception('NVIDIA image generate failed (504): {"_raw": ""}')
+        (output_dir / "ok.png").write_bytes(png)
+        gen = GenerateResult(
+            run_id="retry-run",
+            prompt=prompt,
+            model=settings.image_model,
+            provider="nvidia-image",
+            status="ok",
+            asset_key="k",
+            manifest_key="m",
+            asset_sha256="abc",
+            preview_url=None,
+            created_at="2026-01-01T00:00:00+00:00",
+            dry_run=False,
+        )
+        return gen, png, []
+
+    monkeypatch.setattr("app.pipeline._run_live_once", boom_then_ok)
+    monkeypatch.setattr(
+        "app.pipeline._nvidia_output_dir",
+        lambda: tmp_path / "nvidia-out",
+    )
+    monkeypatch.setattr(
+        "app.nvidia_http.build_nvidia_genai_client",
+        lambda *a, **k: SimpleNamespace(close=lambda: None),
+    )
+    sleeps: list[float] = []
+    monkeypatch.setattr("app.pipeline.time.sleep", lambda s: sleeps.append(s))
+
+    result = generate_image(settings, "cold start mandala")
+    assert len(calls) == 2
+    assert sleeps == [0.01]
+    assert "empty-504 delayed retry" in (result.detail or "")
+
+
+def test_empty_504_no_retry_by_default(monkeypatch, tmp_path):
+    """Default OFF: empty 504 raises without a second billed attempt."""
+    from types import SimpleNamespace
+
+    from app.pipeline import generate_image
+
+    settings = _offline_settings(
+        nvidia_api_key="nvapi-test",
+        b2_key_id="id",
+        b2_app_key="key",
+        b2_bucket="bucket",
+        dry_run=False,
+        empty_504_retry=False,
+        abstract_retry_on_blank=False,
+    )
+    calls = {"n": 0}
+
+    def always_504(*, settings, prompt, timeouts, http_client, output_dir):
+        calls["n"] += 1
+        raise Exception('NVIDIA image generate failed (504): {"_raw": ""}')
+
+    monkeypatch.setattr("app.pipeline._run_live_once", always_504)
+    monkeypatch.setattr(
+        "app.pipeline._nvidia_output_dir",
+        lambda: tmp_path / "nvidia-out",
+    )
+    monkeypatch.setattr(
+        "app.nvidia_http.build_nvidia_genai_client",
+        lambda *a, **k: SimpleNamespace(close=lambda: None),
+    )
+
+    with pytest.raises(Exception, match="504"):
+        generate_image(settings, "no auto retry")
+    assert calls["n"] == 1
+
+
+def test_probe_genai_model_liveness_mock(monkeypatch):
+    from app.nvidia_http import probe_genai_model_liveness
+
+    class FakeResp:
+        status_code = 400
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        def post(self, path, json):
+            assert path.startswith("/genai/")
+            assert json == {}
+            return FakeResp()
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("app.nvidia_http.httpx.Client", FakeClient)
+    out = probe_genai_model_liveness("nvapi-test", "black-forest-labs/flux.1-schnell")
+    assert out["ran"] is True
+    assert out["liveness"] == "live"
+    assert out["http_status"] == 400
+
+
+def test_health_includes_empty_504_policy(client):
+    r = client.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["empty_504_retry"] is False
+    assert body["empty_504_retry_delay_seconds"] >= 5
+    assert "nvidia_warmup" in body
+    assert body["image_ingest_routes"] is True
 
 
 def test_sanitize_strips_meta_commentary():
