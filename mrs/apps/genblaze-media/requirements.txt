@@ -6,6 +6,8 @@ uvicorn[standard]==0.35.0
 python-dotenv==1.2.2
 pydantic==2.11.7
 httpx==0.28.1
+# Required for POST /api/image/ingest multipart (Starlette request.form).
+# Pin must match requirements-docker.txt (used by root + app Dockerfiles).
 python-multipart==0.0.31
 
 # Genblaze stack (NVIDIA NIM image + B2/S3 storage)

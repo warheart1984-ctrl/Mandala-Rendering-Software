@@ -151,3 +151,20 @@ def test_ingest_multipart(ingest_client):
     )
     assert r.status_code == 200, r.text
     assert r.json()["format"] == "PNG"
+
+
+def test_ingest_multipart_missing_dependency_returns_503(ingest_client, monkeypatch):
+    """Starlette without python-multipart must not become an unhandled 500."""
+    from starlette.requests import Request
+
+    async def _boom(self, *args, **kwargs):
+        raise RuntimeError('Form data requires "python-multipart" to be installed.')
+
+    monkeypatch.setattr(Request, "form", _boom)
+    png = _png_bytes(color=(200, 40, 40))
+    r = ingest_client.post(
+        "/api/image/ingest",
+        files={"file": ("warm.png", png, "image/png")},
+    )
+    assert r.status_code == 503, r.text
+    assert "python-multipart" in r.json()["detail"].lower()
