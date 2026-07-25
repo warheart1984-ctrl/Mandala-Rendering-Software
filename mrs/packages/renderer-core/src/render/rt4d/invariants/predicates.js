@@ -21,6 +21,9 @@ import {
   lengthPreservedUnder2dRotation,
 } from "../math/physicalInvariants.js";
 import { buildTinyReferenceFrame, hashBytes } from "../pipeline/CPUConformanceGate.js";
+import { cpuPathTracerHashDeterministic } from "../pipeline/PathTracerSeedHash.js";
+import { BVH4D } from "../accel/BVH4D.js";
+import { Hypersphere } from "../geometry/hypersurface.js";
 
 /** Canonical Lambertian BRDF factor 3/(4π) — must match bsdf4d.js / normalization tests. */
 export const LAMBERTIAN_BRDF_FACTOR = 3 / (4 * Math.PI);
@@ -164,6 +167,8 @@ export function cpuReferenceHashDeterministic(opts = {}) {
   return { ok: hashA === hashB, hashA, hashB, width, height, seed };
 }
 
+export { cpuPathTracerHashDeterministic };
+
 /**
  * EI-LENGTH-PARENT: Transform4D plane rotation preserves ‖v‖².
  *
@@ -193,17 +198,182 @@ export function orthogonalLengthPreserved(
 }
 
 /**
- * EI-TOPOLOGY: skeleton stub — returns ok:null (not evaluated).
- * Callers must not treat this as a pass.
+ * True iff `child` HyperBox is contained in `parent` HyperBox on all four axes
+ * (within tolerance). Supports M-BVH-CONTAINMENT.
  *
- * @returns {{ok:null, status:"skeleton", reason:string}}
+ * @param {{min:{x:number,y:number,z:number,w:number},max:{x:number,y:number,z:number,w:number}}} child
+ * @param {{min:{x:number,y:number,z:number,w:number},max:{x:number,y:number,z:number,w:number}}} parent
+ * @param {number} [tol]
+ * @returns {boolean}
  */
-export function topologyPreservationHolds() {
+export function hyperBoxContained(child, parent, tol = PHYSICAL_INVARIANT_TOL) {
+  return (
+    child.min.x >= parent.min.x - tol &&
+    child.min.y >= parent.min.y - tol &&
+    child.min.z >= parent.min.z - tol &&
+    child.min.w >= parent.min.w - tol &&
+    child.max.x <= parent.max.x + tol &&
+    child.max.y <= parent.max.y + tol &&
+    child.max.z <= parent.max.z + tol &&
+    child.max.w <= parent.max.w + tol
+  );
+}
+
+/**
+ * Deterministic default BVH used when a caller does not supply one, so the
+ * default conformance adapter can evaluate EI-TOPOLOGY without external scene
+ * state. Chosen to force a multi-level tree (> 2 × leafThreshold primitives).
+ *
+ * @returns {BVH4D}
+ */
+export function buildDefaultTopologyBVH() {
+  const centers = [
+    [-3, -2, -1, 0.5],
+    [2, 3, -2, -1],
+    [0, 0, 0, 0],
+    [4, -1, 2, 1.5],
+    [-2, 4, 3, -2],
+    [1, -3, -4, 2],
+    [-4, 1, 4, -3],
+    [3, 2, 1, 3],
+    [-1, -4, 2, -1.5],
+    [2, -2, -3, 0],
+    [-3, 3, -1, 2.5],
+    [1, 1, 4, -4],
+  ];
+  const radii = [0.5, 0.8, 1.2, 0.6, 0.9, 0.7, 1.1, 0.4, 0.75, 0.65, 0.95, 0.55];
+  const primitives = centers.map(
+    (c, i) => new Hypersphere(vec4(c[0], c[1], c[2], c[3]), radii[i]),
+  );
+  return new BVH4D(primitives, { leafThreshold: 2 });
+}
+
+/**
+ * Recursively assert that every descendant node box of `nodeIdx` is missed by
+ * the ray (used only after the caller has confirmed `nodeIdx` itself is missed).
+ *
+ * @param {BVH4D} bvh
+ * @param {number} nodeIdx
+ * @param {object} ray
+ * @returns {boolean}
+ */
+function descendantsAllMiss(bvh, nodeIdx, ray) {
+  const node = bvh.nodes[nodeIdx];
+  for (const childIdx of [node.left, node.right]) {
+    if (childIdx < 0) continue;
+    if (bvh.nodes[childIdx].box.intersect(ray)) return false;
+    if (!descendantsAllMiss(bvh, childIdx, ray)) return false;
+  }
+  return true;
+}
+
+/**
+ * For one ray, verify the miss-implication: any node whose box the ray misses
+ * has no descendant whose box the ray hits.
+ *
+ * @param {BVH4D} bvh
+ * @param {object} ray
+ * @returns {boolean}
+ */
+function missImplicationForRay(bvh, ray) {
+  const visit = (idx) => {
+    const node = bvh.nodes[idx];
+    if (!node.box.intersect(ray)) {
+      return descendantsAllMiss(bvh, idx, ray);
+    }
+    let ok = true;
+    for (const childIdx of [node.left, node.right]) {
+      if (childIdx >= 0) ok = ok && visit(childIdx);
+    }
+    return ok;
+  };
+  return visit(0);
+}
+
+/**
+ * Supporting measurement: cast deterministic (seeded) rays and confirm the
+ * ray-miss implication across the whole tree.
+ *
+ * @param {BVH4D} bvh
+ * @param {{rays?:number, seed?:number}} [opts]
+ * @returns {{ok:boolean, rays:number, missChecks:number, violations:number, seed:number}}
+ */
+export function bvhMissImplicationHolds(bvh, opts = {}) {
+  const rays = opts.rays ?? 256;
+  const seed = opts.seed ?? 0x70706f; // "top"
+  let s = seed >>> 0;
+  const rng = () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+  let violations = 0;
+  let missChecks = 0;
+  for (let i = 0; i < rays; i++) {
+    const origin = vec4(
+      (rng() - 0.5) * 20,
+      (rng() - 0.5) * 20,
+      (rng() - 0.5) * 20,
+      (rng() - 0.5) * 20,
+    );
+    let dir = vec4(rng() - 0.5, rng() - 0.5, rng() - 0.5, rng() - 0.5);
+    const dl =
+      Math.hypot(dir.x, dir.y, dir.z, dir.w) || 1;
+    dir = vec4(dir.x / dl, dir.y / dl, dir.z / dl, dir.w / dl);
+    const ray = { origin, direction: dir, tMin: 0, tMax: Infinity };
+    // Only rays that miss at least one node exercise the implication.
+    if (bvh.nodes.some((n) => !n.box.intersect(ray))) missChecks++;
+    if (!missImplicationForRay(bvh, ray)) violations++;
+  }
+  return { ok: violations === 0, rays, missChecks, violations, seed };
+}
+
+/**
+ * EI-TOPOLOGY: BVH4D child bounds ⊆ parent bounds on all four axes, and
+ * (supporting) ray-miss on a parent implies miss on all descendants.
+ *
+ * Supply a built `BVH4D` (or leave undefined to evaluate a deterministic
+ * default tree). Returns ok:null only when no evaluable tree is available.
+ *
+ * @param {BVH4D} [bvh]
+ * @param {{tol?:number, checkMissImplication?:boolean, rays?:number, seed?:number}} [opts]
+ * @returns {{ok:boolean|null, status:string, nodeCount?:number, checkedPairs?:number, violations?:Array, missImplication?:object, reason?:string}}
+ */
+export function topologyPreservationHolds(bvh, opts = {}) {
+  const tree = bvh ?? buildDefaultTopologyBVH();
+  if (!tree || !Array.isArray(tree.nodes) || tree.nodes.length === 0) {
+    return {
+      ok: null,
+      status: "skeleton",
+      reason: "No BVH nodes available; supply a built BVH4D to evaluate containment.",
+    };
+  }
+  const tol = opts.tol ?? PHYSICAL_INVARIANT_TOL;
+  const nodes = tree.nodes;
+  let checkedPairs = 0;
+  const violations = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    for (const childIdx of [node.left, node.right]) {
+      if (childIdx < 0) continue;
+      const child = nodes[childIdx];
+      checkedPairs++;
+      if (!hyperBoxContained(child.box, node.box, tol)) {
+        violations.push({ parent: i, child: childIdx });
+      }
+    }
+  }
+  const containmentOk = violations.length === 0;
+  const missImplication =
+    opts.checkMissImplication === false
+      ? null
+      : bvhMissImplicationHolds(tree, opts);
   return {
-    ok: null,
-    status: "skeleton",
-    reason:
-      "No BVH parent/child containment predicate is implemented yet. HyperBox.intersect exists; invariant unproven.",
+    ok: containmentOk && (missImplication ? missImplication.ok : true),
+    status: "tested",
+    nodeCount: nodes.length,
+    checkedPairs,
+    violations,
+    missImplication,
   };
 }
 
@@ -260,18 +430,33 @@ export const PREDICATE_RUNNERS = Object.freeze({
       measurement.tol,
     ),
   "EI-REPLAY-DETERMINISM": (measurement = {}) => {
-    // Supporting measurement only — does not prove full timeline replay.
-    const hash = cpuReferenceHashDeterministic(measurement);
+    // Supporting measurements only — do not prove full timeline / multi-host replay.
+    const tinyRef = cpuReferenceHashDeterministic(measurement);
+    const pathHash =
+      measurement.skipPathTracerHash === true
+        ? null
+        : cpuPathTracerHashDeterministic({
+            width: measurement.pathWidth ?? measurement.width ?? 4,
+            height: measurement.pathHeight ?? measurement.height ?? 4,
+            samples: measurement.pathSamples ?? 1,
+            maxDepth: measurement.pathMaxDepth ?? 2,
+            seed: measurement.seed ?? 0x4d5253,
+          });
+    const supportingOk =
+      tinyRef.ok && (pathHash ? pathHash.ok : true);
     return {
       ok: null,
       status: "declared",
-      supporting: hash,
+      supporting: { tinyRef, pathHash, ok: supportingOk },
       reason:
-        "Full replay determinism remains declared. Supporting M-CPU-REF-HASH ran: " +
-        (hash.ok ? "pass" : "fail"),
+        "Full replay determinism remains declared. Supporting M-CPU-REF-HASH: " +
+        (tinyRef.ok ? "pass" : "fail") +
+        "; M-CPU-PATH-HASH: " +
+        (pathHash ? (pathHash.ok ? "pass" : "fail") : "skipped"),
     };
   },
-  "EI-TOPOLOGY": () => topologyPreservationHolds(),
+  "EI-TOPOLOGY": (measurement = {}) =>
+    topologyPreservationHolds(measurement.bvh, measurement),
 });
 
 /**

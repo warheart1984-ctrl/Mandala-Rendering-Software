@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4d-engine.local/schemas/Material4DDesc.v2.schema.json",
+  "title": "Material4DDesc",
+  "description": "FourDRenderer v2 material descriptor (MATERIAL_SYSTEM_RFC). Declared contract — host bindings exist; GPU kernels not claimed. Flags Use4DShading / UseHybridShading are uint 0/1 (no bool in GPU ABI).",
+  "type": "object",
+  "required": ["MaterialId", "BSDFType", "Use4DShading", "UseHybridShading", "BaseColor", "Roughness"],
+  "additionalProperties": false,
+  "properties": {
+    "MaterialId": { "type": "integer", "minimum": 0 },
+    "BSDFType": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Lambert4D=0, GGX4D=1, … (vocabulary declared; not enforced)."
+    },
+    "Use4DShading": { "type": "integer", "enum": [0, 1] },
+    "UseHybridShading": { "type": "integer", "enum": [0, 1] },
+    "BaseColor": {
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "type": "number" }
+        },
+        {
+          "type": "object",
+          "required": ["x", "y", "z"],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "z": { "type": "number" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Roughness": { "type": "number", "minimum": 0 },
+    "WAnisotropy": { "type": "number", "description": "Optional; default 0 when omitted on wire." }
+  },
+  "examples": [
+    {
+      "MaterialId": 0,
+      "BSDFType": 0,
+      "Use4DShading": 1,
+      "UseHybridShading": 0,
+      "BaseColor": [0.8, 0.8, 0.85],
+      "Roughness": 0.5,
+      "WAnisotropy": 0
+    }
+  ]
+}

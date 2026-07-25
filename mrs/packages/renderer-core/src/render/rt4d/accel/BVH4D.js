@@ -29,14 +29,17 @@ export class BVH4D {
       return nodeIdx;
     }
 
-    const bestSplit = this._findBestSplit(start, end);
-    if (!bestSplit) {
+    // NOTE: axis 0 (x) is a valid split axis; check for null explicitly rather
+    // than truthiness, otherwise every node whose best split axis is x collapses
+    // into a leaf and the tree never branches.
+    const bestAxis = this._findBestSplit(start, end);
+    if (bestAxis === null) {
       this.nodes[nodeIdx].start = start;
       this.nodes[nodeIdx].end = end;
       return nodeIdx;
     }
 
-    const mid = this._partition(start, end, bestSplit);
+    const mid = this._partition(start, end, bestAxis);
     const leftIdx = this._build(start, mid);
     const rightIdx = this._build(mid, end);
     this.nodes[nodeIdx].left = leftIdx;
@@ -90,11 +93,18 @@ export class BVH4D {
 
   _partition(start, end, axis) {
     const mid = Math.floor((start + end) / 2);
-    this.primitives.sort((a, b) => {
+    // Sort only the [start, end) sub-range. Sorting the whole array here would
+    // reorder primitives outside this node's range and can pull larger-bound
+    // primitives into a child range after the parent box was already computed,
+    // violating child ⊆ parent containment (EI-TOPOLOGY) for depth ≥ 2 trees.
+    const slice = this.primitives.slice(start, end).sort((a, b) => {
       const ca = a.getCenter ? a.getCenter()[axis] : 0;
       const cb = b.getCenter ? b.getCenter()[axis] : 0;
       return ca - cb;
     });
+    for (let i = start; i < end; i++) {
+      this.primitives[i] = slice[i - start];
+    }
     return mid;
   }
 

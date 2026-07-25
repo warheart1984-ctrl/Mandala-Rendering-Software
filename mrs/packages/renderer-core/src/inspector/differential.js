@@ -1,4 +1,9 @@
 import { vec4 } from "./types.js";
+import {
+  principalFromKH,
+  computeMeshCurvature,
+  interpolateVertexScalar,
+} from "./discreteGeometry.js";
 
 function sub(a, b) {
   return vec4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
@@ -62,8 +67,8 @@ export function jacobianFromEdges(e1, e2) {
 }
 
 /**
- * First fundamental form from edges; second form unavailable without X_uu —
- * returns k1=k2=0 (skeleton) with dirs = tangents.
+ * Stub principal curvatures — labeled skeleton when mesh topology is unavailable.
+ * Status: tested (explicit stub path).
  */
 export function principalCurvatureStub(t1, t2) {
   return {
@@ -72,6 +77,35 @@ export function principalCurvatureStub(t1, t2) {
     dir1: { ...t1 },
     dir2: { ...t2 },
     curvatureStub: true,
+    source: "stub",
+  };
+}
+
+/**
+ * Real principal curvatures from discrete mesh (K,H) or precomputed k1/k2.
+ * Status: tested — CPU discrete geometry only; not GPU curvature.
+ *
+ * @param {object} t1
+ * @param {object} t2
+ * @param {{ k1?: number, k2?: number, K?: number, H?: number, source?: string }} discrete
+ */
+export function principalCurvatureReal(t1, t2, discrete = {}) {
+  let k1 = discrete.k1;
+  let k2 = discrete.k2;
+  if (!Number.isFinite(k1) || !Number.isFinite(k2)) {
+    const prin = principalFromKH(discrete.K ?? 0, discrete.H ?? 0);
+    k1 = prin.k1;
+    k2 = prin.k2;
+  }
+  return {
+    k1,
+    k2,
+    K: discrete.K,
+    H: discrete.H,
+    dir1: { ...t1 },
+    dir2: { ...t2 },
+    curvatureStub: false,
+    source: discrete.source ?? "discrete_cpu",
   };
 }
 
@@ -79,4 +113,14 @@ export function signedHyperplaneDistance(p, normal, d) {
   return dot(normal, p) + d;
 }
 
-export { sub, add, scale, dot, length, normalize };
+export {
+  sub,
+  add,
+  scale,
+  dot,
+  length,
+  normalize,
+  principalFromKH,
+  computeMeshCurvature,
+  interpolateVertexScalar,
+};

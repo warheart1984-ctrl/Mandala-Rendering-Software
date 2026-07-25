@@ -67,21 +67,35 @@ export function createBVH4DGPUBuffers(device, packedNodes) {
   return { nodeBuffer };
 }
 
-/** 4D slab AABB ∩ ray. Returns { hit, tEnter, tExit }. */
+/**
+ * 4D slab AABB ∩ ray. Returns { hit, tEnter, tExit }.
+ * Parallel / zero-thickness axes skip t updates (avoids false misses on planar meshes).
+ */
 export function intersectAABB4D(origin, direction, minBounds, maxBounds, tMin = 0, tMax = 1e30) {
   let tEnter = -Infinity;
   let tExit = Infinity;
   const o = [origin.x, origin.y, origin.z, origin.w];
   const d = [direction.x, direction.y, direction.z, direction.w];
+  const EPS = 1e-12;
+  const PAD = 1e-9;
 
   for (let k = 0; k < 4; k++) {
-    const dk = Math.abs(d[k]) > 1e-12 ? d[k] : (d[k] >= 0 ? 1e-12 : -1e-12);
-    const t1 = (minBounds[k] - o[k]) / dk;
-    const t2 = (maxBounds[k] - o[k]) / dk;
-    const tNear = Math.min(t1, t2);
-    const tFar = Math.max(t1, t2);
-    tEnter = Math.max(tEnter, tNear);
-    tExit = Math.min(tExit, tFar);
+    const lo = minBounds[k];
+    const hi = maxBounds[k];
+    if (Math.abs(d[k]) <= EPS) {
+      if (o[k] < lo - PAD || o[k] > hi + PAD) return { hit: false, tEnter, tExit };
+      continue;
+    }
+    const invD = 1 / d[k];
+    let t0 = (lo - o[k]) * invD;
+    let t1 = (hi - o[k]) * invD;
+    if (t0 > t1) {
+      const tmp = t0;
+      t0 = t1;
+      t1 = tmp;
+    }
+    tEnter = Math.max(tEnter, t0);
+    tExit = Math.min(tExit, t1);
     if (tExit < tEnter) return { hit: false, tEnter, tExit };
   }
 
@@ -95,6 +109,7 @@ export function intersectAABB4D(origin, direction, minBounds, maxBounds, tMin = 
  */
 export function traverseBVH4DPacked(nodes, ray, primIntersect, options = {}) {
   const stackLimit = options.stackLimit ?? 64;
+  const stats = options.stats ?? null;
   const stack = new Int32Array(stackLimit);
   let sp = 0;
   stack[sp++] = 0;
@@ -111,6 +126,7 @@ export function traverseBVH4DPacked(nodes, ray, primIntersect, options = {}) {
     const nodeIdx = stack[--sp];
     const node = nodes[nodeIdx];
     if (!node) continue;
+    if (stats) stats.nodeVisits++;
 
     const box = intersectAABB4D(o, d, node.minBounds, node.maxBounds, tMin, closestT);
     if (!box.hit || box.tEnter > closestT) continue;
