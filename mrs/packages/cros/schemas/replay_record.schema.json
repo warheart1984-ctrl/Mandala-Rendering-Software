@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/cros/schemas/replay_record.schema.json",
+  "title": "CROS ReplayRecord",
+  "description": "Stage 7 of 7. The outcome of attempting to re-execute from a RenderEvidence. Terminal artifact. A ReplayRecord records an attempt and its verdict — 'unverified' is a legitimate, honest verdict and is the correct value when no replay was actually run.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["crosVersion", "kind", "id", "createdAt", "profile", "derivedFrom", "evidenceHash", "replayClass", "verdict", "inputs", "contentHash"],
+  "properties": {
+    "crosVersion": { "const": "0.1.0" },
+    "kind": { "const": "ReplayRecord" },
+    "id": { "$ref": "#/$defs/ArtifactId" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "profile": { "$ref": "#/$defs/ProfileId" },
+    "derivedFrom": { "$ref": "#/$defs/ArtifactId", "description": "id of the RenderEvidence." },
+    "evidenceHash": { "$ref": "#/$defs/Sha256", "description": "contentHash of that RenderEvidence." },
+    "replayClass": {
+      "$ref": "#/$defs/ReplayClass",
+      "description": "CI-005: must be permitted by the active profile. Must not exceed the class asserted by the evidence being replayed."
+    },
+    "verdict": {
+      "enum": ["reproduced", "diverged", "unverified"],
+      "description": "'reproduced' means equality held at the strength defined by replayClass — not stronger. 'unverified' means no attempt was made."
+    },
+    "inputs": {
+      "type": "object",
+      "description": "The inputs actually re-submitted, copied from evidence.replay.inputs."
+    },
+    "comparison": {
+      "type": "object",
+      "description": "Class-appropriate comparison detail: byte equality for bit-identical, parameter diff for deterministic-parameters, provider response metadata for provider-contract."
+    },
+    "notes": { "type": "string" },
+    "contentHash": { "$ref": "#/$defs/Sha256" }
+  },
+  "$defs": {
+    "Sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ArtifactId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "ProfileId": { "enum": ["cros.dcc-offline", "cros.gen-ai-nim"] },
+    "ReplayClass": { "enum": ["bit-identical", "deterministic-parameters", "provider-contract"] }
+  }
+}

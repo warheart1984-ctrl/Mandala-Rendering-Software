@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "profileId": "cros.dcc-offline",
+  "crosVersion": "0.1.0",
+  "title": "CROS Conformance Profile — Offline DCC Path Tracing",
+  "status": "declared",
+  "statusNote": "DECLARED ONLY. No adapter implements this profile. Every requirement below is an expectation placed on future adapters, not a description of current behaviour. There is no Cycles, Arnold, RenderMan, Karma, or Redshift integration in this package, and no stub pretending to be one.",
+  "scope": "Offline, deterministic-by-construction rendering in a locked environment: DCC scene → path tracer → frames on disk.",
+  "replay": {
+    "allowedClasses": ["bit-identical", "deterministic-parameters"],
+    "default": "deterministic-parameters",
+    "claim": "Under a locked environment with pinned seeds, pinned sample counts, and a deterministic reduction order, re-execution is expected to yield byte-equal outputs. This expectation is UNVERIFIED — no adapter exists to test it against. Until an adapter demonstrates it, the honest default class is deterministic-parameters.",
+    "defaultRationale": "bit-identical is permitted but not the default. Claiming byte equality requires having observed byte equality; permitting a class is not the same as achieving it."
+  },
+  "requirements": [
+    {
+      "id": "DCC-R1",
+      "title": "Environment lock",
+      "status": "declared",
+      "requirement": "The adapter must record an exact, resolvable environment identity: renderer version, plugin/shader versions, OS and libc, GPU driver where the render path is GPU-accelerated, and OCIO config version.",
+      "evidenceField": "manifest.environment",
+      "whyBitIdenticalNeedsIt": "A minor renderer or driver revision can change intersection tie-breaks or math intrinsics. Without a recorded lock, byte equality is unfalsifiable."
+    },
+    {
+      "id": "DCC-R2",
+      "title": "RNG seed pinning",
+      "status": "declared",
+      "requirement": "Every stochastic component (sampler, ray-differential jitter, volumetric scatter, stochastic transparency) must draw from an explicitly seeded stream, and every seed must be recorded.",
+      "evidenceField": "replay.inputs.seeds"
+    },
+    {
+      "id": "DCC-R3",
+      "title": "Sample-count and adaptivity pinning",
+      "status": "declared",
+      "requirement": "Sample counts must be recorded per AOV. Adaptive sampling must record its threshold and its termination decision inputs, or be disabled.",
+      "evidenceField": "replay.inputs.sampling",
+      "note": "Adaptive sampling driven by a wall-clock or noise-estimate budget is the most common silent breaker of bit-identical replay: identical inputs terminate at different sample counts on differently-loaded hardware."
+    },
+    {
+      "id": "DCC-R4",
+      "title": "Deterministic reduction order",
+      "status": "declared",
+      "requirement": "Sample accumulation and multi-tile/multi-device merges must occur in a fixed order. Floating-point addition is not associative, so an arrival-order reduction produces run-to-run variance even with identical samples.",
+      "evidenceField": "manifest.determinism.reductionOrder"
+    },
+    {
+      "id": "DCC-R5",
+      "title": "Scene state content addressing",
+      "status": "declared",
+      "requirement": "The resolved scene graph — post-referencing, post-procedural-expansion — must be content-hashed, along with every referenced asset (geometry, textures, volumes).",
+      "evidenceField": "manifest.scene.contentHash"
+    },
+    {
+      "id": "DCC-R6",
+      "title": "Color management declaration",
+      "status": "declared",
+      "requirement": "Working space, view transform, and display transform must be recorded by OCIO config identity and version.",
+      "evidenceField": "manifest.color",
+      "note": "ACES is the expected common case. This package implements no color management whatsoever; naming ACES here is a target, not a capability."
+    },
+    {
+      "id": "DCC-R7",
+      "title": "Denoiser disclosure",
+      "status": "declared",
+      "requirement": "Any denoise pass must be recorded with model identity and version, and must be applied as a declared post-step so that pre-denoise output remains independently hashable.",
+      "evidenceField": "manifest.postProcessing.denoise",
+      "note": "A learned denoiser's version is part of the environment lock. OIDN/OptiX integration is not implemented."
+    },
+    {
+      "id": "DCC-R8",
+      "title": "Distributed execution accounting",
+      "status": "declared",
+      "requirement": "Where a render is split across hosts, each unit of work must be attributable and independently hashable, and the merge must satisfy DCC-R4.",
+      "evidenceField": "manifest.distribution",
+      "note": "No farm planner, scheduler, or work-distribution layer exists in this package."
+    }
+  ],
+  "invariantStatus": {
+    "CI-001": "partial",
+    "CI-002": "declared",
+    "CI-003": "declared",
+    "CI-004": "declared",
+    "CI-005": "declared",
+    "CI-006": "declared"
+  },
+  "invariantStatusNote": "CI-002 is 'declared' rather than 'partial' for this profile specifically: cros.planning.derive_plan raises UnsupportedProfileError for cros.dcc-offline. There is no offline planner. CI-001 remains 'partial' because intent hashing is profile-independent and is implemented.",
+  "requiredEvidenceFields": [
+    "manifest.environment",
+    "manifest.scene.contentHash",
+    "manifest.color",
+    "replay.inputs.seeds",
+    "replay.inputs.sampling"
+  ],
+  "requiredEvidenceFieldsNote": "Declared expectation. cros.evidence enforces requiredEvidenceFields for cros.gen-ai-nim only; the offline field set is not machine-checked because no producer exists to check."
+}

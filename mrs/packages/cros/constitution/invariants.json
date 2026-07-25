@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "crosVersion": "0.1.0",
+  "title": "CROS Constitutional Invariants",
+  "statusVocabulary": {
+    "enforced": "Implemented, unit-tested, and invoked on a real execution path.",
+    "partial": "Validator implemented and unit-tested; no production execution path invokes it yet.",
+    "declared": "Specified in prose/JSON only. No implementation.",
+    "skeleton": "Stub or type signature only."
+  },
+  "runtimeStatus": "absent",
+  "runtimeStatusNote": "No CROS runtime, scheduler, or adapter host exists in this package. Every invariant below is at most 'partial': a validator function that a caller must invoke deliberately.",
+  "profileRequired": true,
+  "profileRequiredNote": "CI-005 cannot be evaluated without a conformance profile. Replay semantics are profile-specific by construction.",
+  "principles": [
+    {
+      "id": "P1",
+      "title": "Lineage completeness",
+      "statement": "Every delivered frame traces to a CreativeIntent through an unbroken chain of typed artifacts. No stage may be skipped or synthesised after the fact."
+    },
+    {
+      "id": "P2",
+      "title": "Profile-scoped honesty",
+      "statement": "Reproducibility claims are made in the vocabulary of the active conformance profile. A claim valid under one profile is not portable to another."
+    },
+    {
+      "id": "P3",
+      "title": "Adapter subordination",
+      "statement": "Backends satisfy a contract; they do not extend it. CROS never depends on a specific renderer, model provider, or DCC."
+    },
+    {
+      "id": "P4",
+      "title": "Evidence precedes assertion",
+      "statement": "A render is not complete when pixels exist. It is complete when the evidence package that describes those pixels exists and verifies."
+    },
+    {
+      "id": "P5",
+      "title": "Declared is not enforced",
+      "statement": "Documentation, schemas, and profile JSON are specifications. They are not runtime gates and must never be described as such."
+    }
+  ],
+  "invariants": [
+    {
+      "id": "CI-001",
+      "title": "Intent immutability",
+      "statement": "An intent artifact is content-addressed. Any change to its body produces a new identity; it never mutates in place.",
+      "rationale": "Downstream artifacts cite an intent by hash. In-place mutation would silently invalidate every descendant without breaking any reference.",
+      "status": "partial",
+      "appliesTo": ["cros.dcc-offline", "cros.gen-ai-nim"],
+      "validator": "cros.validation.check_ci001_intent_immutable",
+      "evidence": [
+        "src/cros/artifacts.py::canonical_hash — RFC 8785-style canonical JSON over the artifact body with contentHash excluded",
+        "tests/test_invariants.py::test_ci001_*"
+      ],
+      "notEnforcedBecause": "No persistent artifact store exists. Nothing prevents a caller from editing a dict and recomputing the hash."
+    },
+    {
+      "id": "CI-002",
+      "title": "Planning derived from valid intent and declared capabilities",
+      "statement": "A RenderPlan is a pure function of (a valid RenderIntent, a declared capability set, an active profile). A plan may not introduce requirements absent from the capability set, and must cite the intent hash it was derived from.",
+      "rationale": "Plans that exceed declared capabilities fail at execution time, after resources are committed.",
+      "status": "partial",
+      "appliesTo": ["cros.dcc-offline", "cros.gen-ai-nim"],
+      "validator": "cros.validation.check_ci002_planning_derived",
+      "evidence": [
+        "src/cros/planning.py::derive_plan — gen-ai subset only; raises UnsupportedProfileError for cros.dcc-offline",
+        "tests/test_invariants.py::test_ci002_*"
+      ],
+      "notEnforcedBecause": "Only the gen-ai capability subset has a plan deriver. The dcc-offline planner does not exist."
+    },
+    {
+      "id": "CI-003",
+      "title": "Execution observability",
+      "statement": "A RenderExecution carries at least one progress observation, and observed completion fractions are monotonically non-decreasing.",
+      "rationale": "An unobservable long-running render is indistinguishable from a hung one. Monotonicity is what makes progress a signal rather than noise.",
+      "status": "partial",
+      "appliesTo": ["cros.dcc-offline", "cros.gen-ai-nim"],
+      "validator": "cros.validation.check_ci003_execution_observable",
+      "evidence": [
+        "schemas/render_execution.schema.json — progressEvents minItems 1",
+        "tests/test_invariants.py::test_ci003_*"
+      ],
+      "notEnforcedBecause": "No adapter host emits progress. streamProgress is a Protocol signature with no implementation."
+    },
+    {
+      "id": "CI-004",
+      "title": "Evidence before completion",
+      "statement": "A RenderResult may not be reported as delivered until a RenderEvidence artifact exists that cites the result hash and carries a content hash for every declared output artifact.",
+      "rationale": "Separates 'the renderer exited zero' from 'we can prove what it produced'.",
+      "status": "partial",
+      "appliesTo": ["cros.dcc-offline", "cros.gen-ai-nim"],
+      "validator": "cros.validation.check_ci004_evidence_before_completion",
+      "evidence": [
+        "src/cros/evidence.py::build_evidence",
+        "tests/test_invariants.py::test_ci004_*"
+      ],
+      "notEnforcedBecause": "No delivery path exists to gate. The validator must be called explicitly."
+    },
+    {
+      "id": "CI-005",
+      "title": "Profile-scoped replayability",
+      "statement": "Every ReplayRecord declares a replayClass, and that class must be permitted by the active conformance profile. No artifact may assert a stronger reproduction class than its profile allows.",
+      "rationale": "Bit-identical replay is achievable for a seeded offline path tracer under a locked environment. It is not achievable for a hosted diffusion endpoint. Collapsing both into the word 'reproducible' is the single most common dishonesty in render provenance.",
+      "status": "partial",
+      "appliesTo": ["cros.dcc-offline", "cros.gen-ai-nim"],
+      "validator": "cros.validation.check_ci005_replayability",
+      "replayClasses": {
+        "bit-identical": "Re-execution yields byte-equal outputs. Requires locked environment, pinned seeds, pinned sample counts, deterministic reduction order.",
+        "deterministic-parameters": "Re-execution yields equal input parameters and scene state; pixel equality is not asserted.",
+        "provider-contract": "Re-submission of a recorded request to a pinned provider endpoint. Reproducibility is bounded by the provider's contract. Pixel equality is NOT asserted and MUST NOT be claimed."
+      },
+      "evidence": [
+        "profiles/cros.gen-ai-nim.json — allowedClasses excludes bit-identical",
+        "tests/test_gen_ai_profile.py::test_gen_ai_profile_forbids_bit_identical_replay"
+      ],
+      "notEnforcedBecause": "No replay executor exists. The validator checks the claim, not the reproduction."
+    },
+    {
+      "id": "CI-006",
+      "title": "Adapter isolation",
+      "statement": "An adapter depends only on the CROS contract and its own backend. It may not import a sibling adapter, a host application, or a narrative/authoring layer.",
+      "rationale": "Cross-adapter imports turn a swappable backend into a distribution. Host-application imports invert the dependency and make the contract untestable.",
+      "status": "partial",
+      "appliesTo": ["cros.dcc-offline", "cros.gen-ai-nim"],
+      "validator": "cros.validation.check_ci006_adapter_isolation",
+      "bannedImportPrefixes": ["story_forge", "storyforge", "app", "genblaze", "cros.adapters"],
+      "bannedImportNote": "'app' and 'genblaze' name the mrs/apps/genblaze-media host. 'story_forge' is banned by MRS policy: CROS carries no Story Forge lineage. 'cros.adapters' is banned to sibling adapters, not to the contract module.",
+      "status_detail": "The import scan is implemented and runs over src/cros in CI. The registry of concrete adapters it would police is empty.",
+      "evidence": [
+        "src/cros/validation.py::scan_module_imports",
+        "tests/test_adapter_protocol.py::test_cros_package_has_no_banned_imports"
+      ],
+      "notEnforcedBecause": "No concrete adapter exists yet. The scan currently proves only that the contract package itself is clean."
+    }
+  ]
+}

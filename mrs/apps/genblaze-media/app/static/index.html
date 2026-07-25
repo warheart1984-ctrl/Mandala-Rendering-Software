@@ -55,6 +55,8 @@
       line-height: 1.45;
       max-width: 38rem;
     }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
     .tips {
       color: var(--muted);
       margin: -0.75rem 0 1.5rem;
@@ -157,10 +159,19 @@
   <main>
     <h1>Mandala · Genblaze</h1>
     <p class="lede">
-      Provenanced concept media for MRS / 4D scene authoring.
-      Prompt → NVIDIA NIM (FLUX stills or Cosmos video via Genblaze) → private Backblaze B2 with SHA-256 manifest
+      Provenanced concept stills for MRS / 4D scene authoring.
+      Prompt → NVIDIA NIM FLUX (via Genblaze) → private Backblaze B2 with SHA-256 manifest
       → optional semantic index (nv-embedcode). Concept plates for the 4D renderer —
-      NIM does not simulate 4D worlds.
+      NIM does not simulate 4D worlds. Cosmos video is an optional operator path
+      (off by default for this demo).
+    </p>
+
+    <p class="lede">
+      Render governance reference: <a href="/cros">CROS invariants, lineage &amp; replay profiles →</a>
+      <br />
+      <span style="font-size:0.9em">
+        Documentation only — this service does <strong>not</strong> implement CROS.
+      </span>
     </p>
 
     <section class="path" id="stills">
@@ -193,7 +204,7 @@
       </section>
     </section>
 
-    <section class="path" id="nim-cosmos">
+    <section class="path" id="nim-cosmos" hidden>
       <h2>NIM Cosmos · video (CMM-NIM-Cosmos)</h2>
       <p class="tips" role="note">
         <strong>Prompt tips (Cosmos text-to-world):</strong>
@@ -201,6 +212,7 @@
         People and faces may blank or degrade. <strong>NVCF cold-start:</strong> Cosmos is often slower than
         FLUX on the first hit after Render or NIM idle — even with 600s+ timeouts, expect longer
         first-request latency; keep this tab open. Larger mp4 objects cost more B2 Class C traffic.
+        This section only appears when <code>GENBLAZE_VIDEO_ENABLED=1</code> and the operator re-enables video.
       </p>
 
       <form id="video-form">
@@ -245,9 +257,10 @@
 
     <footer>
       Storage: Backblaze B2 (private bucket → presigned GET). Orchestration: Genblaze.
-      Image: NVIDIA NIM FLUX (stills). Video: NVIDIA NIM Cosmos (CMM-NIM-Cosmos).
+      Image: NVIDIA NIM FLUX (stills). Video: NVIDIA NIM Cosmos (optional; off by default).
       Embeddings: NVIDIA nv-embedcode. Operator readiness ≠ commercial self-serve.
-      Anchors: <code>/media/stills</code> · <code>/media/nim-cosmos</code>.
+      Anchors: <code>/media/stills</code> · <code>/media/nim-cosmos</code> (video when enabled).
+      Render governance reference (docs only, not implemented here): <a href="/cros">/cros</a>.
     </footer>
   </main>
   <script>
@@ -506,6 +519,11 @@
     document.getElementById("refresh").addEventListener("click", () => loadAssets());
 
     fetch("/health").then(r => r.json()).then(h => {
+      const cosmosSection = document.getElementById("nim-cosmos");
+      const videoOn = h.video_enabled === true;
+      if (cosmosSection) {
+        cosmosSection.hidden = !videoOn;
+      }
       if (!h.nvidia_configured && !h.dry_run) {
         setStatus(statusEl, h.nvidia_help || "NVIDIA_API_KEY not configured — generate will return 503 until set.", "warn");
       } else if (h.b2_error) {
@@ -515,13 +533,13 @@
           statusEl,
           "Ready · B2 " + h.b2_bucket +
             " · image " + h.image_model +
-            " · video " + (h.video_model || "—") +
-            (h.video_enabled === false ? " (disabled)" : "") +
+            (videoOn
+              ? (" · video " + (h.video_model || "—"))
+              : " · video off (stills demo)") +
             " · embed " + h.embed_model
         );
-      }
-      if (h.video_enabled === false) {
-        setStatus(videoStatusEl, "Video path disabled (GENBLAZE_VIDEO_ENABLED=0).", "warn");
+      } else if (!h.dry_run) {
+        setStatus(statusEl, "Ready · image " + h.image_model + (videoOn ? "" : " · video off"), "");
       }
     }).catch(() => {});
 

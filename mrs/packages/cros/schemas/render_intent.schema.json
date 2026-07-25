@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/cros/schemas/render_intent.schema.json",
+  "title": "CROS RenderIntent",
+  "description": "Stage 2 of 7. Technical restatement of a CreativeIntent: what must be produced, at what spec. Subject to CI-001 (content-addressed identity).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["crosVersion", "kind", "id", "createdAt", "profile", "derivedFrom", "creativeIntentHash", "target", "contentHash"],
+  "properties": {
+    "crosVersion": { "const": "0.1.0" },
+    "kind": { "const": "RenderIntent" },
+    "id": { "$ref": "#/$defs/ArtifactId" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "profile": { "$ref": "#/$defs/ProfileId" },
+    "derivedFrom": {
+      "$ref": "#/$defs/ArtifactId",
+      "description": "id of the CreativeIntent this restates."
+    },
+    "creativeIntentHash": {
+      "$ref": "#/$defs/Sha256",
+      "description": "contentHash of that CreativeIntent. Binds this artifact to an exact intent body (CI-001)."
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modality"],
+      "properties": {
+        "modality": { "enum": ["image", "video", "frameSequence"] },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "frameCount": { "type": "integer", "minimum": 1 },
+        "fps": { "type": "number", "exclusiveMinimum": 0 },
+        "durationSeconds": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Generative profiles only. The exact text submitted to the provider."
+    },
+    "promptSha256": {
+      "$ref": "#/$defs/Sha256",
+      "description": "Hash of prompt. Recorded separately so evidence can cite the prompt without republishing it."
+    },
+    "seed": {
+      "type": ["integer", "null"],
+      "description": "null means 'the provider did not expose a seed'. Absent means 'not applicable to this profile'. These are different facts and must not be conflated."
+    },
+    "colorSpace": {
+      "type": "string",
+      "description": "Working color space. Declared field; no color management is implemented in this package."
+    },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role"],
+        "properties": {
+          "role": { "type": "string", "minLength": 1 },
+          "mediaType": { "type": "string" }
+        }
+      }
+    },
+    "contentHash": { "$ref": "#/$defs/Sha256" }
+  },
+  "$defs": {
+    "Sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ArtifactId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "ProfileId": { "enum": ["cros.dcc-offline", "cros.gen-ai-nim"] }
+  }
+}

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CROS · Cinematic Render Operating System (reference architecture)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #0e1412;
+      --bg1: #16201c;
+      --ink: #e8f0ea;
+      --muted: #9bb0a3;
+      --accent: #3d9b6e;
+      --warn: #c9a227;
+      --err: #c45c5c;
+      --line: #2a3a32;
+      --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+      --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #1f3a2e 0%, transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, #243528 0%, transparent 50%),
+        linear-gradient(165deg, var(--bg0), var(--bg1));
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: clamp(1.75rem, 4vw, 2.35rem);
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.35rem;
+      margin: 0 0 0.5rem;
+    }
+    h3 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin: 1.25rem 0 0.4rem;
+    }
+    .lede {
+      color: var(--muted);
+      margin: 0 0 1.5rem;
+      line-height: 1.45;
+      max-width: 46rem;
+    }
+    nav.crumbs {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+    nav.crumbs a { color: var(--accent); text-decoration: none; }
+    nav.crumbs a:hover { text-decoration: underline; }
+    .tips {
+      color: var(--muted);
+      margin: 0 0 1.5rem;
+      padding: 0.85rem 1rem;
+      border-left: 3px solid var(--warn);
+      background: rgba(0, 0, 0, 0.28);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .tips.hard { border-left-color: var(--err); }
+    .tips strong { color: var(--ink); font-weight: 600; }
+    section.path {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--line);
+      scroll-margin-top: 1.25rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 0.75rem 0 0.5rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.55rem 0.6rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      line-height: 1.4;
+    }
+    th {
+      color: var(--ink);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    td.id { white-space: nowrap; font-weight: 600; }
+    code {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.88em;
+      color: var(--ink);
+      background: rgba(0, 0, 0, 0.32);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      word-break: break-word;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 3px;
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    .badge.enforced { color: #0a1a10; background: var(--accent); border-color: var(--accent); }
+    .badge.tested { color: var(--accent); border-color: var(--accent); }
+    .badge.partial { color: var(--warn); border-color: var(--warn); }
+    .badge.declared { color: var(--muted); }
+    .badge.skeleton { color: var(--muted); border-style: dashed; }
+    .badge.absent { color: var(--err); border-color: var(--err); }
+    .chain {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 0.4rem;
+      margin: 1rem 0 0.5rem;
+    }
+    .chain .node {
+      flex: 1 1 8.5rem;
+      min-width: 8.5rem;
+      padding: 0.6rem 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.28);
+    }
+    .chain .node .n {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+    .chain .node .name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin: 0.15rem 0 0.2rem;
+    }
+    .chain .node .cite {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    ul.tight { margin: 0.5rem 0 0.5rem; padding-left: 1.1rem; line-height: 1.5; }
+    ul.tight li { margin-bottom: 0.35rem; color: var(--muted); }
+    ul.tight li strong { color: var(--ink); }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+    }
+    .legend span.item { display: inline-flex; gap: 0.4rem; align-items: baseline; }
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav class="crumbs">
+      <a href="/">← Genblaze media UI</a>
+    </nav>
+
+    <h1>CROS · Cinematic Render Operating System</h1>
+    <p class="lede">
+      Reference architecture for a governed cinematic render stack, versioned at
+      <code>0.1.0</code> under <code>mrs/packages/cros</code>. Seven typed lineage artifacts,
+      six constitutional invariants (CI-001…CI-006), and two conformance profiles that refuse a
+      single meaning of the word “reproducible”.
+    </p>
+
+    <p class="tips hard" role="note">
+      <strong>Status honesty (Drive-G-1).</strong>
+      CROS is a <strong>reference-architecture scaffold</strong>. Its
+      <code>runtimeStatus</code> is <span class="badge absent">absent</span> — there is no CROS
+      runtime, scheduler, adapter host, or farm planner. Every invariant below is at most
+      <span class="badge partial">partial</span>: a validator function that a caller must invoke
+      deliberately. Nothing on this page describes a runtime gate.
+    </p>
+
+    <p class="tips" role="note">
+      <strong>Boundary.</strong>
+      This page is <em>documentation</em> served by the Genblaze media host. It is
+      <strong>not</strong> a claim that <code>mrs/apps/genblaze-media</code> implements CROS —
+      that app does not, and no Python module here imports <code>cros</code>. CI-006 bans the
+      reverse direction too: CROS may not import <code>app</code>, <code>genblaze</code>,
+      <code>story_forge</code>, or <code>storyforge</code>, and an import scan checks it.
+      CROS carries <strong>no Story Forge lineage</strong>.
+    </p>
+
+    <section class="path" id="invariants">
+      <h2>Constitutional invariants · CI-001…CI-006</h2>
+      <p class="lede">
+        Each invariant names a validator in <code>cros.validation</code>. All six are implemented
+        and unit-tested; none is invoked by a production execution path, because no adapter exists.
+        <span class="badge partial">partial</span> is the ceiling until an adapter runs.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Invariant</th>
+            <th>Status</th>
+            <th>Not enforced because</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="id">CI-001</td>
+            <td>
+              <strong>Intent immutability.</strong> An intent artifact is content-addressed; any
+              change to its body produces a new identity.
+              <br /><code>cros.validation.check_ci001_intent_immutable</code>
+            </td>
+            <td><span class="badge partial">partial</span></td>
+            <td>No persistent artifact store exists. Nothing prevents a caller editing a dict and recomputing the hash.</td>
+          </tr>
+          <tr>
+            <td class="id">CI-002</td>
+            <td>
+              <strong>Planning derived from valid intent + declared capabilities.</strong> A plan may
+              not introduce requirements absent from the capability set, and must cite the intent hash.
+              <br /><code>cros.validation.check_ci002_planning_derived</code>
+            </td>
+            <td><span class="badge partial">partial</span></td>
+            <td>Only the gen-ai capability subset has a plan deriver. The <code>cros.dcc-offline</code> planner does not exist (it raises <code>UnsupportedProfileError</code>).</td>
+          </tr>
+          <tr>
+            <td class="id">CI-003</td>
+            <td>
+              <strong>Execution observability.</strong> A RenderExecution carries at least one
+              progress observation, and completion fractions are monotonically non-decreasing.
+              <br /><code>cros.validation.check_ci003_execution_observable</code>
+            </td>
+            <td><span class="badge partial">partial</span></td>
+            <td>No adapter host emits progress. <code>streamProgress</code> is a Protocol signature with no implementation.</td>
+          </tr>
+          <tr>
+            <td class="id">CI-004</td>
+            <td>
+              <strong>Evidence before completion.</strong> A result is not “delivered” until evidence
+              exists citing the result hash and a content hash for every declared output.
+              <br /><code>cros.validation.check_ci004_evidence_before_completion</code>
+            </td>
+            <td><span class="badge partial">partial</span></td>
+            <td>No delivery path exists to gate. The validator must be called explicitly.</td>
+          </tr>
+          <tr>
+            <td class="id">CI-005</td>
+            <td>
+              <strong>Profile-scoped replayability.</strong> Every ReplayRecord declares a
+              <code>replayClass</code> permitted by the active profile. No artifact may assert a
+              stronger reproduction class than its profile allows.
+              <br /><code>cros.validation.check_ci005_replayability</code>
+            </td>
+            <td><span class="badge partial">partial</span></td>
+            <td>No replay executor exists. The validator checks the <em>claim</em>, not the reproduction.</td>
+          </tr>
+          <tr>
+            <td class="id">CI-006</td>
+            <td>
+              <strong>Adapter isolation.</strong> An adapter depends only on the CROS contract and its
+              own backend — never a sibling adapter, a host application, or a narrative layer.
+              <br /><code>cros.validation.scan_module_imports</code>
+            </td>
+            <td><span class="badge partial">partial</span></td>
+            <td>No concrete adapter exists yet. The import scan currently proves only that the contract package itself is clean.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Status vocabulary</h3>
+      <div class="legend">
+        <span class="item"><span class="badge enforced">enforced</span> implemented, unit-tested, invoked on a real execution path</span>
+        <span class="item"><span class="badge partial">partial</span> validator implemented + unit-tested; no production path invokes it</span>
+        <span class="item"><span class="badge declared">declared</span> specified in prose/JSON only; no implementation</span>
+        <span class="item"><span class="badge skeleton">skeleton</span> stub or type signature only</span>
+      </div>
+      <p class="lede" style="margin-top:0.85rem">
+        Source of truth: <code>mrs/packages/cros/constitution/invariants.json</code> ·
+        <code>constitution/CHARTER.md</code>. Nothing in CROS is
+        <span class="badge enforced">enforced</span> today.
+      </p>
+    </section>
+
+    <section class="path" id="lineage">
+      <h2>Artifact lineage · seven artifacts, six transitions, nothing skips</h2>
+      <p class="lede">
+        Each artifact cites its predecessor <strong>twice</strong> — once by identity
+        (<code>derivedFrom</code>) and once by content (a stage-named hash field). Both are
+        <code>required</code> by schema, which is what makes a skipped stage detectable rather than
+        merely discouraged.
+      </p>
+
+      <div class="chain">
+        <div class="node">
+          <div class="n">1 · origin</div>
+          <div class="name">CreativeIntent</div>
+          <div class="cite">no predecessor</div>
+        </div>
+        <div class="node">
+          <div class="n">2</div>
+          <div class="name">RenderIntent</div>
+          <div class="cite"><code>creativeIntentHash</code></div>
+        </div>
+        <div class="node">
+          <div class="n">3</div>
+          <div class="name">RenderPlan</div>
+          <div class="cite"><code>renderIntentHash</code></div>
+        </div>
+        <div class="node">
+          <div class="n">4</div>
+          <div class="name">RenderExecution</div>
+          <div class="cite"><code>planHash</code></div>
+        </div>
+        <div class="node">
+          <div class="n">5</div>
+          <div class="name">RenderResult</div>
+          <div class="cite"><code>executionHash</code></div>
+        </div>
+        <div class="node">
+          <div class="n">6</div>
+          <div class="name">RenderEvidence</div>
+          <div class="cite"><code>resultHash</code></div>
+        </div>
+        <div class="node">
+          <div class="n">7</div>
+          <div class="name">ReplayRecord</div>
+          <div class="cite"><code>evidenceHash</code></div>
+        </div>
+      </div>
+
+      <h3>What the chain buys — and what it does not</h3>
+      <ul class="tight">
+        <li><strong>Does</strong> detect a missing, reordered, or post-hoc-edited stage.</li>
+        <li><strong>Does</strong> detect an artifact body edited after its successor was written.</li>
+        <li>
+          <strong>Does not</strong> prove the described events happened. A caller who fabricates all
+          seven artifacts consistently produces a chain that validates. Lineage integrity is a
+          tamper-<em>evidence</em> property, not an attestation. Binding the chain to a signing
+          authority is a future increment and is <span class="badge declared">declared</span> only.
+        </li>
+      </ul>
+      <p class="lede">
+        <code>contentHash</code> is SHA-256 over canonical JSON of the artifact body with the
+        <code>contentHash</code> key excluded — UTF-8, keys sorted, no insignificant whitespace.
+        Implementation: <code>cros.artifacts.canonical_hash</code>. Chain walk:
+        <code>cros.validation.validate_lineage</code>. Schemas: seven JSON Schema Draft 2020-12
+        files under <code>mrs/packages/cros/schemas/</code>, unit-validated.
+      </p>
+      <p class="lede">
+        The split between stages 5 and 6 is CI-004: “the renderer exited zero” and “we can prove what
+        it produced” are different claims, so they are different artifacts. The split between 6 and 7
+        is CI-005: evidence <em>claims</em> a reproduction class; a ReplayRecord <em>tests</em> it.
+      </p>
+    </section>
+
+    <section class="path" id="profiles">
+      <h2>Dual conformance profiles · replay honesty</h2>
+      <p class="lede">
+        The load-bearing distinction in CROS: “reproducible” means different things for a seeded
+        offline path tracer and a hosted diffusion endpoint. Collapsing both into one word is the
+        dishonesty the profiles exist to prevent.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Profile</th>
+            <th>Status</th>
+            <th>Permitted <code>replayClass</code></th>
+            <th>What it actually means</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="id"><code>cros.dcc-offline</code></td>
+            <td><span class="badge declared">declared</span></td>
+            <td><code>bit-identical</code>, <code>deterministic-parameters</code></td>
+            <td>
+              Expectations placed on a <em>future</em> offline path-tracer adapter — environment lock,
+              seed pinning, sample-count pinning, deterministic reduction order, scene content
+              addressing, OCIO declaration, denoiser disclosure.
+              <strong>No adapter exists.</strong> No Cycles / Arnold / RenderMan / Karma / Redshift /
+              OIDN / ACES integration, and no stub pretending to be one. Honest default class is
+              <code>deterministic-parameters</code>, because permitting <code>bit-identical</code> is
+              not the same as having observed byte equality.
+            </td>
+          </tr>
+          <tr>
+            <td class="id"><code>cros.gen-ai-nim</code></td>
+            <td><span class="badge skeleton">skeleton</span></td>
+            <td><code>provider-contract</code> <strong>only</strong></td>
+            <td>
+              Pinned model id + params-as-submitted + prompt SHA-256 + seed-if-exposed + provider
+              request id + asset SHA-256 hashed on receipt. Reproducible <em>within the provider
+              contract</em>. <strong>Pixel equality is not asserted; a frame-exact claim is a CI-005
+              failure.</strong> A plan deriver and evidence builder exist and are unit-tested — but
+              no adapter calls any provider, and nothing in the package sends a network request.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Why <code>bit-identical</code> is forbidden for hosted inference</h3>
+      <ul class="tight">
+        <li>The provider controls weights, scheduler implementation, batch composition, kernel library, and hardware. None are pinnable from the client, and any may change without a version bump.</li>
+        <li>A recorded seed narrows but does not close the gap: identical seed plus identical params can still diverge across server-side model or runtime revisions.</li>
+        <li><code>seed: null</code> (provider exposed no seed) and an absent <code>seed</code> field (not applicable) are <strong>distinct facts</strong> and must not be conflated — which is why presence-with-null is required rather than optional.</li>
+      </ul>
+      <p class="lede">
+        Machine-checked for <code>cros.gen-ai-nim</code> only, by
+        <code>cros.evidence.build_evidence</code> and
+        <code>cros.validation.check_profile_evidence_fields</code>. The offline field set is not
+        machine-checked, because no producer exists to check.
+      </p>
+    </section>
+
+    <section class="path" id="renderer-invariants">
+      <h2>Adjacent: 4DRS / RT4D renderer invariant stack</h2>
+      <p class="lede">
+        A separate lineage from CROS — do not merge them into one compliance blob. The renderer stack
+        formalises the layer between mathematical theory and 4DRS runtime:
+        <code>PI-*</code> (constitutional physical invariants) → <code>EI-*</code> (runtime
+        guarantees) → <code>M-*</code> (observable measurements) → validation predicates → evidence
+        records.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Claim</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Foundational <code>PI-*</code> predicates (unit tests)</td><td><span class="badge tested">tested</span></td></tr>
+          <tr><td>Selected engine predicates — projection fidelity, radiometric anchors, orthogonal length</td><td><span class="badge tested">tested</span></td></tr>
+          <tr><td>Cross-runtime <code>PI-*</code> suite — math host + Sovereign X host, shared IDs, distinct evidence schemas</td><td><span class="badge tested">tested</span></td></tr>
+          <tr><td>Replay determinism (full)</td><td><span class="badge declared">declared</span> — tiny CPU-ref hash is supporting only</td></tr>
+          <tr><td>Topology / BVH containment</td><td><span class="badge skeleton">skeleton</span></td></tr>
+          <tr><td>Runtime CKL gating of this suite</td><td><span class="badge declared">declared</span> — not wired</td></tr>
+        </tbody>
+      </table>
+      <p class="lede">
+        IDs are the cross-runtime contract; native evidence normalises into a
+        <code>ConformanceClaim</code>. Different runtimes prove conformance against the same
+        <code>PI</code>/<code>EI</code> IDs while their evidence schemas stay distinct.
+      </p>
+      <p class="lede">
+        Docs: <code>docs/4drs/contracts/INVARIANT_STACK.md</code> ·
+        <code>mrs/packages/renderer-core/src/render/rt4d/invariants/STACK.md</code> ·
+        <code>…/invariants/crossRuntime/CROSS_RUNTIME.md</code> ·
+        <code>…/rt4d/math/physical_invariants.md</code>
+      </p>
+    </section>
+
+    <section class="path" id="not">
+      <h2>What CROS is not</h2>
+      <ul class="tight">
+        <li>Not a running runtime, scheduler, or farm planner.</li>
+        <li>Not an Arnold / Cycles / RenderMan / Karma / Redshift / OIDN / ACES implementation.</li>
+        <li>Not a claim that <code>mrs/apps/genblaze-media</code> implements CROS. That app is untouched by the package.</li>
+        <li>Not Story Forge. <code>story_forge</code> / <code>storyforge</code> imports are banned and scanned under CI-006.</li>
+        <li>Not a replacement for the MRS charter. CROS is subordinate to <code>constitution/CHARTER.md</code> and <code>engine/constitution/</code>, and modifies neither.</li>
+      </ul>
+      <h3>Maturity, rated independently (Drive-G-2)</h3>
+      <table>
+        <thead><tr><th>Dimension</th><th>Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Constitutional model (v0.1 scope)</td><td>design complete</td></tr>
+          <tr><td>Governance methodology</td><td><span class="badge partial">partial</span> — 6 validators, unit-tested, no runtime invokes them</td></tr>
+          <tr><td>Reference implementation</td><td><span class="badge skeleton">skeleton</span> — typed artifacts, hashing, evidence builder, gen-ai planner; zero real adapters</td></tr>
+          <tr><td>Platform engineering</td><td><span class="badge absent">absent</span> — no service, no CI job</td></tr>
+          <tr><td>Commercial operations</td><td><span class="badge absent">absent</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      Package: <code>mrs/packages/cros</code> (<code>README.md</code> ·
+      <code>constitution/</code> · <code>schemas/</code> · <code>profiles/</code> ·
+      <code>src/cros/</code> · <code>tests/</code>).
+      This route serves a static page and performs no CROS import, no I/O, and no validation —
+      it renders a hand-maintained mirror of the package's own status tables.
+      Verify against the package files, which are the source of truth.
+      <br />
+      Back to the media UI: <a href="/">/</a> · service health: <a href="/health">/health</a>
+    </footer>
+  </main>
+</body>
+</html>

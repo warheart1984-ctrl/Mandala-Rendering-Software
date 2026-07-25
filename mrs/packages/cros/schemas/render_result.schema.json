@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/cros/schemas/render_result.schema.json",
+  "title": "CROS RenderResult",
+  "description": "Stage 5 of 7. What the execution produced. A RenderResult is NOT a completion signal — see CI-004: completion requires the RenderEvidence at stage 6.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["crosVersion", "kind", "id", "createdAt", "profile", "derivedFrom", "executionHash", "status", "outputs", "contentHash"],
+  "properties": {
+    "crosVersion": { "const": "0.1.0" },
+    "kind": { "const": "RenderResult" },
+    "id": { "$ref": "#/$defs/ArtifactId" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "profile": { "$ref": "#/$defs/ProfileId" },
+    "derivedFrom": { "$ref": "#/$defs/ArtifactId", "description": "id of the RenderExecution." },
+    "executionHash": { "$ref": "#/$defs/Sha256", "description": "contentHash of that RenderExecution." },
+    "status": { "enum": ["ok", "failed"] },
+    "outputs": {
+      "type": "array",
+      "minItems": 0,
+      "description": "Produced artifacts. May be empty when status is failed. Every entry MUST carry sha256 — an output without a hash cannot appear in evidence (CI-004).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "uri", "sha256"],
+        "properties": {
+          "role": { "type": "string", "minLength": 1 },
+          "uri": { "type": "string", "minLength": 1 },
+          "sha256": { "$ref": "#/$defs/Sha256" },
+          "mediaType": { "type": "string" },
+          "bytes": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Observed run metrics (wall time, samples, provider latency). Advisory."
+    },
+    "failureDetail": {
+      "type": "string",
+      "description": "Required in practice when status is failed; not schema-enforced so that partial failures can be recorded without prose."
+    },
+    "contentHash": { "$ref": "#/$defs/Sha256" }
+  },
+  "$defs": {
+    "Sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ArtifactId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "ProfileId": { "enum": ["cros.dcc-offline", "cros.gen-ai-nim"] }
+  }
+}

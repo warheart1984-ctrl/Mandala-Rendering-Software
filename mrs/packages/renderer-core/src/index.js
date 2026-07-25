@@ -39,7 +39,19 @@ export { Timeline, Keyframe, Interpolator, Track, TimelinePlayer, TimelineSerial
 export { CameraPathGenerator, KeyframeBaker, AudioKeyframes, Rotation4DChoreo, Scrubber } from "./timeline/utils/index.js";
 export { AudioAnalyzer, AudioMapper, AudioVisualizer, createAudioAnalyzer, createAudioMapper, createAudioVisualizer } from "./audio/AudioVisualizer.js";
 export { OcclusionCuller, BVHOcclusionCuller, DistanceOcclusionCuller, createOcclusionCuller, createBVHOcclusionCuller, createDistanceOcclusionCuller } from "./render/OcclusionCulling.js";
-export { discoverBrowserRenderAdapters, routeSovereignXRenderer, createGovernedRenderer, createSovereignXNativeDispatch } from "./gpu/SovereignXRenderAdapter.js";
+export {
+  discoverBrowserRenderAdapters,
+  routeSovereignXRenderer,
+  createGovernedRenderer,
+  createSovereignXNativeDispatch,
+  SOVEREIGNX_PHYSICAL_INVARIANT_CAPABILITY,
+  PHYSICAL_INVARIANT_EVIDENCE_REF_PREFIX,
+  listRegisteredPhysicalInvariants,
+  getSovereignXPhysicalInvariantRegistration,
+  physicalInvariantEvidenceRefs,
+  attachPhysicalInvariantEvidence,
+  evaluatePhysicalInvariantEvidence,
+} from "./gpu/SovereignXRenderAdapter.js";
 export { SHARED_FRAME_MAGIC, SHARED_FRAME_HEADER_BYTES, parseSharedFrame, SharedFramePreview } from "./gpu/SharedFramePreview.js";
 
 export { TemporalAA, createTemporalAA } from "./render/taa.js";

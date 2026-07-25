@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "profileId": "cros.gen-ai-nim",
+  "crosVersion": "0.1.0",
+  "title": "CROS Conformance Profile — Hosted Generative Inference (NIM-class endpoints)",
+  "status": "skeleton",
+  "statusNote": "SKELETON. A plan deriver (cros.planning) and an evidence builder (cros.evidence) exist for this profile and are unit-tested. No adapter calls any provider. Nothing in this package sends a network request.",
+  "scope": "Text-or-image conditioned generation against a hosted model endpoint whose weights, scheduler, and server-side execution are outside our control.",
+  "replay": {
+    "allowedClasses": ["provider-contract"],
+    "default": "provider-contract",
+    "forbiddenClasses": ["bit-identical", "deterministic-parameters"],
+    "claim": "Replay means: re-submitting a recorded request to a pinned model endpoint. Reproducibility is bounded by the provider's contract. Pixel equality is NOT asserted. Frame-exact reproduction is NOT claimed and MUST NOT be claimed under this profile.",
+    "forbiddenClassesRationale": [
+      "bit-identical is forbidden because the provider controls the weights, the scheduler implementation, the batch composition, the kernel library, and the hardware. None are pinnable from the client, and a provider may change any of them without a version bump.",
+      "deterministic-parameters is forbidden as too weak-sounding to be honest here rather than too strong: it implies re-execution reproduces scene state, but there is no scene — only a request. provider-contract names the actual guarantee, which is that the request is faithfully recorded and re-submittable."
+    ],
+    "whatIsActuallyGuaranteed": "That the exact request we sent is recorded, addressable, and re-submittable, and that the bytes we received are content-hashed and therefore tamper-evident. Nothing about what a re-submission will return.",
+    "seedCaveat": "A recorded seed narrows but does not close the gap. Identical seed plus identical params can still diverge across server-side model or runtime revisions. seed: null (provider exposed no seed) and an absent seed field (not applicable) are distinct facts and must not be conflated."
+  },
+  "requiredEvidenceFields": [
+    "replay.inputs.model.id",
+    "replay.inputs.params",
+    "replay.inputs.prompt.sha256",
+    "replay.inputs.seed",
+    "replay.inputs.provider.requestId"
+  ],
+  "requiredEvidenceFieldsNote": "Machine-checked by cros.evidence.build_evidence and cros.validation.check_profile_evidence_fields. 'replay.inputs.seed' must be PRESENT; its value may be null (meaning: provider exposed no seed). Presence-with-null is required rather than optional so that 'no seed available' is recorded as a fact instead of as silence.",
+  "requirements": [
+    {
+      "id": "GEN-R1",
+      "title": "Model identity pinning",
+      "status": "partial",
+      "requirement": "The fully-qualified model id must be recorded. Where the provider exposes a version, revision, or digest, it must be recorded alongside.",
+      "evidenceField": "replay.inputs.model",
+      "implementedBy": "cros.evidence.build_evidence"
+    },
+    {
+      "id": "GEN-R2",
+      "title": "Request parameter capture",
+      "status": "partial",
+      "requirement": "Every parameter that influences generation — steps, guidance, sampler, resolution, negative prompt, aspect — must be recorded as submitted, not as defaulted client-side.",
+      "evidenceField": "replay.inputs.params",
+      "implementedBy": "cros.evidence.build_evidence"
+    },
+    {
+      "id": "GEN-R3",
+      "title": "Prompt hashing",
+      "status": "partial",
+      "requirement": "The exact submitted prompt must be SHA-256 hashed. Where the client rewrote or sanitised the prompt, the submitted text is what gets hashed, and the rewrite must be disclosed.",
+      "evidenceField": "replay.inputs.prompt.sha256",
+      "implementedBy": "cros.evidence.build_evidence",
+      "note": "Hash rather than text so evidence can be published without republishing prompt content."
+    },
+    {
+      "id": "GEN-R4",
+      "title": "Provider request correlation",
+      "status": "partial",
+      "requirement": "The provider-side request identifier must be recorded, so a claim can be correlated against provider-side logs by a third party.",
+      "evidenceField": "replay.inputs.provider.requestId",
+      "implementedBy": "cros.evidence.build_evidence"
+    },
+    {
+      "id": "GEN-R5",
+      "title": "Asset content addressing",
+      "status": "partial",
+      "requirement": "Every returned asset must be SHA-256 hashed at the byte level on receipt, before any transcode, resize, or re-encode.",
+      "evidenceField": "assets[].sha256",
+      "implementedBy": "cros.evidence.build_evidence",
+      "note": "Hash-on-receipt is the load-bearing detail: hashing after a transcode proves only what the transcoder emitted."
+    },
+    {
+      "id": "GEN-R6",
+      "title": "Safety and refusal disclosure",
+      "status": "declared",
+      "requirement": "Provider refusals, safety interventions, and silent substitutions must be recorded as first-class outcomes rather than surfaced as generic failures.",
+      "evidenceField": "manifest.providerOutcome"
+    },
+    {
+      "id": "GEN-R7",
+      "title": "Non-determinism disclosure",
+      "status": "declared",
+      "requirement": "Evidence must carry an explicit statement that outputs are not frame-reproducible, so a downstream consumer cannot mistake provider-contract replay for path-tracer replay.",
+      "evidenceField": "replay.claim",
+      "note": "cros.evidence populates replay.claim from this profile's replay.claim string, so the disclosure travels with the artifact rather than living only in documentation."
+    }
+  ],
+  "invariantStatus": {
+    "CI-001": "partial",
+    "CI-002": "partial",
+    "CI-003": "partial",
+    "CI-004": "partial",
+    "CI-005": "partial",
+    "CI-006": "partial"
+  },
+  "invariantStatusNote": "All six validators are implemented and unit-tested against this profile. None is invoked by a production execution path, because no adapter for this profile exists. 'partial' is the ceiling until an adapter runs.",
+  "relationshipToGenblazeMedia": "mrs/apps/genblaze-media independently talks to NIM-class endpoints and already emits run_id / model / provider / asset_sha256 / prompt / created_at. That app does NOT implement this profile and is not modified by this package. cros.bridge.evidence_from_genblaze_manifest maps such a manifest dict into RenderEvidence shape for TEST purposes only; it performs no I/O and is not wired into the app."
+}
