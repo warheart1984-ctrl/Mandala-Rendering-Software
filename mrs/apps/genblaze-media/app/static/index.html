@@ -195,8 +195,9 @@
         Same prompt → same seed → same bytes. This is <strong>not</strong> text-to-image
         and not photoreal diffusion — it is a seeded 4D render with provenance
         (seed, scene id, camera, samples) in the manifest. Requires Node.js +
-        <code>renderer-core/scripts/render-still.mjs</code> (not yet in the deployed
-        python:3.12 Docker image).
+        <code>renderer-core/scripts/render-still.mjs</code>; see
+        <code>rt4d.available</code> in <code>/health</code> for whether this
+        running image has them.
       </p>
 
       <form id="gen-form">
@@ -226,7 +227,9 @@
         People and faces may blank or degrade. <strong>NVCF cold-start:</strong> Cosmos is often slower than
         FLUX on the first hit after Render or NIM idle — even with 600s+ timeouts, expect longer
         first-request latency; keep this tab open. Larger mp4 objects cost more B2 Class C traffic.
-        This section only appears when <code>GENBLAZE_VIDEO_ENABLED=1</code> and the operator re-enables video.
+        This section appears when video is enabled (default when
+        <code>NVIDIA_API_KEY</code> is set and <code>GENBLAZE_VIDEO_ENABLED</code>
+        is unset; set <code>GENBLAZE_VIDEO_ENABLED=0</code> for stills-only).
       </p>
 
       <form id="video-form">

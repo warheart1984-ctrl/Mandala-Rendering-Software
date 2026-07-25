@@ -1,5 +1,10 @@
 # Render: set Root Directory / Docker context to mrs/apps/genblaze-media
 # Dockerfile Path (from repo root): mrs/apps/genblaze-media/Dockerfile
+#
+# NVIDIA FLUX stills only. This context cannot reach
+# mrs/packages/renderer-core, so the RT4D backend reports
+# rt4d.available=false here. Build the repo-root Dockerfile (repo-root context)
+# for a deploy that bundles Node + renderer-core.
 FROM python:3.12-slim
 
 WORKDIR /app
