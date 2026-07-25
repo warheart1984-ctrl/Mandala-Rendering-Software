@@ -396,7 +396,12 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           const detail = data.detail || res.statusText;
-          setStatus(statusEl, typeof detail === "string" ? detail : JSON.stringify(detail), "err");
+          let msg = typeof detail === "string" ? detail : JSON.stringify(detail);
+          if (/504/i.test(msg) && (/_raw/i.test(msg) || /empty 504/i.test(msg))) {
+            msg +=
+              " — Wait 30–60s, then retry once. Auto-retry is off by default to avoid double NIM billing.";
+          }
+          setStatus(statusEl, msg, "err");
           return;
         }
         resultEl.hidden = false;

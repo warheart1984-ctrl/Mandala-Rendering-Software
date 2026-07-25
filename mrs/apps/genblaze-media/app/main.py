@@ -1,17 +1,36 @@
-"""FastAPI entry: health, generate (image + video), assets list, thin UI."""
+"""FastAPI entry: health, generate (image + video), assets list, image ingest, thin UI."""
 
 from __future__ import annotations
 
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from app.config import APP_DIR, NVIDIA_SETUP_HELP, SEEDANCE_SETUP_HELP, get_settings
 from app.embeddings import cosine_similarity, embed_texts, embedding_summary
+from app.image_ingest import (
+    analyze_image_bytes,
+    analyze_ingested,
+    decode_base64_payload,
+    get_ingested_meta,
+    ingest_bytes,
+    is_safe_ingest_id,
+    list_ingested,
+    resolve_stored_file,
+)
 from app.index_store import AssetIndex
-from app.nvidia_http import NvidiaGenaiTimeouts, NvidiaVideoTimeouts
+from app.nvidia_errors import format_generation_failure
+from app.nvidia_http import (
+    NvidiaGenaiTimeouts,
+    NvidiaVideoTimeouts,
+    probe_genai_model_liveness,
+)
 from app.pipeline import GenerationQualityError, generate_image, probe_b2
 from app.pipeline_video import generate_video
 from app.preview_cache import (
@@ -21,11 +40,16 @@ from app.preview_cache import (
     media_type_for_path,
 )
 
+logger = logging.getLogger(__name__)
+
 APP_DIR = Path(__file__).resolve().parent.parent
 INDEX_PATH = APP_DIR / "data" / "recent-assets.json"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 STATIC_UI = STATIC_DIR / "index.html"
 STATIC_CROS = STATIC_DIR / "cros.html"
+
+# Last startup warmup probe result (no secrets) — exposed on /health.
+_nvidia_warmup_state: dict[str, Any] | None = None
 
 
 def _prefer_local_preview(row: dict) -> dict:
@@ -62,15 +86,66 @@ def _with_modality(row: dict) -> dict:
     return row
 
 
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Optional one-shot NVIDIA genai warmup (invalid-payload probe)."""
+    global _nvidia_warmup_state
+    settings = get_settings()
+    if (
+        settings.nvidia_warmup_on_startup
+        and settings.nvidia_configured
+        and not settings.dry_run
+        and settings.nvidia_api_key
+    ):
+        logger.info(
+            "Running NVIDIA genai warmup probe for %s "
+            "(GENBLAZE_NVIDIA_WARMUP_ON_STARTUP)",
+            settings.image_model,
+        )
+        _nvidia_warmup_state = probe_genai_model_liveness(
+            settings.nvidia_api_key, settings.image_model
+        )
+        logger.info("NVIDIA warmup probe result: %s", _nvidia_warmup_state)
+    else:
+        _nvidia_warmup_state = {
+            "ran": False,
+            "enabled": settings.nvidia_warmup_on_startup,
+            "note": (
+                "set GENBLAZE_NVIDIA_WARMUP_ON_STARTUP=1 to probe image model "
+                "once at process start (cheap invalid-payload POST)"
+            ),
+        }
+    yield
+
+
 app = FastAPI(
     title="MRS Genblaze Media",
     description=(
         "Provenanced generative concept media for Mandala Rendering System / "
         "4D scene authoring. Prompt → NVIDIA NIM FLUX (stills) or Cosmos (video) "
         "via Genblaze → Backblaze B2 assets + SHA-256 manifest. "
-        "Does not claim Genblaze renders 4D."
+        "Image ingest stores operator photos and returns heuristic 4D suggestions — "
+        "does not claim Genblaze renders or reconstructs 4D scenes."
     ),
-    version="0.2.0",
+    version="0.2.2",
+    lifespan=_lifespan,
+)
+
+# Allow 4DRS Copilot browser fallback (Vite :1420) and local operator UIs.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:1420",
+        "http://127.0.0.1:1420",
+        "http://localhost:8787",
+        "http://127.0.0.1:8787",
+        "tauri://localhost",
+        "http://tauri.localhost",
+        "https://tauri.localhost",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 _index = AssetIndex(INDEX_PATH)
@@ -87,6 +162,22 @@ class GenerateRequest(BaseModel):
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
     limit: int = Field(default=8, ge=1, le=30)
+
+
+class ImageIngestJsonRequest(BaseModel):
+    """Base64 JSON ingest (preferred for Tauri / browser clients)."""
+
+    image_base64: str = Field(..., min_length=8, description="Raw or data-URL base64 image bytes")
+    filename: str | None = Field(default=None, max_length=200)
+    mime: str | None = Field(default=None, max_length=100)
+
+
+class ImageAnalyzeRequest(BaseModel):
+    """Analyze an ingested id and/or fresh base64 bytes."""
+
+    id: str | None = Field(default=None, max_length=64)
+    image_base64: str | None = Field(default=None, min_length=8)
+    filename: str | None = Field(default=None, max_length=200)
 
 
 @app.get("/health")
@@ -155,31 +246,19 @@ def health() -> dict:
             "pipeline_seconds": video_timeouts.pipeline_timeout,
             "connect_seconds": video_timeouts.connect_timeout,
         },
+        "empty_504_retry": settings.empty_504_retry,
+        "empty_504_retry_delay_seconds": settings.empty_504_retry_delay_seconds,
+        "nvidia_warmup_on_startup": settings.nvidia_warmup_on_startup,
+        "nvidia_warmup": _nvidia_warmup_state or {"ran": False},
+        # Ingest routes ship in app code; a 404 on Render means that deploy
+        # predates the ingest commit — redeploy this service to pick them up.
+        "image_ingest_routes": True,
     }
 
 
 def _format_generation_failure(exc: Exception) -> str:
     """Preserve provider detail and clarify an empty NVIDIA gateway 504."""
-    detail = str(exc).strip() or type(exc).__name__
-    cause = exc.__cause__ or exc.__context__
-    if cause is not None and str(cause) and str(cause) not in detail:
-        detail = f"{detail}; cause: {type(cause).__name__}: {cause}"
-
-    normalized = detail.lower().replace(" ", "")
-    empty_gateway_504 = "504" in normalized and (
-        '"_raw":""' in normalized
-        or "'_raw':''" in normalized
-        or normalized.endswith("(504)")
-    )
-    if empty_gateway_504:
-        detail += (
-            "; NVIDIA returned an empty 504 gateway response. This can occur "
-            "during an upstream NIM cold start or gateway timeout. Wait 30–60 "
-            "seconds and retry once; if it repeats, check model access/status "
-            "and the configured GENBLAZE_HTTP_TIMEOUT / "
-            "GENBLAZE_NVCF_POLL_SECONDS values."
-        )
-    return detail
+    return format_generation_failure(exc)
 
 
 def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
@@ -329,6 +408,140 @@ def api_search(body: SearchRequest) -> dict:
         "embed_model": settings.embed_model,
         "results": scored[: body.limit],
     }
+
+
+def _ingest_response(meta: Any) -> dict:
+    from dataclasses import asdict
+
+    row = asdict(meta) if hasattr(meta, "__dataclass_fields__") else dict(meta)
+    row["preview_url"] = f"/api/image/ingested/{row['id']}/file"
+    row["disclaimer"] = (
+        "Ingest stores operator photos locally under Genblaze data/ingested. "
+        "Heuristic analyze / image_to_4d suggestions are not RT4D reconstruction."
+    )
+    return row
+
+
+@app.post("/api/image/ingest")
+async def api_image_ingest(request: Request) -> dict:
+    """Accept multipart file or JSON base64; store under data/ingested/.
+
+    Validates JPG/PNG/GIF/WebP/BMP/TIFF. Rejects path-traversal filenames.
+    """
+    content_type = (request.headers.get("content-type") or "").lower()
+    data: bytes | None = None
+    name: str | None = None
+    mime: str | None = None
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        upload = form.get("file")
+        if upload is None:
+            raise HTTPException(status_code=400, detail="multipart field 'file' required")
+        filename_field = form.get("filename")
+        if hasattr(upload, "read"):
+            data = await upload.read()  # type: ignore[misc]
+            name = (
+                str(filename_field)
+                if isinstance(filename_field, str) and filename_field
+                else getattr(upload, "filename", None)
+            )
+            mime = getattr(upload, "content_type", None)
+        else:
+            raise HTTPException(status_code=400, detail="multipart field 'file' must be a file")
+    else:
+        try:
+            raw = await request.json()
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(
+                status_code=400,
+                detail="Provide multipart file or JSON { image_base64, filename?, mime? }",
+            ) from exc
+        try:
+            body = ImageIngestJsonRequest.model_validate(raw)
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail=exc.errors()) from exc
+        try:
+            data = decode_base64_payload(body.image_base64)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        name = body.filename
+        mime = body.mime
+
+    assert data is not None
+    try:
+        meta = ingest_bytes(APP_DIR, data, filename=name, declared_mime=mime)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _ingest_response(meta)
+
+
+@app.post("/api/image/analyze")
+async def api_image_analyze(body: ImageAnalyzeRequest) -> dict:
+    """Heuristic 4D surface/color/style suggestion from ingested id or bytes.
+
+    Labeled heuristic — not full RT4D conversion.
+    """
+    if body.id:
+        if not is_safe_ingest_id(body.id):
+            raise HTTPException(status_code=400, detail="invalid image id")
+        try:
+            return analyze_ingested(APP_DIR, body.id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if body.image_base64:
+        try:
+            data = decode_base64_payload(body.image_base64)
+            return analyze_image_bytes(data)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    raise HTTPException(status_code=400, detail="Provide id or image_base64")
+
+
+@app.get("/api/image/ingested")
+def api_image_ingested_list(
+    limit: int = Query(default=50, ge=1, le=200),
+) -> dict:
+    """List recently ingested operator photos (local index)."""
+    items = list_ingested(APP_DIR, limit=limit)
+    return {
+        "items": items,
+        "count": len(items),
+        "disclaimer": (
+            "Local ingest index only. Analyze suggestions are heuristic; "
+            "not RT4D scene reconstruction."
+        ),
+    }
+
+
+@app.get("/api/image/ingested/{image_id}")
+def api_image_ingested_meta(image_id: str) -> dict:
+    if not is_safe_ingest_id(image_id):
+        raise HTTPException(status_code=400, detail="invalid image id")
+    meta = get_ingested_meta(APP_DIR, image_id)
+    if meta is None:
+        raise HTTPException(status_code=404, detail="ingested image not found")
+    return meta
+
+
+@app.get("/api/image/ingested/{image_id}/file")
+def api_image_ingested_file(image_id: str):
+    if not is_safe_ingest_id(image_id):
+        raise HTTPException(status_code=400, detail="invalid image id")
+    path = resolve_stored_file(APP_DIR, image_id)
+    if path is None:
+        raise HTTPException(status_code=404, detail="ingested file not found")
+    meta = get_ingested_meta(APP_DIR, image_id) or {}
+    media = str(meta.get("mime") or media_type_for_path(path))
+    return FileResponse(
+        path,
+        media_type=media,
+        headers={"Cache-Control": "private, max-age=3600"},
+    )
 
 
 @app.get("/media/stills")
