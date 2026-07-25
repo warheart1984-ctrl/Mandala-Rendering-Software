@@ -60,7 +60,7 @@ flowchart TD
 | PI-CALC-ENERGY | foundational | — | **tested** | same |
 | PI-TRIG-RADIAL | foundational | — | **tested** | same |
 | EI-PROJ-FIDELITY | engine | PI-GEO-LENGTH, PI-TRIG-RADIAL | **tested** | `output/projector.js`, `predicates.js::projectionFidelityHolds` |
-| EI-REPLAY-DETERMINISM | engine | PI-CALC-ENERGY | **declared** | `docs/4drs/substrate/DETERMINISTIC_REPLAY.md`, `CPUConformanceGate.js`, constitutional `replay.deterministic-params` |
+| EI-REPLAY-DETERMINISM | engine | PI-CALC-ENERGY | **declared** | `docs/4drs/substrate/DETERMINISTIC_REPLAY.md`, `CPUConformanceGate.js`, `PathTracerSeedHash.js`, constitutional `replay.deterministic-params` |
 | EI-RADIOMETRIC | engine | PI-CALC-ENERGY, PI-TRIG-RADIAL | **tested** | `bsdf4d.js`, `s3.js`, `normalization.test.js` (anchors BRDF = 3ρ/(4π), pdf = 3cosθ/(4π) — **not redefined**) |
 | EI-TOPOLOGY | engine | PI-GEO-LENGTH | **skeleton** | `BVH4D.js`, `HyperBox.js` present; containment predicate **not** implemented |
 | EI-LENGTH-PARENT | engine | PI-GEO-LENGTH, PI-TRIG-RADIAL | **tested** | `Transform4D.rotate` + `lengthPreserved4` |
