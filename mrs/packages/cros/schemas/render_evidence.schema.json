@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/cros/schemas/render_evidence.schema.json",
+  "title": "CROS RenderEvidence",
+  "description": "Stage 6 of 7. The completion artifact (CI-004). Carries the full lineage back-reference set, a content hash per asset, and a profile-scoped replay claim (CI-005).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["crosVersion", "kind", "id", "createdAt", "profile", "derivedFrom", "resultHash", "lineage", "assets", "replay", "contentHash"],
+  "properties": {
+    "crosVersion": { "const": "0.1.0" },
+    "kind": { "const": "RenderEvidence" },
+    "id": { "$ref": "#/$defs/ArtifactId" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "profile": { "$ref": "#/$defs/ProfileId" },
+    "derivedFrom": { "$ref": "#/$defs/ArtifactId", "description": "id of the RenderResult." },
+    "resultHash": { "$ref": "#/$defs/Sha256", "description": "contentHash of that RenderResult." },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["creativeIntentId", "renderIntentId", "planId", "executionId", "resultId"],
+      "description": "Every upstream stage, by id. All five keys are required: evidence that cannot name its whole chain is not evidence (P1).",
+      "properties": {
+        "creativeIntentId": { "$ref": "#/$defs/ArtifactId" },
+        "renderIntentId": { "$ref": "#/$defs/ArtifactId" },
+        "planId": { "$ref": "#/$defs/ArtifactId" },
+        "executionId": { "$ref": "#/$defs/ArtifactId" },
+        "resultId": { "$ref": "#/$defs/ArtifactId" },
+        "hashes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/Sha256" },
+          "description": "Optional stage-id → contentHash map for one-shot chain verification."
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "description": "CI-004: at least one hashed asset. An evidence package describing nothing is vacuous.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "uri", "sha256"],
+        "properties": {
+          "role": { "type": "string", "minLength": 1 },
+          "uri": { "type": "string", "minLength": 1 },
+          "sha256": { "$ref": "#/$defs/Sha256" },
+          "mediaType": { "type": "string" },
+          "bytes": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["replayClass", "claim", "inputs"],
+      "description": "CI-005. replayClass must be permitted by the active profile's allowedClasses.",
+      "properties": {
+        "replayClass": { "$ref": "#/$defs/ReplayClass" },
+        "claim": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Plain-language statement of what equality is and is not asserted."
+        },
+        "inputs": {
+          "type": "object",
+          "description": "Everything needed to attempt re-execution under this class. Profile-specific; cros.gen-ai-nim requires model.id, params, prompt.sha256, seed, provider.requestId."
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "description": "Profile-specific descriptive fields (model, provider, environment lock, color config). Free-form by design: profiles constrain it, the schema does not."
+    },
+    "contentHash": { "$ref": "#/$defs/Sha256" }
+  },
+  "$defs": {
+    "Sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ArtifactId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "ProfileId": { "enum": ["cros.dcc-offline", "cros.gen-ai-nim"] },
+    "ReplayClass": { "enum": ["bit-identical", "deterministic-parameters", "provider-contract"] }
+  }
+}

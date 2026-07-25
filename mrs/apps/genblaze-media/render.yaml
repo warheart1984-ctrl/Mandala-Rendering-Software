@@ -27,6 +27,9 @@ services:
         sync: false
       - key: GENBLAZE_IMAGE_MODEL
         value: black-forest-labs/flux.1-schnell
+      # Judge demo: FLUX stills only. Opt in with "1" when Cosmos is live on the key.
+      - key: GENBLAZE_VIDEO_ENABLED
+        value: "0"
       - key: GENBLAZE_STORAGE_PREFIX
         value: genblaze-media
       - key: GENBLAZE_HTTP_TIMEOUT

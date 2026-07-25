@@ -26,7 +26,7 @@ def _offline_settings(**overrides) -> Settings:
         storage_prefix="genblaze-media",
         image_model="black-forest-labs/flux.1-schnell",
         video_model="nvidia/cosmos-1.0-7b-diffusion-text2world",
-        video_enabled=True,
+        video_enabled=False,
         embed_model="nvidia/nv-embedcode-7b-v1",
         embed_url="https://integrate.api.nvidia.com/v1/embeddings",
         embed_timeout_seconds=60.0,
@@ -61,6 +61,21 @@ def client(tmp_path, monkeypatch):
     from app.index_store import AssetIndex
 
     main_mod._index = AssetIndex(tmp_path / "recent.json")
+    return TestClient(app)
+
+
+@pytest.fixture()
+def video_client(tmp_path, monkeypatch):
+    """Dry-run client with Cosmos video path explicitly enabled."""
+    monkeypatch.setenv("GENBLAZE_DRY_RUN", "1")
+    monkeypatch.setattr(
+        "app.main.get_settings",
+        lambda: _offline_settings(video_enabled=True),
+    )
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "recent-video.json")
     return TestClient(app)
 
 
@@ -176,10 +191,36 @@ def test_video_model_env_default_is_cosmos_1_0_7b(monkeypatch):
     assert settings.video_model == "nvidia/cosmos-1.0-7b-diffusion-text2world"
 
 
+def test_video_enabled_env_default_off(monkeypatch):
+    from app import config
+
+    monkeypatch.setattr(config, "_load_dotenv_files", lambda: [])
+    monkeypatch.delenv("GENBLAZE_VIDEO_ENABLED", raising=False)
+    settings = config.get_settings()
+    assert settings.video_enabled is False
+    assert settings.video_available is False
+
+
 def test_ui_served(client):
     r = client.get("/")
     assert r.status_code == 200
     assert "Genblaze" in r.text
+    assert 'id="stills"' in r.text
+    assert 'id="nim-cosmos" hidden' in r.text
+    assert 'href="/cros"' in r.text
+
+
+def test_cros_reference_page_served_without_runtime_claim(client):
+    r = client.get("/cros")
+    assert r.status_code == 200
+    assert "CI-001" in r.text
+    assert "CI-006" in r.text
+    assert "CreativeIntent" in r.text
+    assert "ReplayRecord" in r.text
+    assert "cros.dcc-offline" in r.text
+    assert "cros.gen-ai-nim" in r.text
+    assert "implements CROS" in r.text
+    assert "runtimeStatus" in r.text
 
 
 def test_generate_dry_run(client):
@@ -935,8 +976,8 @@ def test_best_effort_delete_keys_calls_backend_delete(monkeypatch):
     backend.delete.assert_any_call("m.json")
     backend.close.assert_called_once()
 
-def test_generate_video_dry_run(client):
-    r = client.post("/api/generate-video", json={"prompt": "unit test cosmos world"})
+def test_generate_video_dry_run(video_client):
+    r = video_client.post("/api/generate-video", json={"prompt": "unit test cosmos world"})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["modality"] == "video"
@@ -950,17 +991,17 @@ def test_generate_video_dry_run(client):
     assert "duration_seconds" not in body
     assert "resolution" not in body
     run_id = body["run_id"]
-    prev = client.get(f"/api/preview/{run_id}")
+    prev = video_client.get(f"/api/preview/{run_id}")
     assert prev.status_code == 200
     assert "video" in prev.headers.get("content-type", "")
     assert len(prev.content) > 0
 
 
-def test_generate_video_stores_cloud_url_not_local_path(client):
+def test_generate_video_stores_cloud_url_not_local_path(video_client):
     """Index must retain synthetic/cloud preview_url; local swap is response-only."""
     from app import main as main_mod
 
-    r = client.post("/api/generate-video", json={"prompt": "index keeps cloud video url"})
+    r = video_client.post("/api/generate-video", json={"prompt": "index keeps cloud video url"})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body.get("preview_url", "").startswith("/api/preview/")
@@ -1091,15 +1132,15 @@ def test_rejected_video_deletes_b2_keys(monkeypatch):
     mock_http.close.assert_called_once()
 
 
-def test_assets_modality_filter(client):
-    client.post("/api/generate", json={"prompt": "still asset"})
-    client.post("/api/generate-video", json={"prompt": "video asset"})
-    all_assets = client.get("/api/assets").json()["assets"]
+def test_assets_modality_filter(video_client):
+    video_client.post("/api/generate", json={"prompt": "still asset"})
+    video_client.post("/api/generate-video", json={"prompt": "video asset"})
+    all_assets = video_client.get("/api/assets").json()["assets"]
     assert all(a.get("modality") in {"image", "video"} for a in all_assets)
-    videos = client.get("/api/assets?modality=video").json()["assets"]
+    videos = video_client.get("/api/assets?modality=video").json()["assets"]
     assert videos
     assert all(a["modality"] == "video" for a in videos)
-    images = client.get("/api/assets?modality=image").json()["assets"]
+    images = video_client.get("/api/assets?modality=image").json()["assets"]
     assert images
     assert all(a["modality"] == "image" for a in images)
 
@@ -1108,11 +1149,18 @@ def test_media_anchor_redirects(client):
     for path, dest in (
         ("/media/stills", "/#stills"),
         ("/media/nvidia", "/#stills"),
-        ("/media/nim-cosmos", "/#nim-cosmos"),
+        # Video disabled by default → stills (judge-safe).
+        ("/media/nim-cosmos", "/#stills"),
     ):
         r = client.get(path, follow_redirects=False)
         assert r.status_code == 302
         assert r.headers["location"] == dest
+
+
+def test_media_nim_cosmos_redirect_when_video_enabled(video_client):
+    r = video_client.get("/media/nim-cosmos", follow_redirects=False)
+    assert r.status_code == 302
+    assert r.headers["location"] == "/#nim-cosmos"
 
 
 def test_no_story_forge_imports():
@@ -1125,12 +1173,22 @@ def test_no_story_forge_imports():
     assert offenders == [], f"story_forge referenced in: {offenders}"
 
 
-def test_video_dry_run_reports_modality_in_health(client):
+def test_video_disabled_by_default_in_health(client):
     r = client.get("/health")
     assert r.status_code == 200
     body = r.json()
     assert body["video_model"]
+    assert body["video_enabled"] is False
+    assert body["video_available"] is False
+    assert "video_timeouts" in body
+
+
+def test_video_enabled_reports_in_health(video_client):
+    r = video_client.get("/health")
+    assert r.status_code == 200
+    body = r.json()
     assert body["video_enabled"] is True
+    assert body["video_available"] is True
     assert "video_timeouts" in body
 
 

@@ -146,8 +146,9 @@ def get_settings() -> Settings:
         "no",
         "off",
     }
-    # Default ON: Cosmos text-to-video path (CMM-NIM-Cosmos). Set 0 to hide/disable.
-    video_enabled = (os.getenv("GENBLAZE_VIDEO_ENABLED") or "1").strip().lower() not in {
+    # Default OFF: judge/demo path is FLUX stills. Cosmos video stays an
+    # operator opt-in (GENBLAZE_VIDEO_ENABLED=1) when the key's catalog is live.
+    video_enabled = (os.getenv("GENBLAZE_VIDEO_ENABLED") or "0").strip().lower() not in {
         "0",
         "false",
         "no",

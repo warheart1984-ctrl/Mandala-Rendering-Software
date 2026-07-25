@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/cros/schemas/render_plan.schema.json",
+  "title": "CROS RenderPlan",
+  "description": "Stage 3 of 7. Executable decomposition of a RenderIntent against a declared capability set. Subject to CI-002 — a plan may not require capabilities the adapter did not declare.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["crosVersion", "kind", "id", "createdAt", "profile", "derivedFrom", "renderIntentHash", "adapter", "capabilitiesHash", "steps", "contentHash"],
+  "properties": {
+    "crosVersion": { "const": "0.1.0" },
+    "kind": { "const": "RenderPlan" },
+    "id": { "$ref": "#/$defs/ArtifactId" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "profile": { "$ref": "#/$defs/ProfileId" },
+    "derivedFrom": { "$ref": "#/$defs/ArtifactId", "description": "id of the RenderIntent." },
+    "renderIntentHash": { "$ref": "#/$defs/Sha256", "description": "contentHash of that RenderIntent." },
+    "adapter": { "$ref": "#/$defs/AdapterRef" },
+    "capabilitiesHash": {
+      "$ref": "#/$defs/Sha256",
+      "description": "Hash of the AdapterCapabilities set this plan was derived against. Makes 'the adapter changed under us' detectable."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered operations. minItems 1 — an empty plan is not a plan.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["index", "op"],
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "op": { "type": "string", "minLength": 1 },
+          "params": { "type": "object" },
+          "requiresCapabilities": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Capability names this step needs. CI-002 checks these are a subset of the declared set."
+          }
+        }
+      }
+    },
+    "estimates": {
+      "type": "object",
+      "description": "Non-binding cost/duration estimates. Advisory only; nothing schedules against them."
+    },
+    "contentHash": { "$ref": "#/$defs/Sha256" }
+  },
+  "$defs": {
+    "Sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ArtifactId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "ProfileId": { "enum": ["cros.dcc-offline", "cros.gen-ai-nim"] },
+    "AdapterRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

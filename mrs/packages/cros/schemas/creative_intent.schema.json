@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/cros/schemas/creative_intent.schema.json",
+  "title": "CROS CreativeIntent",
+  "description": "Stage 1 of 7. Human creative authority: what is wanted and by whom. Origin of the lineage chain — the only artifact with no predecessor.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["crosVersion", "kind", "id", "createdAt", "profile", "author", "brief", "contentHash"],
+  "properties": {
+    "crosVersion": { "const": "0.1.0" },
+    "kind": { "const": "CreativeIntent" },
+    "id": { "$ref": "#/$defs/ArtifactId" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "profile": { "$ref": "#/$defs/ProfileId" },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Accountable human or role. Not a service account."
+    },
+    "brief": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The creative ask in natural language."
+    },
+    "references": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "URIs of reference material informing the brief."
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Free-form creative constraints (aspect, tone, must-nots). Not render settings — those belong to RenderIntent."
+    },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "contentHash": { "$ref": "#/$defs/Sha256" }
+  },
+  "$defs": {
+    "Sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "ArtifactId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "ProfileId": { "enum": ["cros.dcc-offline", "cros.gen-ai-nim"] }
+  }
+}

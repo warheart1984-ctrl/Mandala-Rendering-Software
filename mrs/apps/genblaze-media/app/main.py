@@ -23,7 +23,9 @@ from app.preview_cache import (
 
 APP_DIR = Path(__file__).resolve().parent.parent
 INDEX_PATH = APP_DIR / "data" / "recent-assets.json"
-STATIC_UI = Path(__file__).resolve().parent / "static" / "index.html"
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+STATIC_UI = STATIC_DIR / "index.html"
+STATIC_CROS = STATIC_DIR / "cros.html"
 
 
 def _prefer_local_preview(row: dict) -> dict:
@@ -305,6 +307,11 @@ def media_nvidia() -> RedirectResponse:
 
 @app.get("/media/nim-cosmos")
 def media_nim_cosmos() -> RedirectResponse:
+    # Judge-safe: when video is disabled, send operators to stills instead of
+    # an empty Cosmos section that would only produce 503s.
+    settings = get_settings()
+    if not settings.video_enabled:
+        return RedirectResponse(url="/#stills", status_code=302)
     return RedirectResponse(url="/#nim-cosmos", status_code=302)
 
 
@@ -313,3 +320,19 @@ def ui() -> HTMLResponse:
     if STATIC_UI.is_file():
         return HTMLResponse(STATIC_UI.read_text(encoding="utf-8"))
     return HTMLResponse("<h1>MRS Genblaze Media</h1><p>UI missing.</p>", status_code=500)
+
+
+@app.get("/cros", response_class=HTMLResponse)
+def cros_page() -> HTMLResponse:
+    """Read-only CROS reference-architecture page.
+
+    Documentation only. This app does not implement CROS and does not import the
+    ``cros`` package — CI-006 (adapter isolation) bans in-process coupling in both
+    directions, so the page is static text rather than live package introspection.
+    """
+    if STATIC_CROS.is_file():
+        return HTMLResponse(STATIC_CROS.read_text(encoding="utf-8"))
+    return HTMLResponse(
+        "<h1>CROS</h1><p>Page missing. See <code>mrs/packages/cros/README.md</code>.</p>",
+        status_code=500,
+    )
