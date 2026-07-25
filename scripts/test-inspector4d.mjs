@@ -10,9 +10,26 @@ import {
   resultToWire,
   createDefaultSceneBinding,
   DEFAULT_SCENE_ID,
+  principalCurvatureStub,
 } from "../mrs/packages/renderer-core/src/inspector/index.js";
 import { createDefaultInspectorTestMesh } from "../mrs/packages/renderer-core/src/inspector/defaultTestMesh.js";
 import { LiveLinkServer } from "../mrs/packages/renderer-core/src/live-link/LiveLinkServer.js";
+
+/** Assert inspect path uses discrete CPU curvature (not the labeled stub). */
+function assertRealCurvature(curvature, label, { requireSource = false } = {}) {
+  if (curvature?.curvatureStub !== false) {
+    console.error(`expected curvatureStub === false (${label})`, curvature);
+    process.exit(1);
+  }
+  if (!Number.isFinite(curvature.k1) || !Number.isFinite(curvature.k2)) {
+    console.error(`expected finite k1/k2 (${label})`, curvature);
+    process.exit(1);
+  }
+  if (requireSource && curvature.source !== "discrete_cpu") {
+    console.error(`expected discrete_cpu source (${label})`, curvature);
+    process.exit(1);
+  }
+}
 
 const require = createRequire(new URL("../mrs/packages/renderer-core/src/live-link/LiveLinkServer.js", import.meta.url));
 const { WebSocket } = require("ws");
@@ -72,8 +89,17 @@ if (!wire.tangentBasis?.t1 || !Array.isArray(wire.tangentBasis.t1)) {
   console.error("wire tangentBasis.t1 must be array", wire.tangentBasis);
   process.exit(1);
 }
-if (!wire.curvature?.curvatureStub) {
-  console.error("expected curvatureStub on wire curvature", wire.curvature);
+assertRealCurvature(wire.curvature, "wire inspect_primitive");
+assertRealCurvature(rayHit.curvature, "inspectAtRay", { requireSource: true });
+assertRealCurvature(prim.curvature, "inspectPrimitive", { requireSource: true });
+
+// Stub API remains exported for topology-unavailable / labeled-skeleton paths.
+const stubCurv = principalCurvatureStub(
+  { x: 1, y: 0, z: 0, w: 0 },
+  { x: 0, y: 1, z: 0, w: 0 },
+);
+if (stubCurv.curvatureStub !== true || stubCurv.k1 !== 0 || stubCurv.k2 !== 0) {
+  console.error("expected principalCurvatureStub to stay labeled stub", stubCurv);
   process.exit(1);
 }
 
@@ -89,11 +115,6 @@ const bundle = buildInspectorEvidenceBundle(rayHit, {
 });
 if (!bundle.hash) {
   console.error("missing hash");
-  process.exit(1);
-}
-
-if (!rayHit.curvature?.curvatureStub) {
-  console.error("expected curvatureStub marker (MRS-IC 3.5)", rayHit.curvature);
   process.exit(1);
 }
 

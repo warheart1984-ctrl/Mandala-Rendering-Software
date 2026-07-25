@@ -1,19 +1,16 @@
 /**
- * Denoiser stub — Phase B records intent only; not a production filter.
+ * Denoiser — Phase B records intent only; not a production filter.
+ * No-op: does not dispatch a stub kernel (avoids broken denoise dispatch).
  */
-export class WavefrontDenoiserStub {
+export class WavefrontDenoiser {
   /**
-   * @param {import("./WavefrontPipeline.js").WavefrontKernelContext} ctx
+   * @param {import("./WavefrontPipeline.js").WavefrontKernelContext} _ctx
    * @param {{ strength?: number, temporalRadius?: number }} [config]
    */
-  async run(ctx, config = {}) {
-    await ctx.rhi.dispatchKernel(
-      "rt4d_wavefront_denoise_stub",
-      1,
-      1,
-      1,
-      { frame: ctx.frameTexture }
-    );
-    return { applied: true, stub: true, ...config };
+  async run(_ctx, config = {}) {
+    return { applied: false, stub: true, ...config };
   }
 }
+
+/** @deprecated Use WavefrontDenoiser — kept for Phase B import compatibility */
+export { WavefrontDenoiser as WavefrontDenoiserStub };

@@ -82,10 +82,16 @@ export const MEASUREMENTS = Object.freeze([
   Object.freeze({
     id: "M-BVH-CONTAINMENT",
     title: "BVH parent/child AABB containment",
-    description: "Per-node check that child HyperBox ⊆ parent HyperBox on all four axes.",
+    description:
+      "Per-node check that child HyperBox ⊆ parent HyperBox on all four axes, plus " +
+      "seeded ray-miss implication (miss on a node ⇒ miss on all descendants).",
     supports: Object.freeze(["EI-TOPOLOGY"]),
-    status: /** @type {const} */ ("skeleton"),
-    producers: Object.freeze(["BVH4D.nodes"]),
+    status: /** @type {const} */ ("tested"),
+    producers: Object.freeze([
+      "BVH4D.nodes",
+      "predicates.topologyPreservationHolds",
+      "test/invariants.topology.test.js",
+    ]),
   }),
 ]);
 

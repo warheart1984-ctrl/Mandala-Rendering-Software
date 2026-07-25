@@ -78,14 +78,18 @@ test("EI-REPLAY-DETERMINISM is partial (supporting hash only)", () => {
   assert.strictEqual(rec.predicateResult.supporting.ok, true);
 });
 
-test("EI-TOPOLOGY is unevaluated skeleton", () => {
+test("EI-TOPOLOGY containment is tested and passes on default tree", () => {
   const result = runInvariantConformanceSuite(createDefaultAdapter(), {
     invariantIds: ["EI-TOPOLOGY"],
   });
   const rec = result.records[0];
-  assert.strictEqual(rec.catalogStatus, "skeleton");
-  assert.strictEqual(rec.verdict, "unevaluated");
-  assert.strictEqual(topologyPreservationHolds().ok, null);
+  assert.strictEqual(rec.catalogStatus, "tested");
+  assert.strictEqual(rec.verdict, "pass");
+  const topo = topologyPreservationHolds();
+  assert.strictEqual(topo.ok, true);
+  assert.strictEqual(topo.violations.length, 0);
+  assert.ok(topo.checkedPairs > 0);
+  assert.ok(topo.missImplication.ok);
 });
 
 test("projectionFidelityHolds matches Projector4D closed form", () => {
@@ -159,9 +163,11 @@ test("suite summary counts are consistent", () => {
     result.summary.partial +
     result.summary.unevaluated;
   assert.strictEqual(total, result.records.length);
-  assert.ok(result.summary.pass >= 5);
+  // 3 foundational + EI-PROJ + EI-RADIOMETRIC + EI-LENGTH-PARENT + EI-TOPOLOGY = 7 pass;
+  // EI-REPLAY-DETERMINISM remains partial (supporting hash only).
+  assert.ok(result.summary.pass >= 7);
   assert.ok(result.summary.partial >= 1);
-  assert.ok(result.summary.unevaluated >= 1);
+  assert.ok(result.summary.unevaluated >= 0);
   assert.ok(result.note.includes("not a production"));
 });
 

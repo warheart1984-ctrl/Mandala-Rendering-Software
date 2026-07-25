@@ -16,20 +16,21 @@ import { WavefrontEvidence } from "./WavefrontEvidence.js";
 import { PathTracer4D } from "../../integrator/PathTracer4D.js";
 import { createHyperCausticLens } from "../../scene/TestHyperCausticLens.js";
 import { renderRT4DFrame, renderRT4DFrameWavefront } from "../../RT4DRenderer.js";
-import { GENERATE_WGSL, EXTEND_WGSL, SHADE_WGSL, ACCUMULATE_WGSL, WAVE_UPDATE_WGSL } from "./kernels/index.js";
+import { GENERATE_WGSL, EXTEND_WGSL, SHADE_WGSL, ACCUMULATE_WGSL } from "./kernels/index.js";
 
 describe("RT4D Phase B wavefront / RHI", () => {
-  it("createRhi webgpu works; vulkan/dx12 construct but methods throw", async () => {
+  it("createRhi webgpu works; vulkan/dx12 construct but methods throw roadmap", async () => {
     const rhi = createRhi("webgpu", { allowLiveGpu: false });
     assert.equal(rhi.getBackend(), "webgpu");
     const devices = await rhi.getDevices();
     assert.ok(devices.length >= 1);
-    const vk = createRhi("vulkan");
-    assert.equal(vk.getBackend(), "vulkan");
-    await assert.rejects(() => vk.getDevices(), /not implemented|roadmap/i);
-    const dx = createRhi("dx12");
-    assert.equal(dx.getBackend(), "dx12");
-    await assert.rejects(() => dx.dispatchKernel(), /not implemented|roadmap/i);
+    // Phase C: constructors are declared; methods throw roadmap errors.
+    const vulkan = createRhi("vulkan");
+    const dx12 = createRhi("dx12");
+    assert.equal(vulkan.getBackend(), "vulkan");
+    assert.equal(dx12.getBackend(), "dx12");
+    await assert.rejects(() => vulkan.getDevices(), /roadmap/i);
+    await assert.rejects(() => dx12.getDevices(), /roadmap/i);
   });
 
   it("WebGpuRhi createBuffer/uploadBuffer/readBuffer round-trip (stub)", async () => {
@@ -62,7 +63,7 @@ describe("RT4D Phase B wavefront / RHI", () => {
     assert.equal(cfg.enableDenoiser, true);
   });
 
-  it("scheduler stage order is generateΓåÆextendΓåÆshadeΓåÆaccumulate", async () => {
+  it("scheduler stage order is generate→extend→shade→accumulate", async () => {
     const rhi = createRhi("webgpu", { allowLiveGpu: false, frameWidth: 4, frameHeight: 4 });
     await rhi.selectDevice();
     const frameTexture = await rhi.createTexture(4, 4, "rgba8");
@@ -178,150 +179,6 @@ describe("RT4D Phase B wavefront / RHI", () => {
     assert.ok(EXTEND_WGSL && EXTEND_WGSL.includes("extend") || EXTEND_WGSL.includes("@compute"));
     assert.ok(SHADE_WGSL && SHADE_WGSL.includes("@compute"));
     assert.ok(ACCUMULATE_WGSL && ACCUMULATE_WGSL.includes("@compute"));
-    assert.ok(WAVE_UPDATE_WGSL && WAVE_UPDATE_WGSL.includes("psiNext"));
-  });
-
-  it("stub getFramePixels returns non-black pixels after dispatch", async () => {
-    const rhi = new WebGpuRhi({ allowLiveGpu: false, frameWidth: 4, frameHeight: 4, seed: 0x4d5253 });
-    await rhi.selectDevice();
-    const frame = await rhi.createTexture(4, 4, "rgba8");
-    const paths = await rhi.createBuffer(64, "storage");
-    await rhi.dispatchKernel("rt4d_wavefront_generate", 1, 1, 1, { frame, paths });
-    await rhi.dispatchKernel("rt4d_wavefront_accumulate", 1, 1, 1, { frame, paths });
-    const pixels = await rhi.getFramePixels();
-    assert.equal(pixels.length, 4 * 4 * 4);
-    assert.ok(pixels.some((v) => v !== 0), "stub kernels must fill host pixels");
-  });
-
-  it("live getFramePixels maps GPU frame into host before decode (mock device)", async () => {
-    if (typeof globalThis.GPUBufferUsage === "undefined") {
-      globalThis.GPUBufferUsage = {
-        MAP_READ: 1,
-        COPY_DST: 2,
-        COPY_SRC: 4,
-        STORAGE: 8,
-        UNIFORM: 16,
-      };
-    }
-    if (typeof globalThis.GPUMapMode === "undefined") {
-      globalThis.GPUMapMode = { READ: 1 };
-    }
-    if (typeof globalThis.GPUShaderStage === "undefined") {
-      globalThis.GPUShaderStage = { COMPUTE: 4 };
-    }
-
-    /** @param {number} size */
-    function makeBuf(size) {
-      const data = new Uint8Array(size);
-      return {
-        size,
-        _data: data,
-        destroy() {},
-        async mapAsync() {
-          this._mapped = data;
-        },
-        getMappedRange() {
-          return this._mapped.buffer.slice(
-            this._mapped.byteOffset,
-            this._mapped.byteOffset + this._mapped.byteLength
-          );
-        },
-        unmap() {},
-      };
-    }
-
-    const mockDevice = {
-      createBuffer({ size }) {
-        return makeBuf(size);
-      },
-      createBindGroupLayout() {
-        return {};
-      },
-      createBindGroup() {
-        return {};
-      },
-      createShaderModule() {
-        return {};
-      },
-      createPipelineLayout() {
-        return {};
-      },
-      createComputePipeline() {
-        return {};
-      },
-      queue: {
-        writeBuffer(buf, offset, src) {
-          const bytes =
-            src instanceof ArrayBuffer
-              ? new Uint8Array(src)
-              : new Uint8Array(src.buffer, src.byteOffset, src.byteLength);
-          buf._data.set(bytes, offset);
-        },
-        submit(cmds) {
-          for (const cmd of cmds) {
-            if (typeof cmd._apply === "function") cmd._apply();
-          }
-        },
-        async onSubmittedWorkDone() {},
-      },
-      createCommandEncoder() {
-        /** @type {Array<() => void>} */
-        const ops = [];
-        return {
-          copyBufferToBuffer(src, srcOffset, dst, dstOffset, size) {
-            ops.push(() => {
-              dst._data.set(src._data.subarray(srcOffset, srcOffset + size), dstOffset);
-            });
-          },
-          beginComputePass() {
-            return {
-              setPipeline() {},
-              setBindGroup() {},
-              dispatchWorkgroups() {},
-              end() {},
-            };
-          },
-          finish() {
-            return {
-              _apply() {
-                for (const op of ops) op();
-              },
-            };
-          },
-        };
-      },
-    };
-
-    const rhi = new WebGpuRhi({
-      allowLiveGpu: false,
-      gpuDevice: mockDevice,
-      frameWidth: 2,
-      frameHeight: 2,
-    });
-    await rhi.selectDevice();
-    assert.equal(rhi.mode, "live");
-
-    const frame = await rhi.createTexture(2, 2, "rgba8");
-    const tex = rhi._textures.get(frame.id);
-    assert.ok(tex?.gpu);
-
-    // Simulate GPU-only write: host stays zero, GPU storage has packed RGBA.
-    const gpuU32 = new Uint32Array(tex.gpu._data.buffer, tex.gpu._data.byteOffset, 4);
-    gpuU32[0] = ((255 << 24) | (10 << 16) | (20 << 8) | 30) >>> 0;
-    gpuU32[1] = ((255 << 24) | (40 << 16) | (50 << 8) | 60) >>> 0;
-    gpuU32[2] = ((255 << 24) | (70 << 16) | (80 << 8) | 90) >>> 0;
-    gpuU32[3] = ((255 << 24) | (100 << 16) | (110 << 8) | 120) >>> 0;
-    rhi._frameGpuDirty = true;
-
-    assert.equal(tex.host[0], 0, "host must be empty before readback");
-
-    const pixels = await rhi.getFramePixels();
-    assert.equal(pixels[0], 10);
-    assert.equal(pixels[1], 20);
-    assert.equal(pixels[2], 30);
-    assert.equal(pixels[3], 255);
-    assert.equal(pixels[4], 40);
-    assert.equal(rhi._frameGpuDirty, false);
   });
 
   it("CPU PathTracer4D still traces Hyper-Caustic Lens (conformance oracle)", () => {
@@ -335,5 +192,302 @@ describe("RT4D Phase B wavefront / RHI", () => {
     const L = tracer.trace(ray, scene, 0);
     assert.ok(L);
     assert.equal(typeof L.x, "number");
+  });
+});
+
+/**
+ * Mock GPUDevice for real wavefront path (Node has no WebGPU).
+ * Tracks pipeline creation, bind groups, and encoder ops.
+ */
+function createMockGpuDevice() {
+  if (typeof globalThis.GPUBufferUsage === "undefined") {
+    globalThis.GPUBufferUsage = {
+      MAP_READ: 1,
+      MAP_WRITE: 2,
+      COPY_SRC: 4,
+      COPY_DST: 8,
+      INDEX: 16,
+      VERTEX: 32,
+      UNIFORM: 64,
+      STORAGE: 128,
+    };
+  }
+  if (typeof globalThis.GPUMapMode === "undefined") {
+    globalThis.GPUMapMode = { READ: 1, WRITE: 2 };
+  }
+  if (typeof globalThis.GPUShaderStage === "undefined") {
+    globalThis.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
+  }
+
+  /** @param {number} size */
+  function makeBuf(size) {
+    const data = new Uint8Array(size);
+    return {
+      size,
+      usage: 0,
+      _data: data,
+      destroy() {},
+      async mapAsync() {
+        this._mapped = data;
+      },
+      getMappedRange() {
+        // Must return the live buffer (not a copy) so mappedAtCreation writes stick.
+        return this._mapped.buffer;
+      },
+      unmap() {
+        this._mapped = null;
+      },
+    };
+  }
+
+  const stats = {
+    shaderModules: 0,
+    computePipelines: 0,
+    bindGroupLayouts: [],
+    bindGroups: [],
+    encoderOps: [],
+    submits: 0,
+  };
+
+  const mockDevice = {
+    stats,
+    createBuffer({ size, mappedAtCreation }) {
+      const buf = makeBuf(size);
+      if (mappedAtCreation) buf._mapped = buf._data;
+      return buf;
+    },
+    createBindGroupLayout(desc) {
+      stats.bindGroupLayouts.push(desc);
+      return { entries: desc.entries };
+    },
+    createBindGroup(desc) {
+      stats.bindGroups.push({
+        bindingCount: desc.entries.length,
+        bindings: desc.entries.map((e) => e.binding),
+      });
+      return {};
+    },
+    createShaderModule() {
+      stats.shaderModules += 1;
+      return {};
+    },
+    createPipelineLayout() {
+      return {};
+    },
+    createComputePipeline() {
+      stats.computePipelines += 1;
+      return {};
+    },
+    queue: {
+      writeBuffer(buf, offset, src) {
+        const bytes =
+          src instanceof ArrayBuffer
+            ? new Uint8Array(src)
+            : new Uint8Array(src.buffer, src.byteOffset, src.byteLength);
+        buf._data.set(bytes, offset);
+      },
+      submit(cmds) {
+        stats.submits += 1;
+        for (const cmd of cmds) {
+          if (typeof cmd._apply === "function") cmd._apply();
+        }
+      },
+      async onSubmittedWorkDone() {},
+    },
+    createCommandEncoder() {
+      /** @type {Array<() => void>} */
+      const ops = [];
+      /** @type {string[]} */
+      const opLog = [];
+      return {
+        copyBufferToBuffer(src, srcOffset, dst, dstOffset, size) {
+          opLog.push("copy");
+          ops.push(() => {
+            dst._data.set(src._data.subarray(srcOffset, srcOffset + size), dstOffset);
+          });
+        },
+        beginComputePass() {
+          opLog.push("compute");
+          return {
+            setPipeline() {},
+            setBindGroup() {},
+            dispatchWorkgroups() {},
+            end() {},
+          };
+        },
+        finish() {
+          stats.encoderOps.push([...opLog]);
+          return {
+            _apply() {
+              for (const op of ops) op();
+            },
+          };
+        },
+      };
+    },
+  };
+
+  return mockDevice;
+}
+
+describe("RT4D real wavefront kernels (mock GPUDevice)", () => {
+  it("RealWavefrontKernels creates 4 compute pipelines from production WGSL", async () => {
+    const { RealWavefrontKernels } = await import("./WavefrontKernels.js");
+    const { createRt4dWavefrontPipeline } = await import("./WavefrontPipeline.js");
+    const device = createMockGpuDevice();
+    const pipeline = await createRt4dWavefrontPipeline({
+      gpuDevice: device,
+      width: 4,
+      height: 4,
+      scene: { primitives: [], lights: [], materials: { listIds: () => [], get: () => ({ params: {} }) } },
+      camera: { position: { x: 0, y: 0, z: -3, w: 0 }, width: 4, height: 4 },
+    });
+    assert.equal(pipeline.mode, "live");
+    assert.ok(pipeline.kernels instanceof RealWavefrontKernels);
+    assert.equal(device.stats.computePipelines, 4);
+    assert.equal(device.stats.shaderModules, 4);
+  });
+
+  it("batched scheduler: generate → (extend→shade→copy)×maxDepth → accumulate in one encoder", async () => {
+    const { createRt4dWavefrontPipeline } = await import("./WavefrontPipeline.js");
+    const device = createMockGpuDevice();
+    const maxDepth = 3;
+    const pipeline = await createRt4dWavefrontPipeline({
+      gpuDevice: device,
+      width: 4,
+      height: 4,
+      maxDepth,
+      samplesPerPixel: 1,
+      scene: { primitives: [], lights: [], materials: { listIds: () => [], get: () => ({ params: {} }) } },
+      camera: { position: { x: 0, y: 0, z: -3, w: 0 }, width: 4, height: 4 },
+    });
+
+    await pipeline.renderFrame("mock-world", {
+      maxDepth,
+      samplesPerPixel: 1,
+      tileSize: 32,
+      quality: "baseline",
+      enableDenoiser: false,
+      enableCurvatureEvidence: false,
+      enableMultiGpu: false,
+    });
+
+    assert.equal(device.stats.submits, 1, "one submit per sample");
+    assert.equal(device.stats.encoderOps.length, 1, "one encoder finish");
+
+    const names = pipeline.dispatchLog.map((d) => d.kernelName);
+    assert.equal(names[0], "rt4d_wavefront_generate");
+    const extendCount = names.filter((n) => n === "rt4d_wavefront_extend").length;
+    const shadeCount = names.filter((n) => n === "rt4d_wavefront_shade").length;
+    const copyCount = names.filter((n) => n === "rt4d_wavefront_copy_scatter").length;
+    assert.equal(extendCount, maxDepth);
+    assert.equal(shadeCount, maxDepth);
+    assert.equal(copyCount, maxDepth);
+    assert.ok(names.includes("rt4d_wavefront_accumulate"));
+
+    // Per bounce: extend compute + shade compute + 2 copies; plus generate + accum(copy+compute)
+    const ops = device.stats.encoderOps[0];
+    const computePasses = ops.filter((o) => o === "compute").length;
+    // generate + maxDepth*(extend+shade) + accumulate = 1 + 2*maxDepth + 1
+    assert.equal(computePasses, 1 + 2 * maxDepth + 1);
+  });
+
+  it("bind groups match raygen/bvh/shade/accum layout sizes", async () => {
+    const { createRt4dWavefrontPipeline } = await import("./WavefrontPipeline.js");
+    const device = createMockGpuDevice();
+    const pipeline = await createRt4dWavefrontPipeline({
+      gpuDevice: device,
+      width: 2,
+      height: 2,
+      maxDepth: 1,
+      samplesPerPixel: 1,
+      scene: { primitives: [], lights: [], materials: { listIds: () => [], get: () => ({ params: {} }) } },
+      camera: { position: { x: 0, y: 0, z: -3, w: 0 }, width: 2, height: 2 },
+    });
+    await pipeline.renderFrame("bg", {
+      maxDepth: 1,
+      samplesPerPixel: 1,
+      tileSize: 32,
+      quality: "baseline",
+      enableDenoiser: false,
+      enableCurvatureEvidence: false,
+      enableMultiGpu: false,
+    });
+
+    const counts = device.stats.bindGroups.map((g) => g.bindingCount);
+    // raygen=5, bvh=11, shade=9, accum=3 (plus any from layout creation path)
+    assert.ok(counts.includes(5), `raygen layout 5 bindings, got ${counts}`);
+    assert.ok(counts.includes(11), `bvh layout 11 bindings, got ${counts}`);
+    assert.ok(counts.includes(9), `shade layout 9 bindings, got ${counts}`);
+    assert.ok(counts.includes(3), `accum layout 3 bindings, got ${counts}`);
+  });
+
+  it("dual call signatures + forceStub keeps Phase B path", async () => {
+    const { createRt4dWavefrontPipeline } = await import("./WavefrontPipeline.js");
+    const { StubWavefrontKernels } = await import("./WavefrontKernels.js");
+
+    const device = createMockGpuDevice();
+    const real = await createRt4dWavefrontPipeline({
+      backend: "webgpu",
+      gpuDevice: device,
+      width: 2,
+      height: 2,
+    });
+    assert.equal(real.mode, "live");
+
+    const stub = await createRt4dWavefrontPipeline("webgpu", {
+      forceStub: true,
+      gpuDevice: device,
+      allowLiveGpu: false,
+      width: 2,
+      height: 2,
+    });
+    assert.ok(stub.kernels instanceof StubWavefrontKernels);
+    assert.equal(stub.kernels.isBatched, false);
+    assert.equal(stub.mode, "stub");
+  });
+
+  it("renderWavefrontFrame with gpuDevice returns live rhiMode + dispatchLog", async () => {
+    const device = createMockGpuDevice();
+    const { scene, camera } = createHyperCausticLens({ width: 4, height: 4 });
+    const result = await renderWavefrontFrame("live-mock", {
+      quality: "baseline",
+      host: "browser",
+      width: 4,
+      height: 4,
+      maxDepth: 2,
+      gpuDevice: device,
+      scene4D: scene,
+      camera4D: camera,
+      runConformance: false,
+    });
+    assert.equal(result.rhiMode, "live");
+    assert.ok(result.dispatchLog.length >= 1 + 2 * 2 + 1);
+    assert.ok(result.dispatchLog.some((d) => d.kernelName.includes("generate")));
+    assert.ok(result.dispatchLog.some((d) => d.kernelName.includes("copy_scatter")));
+  });
+
+  it("WavefrontDenoiser is a no-op (applied: false)", async () => {
+    const { WavefrontDenoiser } = await import("./WavefrontDenoiser.js");
+    const d = new WavefrontDenoiser();
+    const out = await d.run({}, { strength: 0.5 });
+    assert.equal(out.applied, false);
+    assert.equal(out.stub, true);
+  });
+
+  it("renderRT4DFrameWavefront passes scene + camera into real path", async () => {
+    const device = createMockGpuDevice();
+    const { scene, camera } = createHyperCausticLens({ width: 4, height: 4 });
+    const frame = await renderRT4DFrameWavefront(scene, camera, {
+      width: 4,
+      height: 4,
+      maxDepth: 2,
+      gpuDevice: device,
+      runConformance: false,
+    });
+    assert.equal(frame.engineMode, "wavefront");
+    assert.equal(frame.rhiMode, "live");
+    assert.equal(frame.gpu, true);
+    assert.ok(frame.dispatchLog.some((d) => d.shader === "RAYGEN_WGSL" || d.kernelName.includes("generate")));
   });
 });

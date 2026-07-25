@@ -56,14 +56,16 @@ export const ENGINE_INVARIANTS = Object.freeze([
       "docs/4drs/substrate/DETERMINISTIC_REPLAY.md",
       "engine/conformance/default.conformance-profile.json::replay.deterministic-params",
       "src/render/rt4d/pipeline/CPUConformanceGate.js",
+      "src/render/rt4d/pipeline/PathTracerSeedHash.js",
     ]),
     anchors: Object.freeze([
       "CPUConformanceGate.hashBytes",
       "buildTinyReferenceFrame",
+      "cpuPathTracerHashDeterministic",
       "replay.deterministic-params",
     ]),
     notEnforcedBecause:
-      "Constitutional replay checks exist for timeline params; RT4D path-tracer bit-identical multi-host replay is not gated. Tiny CPU reference hash equality is a supporting measurement only (see M-CPU-REF-HASH).",
+      "Constitutional replay checks exist for timeline params; RT4D path-tracer bit-identical multi-host replay is not gated. M-CPU-REF-HASH + M-CPU-PATH-HASH are supporting measurements only.",
   }),
   Object.freeze({
     id: "EI-RADIOMETRIC",
@@ -94,15 +96,25 @@ export const ENGINE_INVARIANTS = Object.freeze([
     statement:
       "BVH4D / HyperBox AABB4 slab intersection preserves containment: child bounds ⊆ parent bounds; ray miss on parent implies miss on descendants.",
     derived_from: Object.freeze(["PI-GEO-LENGTH"]),
-    status: /** @type {InvariantStatus} */ ("skeleton"),
+    status: /** @type {InvariantStatus} */ ("tested"),
     evidence: Object.freeze([
       "src/render/rt4d/accel/BVH4D.js",
       "src/render/rt4d/accel/HyperBox.js",
+      "src/render/rt4d/invariants/predicates.js::topologyPreservationHolds",
+      "src/render/rt4d/pipeline/LiveSceneEiGate.js",
+      "src/render/rt4d/test/invariants.topology.test.js",
+      "src/render/rt4d/test/liveSceneEiGate.test.js",
       "docs/4drs/substrate/BVH4D_GPU.md",
     ]),
-    anchors: Object.freeze(["HyperBox.intersect", "BVH4D.traverse"]),
+    anchors: Object.freeze([
+      "HyperBox.intersect",
+      "BVH4D.traverse",
+      "topologyPreservationHolds",
+      "runLiveSceneEiGate",
+    ]),
     notEnforcedBecause:
-      "AABB4 slab code exists; no unit test yet proves parent/child containment or miss-implication as an invariant predicate. Do not treat BVH presence as enforcement.",
+      "Containment is unit-proven and optionally soft-attached / deny-gated via LiveSceneEiGate " +
+      "(runEiGate / enforceEngineInvariantTopology). Catalog stays tested — not default CKL deny on every render.",
   }),
   Object.freeze({
     id: "EI-LENGTH-PARENT",

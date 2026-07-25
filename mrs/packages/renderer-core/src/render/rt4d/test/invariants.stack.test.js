@@ -73,7 +73,7 @@ test("expected engine IDs exist with documented statuses", () => {
   assert.strictEqual(getEngineInvariant("EI-RADIOMETRIC").status, "tested");
   assert.strictEqual(getEngineInvariant("EI-LENGTH-PARENT").status, "tested");
   assert.strictEqual(getEngineInvariant("EI-REPLAY-DETERMINISM").status, "declared");
-  assert.strictEqual(getEngineInvariant("EI-TOPOLOGY").status, "skeleton");
+  assert.strictEqual(getEngineInvariant("EI-TOPOLOGY").status, "tested");
 });
 
 test("engineInvariantsDerivedFrom(PI-GEO-LENGTH) non-empty", () => {

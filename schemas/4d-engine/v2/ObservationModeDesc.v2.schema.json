@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4d-engine.local/schemas/ObservationModeDesc.v2.schema.json",
+  "title": "ObservationModeDesc",
+  "description": "FourDRenderer v2 observation mode descriptor (OBSERVATION_MODE_RFC). Declared contract — host USTRUCT/C#/HLSL bindings exist; Sequencer/LiveLink enforcement of v2 routing is not claimed.",
+  "type": "object",
+  "required": [
+    "Id",
+    "ProjectionPolicyId",
+    "PathRoutingPolicyId",
+    "VisibilityPolicyId",
+    "BlendPolicyId",
+    "WSliceMin",
+    "WSliceMax"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "description": "ObservationModeId as uint64 (number or decimal/hex string).",
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "required": ["Value"],
+          "properties": {
+            "Value": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                { "type": "string", "minLength": 1 }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ProjectionPolicyId": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "0=PERSPECTIVE_4D_TO_3D, 1=SLICE_W_CONSTANT, 2=STEREOGRAPHIC_4D_TO_3D (RFC examples)."
+    },
+    "PathRoutingPolicyId": { "type": "integer", "minimum": 0 },
+    "VisibilityPolicyId": { "type": "integer", "minimum": 0 },
+    "BlendPolicyId": { "type": "integer", "minimum": 0 },
+    "WSliceMin": { "type": "number" },
+    "WSliceMax": { "type": "number" }
+  },
+  "examples": [
+    {
+      "Id": { "Value": "0x1000000000000001" },
+      "ProjectionPolicyId": 0,
+      "PathRoutingPolicyId": 0,
+      "VisibilityPolicyId": 0,
+      "BlendPolicyId": 0,
+      "WSliceMin": 0,
+      "WSliceMax": 0
+    }
+  ]
+}
