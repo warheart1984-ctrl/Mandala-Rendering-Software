@@ -25,7 +25,7 @@ from app.image_ingest import (
     resolve_stored_file,
 )
 from app.index_store import AssetIndex
-from app.nvidia_errors import format_generation_failure
+from app.nvidia_errors import format_generation_failure, nvidia_nim_status_from_warmup
 from app.nvidia_http import (
     NvidiaGenaiTimeouts,
     NvidiaVideoTimeouts,
@@ -250,15 +250,25 @@ def health() -> dict:
         "empty_504_retry_delay_seconds": settings.empty_504_retry_delay_seconds,
         "nvidia_warmup_on_startup": settings.nvidia_warmup_on_startup,
         "nvidia_warmup": _nvidia_warmup_state or {"ran": False},
+        # Derived from startup evidence; /health does not invoke NVIDIA again.
+        "nvidia_nim_status": nvidia_nim_status_from_warmup(_nvidia_warmup_state),
         # Ingest routes ship in app code; a 404 on Render means that deploy
         # predates the ingest commit — redeploy this service to pick them up.
         "image_ingest_routes": True,
+        # Drive-G-1 capability disclosure: Seedance/fal is video-only.
+        "image_backends": ["nvidia-genai"],
+        "fal_image_fallback": False,
+        "prefer_async": False,
+        "async_note": (
+            "No prefer_async flag: Genblaze polls NVCF only when NVIDIA returns "
+            "202 + NVCF-REQID after NVCF-POLL-SECONDS (max 300)."
+        ),
     }
 
 
 def _format_generation_failure(exc: Exception) -> str:
     """Preserve provider detail and clarify an empty NVIDIA gateway 504."""
-    return format_generation_failure(exc)
+    return format_generation_failure(exc, warmup=_nvidia_warmup_state)
 
 
 def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:

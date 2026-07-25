@@ -419,12 +419,12 @@ def test_nvidia_timeouts_defaults(monkeypatch):
     assert cfg.http_timeout == 600.0
     assert cfg.nvcf_timeout == 600.0
     assert cfg.pipeline_timeout == 720
-    assert cfg.nvcf_poll_seconds == 120
+    assert cfg.nvcf_poll_seconds == 180
     assert cfg.connect_timeout == 30.0
 
     client = build_nvidia_genai_client("nvapi-test", cfg)
     try:
-        assert client.headers["NVCF-POLL-SECONDS"] == "120"
+        assert client.headers["NVCF-POLL-SECONDS"] == "180"
         assert client.timeout.read == 600.0
         assert client.timeout.connect == 30.0
     finally:
@@ -434,11 +434,11 @@ def test_nvidia_timeouts_defaults(monkeypatch):
 def test_nvidia_timeouts_http_floors_above_poll(monkeypatch):
     from app.nvidia_http import NvidiaGenaiTimeouts
 
-    monkeypatch.setenv("GENBLAZE_NVCF_POLL_SECONDS", "120")
+    monkeypatch.setenv("GENBLAZE_NVCF_POLL_SECONDS", "180")
     monkeypatch.setenv("GENBLAZE_HTTP_TIMEOUT", "100")  # too low vs poll
     cfg = NvidiaGenaiTimeouts.from_env()
-    assert cfg.nvcf_poll_seconds == 120
-    assert cfg.http_timeout == 150.0  # poll + 30
+    assert cfg.nvcf_poll_seconds == 180
+    assert cfg.http_timeout == 210.0  # poll + 30
 
 
 def test_health_includes_nvidia_timeouts(client):
@@ -579,6 +579,37 @@ def test_is_empty_nvidia_gateway_504_variants():
     )
     assert "empty 504 gateway response" in msg
     assert "GENBLAZE_EMPTY_504_RETRY" in msg
+    unavailable = format_generation_failure(
+        Exception('NVIDIA image generate failed (504): {"_raw": ""}'),
+        warmup={"ran": True, "http_status": 504, "liveness": "unavailable"},
+    )
+    assert "treat NIM as unavailable" in unavailable
+
+
+def test_warmup_probe_classifies_empty_504_unavailable(monkeypatch):
+    from app.nvidia_http import probe_genai_model_liveness
+
+    class FakeResp:
+        status_code = 504
+        content = b""
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def post(self, path, json):
+            return FakeResp()
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("app.nvidia_http.httpx.Client", FakeClient)
+    out = probe_genai_model_liveness(
+        "nvapi-test", "black-forest-labs/flux.1-schnell"
+    )
+    assert out["http_status"] == 504
+    assert out["liveness"] == "unavailable"
+    assert out["body_bytes"] == 0
 
 
 def test_empty_504_retry_opt_in(monkeypatch, tmp_path):
@@ -711,6 +742,9 @@ def test_health_includes_empty_504_policy(client):
     assert body["empty_504_retry"] is False
     assert body["empty_504_retry_delay_seconds"] >= 5
     assert "nvidia_warmup" in body
+    assert "nvidia_nim_status" in body
+    assert body["fal_image_fallback"] is False
+    assert body["prefer_async"] is False
     assert body["image_ingest_routes"] is True
 
 

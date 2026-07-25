@@ -38,12 +38,15 @@ services:
         value: "600"
       - key: GENBLAZE_PIPELINE_TIMEOUT
         value: "720"
+      # NVIDIA documents 300 as the NVCF-POLL-SECONDS maximum. Render plus a
+      # cold NIM otherwise risks returning an empty gateway 504 before 202.
       - key: GENBLAZE_NVCF_POLL_SECONDS
-        value: "120"
+        value: "300"
       # Default off: do not auto-retry empty NVIDIA 504s (billing ambiguity).
       - key: GENBLAZE_EMPTY_504_RETRY
         value: "0"
-      # Optional: cheap invalid-payload probe at boot to reduce NIM cold-start 504s.
+      # Invalid-payload probe at boot. If this also returns 504, /health marks
+      # the NIM unavailable; the probe did not successfully warm the model.
       - key: GENBLAZE_NVIDIA_WARMUP_ON_STARTUP
         value: "1"
       # Default off: Render healthCheckPath=/health must not ListObjects (Class C).
