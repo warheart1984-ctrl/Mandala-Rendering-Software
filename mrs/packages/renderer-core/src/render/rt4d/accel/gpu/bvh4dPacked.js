@@ -109,6 +109,7 @@ export function intersectAABB4D(origin, direction, minBounds, maxBounds, tMin = 
  */
 export function traverseBVH4DPacked(nodes, ray, primIntersect, options = {}) {
   const stackLimit = options.stackLimit ?? 64;
+  const stats = options.stats ?? null;
   const stack = new Int32Array(stackLimit);
   let sp = 0;
   stack[sp++] = 0;
@@ -125,6 +126,7 @@ export function traverseBVH4DPacked(nodes, ray, primIntersect, options = {}) {
     const nodeIdx = stack[--sp];
     const node = nodes[nodeIdx];
     if (!node) continue;
+    if (stats) stats.nodeVisits++;
 
     const box = intersectAABB4D(o, d, node.minBounds, node.maxBounds, tMin, closestT);
     if (!box.hit || box.tEnter > closestT) continue;

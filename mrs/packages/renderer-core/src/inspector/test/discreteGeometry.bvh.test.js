@@ -228,6 +228,7 @@ test("BVH pick visits ≪ face count and usedBVH=true", () => {
   assert(stats.usedBVH === true, "usedBVH");
   assert(stats.faceCount === faceCount, "faceCount");
   console.log(`    nodeVisits=${stats.nodeVisits} faceCount=${faceCount}`);
+  assert(stats.nodeVisits > 0, `nodeVisits must be counted (got ${stats.nodeVisits})`);
   assert(stats.nodeVisits < faceCount * 0.35, `visits ${stats.nodeVisits} not ≪ ${faceCount}`);
   assert(stats.nodeVisits < faceCount, "visits < faces");
 });
@@ -253,6 +254,10 @@ test("inspector hasBVH on large mesh and spatial pick records visits", () => {
   assert(insp.lastPickStats?.usedBVH === true, "spatial BVH");
   console.log(
     `    spatial nodeVisits=${insp.lastPickStats.nodeVisits} faces=${mesh.faces.length}`,
+  );
+  assert(
+    insp.lastPickStats.nodeVisits > 0,
+    `spatial nodeVisits must be counted (got ${insp.lastPickStats.nodeVisits})`,
   );
   assert(insp.lastPickStats.nodeVisits < mesh.faces.length * 0.35);
 });
