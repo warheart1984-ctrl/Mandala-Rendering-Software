@@ -90,6 +90,58 @@ Physical invariants (`PI-GEO-LENGTH`, `PI-CALC-ENERGY`, `PI-TRIG-RADIAL`) are **
 results via `SovereignXPhysicalInvariants.js` (status **tested**); opt-in evidence refs / measurement
 evaluation route through `decision.evidenceRefs` and are not a render deny gate.
 
+## PI-* contracts, cross-runtime suite, and CKL acceptance
+
+Physical / constitutional invariant work lives under `src/render/rt4d/invariants/`
+(math SoT: `src/render/rt4d/math/physicalInvariants.js`). **Distinct from** CROS
+CI-001..006 (`mrs/packages/cros/`) — do not merge compliance claims.
+
+| Layer | What it is | Status (Drive-G-1) |
+| --- | --- | --- |
+| PI-* Constitutional Contracts | `PI-GEO-LENGTH`, `PI-CALC-ENERGY`, `PI-TRIG-RADIAL` | **tested** (unit suite); not a default render deny |
+| EI-* engine invariants | derived runtime layer (projection, radiometric, …) | mixed **tested** / **declared** / **skeleton** |
+| Cross-runtime suite | native evidence → normalized claims → `ConformanceReport` | **tested** (`crossRuntime.conformance.test.js`) |
+| CKL soft acceptance | `acceptConformanceReport(report)` attaches evidence | **accepted** path — opt-in |
+| CKL enforce | deny only when `enforcePhysicalInvariantConformance: true` (or `enforce: true`) | **enforced** only when operator opts in |
+| Default renders | not denied by PI-* | intentional |
+
+Hierarchy and diagrams: [`src/render/rt4d/invariants/STACK.md`](./src/render/rt4d/invariants/STACK.md).  
+Cross-runtime contract: [`src/render/rt4d/invariants/crossRuntime/CROSS_RUNTIME.md`](./src/render/rt4d/invariants/crossRuntime/CROSS_RUNTIME.md).  
+Docs mirror: [`docs/4drs/contracts/INVARIANT_STACK.md`](../../../docs/4drs/contracts/INVARIANT_STACK.md).
+
+```bash
+# From repo root / package — PI + stack + cross-runtime + CKL soft/enforce
+npm run test:4d-renderer
+# or package-local:
+# npm test -- src/render/rt4d/test/physicalInvariants.test.js
+# npm test -- src/render/rt4d/test/crossRuntime.conformance.test.js
+# npm test -- src/render/rt4d/test/cklAcceptance.test.js
+```
+
+**Not claimed:** unified schema enforcement across hosts, EI-* as a default gate,
+or that soft acceptance implies full constitutional activation.
+
+## SX-PTIG — ContinuityGuarantee ≠ AcceptanceGuarantee
+
+Sovereign X Temporal Idea Governance (`src/gpu/constitution/`) **declares and tests**
+that preservation and activation are **independent** guarantees:
+
+| Guarantee | Meaning |
+| --- | --- |
+| **ContinuityGuarantee** | Identity / lineage / provenance / context are preserved; ideas may stay **inactive** |
+| **AcceptanceGuarantee** | Only evidence-backed activation (PI-* / `AcceptanceDecision`-shaped criteria) |
+
+**Preservation must not imply acceptance.** This aligns with CROS CI-004/005 honesty
+and PI-* soft-vs-enforce acceptance. System-wide CI-* mapping into JCK / COS / CER
+is **declared** only — **not** full CKL enforcement of PTIG.
+
+| Artifact | Role |
+| --- | --- |
+| [`src/gpu/constitution/SX-PTIG.md`](./src/gpu/constitution/SX-PTIG.md) | Prose + lifecycle mermaid |
+| [`src/gpu/constitution/lifecycle.json`](./src/gpu/constitution/lifecycle.json) | Machine SoT |
+| [`src/render/rt4d/invariants/LIFECYCLE.md`](./src/render/rt4d/invariants/LIFECYCLE.md) | Bridge from invariant stack → PTIG |
+| CROS bridge | [`mrs/packages/cros/constitution/LIFECYCLE.md`](../cros/constitution/LIFECYCLE.md) (**declared**, not a runtime gate) |
+
 ## What is not claimed
 
 | Host | Status |

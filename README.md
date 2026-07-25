@@ -31,6 +31,17 @@ Package notes: [`4d-renderer/README.md`](4d-renderer/README.md) (shim) · canoni
 
 **MRS × ChatGPT App (monorepo):** see [`mrs/README.md`](mrs/README.md) and [`mrs/apps/chatgpt-mrs/README.md`](mrs/apps/chatgpt-mrs/README.md).
 
+### Related surfaces (honest pointers)
+
+| Surface | Path | Status |
+| --- | --- | --- |
+| Genblaze media (FLUX stills → B2) | [`mrs/apps/genblaze-media`](mrs/apps/genblaze-media) | **Prepared** operator MVP; video **default off** (`GENBLAZE_VIDEO_ENABLED=0`) |
+| NIM Cosmos / Seedance video | same app, opt-in backends | Cosmos + Seedance (fal, **billed**) — see app README; temporal layers **declared** |
+| CROS scaffold | [`mrs/packages/cros`](mrs/packages/cros) | Reference architecture — CI-001..006 validators **caller-invoked**; **not** a claim genblaze implements CROS |
+| PI-* / cross-runtime / CKL soft·enforce | [`mrs/packages/renderer-core`](mrs/packages/renderer-core) · [`STACK.md`](mrs/packages/renderer-core/src/render/rt4d/invariants/STACK.md) | PI-* **tested**; soft accept opt-in; enforce deny opt-in |
+| SX-PTIG (continuity ≠ acceptance) | [`SX-PTIG.md`](mrs/packages/renderer-core/src/gpu/constitution/SX-PTIG.md) | **Declared** + unit-tested heuristics; not full CKL enforcement of PTIG |
+| Desktop copilot shell | [`desktop/`](desktop/) | Chat / tools / probes — **not** a full RT4D viewport |
+
 ```bash
 cd mrs && pnpm run setup   # fresh clone: install + rebuild canvas/esbuild
 ```
