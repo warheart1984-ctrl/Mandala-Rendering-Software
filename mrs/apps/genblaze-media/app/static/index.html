@@ -321,7 +321,8 @@
           meta.className = "meta";
           const mod = a.modality || "image";
           meta.textContent =
-            "[" + mod + "] " + (a.prompt || "").slice(0, 120) + "\n" + (a.asset_key || "");
+            "[" + mod + "] model: " + (a.model || "—") + "\n" +
+            (a.prompt || "").slice(0, 120) + "\n" + (a.asset_key || "");
           div.appendChild(meta);
           if (a.preview_url) {
             if (mod === "video") {
@@ -457,7 +458,8 @@
         }
         setStatus(
           videoStatusEl,
-          data.dry_run ? "Dry-run video stub (not live NIM Cosmos)." : "Video done.",
+          (data.dry_run ? "Dry-run video stub (not live NIM Cosmos)." : "Video done.") +
+            " Model: " + (data.model || "—"),
           data.dry_run ? "warn" : ""
         );
         await loadAssets();

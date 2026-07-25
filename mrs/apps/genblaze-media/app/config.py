@@ -175,7 +175,9 @@ def get_settings() -> Settings:
         ).strip(),
         video_model=(
             os.getenv("GENBLAZE_VIDEO_MODEL")
-            or "nvidia/cosmos-2.0-diffusion-text2world"
+            # Upstream-valid default; operators can fall back to the 12b
+            # Cosmos 1.0 slug when it is available on their NVIDIA key.
+            or "nvidia/cosmos-1.0-7b-diffusion-text2world"
         ).strip(),
         video_enabled=video_enabled,
         embed_model=(
