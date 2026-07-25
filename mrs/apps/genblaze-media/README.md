@@ -40,7 +40,7 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `B2_REGION` | e.g. `us-east-005` |
 | `B2_ENDPOINT` | optional; defaults to `https://s3.<region>.backblazeb2.com` |
 | `GENBLAZE_IMAGE_MODEL` | optional; default `black-forest-labs/flux.1-schnell` |
-| `GENBLAZE_VIDEO_MODEL` | optional; default `nvidia/cosmos-2.0-diffusion-text2world` (try `nvidia/cosmos-1.0-7b-diffusion-text2world` if 2.0 fails on the key) |
+| `GENBLAZE_VIDEO_MODEL` | optional; default `nvidia/cosmos-1.0-7b-diffusion-text2world`; fallback `nvidia/cosmos-1.0-12b-diffusion-text2world` when available on the key |
 | `GENBLAZE_VIDEO_ENABLED` | default **on**; set `0` to disable `/api/generate-video` |
 | `GENBLAZE_VIDEO_HTTP_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_TIMEOUT` / `GENBLAZE_VIDEO_PIPELINE_TIMEOUT` / `GENBLAZE_VIDEO_NVCF_POLL_SECONDS` | Cosmos video timeouts (defaults 900 / 900 / 1200 / 120) |
 | `GENBLAZE_STORAGE_PREFIX` | optional; default `genblaze-media` |
@@ -111,6 +111,7 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 | `asset transfer(s) failed; manifest was not uploaded` | NVIDIA FLUX returns base64; Genblaze writes `file://` under CWD (`/app` in Docker). `AssetTransfer` only allowlists system temp — transfer fails and SinkError omits the cause. Fix: write NVIDIA payloads under `tempfile` + surface underlying transfer exception in the API detail |
 | Solid black / empty JPEG after “success” | Observed: valid ~6 KiB 1024² JPEG, mean luminance 0, one color — common when FLUX.1-schnell NIM blanks photoreal-people prompts. Pipeline rejects near-black stills with HTTP **422**, strips trailing meta-commentary, optionally retries once with an abstract geometry rewrite (`GENBLAZE_ABSTRACT_RETRY`, default on), and best-effort deletes the rejected B2 asset/manifest |
 | Broken image icon / preview errors after successful generate | Metadata + B2 keys exist, but browser GET of the private presigned URL returns **AccessDenied: Transaction cap exceeded** (B2 free-tier daily caps). Fix: serve UI from same-origin `/api/preview/{run_id}` local cache after generate; wait for Caps & Alerts reset (~00:00 GMT) before more B2 traffic |
+| Cosmos 2.0 model-not-found | Operator catalog probe reported `nvidia/cosmos-2.0-diffusion-text2world` as `DEAD`; it is not available in the probed upstream NVCF catalog. Use `nvidia/cosmos-1.0-7b-diffusion-text2world`, or the `nvidia/cosmos-1.0-12b-diffusion-text2world` fallback when available on the key. The live path refreshes model validation before generation. |
 | `GENBLAZE_DRY_RUN=1` | Offline unit-test path only — not for Devpost live demos |
 ## API sketch
 
@@ -130,7 +131,7 @@ Operator path for text-to-video via NVIDIA NIM Cosmos (`app/pipeline_video.py`).
 | Concern | Honest status |
 | --- | --- |
 | Live generate | Requires `NVIDIA_API_KEY` **and** Cosmos model access on that key |
-| Default model | `nvidia/cosmos-2.0-diffusion-text2world` — if unavailable, try `nvidia/cosmos-1.0-7b-diffusion-text2world` |
+| Default model | `nvidia/cosmos-1.0-7b-diffusion-text2world`; optional fallback `nvidia/cosmos-1.0-12b-diffusion-text2world` when the upstream probe confirms access |
 | Timeouts | Video defaults are higher than FLUX (see `.env.example`); first hit after Render/NIM idle can still feel slow |
 | NVCF cold-start | Cosmos is often **slower than FLUX** on cold start even with 600s+ timeouts — expect longer first-request latency; keep the browser tab open |
 | B2 cost | Larger mp4 objects burn more **Class C** (list/download) traffic than stills |

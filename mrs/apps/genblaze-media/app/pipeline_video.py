@@ -219,6 +219,18 @@ def assess_video_bytes(data: bytes) -> dict[str, Any]:
     }
 
 
+def _validate_video_model(provider: Any, model: str) -> None:
+    """Refresh the provider's real upstream probe before generation."""
+    validation = provider.validate_model(model, refresh=True)
+    if not validation.is_terminal_failure:
+        return
+    detail = f" ({validation.detail})" if validation.detail else ""
+    raise RuntimeError(
+        f"Video model {model!r} not found in upstream catalog{detail}. "
+        "Set GENBLAZE_VIDEO_MODEL to an upstream-valid Cosmos 1.0 slug."
+    )
+
+
 def generate_video(settings: Settings, prompt: str) -> VideoGenerateResult:
     """Run Genblaze NVIDIA video step and persist assets + manifest to B2."""
     raw = (prompt or "").strip()
@@ -304,6 +316,7 @@ def _run_live_video(
         http_client=http_client,
         output_dir=output_dir,
     )
+    _validate_video_model(provider, settings.video_model)
     transfer_failures: list[BaseException] = []
     backend = build_backend(settings)
     try:
@@ -356,8 +369,9 @@ def _run_live_video(
             raise RuntimeError(
                 "video generation produced no assets (check NVIDIA_API_KEY, "
                 "Cosmos model access on the key, and network to ai.api.nvidia.com). "
-                "If cosmos-2.0 is unavailable, set GENBLAZE_VIDEO_MODEL="
-                "nvidia/cosmos-1.0-7b-diffusion-text2world"
+                "Configured model: "
+                f"{settings.video_model}. The optional Cosmos 1.0 fallback is "
+                "nvidia/cosmos-1.0-12b-diffusion-text2world."
             )
 
         manifest = getattr(result, "manifest", None)

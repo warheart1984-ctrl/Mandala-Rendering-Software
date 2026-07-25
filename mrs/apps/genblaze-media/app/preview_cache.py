@@ -41,8 +41,14 @@ def _guess_ext(data: bytes) -> str:
         return ".jpg"
     if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return ".webp"
-    # ISO BMFF / MP4 (ftyp box at offset 4)
-    if len(data) >= 8 and data[4:8] == b"ftyp":
+    # WebM / Matroska (EBML)
+    if len(data) >= 4 and data[:4] == b"\x1aE\xdf\xa3":
+        return ".webm"
+    # ISO BMFF: QuickTime (.mov) vs MP4 — major brand at offset 8
+    if len(data) >= 12 and data[4:8] == b"ftyp":
+        brand = data[8:12]
+        if brand == b"qt  ":
+            return ".mov"
         return ".mp4"
     return ".bin"
 
@@ -57,6 +63,10 @@ def media_type_for_path(path: Path) -> str:
         return "image/webp"
     if ext == ".mp4":
         return "video/mp4"
+    if ext == ".webm":
+        return "video/webm"
+    if ext == ".mov":
+        return "video/quicktime"
     return "application/octet-stream"
 
 
