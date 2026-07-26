@@ -93,30 +93,6 @@ def validate_scene_spec_default_script_path(repo_root: Path = REPO_ROOT) -> Path
     return _resolve_renderer_core_script("validate-scene-spec.mjs", repo_root)
 
 
-def scene_spec_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
-    """Default path to the SceneSpecification render-scene CLI."""
-    return (
-        repo_root
-        / "mrs"
-        / "packages"
-        / "renderer-core"
-        / "scripts"
-        / "render-scene.mjs"
-    )
-
-
-def validate_scene_spec_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
-    """Default path to SceneSpecification capability validator (Node SoT)."""
-    return (
-        repo_root
-        / "mrs"
-        / "packages"
-        / "renderer-core"
-        / "scripts"
-        / "validate-scene-spec.mjs"
-    )
-
-
 def _load_dotenv_files() -> list[str]:
     """Load repo-root `.env` then app-local `.env` without clobbering process env.
 

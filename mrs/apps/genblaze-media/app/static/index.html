@@ -219,18 +219,24 @@
         <code>GENBLAZE_IMAGE_FALLBACK_TO_RT4D=1</code>):
         the prompt selects a <em>procedural</em> 4D scene archetype (keyword → surface /
         palette / camera), then the MRS RT4D CPU path tracer renders a deterministic PNG.
-        Same prompt → same seed → same bytes. This is <strong>not</strong> text-to-image
-        and not photoreal diffusion — it is a seeded 4D render with provenance
-        (seed, scene id, camera, samples) in the manifest. Requires Node.js +
-        <code>renderer-core/scripts/render-still.mjs</code>; see
+        Mandala / neural-lattice / sovereign / glyph prompts map to the
+        <code>neural-lattice</code> archetype (radial lattice + energy core primitives) —
+        still not photoreal diffusion. Same prompt → same seed → same bytes. Requires
+        Node.js + <code>renderer-core/scripts/render-still.mjs</code>; see
         <code>rt4d.available</code> in <code>/health</code> for whether this
-        running image has them.
+        running image has them. Default quality is <strong>draft</strong> (safe on
+        shared CPU); choose <strong>final</strong> only when you can wait longer.
       </p>
 
       <form id="gen-form">
         <label for="prompt">Prompt</label>
         <textarea id="prompt" name="prompt" required maxlength="2000"
           placeholder="e.g. isometric concept of a translucent 4D torus mandala, cool studio light"></textarea>
+        <label for="still-quality" style="margin-top:0.75rem">Still render quality</label>
+        <select id="still-quality">
+          <option value="draft" selected>Draft (fast — smaller / noisier)</option>
+          <option value="final">Final (slower — RT4D profile)</option>
+        </select>
         <div class="row">
           <button type="submit" id="go">Generate</button>
           <button type="button" class="secondary" id="refresh">Refresh assets</button>
@@ -277,7 +283,7 @@
         <input type="file" id="scene-file" accept="image/jpeg,image/png,image/webp,image/gif" />
         <label for="scene-run-id" style="margin-top:0.75rem">Or generate run_id</label>
         <input type="text" id="scene-run-id" maxlength="64" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-        <label for="scene-quality" style="margin-top:0.75rem">Render quality</label>
+        <label for="scene-quality" style="margin-top:0.75rem">Image→MRS render quality</label>
         <select id="scene-quality">
           <option value="draft" selected>Draft (fast — smaller / noisier)</option>
           <option value="final">Final (slower — RT4D profile)</option>
@@ -378,6 +384,11 @@
     const dualPreviews = document.getElementById("dual-previews");
     const previewFlux = document.getElementById("preview-flux");
     const previewMrs = document.getElementById("preview-mrs");
+
+    // Populated by the /health fetch below. Until it resolves, treat the backend
+    // as unknown and avoid naming FLUX or RT4D in progress copy.
+    let health = null;
+    const isRt4dBackend = () => health && health.image_backend === "rt4d";
 
     function fileToDataUrl(file) {
       return new Promise((resolve, reject) => {
@@ -490,13 +501,27 @@
       if (!prompt) return;
       const peopleHint = /\b(person|people|human|man|woman|girl|boy|face|skin|portrait|photoreal)\b/i.test(prompt);
       goBtn.disabled = true;
-      setStatus(
-        statusEl,
-        peopleHint
-          ? "Generating… people/faces often blank on FLUX.1-schnell — will auto-retry abstract if needed (1–3+ min)"
-          : "Generating… (FLUX may take 1–3 min on cold start)",
-        ""
-      );
+      // The FLUX warnings (cold start, people blanking) apply only to the NVIDIA
+      // diffusion path. On the RT4D backend the prompt selects a procedural 4D
+      // scene and the CPU path tracer renders it — different failure modes and
+      // different honest description.
+      let progressMsg;
+      const stillQuality = document.getElementById("still-quality")?.value || "draft";
+      if (isRt4dBackend()) {
+        progressMsg =
+          "Rendering… MRS RT4D deterministic path trace (procedural 4D scene " +
+          "selection — not diffusion, not text-to-image). Quality=" +
+          stillQuality +
+          (stillQuality === "draft"
+            ? " — typically tens of seconds on a shared CPU."
+            : " — may take longer; reduce if the request times out.");
+      } else if (peopleHint) {
+        progressMsg =
+          "Generating… people/faces often blank on FLUX.1-schnell — will auto-retry abstract if needed (1–3+ min)";
+      } else {
+        progressMsg = "Generating… (FLUX may take 1–3 min on cold start)";
+      }
+      setStatus(statusEl, progressMsg, "");
       preview.hidden = true;
       if (dualPreviews) dualPreviews.hidden = true;
       try {
@@ -504,7 +529,12 @@
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, embed: true, then_scene: thenScene }),
+          body: JSON.stringify({
+            prompt,
+            embed: true,
+            then_scene: thenScene,
+            quality: stillQuality,
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -540,6 +570,14 @@
           };
         }
         let doneMsg = data.dry_run ? "Dry-run complete (not live NIM)." : "Done.";
+        if (data.provider === "rt4d-render") {
+          const p = data.provenance || {};
+          doneMsg +=
+            " MRS RT4D render · scene " + (p.scene || "—") +
+            " · seed " + (p.seed != null ? p.seed : "—") +
+            " · quality " + (p.quality || "—") +
+            " (deterministic procedural 4D — not diffusion).";
+        }
         if (data.then_scene) {
           doneMsg += " Dual path: FLUX concept + MRS scene interpretation frame.";
         } else if (data.then_scene_error) {
@@ -726,6 +764,7 @@
     document.getElementById("refresh").addEventListener("click", () => loadAssets());
 
     fetch("/health").then(r => r.json()).then(h => {
+      health = h;
       const cosmosSection = document.getElementById("nim-cosmos");
       const videoOn = h.video_enabled === true;
       if (cosmosSection) {
@@ -747,10 +786,18 @@
           h.image_backend === "rt4d"
             ? "rt4d-render"
             : ("image " + h.image_model);
+        // Operators read "not pulling NIM" as a wiring bug; when the NIM probe
+        // reports unavailable it is upstream, so say it in the ready line.
+        const nimDown =
+          h.nvidia_nim_status && h.nvidia_nim_status.status === "unavailable"
+            ? " · NIM FLUX unavailable (" +
+              (h.nvidia_nim_status.http_status || "no status") + ")"
+            : "";
         setStatus(
           statusEl,
           "Ready · B2 " + h.b2_bucket +
             " · " + backendLabel +
+            nimDown +
             (h.image_fallback_to_rt4d ? " · RT4D fallback on" : "") +
             (videoOn
               ? (" · video " + (h.video_model || "—"))

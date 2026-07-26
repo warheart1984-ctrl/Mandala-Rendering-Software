@@ -85,6 +85,7 @@ const SCENE_ARCHETYPES = [
   "lattice-grid",
   "tesseract-vertices",
   "mythic-tableau",
+  "neural-lattice",
 ];
 
 const PALETTES = {
@@ -97,32 +98,49 @@ const PALETTES = {
   mono: { albedo: [0.85, 0.85, 0.90], name: "mono" },
 };
 
+// Each alternation is anchored with a leading \b so a keyword only matches at a
+// word start. Without it short tokens hijack selection from inside unrelated
+// words — "Mandala Rendering System" matched `ring` via "Rende(ring)", and
+// `net` matched "pla(net)"/"mag(net)ic". Suffixes still match (rings, grids,
+// orbital, lattices) because there is no trailing boundary.
 function pickScene(prompt) {
   const p = (prompt || "").toLowerCase();
-  if (/(dragon|wolf|battle|creature|mountain|tableau)/.test(p)) return "mythic-tableau";
-  if (/(tesseract|hypercube|4d|four[- ]?dimension|8-cell)/.test(p)) return "tesseract-vertices";
-  if (/(torus|ring|mandala|donut|halo|loop|orbit)/.test(p)) return "torus-ring";
-  if (/(grid|lattice|matrix|array|mesh|net)/.test(p)) return "lattice-grid";
-  if (/(cluster|galaxy|scatter|particle|swarm|constellation|nebula)/.test(p)) return "orbital-cluster";
-  if (/(sphere|orb|planet|ball|pearl|core|singularity)/.test(p)) return "central-orb";
+  if (/\b(dragon|wolf|battle|creature|mountain|tableau)/.test(p)) return "mythic-tableau";
+  if (/\b(tesseract|hypercube|4d|four[- ]?dimension|8-cell)/.test(p)) return "tesseract-vertices";
+  // Mandala / MRS / neural-lattice prompts before generic ring/grid so
+  // "Mandala Rendering System" + "neural lattice" land on a dedicated radial
+  // lattice with an energy core — still procedural primitives, not diffusion.
+  if (
+    /\b(mandala|neural[- ]?lattice|sovereign|glyph|glyphs|energy[- ]?core|constitutional)/.test(p)
+  ) {
+    return "neural-lattice";
+  }
+  if (/\b(torus|ring|donut|halo|loop|orbit)/.test(p)) return "torus-ring";
+  if (/\b(grid|lattice|matrix|array|mesh|net)/.test(p)) return "lattice-grid";
+  if (/\b(cluster|galaxy|scatter|particle|swarm|constellation|nebula)/.test(p)) return "orbital-cluster";
+  if (/\b(sphere|orb|planet|ball|pearl|core|singularity)/.test(p)) return "central-orb";
   return null; // caller falls back to seed-derived choice
 }
 
+// Word-anchored for the same reason as pickScene: `ice` matched "latt(ice)", so
+// every lattice prompt silently became the cool palette.
 function pickPalette(prompt) {
   const p = (prompt || "").toLowerCase();
-  if (/(neon|cyan|electric|teal|aqua)/.test(p)) return PALETTES.neon;
-  if (/(warm|fire|red|lava|sunset|ember|crimson|orange)/.test(p)) return PALETTES.warm;
-  if (/(cool|ice|blue|azure|cobalt|frost)/.test(p)) return PALETTES.cool;
-  if (/(green|emerald|forest|jade|lime)/.test(p)) return PALETTES.green;
-  if (/(gold|amber|bronze|brass|yellow)/.test(p)) return PALETTES.gold;
-  if (/(purple|violet|magenta|lilac|plasma)/.test(p)) return PALETTES.violet;
-  if (/(mono|white|silver|grey|gray|chrome|steel)/.test(p)) return PALETTES.mono;
+  if (/\b(neon|cyan|electric|teal|aqua)/.test(p)) return PALETTES.neon;
+  if (/\b(warm|fire|red|lava|sunset|ember|crimson|orange)/.test(p)) return PALETTES.warm;
+  if (/\b(cool|ice|blue|azure|cobalt|frost)/.test(p)) return PALETTES.cool;
+  if (/\b(green|emerald|forest|jade|lime)/.test(p)) return PALETTES.green;
+  if (/\b(gold|amber|bronze|brass|yellow)/.test(p)) return PALETTES.gold;
+  if (/\b(purple|violet|magenta|lilac|plasma)/.test(p)) return PALETTES.violet;
+  if (/\b(mono|white|silver|grey|gray|chrome|steel)/.test(p)) return PALETTES.mono;
   return null;
 }
 
+// Word-anchored so `shine` stops matching "ma(chine)"; "crystalline" still
+// selects ggx because the word itself begins with `crystal`.
 function pickMaterialType(prompt) {
   const p = (prompt || "").toLowerCase();
-  if (/(glass|chrome|metal|mirror|glossy|polished|crystal|shine|reflective)/.test(p)) {
+  if (/\b(glass|chrome|metal|mirror|glossy|polished|crystal|shine|reflective)/.test(p)) {
     return "ggx";
   }
   return "lambertian";
@@ -177,7 +195,7 @@ function buildScene(descriptor, seed) {
   const [ar, ag, ab] = descriptor.palette.albedo;
   const albedo = vec4(ar, ag, ab, 1);
 
-  if (descriptor.scene === "mythic-tableau") {
+  if (descriptor.scene === "mythic-tableau" || descriptor.scene === "neural-lattice") {
     // Diffuse body stays readable at draft sample counts (GGX silhouettes go black).
     scene.materials.createMaterial("surf", "lambertian", {
       albedo: vec4(
@@ -349,6 +367,53 @@ function buildScene(descriptor, seed) {
       }
       break;
     }
+    case "neural-lattice": {
+      // Radial lattice around a central energy core — procedural mandala /
+      // neural-circuit silhouette. NOT photoreal glyphs or diffusion synthesis.
+      accents.push({
+        primitive: new Hypersphere(vec4(0, 0.2, 0, jitter(0.15)), 0.42),
+        materialId: "radiant-core",
+      });
+      const ringCounts = [8, 12];
+      const radii = [1.05, 1.85];
+      for (let ring = 0; ring < ringCounts.length; ring++) {
+        const count = ringCounts[ring];
+        const R = radii[ring];
+        for (let i = 0; i < count; i++) {
+          const a = (i / count) * Math.PI * 2 + jitter(0.04);
+          const y = 0.12 + (ring === 0 ? 0.08 : -0.02) + jitter(0.06);
+          objects.push(
+            new Hypersphere(
+              vec4(Math.cos(a) * R, y, Math.sin(a) * R, jitter(0.2)),
+              ring === 0 ? 0.22 : 0.18,
+            ),
+          );
+          // Short radial "ribbon" segments toward the core (circuit spokes).
+          if (i % 2 === 0) {
+            const mid = R * 0.55;
+            accents.push({
+              primitive: new Hypersphere(
+                vec4(Math.cos(a) * mid, y * 0.7, Math.sin(a) * mid, 0),
+                0.11,
+              ),
+              materialId: i % 4 === 0 ? "gold" : "silver",
+            });
+          }
+        }
+      }
+      // Outer glyph accents (small bright nodes on a sparse ring).
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+        accents.push({
+          primitive: new Hypersphere(
+            vec4(Math.cos(a) * 2.15, 0.55 + jitter(0.1), Math.sin(a) * 2.15, 0),
+            0.12,
+          ),
+          materialId: i % 2 === 0 ? "gold" : "silver",
+        });
+      }
+      break;
+    }
     default: {
       objects.push(new Hypersphere(vec4(0, 0.1, 0, 0), 1.15));
       break;
@@ -514,7 +579,12 @@ export function renderStill(options = {}) {
   const tracer = new PathTracer4D({ maxDepth, samplesPerPixel: samples, rng });
 
   const rgba = Buffer.alloc(width * height * 4);
-  const exposure = descriptor.scene === "mythic-tableau" ? 3.2 : 2.4;
+  const exposure =
+    descriptor.scene === "mythic-tableau"
+      ? 3.2
+      : descriptor.scene === "neural-lattice"
+        ? 2.9
+        : 2.4;
   let lumSum = 0;
   // Center ROI excludes ground band (bottom 25%) so grey floor cannot alone pass.
   let roiLumSum = 0;

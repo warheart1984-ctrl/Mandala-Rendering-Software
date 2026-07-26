@@ -29,12 +29,17 @@ def test_static_index_inline_script_parses_and_posts_generate() -> None:
 
     assert 'fetch("/api/generate"' in script
     assert "ev.preventDefault()" in script
+    # Primary still Generate must send quality from the still-quality control.
+    assert 'id="still-quality"' in html
+    assert 'document.getElementById("still-quality")' in script
+    assert "quality: stillQuality" in script
 
     assert CORRUPT_NESTED_STATUS not in script
     # Duplicate body without quality was left after a nested setStatus merge; reject that alone.
     assert CORRUPT_DUP_BODY not in script
-    # Quality path must keep the intended body shape.
+    # Image→MRS quality path must keep the intended body shape.
     assert "const body = { render: true, quality };" in script
+    assert 'id="scene-quality"' in html
 
     if shutil.which("node") is None:
         pytest.skip("node not available for --check")

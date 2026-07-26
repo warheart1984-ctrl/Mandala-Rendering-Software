@@ -70,6 +70,26 @@ def quality_presets(settings: Any) -> dict[str, dict[str, int]]:
     }
 
 
+def resolve_still_render_params(settings: Any, quality: Any = None) -> dict[str, int]:
+    """Effective width/height/samples/maxDepth for a prompt-driven RT4D still.
+
+    ``draft`` **caps** each key at the draft preset (same semantics as
+    :func:`apply_quality_to_output`), so an ``RT4D_*`` profile sized for a dev
+    machine cannot force a render longer than ``RT4D_TIMEOUT`` on a small shared
+    instance. A profile already smaller than the cap is preserved. ``final``
+    uses the ``RT4D_*`` profile unchanged.
+    """
+    resolved = resolve_quality(settings, quality)
+    presets = quality_presets(settings)
+    final = presets[FINAL_QUALITY]
+    if resolved == FINAL_QUALITY:
+        return {key: int(final[key]) for key in _OUTPUT_KEYS}
+    draft = presets[DRAFT_QUALITY]
+    return {
+        key: max(1, min(int(final[key]), int(draft[key]))) for key in _OUTPUT_KEYS
+    }
+
+
 def apply_quality_to_output(
     spec: dict[str, Any],
     settings: Any,
