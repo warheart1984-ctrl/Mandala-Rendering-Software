@@ -7,8 +7,12 @@ import {
   hashPromptToSeed,
   resolveSceneDescriptor,
   parseArgs,
+  TESSERACT_EDGES,
+  tesseractProjectedVertices,
+  beamChain,
 } from "../render-still.mjs";
 import { Camera4D } from "../../src/render/rt4d/camera/Camera4D.js";
+import { Hypersphere } from "../../src/render/rt4d/geometry/hypersurface.js";
 
 const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -114,10 +118,43 @@ test("center ROI is lit (NEE — ground band alone must not pass)", () => {
 test("prompt keywords drive scene + palette selection (procedural, not generative)", () => {
   const seed = hashPromptToSeed("tesseract");
   const d1 = resolveSceneDescriptor({ prompt: "a glowing tesseract hypercube", seed });
-  assert.equal(d1.scene, "tesseract-vertices");
+  assert.equal(d1.scene, "tesseract-lattice");
   const d2 = resolveSceneDescriptor({ prompt: "warm torus ring", seed });
   assert.equal(d2.scene, "torus-ring");
   assert.equal(d2.palette.name, "warm");
+});
+
+test("legacy tesseract-vertices alias resolves to tesseract-lattice", () => {
+  const d = resolveSceneDescriptor({
+    prompt: "anything",
+    scene: "tesseract-vertices",
+    seed: 7,
+  });
+  assert.equal(d.scene, "tesseract-lattice");
+});
+
+test("tesseract keywords outrank mandala / neural-lattice in the same prompt", () => {
+  // Exact user-reported prompt shape: tesseract subject inside a radial mandala grid.
+  // The lattice archetype owns the composition (with its own ring accents); a
+  // generic neural-lattice would drop the 8-cell entirely.
+  const prompt =
+    "A floating tesseract made of neon-blue lattice beams, suspended inside a radial " +
+    "mandala grid. The core emits a pulsing white energy sphere, illuminating the structure " +
+    "with studio-grade rim lighting. Surrounding geometry forms concentric fractal rings, " +
+    "each with reflective metallic surfaces and soft volumetric glow.";
+  assert.equal(
+    resolveSceneDescriptor({ prompt, seed: hashPromptToSeed(prompt) }).scene,
+    "tesseract-lattice",
+  );
+  // Word-anchored: "Rendering" must not steal via infix `ring`, and tesseract
+  // still wins when both families are present as whole words.
+  assert.equal(
+    resolveSceneDescriptor({
+      prompt: "tesseract neural-lattice mandala Rendering System",
+      seed: 11,
+    }).scene,
+    "tesseract-lattice",
+  );
 });
 
 test("creature battle prompts select the procedural mythic tableau before tesseract accents", () => {
@@ -199,6 +236,63 @@ test("neural-lattice archetype renders above blank luminance", () => {
     provenance.mean_luminance > 8,
     `mean luminance ${provenance.mean_luminance} should exceed 8`,
   );
+});
+
+test("tesseract lattice has 16 vertices, 32 edges, and a bounded beam chain", () => {
+  assert.equal(TESSERACT_EDGES.length, 32);
+  for (const [i, j] of TESSERACT_EDGES) {
+    const d = i ^ j;
+    assert.ok((d & (d - 1)) === 0, `edge ${i}-${j} must differ in exactly one bit`);
+  }
+  const verts = tesseractProjectedVertices();
+  assert.equal(verts.length, 16);
+  // Every projected vertex sits on the camera's central W-slice.
+  for (const v of verts) assert.equal(v.w, 0);
+
+  const a = verts[0];
+  const b = verts[1];
+  const chain = beamChain(a, b, 0.1, 0.1);
+  assert.ok(chain.length >= 2);
+  assert.ok(chain.length <= 64, `beam chain length ${chain.length} must stay bounded`);
+  assert.ok(chain.every((p) => p instanceof Hypersphere));
+  // Endpoints land on the segment endpoints (within float noise).
+  assert.ok(Math.abs(chain[0].center.x - a.x) < 1e-9);
+  assert.ok(Math.abs(chain[chain.length - 1].center.x - b.x) < 1e-9);
+});
+
+test("tesseract-lattice archetype reports composition and stays above blank luminance", () => {
+  const { provenance } = renderStill({
+    prompt: "neon-blue tesseract lattice beams radial mandala reflective metallic",
+    seed: 526562436,
+    width: 48,
+    height: 48,
+    samples: 4,
+    maxDepth: 3,
+  });
+  assert.equal(provenance.scene, "tesseract-lattice");
+  assert.equal(provenance.composition.tesseract_vertices, 16);
+  assert.equal(provenance.composition.tesseract_edges, 32);
+  assert.ok(provenance.composition.beam_spheres >= 32);
+  // Bound the CPU cost: sphere-chain beams must not explode object count.
+  assert.ok(
+    provenance.object_count <= 800,
+    `object_count ${provenance.object_count} exceeds the draft CPU budget`,
+  );
+  assert.equal(provenance.composition.emissive_cores, 1);
+  assert.ok(provenance.composition.ring_nodes >= 16);
+  // Draft sample counts use soft emissive rings, not black GGX silhouettes.
+  assert.equal(provenance.composition.ring_material, "ring-glow");
+  assert.ok(
+    provenance.mean_luminance > 8,
+    `mean luminance ${provenance.mean_luminance} should exceed 8`,
+  );
+  assert.ok(
+    provenance.mean_luminance_center > 12,
+    `center ROI ${provenance.mean_luminance_center} should exceed 12`,
+  );
+  assert.ok(typeof provenance.dark_pixel_fraction === "number");
+  // Camera locked on the energy core (elevated look-at).
+  assert.ok(provenance.camera.look_at.y > 0.4);
 });
 
 test("camera screen-up follows world-up", () => {

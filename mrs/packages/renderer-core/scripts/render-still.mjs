@@ -42,7 +42,15 @@ import { Hypersphere, Hyperplane } from "../src/render/rt4d/geometry/hypersurfac
 import { vec4 } from "../src/render/rt4d/math/vec4.js";
 import { lengthPreserved4, rotate2d } from "../src/render/rt4d/math/physicalInvariants.js";
 
-export const RENDER_STILL_VERSION = "1.0.0";
+export const RENDER_STILL_VERSION = "1.1.0";
+/** Per-archetype Reinhard exposure multiplier (default 2.4). */
+const SCENE_EXPOSURE = {
+  "mythic-tableau": 3.2,
+  "neural-lattice": 2.9,
+  "tesseract-lattice": 2.0,
+};
+/** Byte-luminance below which a pixel counts as "dark" for noise reporting. */
+const DARK_LUMINANCE_THRESHOLD = 24;
 const MAX_DIM = 1024;
 const MAX_SAMPLES = 512;
 const MAX_DEPTH_CAP = 12;
@@ -83,10 +91,20 @@ const SCENE_ARCHETYPES = [
   "orbital-cluster",
   "torus-ring",
   "lattice-grid",
-  "tesseract-vertices",
+  "tesseract-lattice",
   "mythic-tableau",
   "neural-lattice",
 ];
+
+// `tesseract-vertices` rendered the 16 projected vertices as bare hyperspheres
+// and nothing else: no edges, so the classic 8-cell read as disconnected blobs,
+// and prompts containing "reflective"/"metallic" pushed it onto GGX, which goes
+// near-black at draft sample counts. It is superseded by `tesseract-lattice`
+// (vertices + 32 edge beams + emissive core + mandala rings). The old id stays
+// accepted so stored specs / explicit `--scene` values keep rendering.
+export const SCENE_ALIASES = {
+  "tesseract-vertices": "tesseract-lattice",
+};
 
 const PALETTES = {
   neon: { albedo: [0.10, 0.80, 0.90], name: "neon" },
@@ -106,7 +124,11 @@ const PALETTES = {
 function pickScene(prompt) {
   const p = (prompt || "").toLowerCase();
   if (/\b(dragon|wolf|battle|creature|mountain|tableau)/.test(p)) return "mythic-tableau";
-  if (/\b(tesseract|hypercube|4d|four[- ]?dimension|8-cell)/.test(p)) return "tesseract-vertices";
+  // Tesseract cues outrank the mandala/neural branch below: a prompt naming both
+  // ("a tesseract ... inside a radial mandala grid") wants the 8-cell lattice as
+  // the subject with rings as accents, not a generic radial node field. The
+  // tesseract-lattice archetype carries its own mandala rings for that reason.
+  if (/\b(tesseract|hypercube|4d|four[- ]?dimension|8-cell)/.test(p)) return "tesseract-lattice";
   // Mandala / MRS / neural-lattice prompts before generic ring/grid so
   // "Mandala Rendering System" + "neural lattice" land on a dedicated radial
   // lattice with an energy core — still procedural primitives, not diffusion.
@@ -165,8 +187,9 @@ function hsvToRgb(h, s, v) {
 
 /** Resolve the full scene descriptor from prompt/overrides + seed. */
 export function resolveSceneDescriptor({ prompt = "", scene = null, palette = null, seed }) {
+  const requested = scene ? (SCENE_ALIASES[scene] ?? scene) : null;
   const chosenScene =
-    (scene && SCENE_ARCHETYPES.includes(scene) ? scene : null) ||
+    (requested && SCENE_ARCHETYPES.includes(requested) ? requested : null) ||
     pickScene(prompt) ||
     SCENE_ARCHETYPES[seed % SCENE_ARCHETYPES.length];
 
@@ -186,16 +209,118 @@ export function resolveSceneDescriptor({ prompt = "", scene = null, palette = nu
 }
 
 // ---------------------------------------------------------------------------
+// Tesseract lattice geometry
+//
+// RT4D exposes exactly two BVH-bounded primitives (`Hypersphere`, `Hyperplane`);
+// `ImplicitHypersurface` has no `getBounds`, so adding one disables the BVH for
+// the whole scene. There is no line/capsule/segment primitive. A "beam" is
+// therefore a deterministic chain of overlapping hyperspheres, and its object
+// count is bounded by the caller's `step` (see `beamChain`).
+// ---------------------------------------------------------------------------
+
+const TESSERACT_HALF = 0.95;      // 4D vertex coordinate (±half on each axis)
+const TESSERACT_PROJ_DIST = 2.2;  // 4D→3D perspective denominator offset
+const TESSERACT_PROJ_SCALE = 2.1; // projected scale (outer ≈1.60, inner ≈0.63)
+const TESSERACT_CENTER_Y = 0.55;  // lift so the outer cube floats above the plane
+const TESSERACT_BEAM_RADIUS = 0.155;
+// Centre spacing as a fraction of the beam radius. The integrator returns
+// `emission * cosθ` for light materials, so sphere-chain beams always scallop
+// slightly at the joints; 1.35 is the readability/CPU sweet spot measured for
+// draft stills (see PR). Closer spacing helps but costs spheres linearly.
+const TESSERACT_BEAM_STEP_SCALE = 1.35;
+const TESSERACT_GROUND_OFFSET = -1.85;
+const TESSERACT_CAMERA_RADIUS = 6.4;
+/**
+ * Rough-GGX ring accents ("reflective metallic surfaces") need enough samples to
+ * resolve; below this they render as near-black silhouettes. Draft therefore
+ * uses soft emissive cyan rings — honestly not metal — and `final` (≥ this
+ * threshold) gets the rough GGX "silver" material.
+ */
+const RING_GGX_MIN_SAMPLES = 12;
+
+/**
+ * The 32 canonical edges of an 8-cell: vertex indices whose bit patterns differ
+ * in exactly one of the four axes. Derived, not hand-listed, so it cannot drift.
+ */
+export const TESSERACT_EDGES = (() => {
+  const edges = [];
+  for (let i = 0; i < 16; i++) {
+    for (let j = i + 1; j < 16; j++) {
+      const d = i ^ j;
+      if ((d & (d - 1)) === 0) edges.push([i, j]); // single-bit difference
+    }
+  }
+  return edges;
+})();
+
+/**
+ * The 16 tesseract vertices projected into the camera's central W-slice.
+ *
+ * Index bits map to (x, y, z, w) signs. `w` sets the perspective divisor, so the
+ * w=-half cube becomes the outer cube and w=+half the inner one — the classic
+ * tesseract diagram. Projected points sit at w=0 because `renderStill` fixes the
+ * hyperplane sample at the central slice; geometry off that slice renders as
+ * speckle.
+ */
+export function tesseractProjectedVertices({
+  half = TESSERACT_HALF,
+  projDist = TESSERACT_PROJ_DIST,
+  projScale = TESSERACT_PROJ_SCALE,
+  centerY = TESSERACT_CENTER_Y,
+} = {}) {
+  const out = [];
+  for (let i = 0; i < 16; i++) {
+    const x = i & 1 ? half : -half;
+    const y = i & 2 ? half : -half;
+    const z = i & 4 ? half : -half;
+    const w = i & 8 ? half : -half;
+    const k = projScale / (projDist + w);
+    out.push(vec4(x * k, y * k + centerY, z * k, 0));
+  }
+  return out;
+}
+
+/**
+ * Overlapping hypersphere chain approximating the segment a→b.
+ *
+ * `step` is the centre spacing; `step === radius` keeps the tube waist at
+ * cos(30°) ≈ 87% of the radius, which reads as a continuous beam rather than a
+ * bead string. Object count is `ceil(len/step) + 1`, so the caller bounds CPU
+ * cost by choosing `step` — this is an approximation of a capsule, not a real
+ * swept primitive.
+ */
+export function beamChain(a, b, radius, step = radius) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const dz = b.z - a.z;
+  const dw = b.w - a.w;
+  const len = Math.sqrt(dx * dx + dy * dy + dz * dz + dw * dw);
+  const n = Math.max(1, Math.ceil(len / Math.max(1e-6, step)));
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    out.push(
+      new Hypersphere(vec4(a.x + dx * t, a.y + dy * t, a.z + dz * t, a.w + dw * t), radius),
+    );
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Scene construction
 // ---------------------------------------------------------------------------
 
-function buildScene(descriptor, seed) {
+function buildScene(descriptor, seed, { samples = 24 } = {}) {
   const rng = mulberry32(seed ^ 0x9e3779b9);
   const scene = new Scene4D();
   const [ar, ag, ab] = descriptor.palette.albedo;
   const albedo = vec4(ar, ag, ab, 1);
 
-  if (descriptor.scene === "mythic-tableau" || descriptor.scene === "neural-lattice") {
+  if (
+    descriptor.scene === "mythic-tableau" ||
+    descriptor.scene === "neural-lattice" ||
+    descriptor.scene === "tesseract-lattice"
+  ) {
     // Diffuse body stays readable at draft sample counts (GGX silhouettes go black).
     scene.materials.createMaterial("surf", "lambertian", {
       albedo: vec4(
@@ -215,8 +340,63 @@ function buildScene(descriptor, seed) {
   } else {
     scene.materials.createMaterial("surf", "lambertian", { albedo });
   }
+  // A mid-grey floor reads as noisy sludge once it fills most of the frame at
+  // draft sample counts, so the lattice gets a dark floor: the same NEE variance
+  // lands on a darker surface, and the tesseract reads as suspended.
   scene.materials.createMaterial("ground", "lambertian", {
-    albedo: vec4(0.42, 0.45, 0.52, 1),
+    albedo:
+      descriptor.scene === "tesseract-lattice"
+        ? vec4(0.16, 0.17, 0.22, 1)
+        : vec4(0.42, 0.45, 0.52, 1),
+  });
+  // Emissive neon beam. `type: "light"` returns `emission * cosθ` directly from
+  // the integrator with zero variance, which is what makes a 4-spp draft show
+  // crisp beams instead of noise; cosθ still gives the tube a rim falloff and
+  // a mild scallop where overlapping spheres meet — that is an honest limit of
+  // the sphere-chain approximation, not a missing glow pass.
+  // These are added with `addPrimitive`, NOT `addLight`: they are self-lit
+  // surfaces, so they do not feed NEE and (by the tracer's light-hit rule in
+  // `_handleSurface`) do not cast shadows. Shadows come from the diffuse/
+  // glossy ring nodes when those are present.
+  scene.materials.createMaterial("beam", "light", {
+    emission: vec4(
+      Math.min(1.55, ar * 1.35 + 0.06),
+      Math.min(1.55, ag * 1.35 + 0.06),
+      Math.min(1.55, ab * 1.35 + 0.06),
+      0,
+    ),
+    albedo: vec4(ar, ag, ab, 1),
+  });
+  // Soft emissive ring accent used at draft sample counts. Same light-as-surface
+  // trick as the beams, but dimmer, so the concentric rings read without NEE
+  // noise. Not metal — see RING_GGX_MIN_SAMPLES for when "silver" is used.
+  scene.materials.createMaterial("ring-glow", "light", {
+    emission: vec4(
+      Math.min(0.85, ar * 0.75 + 0.08),
+      Math.min(0.85, ag * 0.75 + 0.08),
+      Math.min(0.85, ab * 0.75 + 0.08),
+      0,
+    ),
+    albedo: vec4(ar, ag, ab, 1),
+  });
+  // Brighter emissive junction node, so vertices read as lattice joints rather
+  // than as the dark spheres the previous archetype produced.
+  scene.materials.createMaterial("node", "light", {
+    emission: vec4(
+      Math.min(1.85, ar * 1.6 + 0.28),
+      Math.min(1.85, ag * 1.6 + 0.28),
+      Math.min(1.85, ab * 1.6 + 0.28),
+      0,
+    ),
+    albedo: vec4(1, 1, 1, 1),
+  });
+  // White energy core. Registered via `addLight`, so it both reads as the bright
+  // centre and actually illuminates nearby surfaces through NEE — the prompt's
+  // "core ... illuminating the structure". Emission is low because a small
+  // radius means a small S³ area and therefore a large solid-angle PDF.
+  scene.materials.createMaterial("core", "light", {
+    emission: vec4(5.6, 5.4, 4.9, 0),
+    albedo: vec4(1, 1, 1, 1),
   });
   // Emission scaled for the 4D area→solid-angle Jacobian (r³). Too low and
   // stills look like dark noise; the previous r² PDF over-brightened fireflies.
@@ -249,6 +429,8 @@ function buildScene(descriptor, seed) {
 
   const objects = [];
   const accents = [];
+  const extraLights = [];
+  const composition = {};
   const jitter = (amp) => (rng() - 0.5) * 2 * amp;
 
   switch (descriptor.scene) {
@@ -299,22 +481,83 @@ function buildScene(descriptor, seed) {
       }
       break;
     }
-    case "tesseract-vertices":
-    {
-      // Project the 16 tesseract vertices into the camera's central W-slice
-      // (w→0) with a mild perspective so both cubes read as a classic
-      // tesseract diagram instead of vanishing off the hyperplane.
-      const s = 0.95;
-      for (let i = 0; i < 16; i++) {
-        const x = (i & 1) ? s : -s;
-        const y = (i & 2) ? s : -s;
-        const z = (i & 4) ? s : -s;
-        const w = (i & 8) ? s : -s;
-        const k = 1.35 / (2.2 + w);
-        objects.push(
-          new Hypersphere(vec4(x * k * 2.0, y * k * 2.0 + 0.15, z * k * 2.0, 0), 0.26),
-        );
+    case "tesseract-lattice": {
+      // Readable 8-cell: 16 projected vertices joined by all 32 canonical edges
+      // as emissive neon beam chains, a white energy core at the centre, and
+      // concentric mandala rings as accents. Still deterministic procedural
+      // primitives — no semantic synthesis.
+      const verts = tesseractProjectedVertices();
+      const beamRadius = TESSERACT_BEAM_RADIUS;
+
+      const beamStep = beamRadius * TESSERACT_BEAM_STEP_SCALE;
+      let beamSpheres = 0;
+      for (const [i, j] of TESSERACT_EDGES) {
+        for (const primitive of beamChain(verts[i], verts[j], beamRadius, beamStep)) {
+          accents.push({ primitive, materialId: "beam" });
+          beamSpheres += 1;
+        }
       }
+
+      // Brighter emissive vertex joints. These were diffuse in the first pass and
+      // came back as dark knobs at every corner — the same failure mode as the
+      // reported render, because a 4-spp diffuse sphere ringed by non-occluding
+      // emissive beams gets almost no resolved direct light.
+      for (const v of verts) accents.push({ primitive: new Hypersphere(v, beamRadius * 1.35), materialId: "node" });
+
+      extraLights.push({
+        primitive: new Hypersphere(vec4(0, TESSERACT_CENTER_Y, 0, 0), 0.3),
+        materialId: "core",
+      });
+
+      // Radial mandala: two concentric node rings plus short spoke beams.
+      // At draft sample counts rings are soft-emissive cyan (`ring-glow`) so they
+      // read without NEE noise — honestly not reflective metal. At final
+      // (samples ≥ RING_GGX_MIN_SAMPLES) they become rough GGX "silver".
+      const useMetalRings =
+        descriptor.materialType === "ggx" && samples >= RING_GGX_MIN_SAMPLES;
+      const ringMaterial = useMetalRings ? "silver" : "ring-glow";
+      const ringSpecs = [
+        // Counts chosen so neighbouring nodes nearly touch (r ≥ R·sin(π/n)), giving
+        // a continuous ring silhouette without a second sphere-chain pass.
+        { radius: 2.05, count: 32, y: TESSERACT_CENTER_Y - 0.05, nodeRadius: 0.13 },
+        { radius: 2.55, count: 40, y: TESSERACT_CENTER_Y - 0.12, nodeRadius: 0.11 },
+      ];
+      let ringNodes = 0;
+      for (let r = 0; r < ringSpecs.length; r++) {
+        const { radius, count, y, nodeRadius } = ringSpecs[r];
+        for (let i = 0; i < count; i++) {
+          const a = (i / count) * Math.PI * 2 + (r === 0 ? 0 : Math.PI / count);
+          accents.push({
+            primitive: new Hypersphere(vec4(Math.cos(a) * radius, y, Math.sin(a) * radius, 0), nodeRadius),
+            materialId: ringMaterial,
+          });
+          ringNodes += 1;
+        }
+      }
+
+      // Six short radial spokes from the outer cube toward the first ring.
+      let spokeSpheres = 0;
+      const spokes = 6;
+      for (let i = 0; i < spokes; i++) {
+        const a = (i / spokes) * Math.PI * 2;
+        const inner = vec4(Math.cos(a) * 1.72, TESSERACT_CENTER_Y - 0.05, Math.sin(a) * 1.72, 0);
+        const outer = vec4(Math.cos(a) * 2.05, TESSERACT_CENTER_Y - 0.05, Math.sin(a) * 2.05, 0);
+        for (const primitive of beamChain(inner, outer, 0.08, 0.11)) {
+          accents.push({ primitive, materialId: "beam" });
+          spokeSpheres += 1;
+        }
+      }
+
+      composition.tesseract_vertices = verts.length;
+      composition.tesseract_edges = TESSERACT_EDGES.length;
+      composition.beam_spheres = beamSpheres;
+      composition.spoke_spheres = spokeSpheres;
+      composition.ring_nodes = ringNodes;
+      composition.emissive_cores = 1;
+      composition.ring_material = ringMaterial;
+      composition.ring_material_note = useMetalRings
+        ? "rough GGX silver (approximate reflective metal)"
+        : "soft emissive cyan (draft-readable; not metal)";
       break;
     }
     case "mythic-tableau": {
@@ -422,23 +665,49 @@ function buildScene(descriptor, seed) {
 
   for (const obj of objects) scene.addPrimitive(obj, "surf");
   for (const { primitive, materialId } of accents) scene.addPrimitive(primitive, materialId);
-  scene.addPrimitive(new Hyperplane(vec4(0, 1, 0, 0), -1.4), "ground");
+  const groundOffset =
+    descriptor.scene === "tesseract-lattice" ? TESSERACT_GROUND_OFFSET : -1.4;
+  scene.addPrimitive(new Hyperplane(vec4(0, 1, 0, 0), groundOffset), "ground");
   // Lights elevated and off to the sides — close enough to light the scene,
   // outside the camera frustum so they do not appear as white disks.
   scene.addLight(new Hypersphere(vec4(4.2, 7.2, -3.8, 0), 0.7), "keylight");
-  scene.addLight(new Hypersphere(vec4(-5.0, 5.8, 4.2, 0), 0.55), "filllight");
+  // NEE picks one light uniformly per bounce, so every extra light multiplies
+  // light-selection variance. At 4 spp a key/fill/core triple leaves diffuse
+  // surfaces mottled (some pixels draw the bright key three times, some the dim
+  // fill three times). tesseract-lattice therefore runs key + core only and gets
+  // its fill from the emissive lattice via BSDF-sampled indirect bounces.
+  if (descriptor.scene !== "tesseract-lattice") {
+    scene.addLight(new Hypersphere(vec4(-5.0, 5.8, 4.2, 0), 0.55), "filllight");
+  }
+  // In-frame emissive lights (e.g. the tesseract core) join NEE last so the
+  // off-frame key/fill remain lights[0]/[1] for every existing archetype.
+  for (const { primitive, materialId } of extraLights) scene.addLight(primitive, materialId);
   scene.build();
 
-  return { scene, objectCount: objects.length + accents.length };
+  return {
+    scene,
+    objectCount: objects.length + accents.length + extraLights.length,
+    composition,
+  };
 }
 
-function buildCamera(seed, width, height) {
+function buildCamera(seed, width, height, descriptor = null) {
   const rng = mulberry32(seed ^ 0x2545f491);
   const theta = rng() * Math.PI * 2;
-  const radius = 4.4;
-  const elevation = 1.55 + rng() * 0.25;
+  const orbitJitter = rng();
+  let radius = 4.4;
+  let elevation = 1.55 + orbitJitter * 0.25;
+  let lookY = 0.45;
+  if (descriptor?.scene === "tesseract-lattice") {
+    // Pull back far enough for the outer cube plus both mandala rings, and keep
+    // the view axis near-horizontal. The default 4.4/1.55 rig tilts down ~14°,
+    // which puts the horizon at ~23% of frame height and lets the ground fill
+    // the remaining ~77% — the dominant grey band in the reported render.
+    radius = TESSERACT_CAMERA_RADIUS;
+    elevation = TESSERACT_CENTER_Y + 0.62 + orbitJitter * 0.14;
+    lookY = TESSERACT_CENTER_Y; // locked on the emissive core
+  }
   const camW = 0; // stay in the projected slice with the geometry
-  const lookY = 0.45;
   const position = {
     x: Math.cos(theta) * radius,
     y: elevation,
@@ -572,20 +841,18 @@ export function renderStill(options = {}) {
   });
 
 
-  const { scene, objectCount } = buildScene(descriptor, seed);
-  const { camera, position, lookAt } = buildCamera(seed, width, height);
+  const { scene, objectCount, composition } = buildScene(descriptor, seed, { samples });
+  const { camera, position, lookAt } = buildCamera(seed, width, height, descriptor);
 
   const rng = mulberry32(seed);
   const tracer = new PathTracer4D({ maxDepth, samplesPerPixel: samples, rng });
 
   const rgba = Buffer.alloc(width * height * 4);
-  const exposure =
-    descriptor.scene === "mythic-tableau"
-      ? 3.2
-      : descriptor.scene === "neural-lattice"
-        ? 2.9
-        : 2.4;
+  // tesseract-lattice sits lower than the diffuse archetypes because its beams
+  // and core are emissive; the default 2.4 blows them to flat white.
+  const exposure = SCENE_EXPOSURE[descriptor.scene] ?? 2.4;
   let lumSum = 0;
+  let darkPixels = 0;
   // Center ROI excludes ground band (bottom 25%) so grey floor cannot alone pass.
   let roiLumSum = 0;
   let roiCount = 0;
@@ -624,6 +891,7 @@ export function renderStill(options = {}) {
       rgba[idx + 3] = 255;
       const lum = 0.299 * R + 0.587 * G + 0.114 * B;
       lumSum += lum;
+      if (lum < DARK_LUMINANCE_THRESHOLD) darkPixels += 1;
       if (x >= xLo && x < xHi && y >= yLo && y < yHi) {
         roiLumSum += lum;
         roiCount += 1;
@@ -649,7 +917,7 @@ export function renderStill(options = {}) {
     engine: "mrs-renderer-core/rt4d",
     renderer_version: RENDER_STILL_VERSION,
     kind: "deterministic-procedural-4d-render",
-    note: "Procedural scene selection + seeded RT4D path trace. NOT text-to-image / not diffusion.",
+    note: "Procedural scene selection + seeded RT4D path trace. NOT text-to-image / not diffusion. Archetypes (including tesseract-lattice) are abstract 4D primitive compositions, not photoreal or semantic synthesis.",
     prompt,
     prompt_hash: hashPromptToSeed(prompt),
     seed,
@@ -657,6 +925,7 @@ export function renderStill(options = {}) {
     palette: descriptor.palette.name,
     material_type: descriptor.materialType,
     object_count: objectCount,
+    composition,
     camera: { position, look_at: lookAt, fov_x: camera.fovX, fov_y: camera.fovY, fov_w: camera.fovW },
     width,
     height,
@@ -666,6 +935,7 @@ export function renderStill(options = {}) {
     sha256,
     mean_luminance: Number(meanLuminance.toFixed(3)),
     mean_luminance_center: Number(meanLuminanceCenter.toFixed(3)),
+    dark_pixel_fraction: Number((darkPixels / (width * height)).toFixed(4)),
     invariant: { id: "PI-GEO-LENGTH", status: "tested", ok: invariantOk },
   };
 
