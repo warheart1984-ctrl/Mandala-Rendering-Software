@@ -240,10 +240,13 @@
         <div class="row">
           <button type="submit" id="go">Generate</button>
           <button type="button" class="secondary" id="refresh">Refresh assets</button>
+          <button type="button" class="secondary" id="send-rt4d-nvidia" hidden disabled>
+            Send RT4D still → NVIDIA
+          </button>
         </div>
         <label style="margin-top:0.75rem;font-weight:400;display:flex;gap:0.5rem;align-items:center;">
           <input type="checkbox" id="then-scene" />
-          Also interpret → MRS full frame (keeps FLUX concept; dual previews)
+          <span id="then-scene-label">Also interpret → MRS full frame (keeps concept still; dual previews)</span>
         </label>
       </form>
 
@@ -255,11 +258,11 @@
         <img id="preview" alt="Generated concept" hidden />
         <div class="side-by-side" id="dual-previews" hidden>
           <figure>
-            <figcaption>FLUX / concept still</figcaption>
-            <img id="preview-flux" alt="FLUX concept" />
+            <figcaption id="preview-flux-caption">Concept / RT4D still</figcaption>
+            <img id="preview-flux" alt="Concept or RT4D still" />
           </figure>
           <figure>
-            <figcaption>MRS path-traced full frame (scene interpretation)</figcaption>
+            <figcaption>MRS path-traced full frame (NVIDIA scene interpretation)</figcaption>
             <img id="preview-mrs" alt="MRS scene interpretation" />
           </figure>
         </div>
@@ -277,6 +280,9 @@
         Default quality is <strong>draft</strong> (smaller / noisier, typically tens of
         seconds on CPU) — choose <strong>final</strong> only when you can wait longer
         for a nicer still.
+        After an RT4D generate, use <strong>Send RT4D still → NVIDIA</strong> (or
+        <code>POST /api/rt4d-to-nvidia</code>) to require NIM vision with no silent
+        heuristic fallback — if NVIDIA is down, the RT4D still stays usable.
       </p>
       <form id="scene-form">
         <label for="scene-file">Image upload</label>
@@ -288,6 +294,10 @@
           <option value="draft" selected>Draft (fast — smaller / noisier)</option>
           <option value="final">Final (slower — RT4D profile)</option>
         </select>
+        <label style="margin-top:0.75rem;font-weight:400;display:flex;gap:0.5rem;align-items:center;">
+          <input type="checkbox" id="scene-require-nvidia" />
+          Require NVIDIA NIM vision (no heuristic fallback)
+        </label>
         <div class="row">
           <button type="submit" id="scene-go">Interpret + render</button>
         </div>
@@ -384,11 +394,58 @@
     const dualPreviews = document.getElementById("dual-previews");
     const previewFlux = document.getElementById("preview-flux");
     const previewMrs = document.getElementById("preview-mrs");
+    const sendRt4dNvidiaBtn = document.getElementById("send-rt4d-nvidia");
+    const previewFluxCaption = document.getElementById("preview-flux-caption");
+    const thenSceneLabel = document.getElementById("then-scene-label");
 
     // Populated by the /health fetch below. Until it resolves, treat the backend
     // as unknown and avoid naming FLUX or RT4D in progress copy.
     let health = null;
+    let latestStill = null; // { run_id, preview_url, provider }
     const isRt4dBackend = () => health && health.image_backend === "rt4d";
+
+    function nvidiaVisionReady() {
+      return !!(health && health.nvidia_configured);
+    }
+
+    function updateRt4dNvidiaControls() {
+      if (!sendRt4dNvidiaBtn) return;
+      const hasStill = !!(latestStill && latestStill.run_id);
+      const show = hasStill && (isRt4dBackend() || latestStill.provider === "rt4d-render");
+      sendRt4dNvidiaBtn.hidden = !show;
+      sendRt4dNvidiaBtn.disabled = !show;
+      if (thenSceneLabel) {
+        thenSceneLabel.textContent = isRt4dBackend()
+          ? "Also interpret with NVIDIA → MRS full frame (keeps RT4D still; dual previews)"
+          : "Also interpret → MRS full frame (keeps concept still; dual previews)";
+      }
+      if (previewFluxCaption) {
+        previewFluxCaption.textContent = isRt4dBackend()
+          ? "RT4D still"
+          : "Concept / FLUX still";
+      }
+    }
+
+    function rememberLatestStill(data) {
+      latestStill = {
+        run_id: data.run_id || null,
+        preview_url: data.preview_url || null,
+        provider: data.provider || null,
+      };
+      const runInput = document.getElementById("scene-run-id");
+      if (runInput && latestStill.run_id) {
+        runInput.value = latestStill.run_id;
+      }
+      updateRt4dNvidiaControls();
+    }
+
+    function nvidiaUnavailableMessage(detail) {
+      if (detail && typeof detail === "object") {
+        const msg = detail.message || JSON.stringify(detail);
+        return msg;
+      }
+      return typeof detail === "string" ? detail : JSON.stringify(detail || "NVIDIA unavailable");
+    }
 
     function fileToDataUrl(file) {
       return new Promise((resolve, reject) => {
@@ -549,6 +606,7 @@
         }
         resultEl.hidden = false;
         renderEntry(resultMeta, data);
+        rememberLatestStill(data);
         dualPreviews.hidden = true;
         preview.hidden = true;
         if (data.then_scene && data.then_scene.render && data.then_scene.render.preview_url) {
@@ -577,9 +635,16 @@
             " · seed " + (p.seed != null ? p.seed : "—") +
             " · quality " + (p.quality || "—") +
             " (deterministic procedural 4D — not diffusion).";
+          if (nvidiaVisionReady()) {
+            doneMsg += " Use “Send RT4D still → NVIDIA” to interpret with NIM vision.";
+          } else if (health && !health.nvidia_configured) {
+            doneMsg += " NVIDIA_API_KEY missing — RT4D still is usable; NVIDIA interpret unavailable.";
+          }
         }
         if (data.then_scene) {
-          doneMsg += " Dual path: FLUX concept + MRS scene interpretation frame.";
+          doneMsg += isRt4dBackend()
+            ? " Dual path: RT4D concept + MRS scene interpretation frame."
+            : " Dual path: FLUX concept + MRS scene interpretation frame.";
         } else if (data.then_scene_error) {
           doneMsg += " then_scene skipped: " + (
             typeof data.then_scene_error === "string"
@@ -621,6 +686,9 @@
           body.image_base64 = await fileToDataUrl(file);
         } else {
           body.run_id = runId;
+        }
+        if (document.getElementById("scene-require-nvidia")?.checked) {
+          body.require_nvidia = true;
         }
         const res = await fetch("/api/image-to-scene", {
           method: "POST",
@@ -763,8 +831,90 @@
 
     document.getElementById("refresh").addEventListener("click", () => loadAssets());
 
+    if (sendRt4dNvidiaBtn) {
+      sendRt4dNvidiaBtn.addEventListener("click", async () => {
+        if (!latestStill || !latestStill.run_id) {
+          setStatus(statusEl, "Generate an RT4D still first.", "warn");
+          return;
+        }
+        if (health && !health.nvidia_configured) {
+          setStatus(
+            statusEl,
+            "NVIDIA unavailable: NVIDIA_API_KEY not configured. RT4D still is unchanged.",
+            "err"
+          );
+          return;
+        }
+        sendRt4dNvidiaBtn.disabled = true;
+        goBtn.disabled = true;
+        const quality = document.getElementById("still-quality")?.value || "draft";
+        setStatus(
+          statusEl,
+          "Sending RT4D still to NVIDIA NIM vision → SceneSpecification → MRS frame…",
+          ""
+        );
+        try {
+          const res = await fetch("/api/rt4d-to-nvidia", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              run_id: latestStill.run_id,
+              render: true,
+              quality,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            setStatus(statusEl, nvidiaUnavailableMessage(data.detail), "err");
+            // Keep the RT4D preview visible.
+            if (latestStill.preview_url) {
+              preview.src = latestStill.preview_url;
+              preview.hidden = false;
+              dualPreviews.hidden = true;
+            }
+            return;
+          }
+          resultEl.hidden = false;
+          const render = data.render || {};
+          renderEntry(resultMeta, {
+            ...render,
+            source_run_id: data.source_run_id || latestStill.run_id,
+            scene_source: data.source,
+            analysis_mode: data.analysis_mode,
+          });
+          if (render.preview_url && latestStill.preview_url) {
+            dualPreviews.hidden = false;
+            preview.hidden = true;
+            previewFlux.src = latestStill.preview_url;
+            previewMrs.src = render.preview_url;
+            if (previewFluxCaption) previewFluxCaption.textContent = "RT4D still (source)";
+          } else if (render.preview_url) {
+            dualPreviews.hidden = true;
+            preview.src = render.preview_url;
+            preview.hidden = false;
+          }
+          setStatus(
+            statusEl,
+            "Done · NVIDIA NIM vision (" +
+              (data.source || "—") +
+              ") from run " +
+              (data.source_run_id || latestStill.run_id) +
+              " · not img2img, not reconstruction.",
+            ""
+          );
+          await loadAssets();
+        } catch (err) {
+          setStatus(statusEl, String(err), "err");
+        } finally {
+          goBtn.disabled = false;
+          updateRt4dNvidiaControls();
+        }
+      });
+    }
+
     fetch("/health").then(r => r.json()).then(h => {
       health = h;
+      updateRt4dNvidiaControls();
       const cosmosSection = document.getElementById("nim-cosmos");
       const videoOn = h.video_enabled === true;
       if (cosmosSection) {
@@ -793,11 +943,18 @@
             ? " · NIM FLUX unavailable (" +
               (h.nvidia_nim_status.http_status || "no status") + ")"
             : "";
+        const visionNote =
+          h.rt4d_to_nvidia && h.rt4d_to_nvidia.available
+            ? " · RT4D→NVIDIA vision ready"
+            : (h.image_backend === "rt4d" && !h.nvidia_configured
+              ? " · RT4D→NVIDIA vision needs NVIDIA_API_KEY"
+              : "");
         setStatus(
           statusEl,
           "Ready · B2 " + h.b2_bucket +
             " · " + backendLabel +
             nimDown +
+            visionNote +
             (h.image_fallback_to_rt4d ? " · RT4D fallback on" : "") +
             (videoOn
               ? (" · video " + (h.video_model || "—"))

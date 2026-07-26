@@ -29,6 +29,9 @@ def test_static_index_inline_script_parses_and_posts_generate() -> None:
 
     assert 'fetch("/api/generate"' in script
     assert "ev.preventDefault()" in script
+    assert 'fetch("/api/rt4d-to-nvidia"' in script
+    assert 'id="send-rt4d-nvidia"' in html
+    assert "require_nvidia" in script
     # Primary still Generate must send quality from the still-quality control.
     assert 'id="still-quality"' in html
     assert 'document.getElementById("still-quality")' in script

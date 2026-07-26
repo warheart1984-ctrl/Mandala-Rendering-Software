@@ -44,6 +44,10 @@ from app.render_quality import (
     resolve_quality,
 )
 from app.rt4d_provider import _find_node
+from app.rt4d_to_nvidia import (
+    NvidiaUnavailableError,
+    raise_if_nvidia_required_unavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -517,12 +521,23 @@ def interpret_image_to_scene(
     image_bytes: bytes,
     *,
     force_heuristic: bool = False,
+    require_nvidia: bool = False,
     http_post: Callable[..., Any] | None = None,
     validate_fn: Callable[..., dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Core bridge: bytes → SceneSpecification + provenance fields."""
+    """Core bridge: bytes → SceneSpecification + provenance fields.
+
+    When ``require_nvidia`` is True, never silently fall back to the heuristic:
+    missing key or NIM failure raises ``NvidiaUnavailableError`` so callers can
+    keep the source RT4D still and surface "NVIDIA unavailable" honestly.
+    """
     if not image_bytes:
         raise ValueError("empty image")
+    if require_nvidia and force_heuristic:
+        raise ValueError("require_nvidia and force_heuristic are mutually exclusive")
+
+    if require_nvidia and not settings.nvidia_configured:
+        raise_if_nvidia_required_unavailable(settings)
 
     image_sha256 = hashlib.sha256(image_bytes).hexdigest()
     analysis = analyze_image_bytes(image_bytes)
@@ -560,9 +575,20 @@ def interpret_image_to_scene(
                     source = "nim-vision"
                 else:
                     nim_error = json.dumps(result2.get("errors") or result2)[:500]
-        except Exception as exc:  # noqa: BLE001 — fall back to heuristic
+        except NvidiaUnavailableError:
+            raise
+        except Exception as exc:  # noqa: BLE001 — fall back unless require_nvidia
             nim_error = str(exc)
             logger.warning("NIM vision image-to-scene failed: %s", exc)
+            if require_nvidia:
+                raise_if_nvidia_required_unavailable(
+                    settings, nim_error=nim_error, scene_source=None
+                )
+
+    if require_nvidia and source != "nim-vision":
+        raise_if_nvidia_required_unavailable(
+            settings, nim_error=nim_error, scene_source=source
+        )
 
     if spec is None:
         spec = build_heuristic_scene_spec(analysis, image_sha256=image_sha256)

@@ -8,6 +8,7 @@ Thin **FastAPI** service: user prompt → **Genblaze** (`genblaze-nvidia` + `gen
 | Genblaze 4D render | **Not claimed** — Genblaze's NVIDIA path generates 2D (NIM FLUX); MRS remains the 4D renderer |
 | RT4D image backend | **Prepared** — `GENBLAZE_IMAGE_BACKEND=rt4d` shells out to renderer-core `render-still.mjs` for deterministic procedural 4D stills (NOT text-to-image). Requires Node; the **repo-root** Dockerfile bundles Node 22 + renderer-core; the app-local one cannot. Live Render RT4D is only verified after Manual Deploy + `/health.rt4d.available: true` |
 | Image → SceneSpecification | **Prepared** — `POST /api/image-to-scene` interprets a still (NIM vision or heuristic) into SceneSpecification, then MRS path-traces a full frame. **Not** geometric reconstruction / photogrammetry |
+| RT4D → NVIDIA vision | **Prepared** — `POST /api/rt4d-to-nvidia` sends a prior `run_id` PNG to NIM vision (`require_nvidia`). **Not** img2img; fails clearly when key missing or NIM 5xx/504 |
 | Operator deploy | **Prepared** — Dockerfile + `render.yaml` (Render free web) |
 | Live NIM generate | **Requires** `NVIDIA_API_KEY` at runtime (default backend) |
 | NIM Cosmos video (CMM-NIM-Cosmos) | **Prepared but off by default** (stills-only demo) — API/pipeline intact; set `GENBLAZE_VIDEO_ENABLED=1` to re-enable UI + API. Cosmos catalog access is key-dependent; docs **declared** not enforced |
@@ -43,10 +44,17 @@ default path. This does **not** claim GPU acceleration or sub-second renders.
 
 Honest copy: **scene interpretation + path-traced full frame**. Responses include `analysis_mode` / `note` stating this is **not** geometric reconstruction. Phase 3 depth/mesh/pose recovery is **declared roadmap only** (see `docs/4d-engine/v2/scene-spec/IMAGE_TO_SCENE_RFC.md`).
 
-Dual FLUX + MRS: set `GENBLAZE_FLUX_THEN_SCENE=1` or pass `"then_scene": true` on `POST /api/generate`. The FLUX concept still is **kept**; the MRS frame is returned alongside under `then_scene` with separate modality/provider labels (draft quality by default).
-Honest copy: **scene interpretation + path-traced full frame**. Responses include `analysis_mode` / `note` stating this is **not** geometric reconstruction. Phase 3 depth/mesh/pose recovery is **declared roadmap only** (see `docs/4d-engine/v2/scene-spec/IMAGE_TO_SCENE_RFC.md`).
+Pass `"require_nvidia": true` on `/api/image-to-scene` to forbid the silent heuristic fallback (missing key → **503**, NIM 5xx/504 → **502** with `nvidia_unavailable: true`; the source still is unchanged).
 
-Dual FLUX + MRS: set `GENBLAZE_FLUX_THEN_SCENE=1` or pass `"then_scene": true` on `POST /api/generate`. The FLUX concept still is **kept**; the MRS frame is returned alongside under `then_scene` with separate modality/provider labels.
+### RT4D still → NVIDIA (NIM vision)
+
+`POST /api/rt4d-to-nvidia` takes a prior generate `run_id` (local preview or B2), sends that PNG to **NVIDIA NIM vision** (`GENBLAZE_IMAGE_TO_SCENE_MODEL`, default `meta/llama-3.2-11b-vision-instruct` at `GENBLAZE_IMAGE_TO_SCENE_CHAT_URL`), and optionally re-renders an MRS frame. This reuses the image→scene path with `require_nvidia=true`.
+
+**Honest scope:** NIM **vision → SceneSpecification**, not FLUX img2img enhancement. No img2img endpoint is wired in this app (`/health.rt4d_to_nvidia.img2img_wired: false`). Keep `GENBLAZE_IMAGE_BACKEND=rt4d` as the base renderer; NVIDIA is an **additional** interpret step.
+
+Requires `NVIDIA_API_KEY`. When the key is missing or NIM returns 5xx/504, the API reports NVIDIA unavailable and the RT4D still remains usable.
+
+Dual FLUX + MRS: set `GENBLAZE_FLUX_THEN_SCENE=1` or pass `"then_scene": true` on `POST /api/generate`. The FLUX concept still is **kept**; the MRS frame is returned alongside under `then_scene` with separate modality/provider labels (draft quality by default).
 
 ## Setup
 
@@ -155,6 +163,9 @@ curl -s -X POST http://127.0.0.1:8787/api/generate -H "content-type: application
 ```bash
 # Heuristic interpret + MRS full-frame render (no NIM vision required)
 curl -s -X POST http://127.0.0.1:8787/api/image-to-scene -H "content-type: application/json" -d "{\"image_base64\":\"<base64 or data-url>\",\"render\":true,\"force_heuristic\":true}"
+
+# Prior RT4D/generate still → NVIDIA NIM vision (requires NVIDIA_API_KEY; no heuristic fallback)
+curl -s -X POST http://127.0.0.1:8787/api/rt4d-to-nvidia -H "content-type: application/json" -d "{\"run_id\":\"<uuid>\",\"render\":true,\"quality\":\"draft\"}"
 
 # Dual FLUX concept + MRS frame (keeps both)
 curl -s -X POST http://127.0.0.1:8787/api/generate -H "content-type: application/json" -d "{\"prompt\":\"neon lattice\",\"embed\":false,\"then_scene\":true}"
@@ -389,10 +400,9 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 | GET | `/health` | Boots always; NVIDIA/B2/RT4D flags; `image_to_scene` probe; ListObjects probe only if `B2_PROBE_ON_HEALTH=1` |
 | POST | `/api/generate` | Live Genblaze FLUX→B2 (default), or RT4D when `GENBLAZE_IMAGE_BACKEND=rt4d`; optional `then_scene` / `GENBLAZE_FLUX_THEN_SCENE` dual MRS frame; **503** if setup missing; RT4D CLI failure → **502** |
 | POST | `/api/generate-video` | Selected Cosmos or Seedance backend → B2; 503 if disabled or its credential is missing |
-| POST | `/api/image-to-scene` | Image → SceneSpecification → optional MRS full-frame path trace (`render` default **true**, `quality` default **draft**). Scene interpretation — **not** reconstruction |
+| POST | `/api/image-to-scene` | Image → SceneSpecification → optional MRS full-frame path trace (`render` default **true**, `quality` default **draft**; optional `require_nvidia`). Scene interpretation — **not** reconstruction |
+| POST | `/api/rt4d-to-nvidia` | Prior still `run_id` → NIM vision → optional MRS re-render (`require_nvidia`); **503** missing key, **502** NIM 5xx/504; **not** img2img |
 | POST | `/api/render-scene` | SceneSpecification JSON → RT4D still (`quality` default **draft**; pass `final` for RT4D_* profile) |
-| POST | `/api/image-to-scene` | Image → SceneSpecification → optional MRS full-frame path trace (`render` default **true**). Scene interpretation — **not** reconstruction |
-| POST | `/api/render-scene` | SceneSpecification JSON → RT4D still |
 | GET | `/api/assets` | Local recent index (capped); optional `?modality=image\|video` |
 | GET | `/media/stills` · `/media/nvidia` · `/media/nim-cosmos` | 302 into SPA hash anchors |
 | GET | `/` | Single-page UI (stills; Cosmos section hidden unless video enabled) |

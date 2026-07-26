@@ -45,6 +45,12 @@ from app.rt4d_provider import (
     generate_image_rt4d,
     rt4d_availability,
 )
+from app.rt4d_to_nvidia import (
+    NvidiaUnavailableError,
+    build_nvidia_vision_provenance,
+    build_rt4d_to_nvidia_request,
+    rt4d_to_nvidia_availability,
+)
 from app.scene_spec_provider import (
     SCENE_SPEC_PROVIDER_ID,
     render_scene_clip,
@@ -238,6 +244,14 @@ class ImageToSceneRequest(BaseModel):
         default=False,
         description="Skip NIM vision; build heuristic SceneSpecification only.",
     )
+    require_nvidia: bool = Field(
+        default=False,
+        description=(
+            "When true, require NIM vision success — do not silently fall back to "
+            "the heuristic. Missing NVIDIA_API_KEY or NIM 5xx/504 → clear error; "
+            "source still (run_id) is left unchanged."
+        ),
+    )
     quality: str = Field(
         default=DRAFT_QUALITY,
         description=(
@@ -245,6 +259,25 @@ class ImageToSceneRequest(BaseModel):
             "depth 3; smaller/noisier, typically tens of seconds on CPU) or "
             "'final'/'high' (RT4D_* profile, typically slower)."
         ),
+    )
+
+
+class Rt4dToNvidiaRequest(BaseModel):
+    """Send a prior RT4D/generate still to NVIDIA NIM vision (not img2img)."""
+
+    run_id: str = Field(
+        ...,
+        min_length=8,
+        max_length=64,
+        description="Prior generate run_id whose PNG is the NVIDIA vision input",
+    )
+    render: bool = Field(
+        default=True,
+        description="When true, path-trace an MRS frame from the NIM SceneSpecification.",
+    )
+    quality: str = Field(
+        default=DRAFT_QUALITY,
+        description="MRS re-render quality: draft/fast (default) or final/high.",
     )
 
 
@@ -377,8 +410,9 @@ def health() -> dict:
             "path-traced full frame. Scene interpretation only — NOT reconstruction. "
             "Default quality is draft (typically tens of seconds on CPU; noisier/"
             "smaller). Heuristic fallback always available; NIM vision when "
-            "NVIDIA_API_KEY set."
+            "NVIDIA_API_KEY set. Pass require_nvidia=true to forbid heuristic fallback."
         ),
+        "rt4d_to_nvidia": rt4d_to_nvidia_availability(settings),
         "flux_then_scene": settings.flux_then_scene,
         "fal_image_fallback": False,
         "prefer_async": False,
@@ -562,7 +596,9 @@ def _image_to_scene_pipeline(
     render: bool = True,
     frame: int | None = None,
     force_heuristic: bool = False,
+    require_nvidia: bool = False,
     quality: str | None = None,
+    provenance_kind: str | None = None,
 ) -> dict[str, Any]:
     """Resolve image → interpret → optional MRS full-frame render."""
     try:
@@ -579,19 +615,52 @@ def _image_to_scene_pipeline(
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    interpreted = interpret_image_to_scene(
-        settings,
-        image_bytes,
-        force_heuristic=force_heuristic,
-    )
+    try:
+        interpreted = interpret_image_to_scene(
+            settings,
+            image_bytes,
+            force_heuristic=force_heuristic,
+            require_nvidia=require_nvidia,
+        )
+    except NvidiaUnavailableError as exc:
+        status = 503 if exc.reason == "missing_key" else 502
+        raise HTTPException(
+            status_code=status,
+            detail={
+                "message": str(exc),
+                "reason": exc.reason,
+                "nvidia_unavailable": True,
+                "source_run_id": run_id,
+                "note": (
+                    "RT4D / source still is unchanged. Configure NVIDIA_API_KEY "
+                    "or retry when NIM recovers."
+                ),
+            },
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     resolved_quality = resolve_quality(settings, quality)
+    nvidia_prov = None
+    if run_id and (require_nvidia or interpreted.get("source") == "nim-vision"):
+        nvidia_prov = build_nvidia_vision_provenance(
+            settings,
+            source_run_id=str(run_id),
+            image_sha256=str(interpreted.get("image_sha256") or ""),
+            scene_source=str(interpreted.get("source") or ""),
+            resolve_meta=resolve_meta if isinstance(resolve_meta, dict) else {},
+            nim_error=interpreted.get("nim_error"),
+        )
     payload: dict[str, Any] = {
         **interpreted,
         "resolve": resolve_meta,
         "analysis_mode": interpreted.get("analysis_mode"),
         "note": interpreted.get("note") or IMAGE_TO_SCENE_DISCLAIMER,
         "quality": resolved_quality,
+        "source_run_id": run_id,
     }
+    if nvidia_prov is not None:
+        payload["nvidia_provenance"] = nvidia_prov
 
     if not render:
         return payload
@@ -629,13 +698,25 @@ def _image_to_scene_pipeline(
 
     entry = result.to_dict()
     entry["modality"] = "image"
-    entry["kind"] = "image-to-scene-mrs-full-frame"
-    entry["provider_label"] = "mrs-scene-interpretation"
+    entry["kind"] = provenance_kind or "image-to-scene-mrs-full-frame"
+    entry["provider_label"] = (
+        "nvidia-nim-vision+mrs"
+        if interpreted.get("source") == "nim-vision"
+        else "mrs-scene-interpretation"
+    )
     entry["analysis_mode"] = interpreted.get("analysis_mode")
     entry["note"] = IMAGE_TO_SCENE_DISCLAIMER
     entry["scene_source"] = interpreted.get("source")
     entry["image_sha256"] = interpreted.get("image_sha256")
     entry["spec"] = interpreted.get("spec")
+    entry["source_run_id"] = run_id
+    if nvidia_prov is not None:
+        # Attach under provenance without clobbering RT4D render provenance.
+        base_prov = entry.get("provenance")
+        if isinstance(base_prov, dict):
+            entry["provenance"] = {**base_prov, "nvidia_vision": nvidia_prov}
+        else:
+            entry["provenance"] = {"nvidia_vision": nvidia_prov}
     _index.prepend(entry)
     render_public = {k: v for k, v in entry.items() if k != "embedding_vector"}
     payload["render"] = _prefer_local_preview(render_public)
@@ -663,6 +744,11 @@ def api_image_to_scene(body: ImageToSceneRequest) -> dict:
             status_code=400,
             detail="provide image_base64, id (ingest), or run_id",
         )
+    if body.require_nvidia and body.force_heuristic:
+        raise HTTPException(
+            status_code=400,
+            detail="require_nvidia and force_heuristic are mutually exclusive",
+        )
     settings = get_settings()
     return _image_to_scene_pipeline(
         settings,
@@ -672,7 +758,40 @@ def api_image_to_scene(body: ImageToSceneRequest) -> dict:
         render=body.render,
         frame=body.frame,
         force_heuristic=body.force_heuristic,
+        require_nvidia=body.require_nvidia,
         quality=body.quality,
+    )
+
+
+@app.post("/api/rt4d-to-nvidia")
+def api_rt4d_to_nvidia(body: Rt4dToNvidiaRequest) -> dict:
+    """RT4D / generate still (run_id) → NVIDIA NIM vision → optional MRS re-render.
+
+    Uses the existing NIM vision image→scene path (not img2img). Requires
+    NVIDIA_API_KEY; on missing key or NIM 5xx/504 returns a clear NVIDIA-unavailable
+    error and does not replace the source still.
+    """
+    settings = get_settings()
+    try:
+        req = build_rt4d_to_nvidia_request(
+            run_id=body.run_id,
+            quality=body.quality,
+            render=body.render,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if not is_run_id(req["run_id"]):
+        raise HTTPException(status_code=400, detail="invalid run_id")
+
+    return _image_to_scene_pipeline(
+        settings,
+        run_id=req["run_id"],
+        render=req["render"],
+        force_heuristic=False,
+        require_nvidia=True,
+        quality=req["quality"],
+        provenance_kind="rt4d-to-nvidia-mrs-full-frame",
     )
 
 
