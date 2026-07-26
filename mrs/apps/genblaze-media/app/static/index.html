@@ -352,9 +352,6 @@
       (<code>GENBLAZE_IMAGE_BACKEND=rt4d</code> — deterministic procedural 4D, not diffusion).
       Video: NVIDIA NIM Cosmos (optional; off by default — set
       <code>GENBLAZE_VIDEO_ENABLED=1</code> to re-enable).
-      Video: NVIDIA NIM Cosmos (default on when NVIDIA key present; pin
-      <code>GENBLAZE_VIDEO_ENABLED=0</code> for stills-only).
-      Video: NVIDIA NIM Cosmos (optional; off by default).
       Embeddings: NVIDIA nv-embedcode. Operator readiness ≠ commercial self-serve.
       Anchors: <code>/media/stills</code> · <code>/media/nim-cosmos</code> (video when enabled).
       Render governance reference (docs only, not implemented here): <a href="/cros">/cros</a>.
@@ -577,15 +574,11 @@
         quality === "final"
           ? "Interpreting image → SceneSpecification → MRS full-frame (final quality; may take longer)…"
           : "Interpreting image → SceneSpecification → MRS draft still (fast / noisier)…",
-      setStatus(
-        sceneStatusEl,
-        "Interpreting image → SceneSpecification → MRS full-frame path trace…",
         ""
       );
       scenePreview.hidden = true;
       try {
         const body = { render: true, quality };
-        const body = { render: true };
         if (file) {
           body.image_base64 = await fileToDataUrl(file);
         } else {
