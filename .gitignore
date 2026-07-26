@@ -63,3 +63,10 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 *.pyc
+
+# Local RT4D / WebGPU smoke artifacts (not product outputs)
+mrs/packages/renderer-core/_tmp_*.png
+mrs/packages/renderer-core/_debug_*.png
+mrs/packages/renderer-web/_webgpu-smoke/_out/
+*.wip-full
+*.receipt-wip

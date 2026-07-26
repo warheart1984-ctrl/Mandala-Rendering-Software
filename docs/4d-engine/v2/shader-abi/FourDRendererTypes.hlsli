@@ -11,6 +11,37 @@
 #ifndef FOURD_RENDERER_TYPES_HLSLI
 #define FOURD_RENDERER_TYPES_HLSLI
 
+// Geometry / BVH (BVH_AND_PROJECTION_RFC) — declared; no traversal kernel claimed.
+struct Primitive4D
+{
+    float4 P0;
+    float4 P1;
+    float4 P2;
+    uint   MaterialId;
+    uint   ProjectionPolicyId;
+};
+
+struct EmbeddedSurface4D
+{
+    float4 Origin;
+    float4 BasisX;
+    float4 BasisY;
+    float4 BasisZ;
+    float2 UVScale;
+    uint   MaterialId;
+    uint   ProjectionPolicyId;
+};
+
+struct BVHNode4D
+{
+    float4 BoundsMin;
+    float4 BoundsMax;
+    uint   FirstChildOrPrim;
+    uint   ChildCount; // 0 => leaf (layout variant)
+    uint   PrimCount;
+    uint   Flags;
+};
+
 struct Ray4D
 {
     float4 Origin;

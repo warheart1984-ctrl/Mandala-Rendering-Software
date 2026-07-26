@@ -18,7 +18,8 @@ Unreal-side host adapter for 4D Engine v1 / PLP projected output. Authority for 
 | `UFourDVisualizationComponent` | + events SetWSlice/Ghosting/WDepthMode | **skeleton** |
 | `UScene3DAsset` / `ULineageBundleAsset` | DataAsset stubs | **skeleton** |
 | Sequencer track / section / template / controller | `UMovieScene4D*`, `FMovieScene4DTrackTemplate`, `UFourDSequencerController` | **skeleton** · preview **roadmap** |
-| `UFourDLiveLinkClient` | ProjectionRequest/Response | **skeleton** |
+| `UFourDLiveLinkClient` | ProjectionRequest/Response + `SendShadingData` stub | **skeleton** |
+| `FourDShadingTypes.h` | FPrimitive4D … FShadingInput4D / FObservationModeId / FMaterial4DDesc | **skeleton** (RFC field mirror) |
 | Debugger / W-axis / viewport overlay | Editor Public/* | **skeleton** |
 | `MF_*` / `M_FourD*` | `Content/Materials/README.md` | **declared** |
 | `CS_WEncoding` | design doc only | **roadmap** |
@@ -37,6 +38,13 @@ FourDAdapter/
 ```
 
 Peer of `unreal/GovernedEnginePlugin/`. Copy or symlink into `<YourProject>/Plugins/FourDAdapter/`.
+
+## Interop structs (v2)
+
+Interop structs **align with** FourDRenderer v2 RFCs (`docs/4d-engine/v2/bvh-projection`, `observation`, `materials`).
+Unity ComputeBuffer / Unreal `SendShadingData` are an **inspection** path; **PLP remains the Scene3D host path** (`docs/4d-engine/v1/plp/PLP_V1.md`).
+Package SoT: `mrs/packages/renderer-core/src/interop/FOURD_SHADING_TYPES.md`.
+`SendShadingData` returns **false** when not connected and does not invent network success.
 
 ## Design docs
 

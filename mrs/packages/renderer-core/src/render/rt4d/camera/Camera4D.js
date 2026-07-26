@@ -26,7 +26,10 @@ export class Camera4D {
     const forward = normalize(sub(this.lookAt, this.position));
 
     const right = normalize(cross4D(forward, this.up, this.hyperUp));
-    const up = cross4D(right, forward, this.hyperUp);
+    // Keep screen-up aligned with the configured world-up. The previous
+    // operand order produced the negated vector, so top-of-frame rays pointed
+    // down at the ground and bottom-of-frame rays pointed into the sky.
+    const up = normalize(cross4D(forward, right, this.hyperUp));
     const thru = cross4D(right, up, forward);
 
     this.basis = { right, up, forward, thru };
