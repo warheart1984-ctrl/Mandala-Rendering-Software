@@ -1,0 +1,29 @@
+name: Engine3D Core CI
+
+on:
+  push:
+    paths:
+      - "mrs/packages/engine3d-core/**"
+      - ".github/workflows/engine3d.yml"
+      - "docs/4d-engine/engine3d/**"
+  pull_request:
+    paths:
+      - "mrs/packages/engine3d-core/**"
+      - ".github/workflows/engine3d.yml"
+      - "docs/4d-engine/engine3d/**"
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mrs/packages/engine3d-core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - run: npm run build
+      - run: npm run test:engine3d
+      - run: npm run demo:engine3d

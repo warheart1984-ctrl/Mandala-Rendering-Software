@@ -37,6 +37,17 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  # Engine3D core — headless null renderer demo (lean; no GPU/X11)
+  engine3d:
+    build:
+      context: ./mrs/packages/engine3d-core
+      dockerfile: Dockerfile
+    container_name: engine3d-core
+    environment:
+      NODE_ENV: production
+    profiles:
+      - engine3d
+
   # Optional: Separate Genblaze media service (if needed for hackathon)
   # genblaze-media:
   #   build:
