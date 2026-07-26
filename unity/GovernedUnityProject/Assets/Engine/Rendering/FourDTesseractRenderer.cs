@@ -32,11 +32,20 @@ public class FourDTesseractRenderer : MonoBehaviour
     public Material solidMaterial;
 
     [Header("Shading buffer (inspection — partial)")]
-    [Tooltip("Maps to ProjectionPolicyId 0/1 per Observation Mode RFC examples. PLP remains Scene3D host path.")]
+    [Tooltip("Maps to ObservationModeId + ProjectionPolicyId (host SoT). Modes are transported; PLP remains Scene3D path.")]
     public ObservationModeChoice observationMode = ObservationModeChoice.Perspective4DTo3D;
     public uint shadingMaterialId = 0;
     [Tooltip("When true, fills a ComputeBuffer of ShadingInput4D (one per vertex) for debug readback.")]
     public bool enableShadingBuffer = true;
+
+    [Header("LiveLink shading publish (partial)")]
+    [Tooltip("When true, publishes bounded shading_update JSON to LiveLink. Uses CPU copy — not GetData every frame.")]
+    public bool publishShadingToLiveLink = false;
+    public string liveLinkUrl = "ws://127.0.0.1:9487";
+    [Tooltip("Seconds between publishes. Avoids per-frame GPU/WS stalls.")]
+    public float shadingPublishIntervalSeconds = 1f;
+    [Tooltip("Max ShadingInput4D entries included in each JSON message.")]
+    public int maxShadingEntriesToPublish = 16;
 
     Vector4[] verts4D;
     int[,] edges;
@@ -51,6 +60,8 @@ public class FourDTesseractRenderer : MonoBehaviour
 
     ComputeBuffer _shadingBuffer;
     ShadingInput4D[] _shadingCpu;
+    float _nextShadingPublishTime;
+    SovereignX.CIEMS.Engine.LiveLink.MRSWebSocketConnection _shadingLiveLink;
 
     void Awake() => EnsureComponents();
 
@@ -60,11 +71,13 @@ public class FourDTesseractRenderer : MonoBehaviour
         ReloadMesh();
         EnsureSolidMaterial();
         EnsureShadingBuffer();
+        EnsureShadingLiveLink();
     }
 
     void OnDisable()
     {
         ReleaseShadingBuffer();
+        ReleaseShadingLiveLink();
     }
 
     void OnValidate()
@@ -83,6 +96,8 @@ public class FourDTesseractRenderer : MonoBehaviour
             UpdateSolidMesh(t);
         if (enableShadingBuffer)
             FillShadingBuffer(t);
+        if (publishShadingToLiveLink)
+            MaybePublishShadingToLiveLink();
     }
 
     public void SetSurface(string id)
@@ -237,6 +252,7 @@ public class FourDTesseractRenderer : MonoBehaviour
     /// <summary>
     /// Main-thread readback of the inspection shading buffer. Returns a copy; empty if disabled.
     /// Status: partial — does not imply GPU kernel consumption.
+    /// Prefer this for explicit validation; avoid calling every frame in Play Mode.
     /// </summary>
     public ShadingInput4D[] ReadBackShadingData()
     {
@@ -246,6 +262,100 @@ public class FourDTesseractRenderer : MonoBehaviour
         var copy = new ShadingInput4D[_shadingCpu.Length];
         System.Array.Copy(_shadingCpu, copy, _shadingCpu.Length);
         return copy;
+    }
+
+    /// <summary>Current ObservationModeId wire hex (host SoT).</summary>
+    public string GetObservationModeWireId() => FourDObservationModeMap.ToWireHex(observationMode);
+
+    /// <summary>
+    /// Build LiveLink shading_update JSON from the CPU shading mirror (no GetData).
+    /// Status: partial inspection transport — not Shade4D.
+    /// </summary>
+    public string BuildShadingUpdateJson(int maxEntries = -1)
+    {
+        if (_shadingCpu == null || _shadingCpu.Length == 0)
+            return null;
+        int limit = maxEntries < 0 ? maxShadingEntriesToPublish : maxEntries;
+        if (limit < 1) limit = 1;
+        if (limit > _shadingCpu.Length) limit = _shadingCpu.Length;
+
+        var sb = new System.Text.StringBuilder(256 + limit * 96);
+        string obsHex = FourDObservationModeMap.ToWireHex(observationMode);
+        uint projId = FourDObservationModeMap.ToProjectionPolicyId(observationMode);
+        string surf = string.IsNullOrEmpty(_loadedSurface) ? surfaceId : _loadedSurface;
+        int frame = Application.isPlaying ? (int)(Time.frameCount) : 0;
+
+        sb.Append("{\"type\":\"shading_update\",\"schemaVersion\":\"1.0\",\"role\":\"inspection\",");
+        sb.Append("\"surfaceId\":\"").Append(EscapeJson(surf)).Append("\",");
+        sb.Append("\"frame\":").Append(frame).Append(',');
+        sb.Append("\"observationModeId\":\"").Append(obsHex).Append("\",");
+        sb.Append("\"projectionPolicyId\":").Append(projId).Append(',');
+        sb.Append("\"materialId\":").Append(shadingMaterialId).Append(',');
+        sb.Append("\"count\":").Append(limit).Append(',');
+        sb.Append("\"entries\":[");
+        for (int i = 0; i < limit; i++)
+        {
+            if (i > 0) sb.Append(',');
+            var e = _shadingCpu[i];
+            sb.Append("{\"Position4D\":[")
+                .Append(Fmt(e.Position4D.x)).Append(',').Append(Fmt(e.Position4D.y)).Append(',')
+                .Append(Fmt(e.Position4D.z)).Append(',').Append(Fmt(e.Position4D.w)).Append("],");
+            sb.Append("\"Normal4D\":[")
+                .Append(Fmt(e.Normal4D.x)).Append(',').Append(Fmt(e.Normal4D.y)).Append(',')
+                .Append(Fmt(e.Normal4D.z)).Append(',').Append(Fmt(e.Normal4D.w)).Append("],");
+            sb.Append("\"ViewDir4D\":[")
+                .Append(Fmt(e.ViewDir4D.x)).Append(',').Append(Fmt(e.ViewDir4D.y)).Append(',')
+                .Append(Fmt(e.ViewDir4D.z)).Append(',').Append(Fmt(e.ViewDir4D.w)).Append("],");
+            sb.Append("\"MaterialId\":").Append(e.MaterialId).Append(',');
+            sb.Append("\"ProjectionPolicyId\":").Append(e.ProjectionPolicyId).Append('}');
+        }
+        sb.Append("]}");
+        return sb.ToString();
+    }
+
+    static string Fmt(float v) => v.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+
+    static string EscapeJson(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        return s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    }
+
+    void EnsureShadingLiveLink()
+    {
+        if (!publishShadingToLiveLink)
+        {
+            ReleaseShadingLiveLink();
+            return;
+        }
+        // Keep the connection object while connecting; do not reconnect every frame.
+        if (_shadingLiveLink != null) return;
+        _shadingLiveLink = new SovereignX.CIEMS.Engine.LiveLink.MRSWebSocketConnection(liveLinkUrl);
+        _shadingLiveLink.Connect();
+        _nextShadingPublishTime = 0f;
+    }
+
+    void ReleaseShadingLiveLink()
+    {
+        _shadingLiveLink?.Dispose();
+        _shadingLiveLink = null;
+    }
+
+    void MaybePublishShadingToLiveLink()
+    {
+        EnsureShadingLiveLink();
+        if (_shadingLiveLink == null) return;
+        _shadingLiveLink.PumpMainThread();
+        float interval = Mathf.Max(0.05f, shadingPublishIntervalSeconds);
+        float now = Application.isPlaying ? Time.unscaledTime : Time.realtimeSinceStartup;
+        if (now < _nextShadingPublishTime) return;
+        _nextShadingPublishTime = now + interval;
+        if (!_shadingLiveLink.IsConnected) return;
+        // CPU mirror only — do not call GetData on the publish path.
+        if (!enableShadingBuffer || _shadingCpu == null) return;
+        string json = BuildShadingUpdateJson(maxShadingEntriesToPublish);
+        if (!string.IsNullOrEmpty(json))
+            _shadingLiveLink.SendJson(json);
     }
 
     void BuildTesseractFallback()

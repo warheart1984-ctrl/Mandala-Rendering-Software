@@ -36,12 +36,24 @@ Interop structs prepare Trace4D → Shade4D → Project4D contracts. Unity’s `
 | --- | --- |
 | `fourd-shading-types.json` + `index.js` | declared |
 | Unity `FourDRendererTypes.cs` + buffer in `FourDTesseractRenderer` | partial |
+| LiveLink `shading_update` JSON (`src/live-link/shadingWire.js`, port 9487) | partial |
 | Unreal `FourDShadingTypes.h` / `FourDRendererTypes.h` + LiveLink stub | skeleton |
 | HLSL / USH headers | declared (header only) |
+
+## ObservationModeId (host SoT)
+
+| Choice | Wire / uint64 |
+| --- | --- |
+| Perspective4DTo3D | `0x1000000000000001` |
+| WSliceConstant | `0x1000000000000002` |
+
+ProjectionPolicyId: `0` perspective · `1` W-slice · `2` stereographic (declared).
 
 ## Test
 
 ```bash
 cd mrs/packages/renderer-core
-node --test src/interop/fourd-shading-types.test.js
+npm run test:interop
+npm run test:shading-wire
+npm run validate:shading-ws
 ```
