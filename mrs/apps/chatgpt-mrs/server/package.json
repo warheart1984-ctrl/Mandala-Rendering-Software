@@ -25,6 +25,7 @@
     "@types/node": "^24.3.0",
     "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "zod-to-json-schema": "3.25.2"
   }
 }
