@@ -61,7 +61,13 @@ export {
   createReplayEvidenceInvariant,
 } from "./invariants/Engine3DInvariants.js";
 
-export type { ReplayRecord } from "./replay/ReplayRecord.js";
+export type {
+  ReplayRecord,
+  ReplayRecordDraft,
+  ReplayRecordInputs,
+  ReplayBodySnapshot,
+  ReplayBodyLike,
+} from "./replay/ReplayRecord.js";
 export type { ReplayTimeline } from "./replay/ReplayTimeline.js";
 export {
   InMemoryReplayTimeline,

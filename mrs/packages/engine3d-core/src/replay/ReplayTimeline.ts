@@ -1,22 +1,48 @@
-import type { ReplayRecord } from "./ReplayRecord.js";
+import type {
+  ReplayBodyLike,
+  ReplayBodySnapshot,
+  ReplayRecord,
+  ReplayRecordDraft,
+} from "./ReplayRecord.js";
 
 export interface ReplayTimeline {
-  append(record: ReplayRecord): void;
+  append(record: ReplayRecordDraft): void;
   get(index: number): ReplayRecord | undefined;
   length(): number;
 }
 
+function snapshotBody(body: ReplayBodyLike): ReplayBodySnapshot {
+  return Object.freeze({
+    id: body.id,
+    mass: body.mass,
+    position: Object.freeze({
+      x: body.position.x,
+      y: body.position.y,
+      z: body.position.z,
+    }),
+    velocity: Object.freeze({
+      x: body.velocity.x,
+      y: body.velocity.y,
+      z: body.velocity.z,
+    }),
+  });
+}
+
 /**
- * Shallow-freeze a replay record (and nested plain objects/arrays) so
- * post-append mutation throws in strict mode. Typed arrays are left as-is
- * (Object.freeze does not make their contents immutable).
- * Status: **partial** — Rule 5 integrity for plain fields.
+ * Deep-freeze a replay record so stored body position/velocity are scalar
+ * snapshots, not shared live `Body` refs. Array `.slice()` alone is insufficient
+ * because physics mutates body vectors in place after append.
+ * Typed arrays (`vertices`, visualMod buffers) are left as-is.
+ * Status: **partial** — Rule 5 integrity for plain body scalar fields.
  */
-export function freezeReplayRecord(record: ReplayRecord): ReplayRecord {
+export function freezeReplayRecord(record: ReplayRecordDraft): ReplayRecord {
+  const bodies = Object.freeze(
+    record.inputs.bodies.map((body) => snapshotBody(body)),
+  );
   const frozenInputs = Object.freeze({
     time: record.inputs.time,
     dt: record.inputs.dt,
-    bodies: Object.freeze(record.inputs.bodies.slice()) as ReplayRecord["inputs"]["bodies"],
+    bodies,
     vertices: record.inputs.vertices,
   });
   const frozenVisualMod = Object.freeze({
@@ -30,13 +56,13 @@ export function freezeReplayRecord(record: ReplayRecord): ReplayRecord {
     dt: record.dt,
     inputs: frozenInputs,
     visualMod: frozenVisualMod,
-  }) as ReplayRecord;
+  });
 }
 
 export class InMemoryReplayTimeline implements ReplayTimeline {
   private readonly records: ReplayRecord[] = [];
 
-  append(record: ReplayRecord): void {
+  append(record: ReplayRecordDraft): void {
     this.records.push(freezeReplayRecord(record));
   }
 
