@@ -203,6 +203,12 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
   const albedo = rt4d.paletteAlbedo;
   const rgba = Buffer.alloc(width * height * 4);
   let lumSum = 0;
+  let roiLumSum = 0;
+  let roiCount = 0;
+  const yLo = Math.floor(height * 0.15);
+  const yHi = Math.floor(height * 0.7);
+  const xLo = Math.floor(width * 0.25);
+  const xHi = Math.floor(width * 0.75);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -212,8 +218,8 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
       for (let s = 0; s < samples; s++) {
         const u1 = rng();
         const u2 = rng();
-        const u3 = rng();
-        const ray = camera.generateRay(x, y, u1, u2, u3);
+        // Central 4D slice — see render-still.mjs for why u3/u4 stay fixed.
+        const ray = camera.generateRay(x, y, u1, u2, 0.5, 0.5);
         const hit = scene.intersect(ray);
         const L = hit
           ? tracer.trace(ray, scene)
@@ -231,7 +237,12 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
       rgba[idx + 1] = G;
       rgba[idx + 2] = B;
       rgba[idx + 3] = 255;
-      lumSum += 0.299 * R + 0.587 * G + 0.114 * B;
+      const lum = 0.299 * R + 0.587 * G + 0.114 * B;
+      lumSum += lum;
+      if (x >= xLo && x < xHi && y >= yLo && y < yHi) {
+        roiLumSum += lum;
+        roiCount += 1;
+      }
     }
   }
 
@@ -255,6 +266,9 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
     objectCount: rt4d.primitives.length,
     lightCount: rt4d.lights.length,
     mean_luminance: Number((lumSum / (width * height)).toFixed(3)),
+    mean_luminance_center: Number(
+      (roiCount > 0 ? roiLumSum / roiCount : 0).toFixed(3),
+    ),
     sha256,
     worldId: worldDocument.id,
     determinism:
