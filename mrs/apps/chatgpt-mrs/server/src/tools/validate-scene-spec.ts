@@ -3,11 +3,15 @@ import {
   parseSceneSpecification,
   validateSceneCapabilities,
 } from "@mrs/renderer-core/scene-spec";
+import { parseSceneSpecPayload } from "./schema-helpers.js";
 
 export const validateSceneSpecInputShape = {
+  // Stringified JSON — OpenAI rejects z.record(z.unknown()) → additionalProperties:{}
   sceneSpec: z
-    .record(z.unknown())
-    .describe("SceneSpecification JSON object (schemaVersion 1.0)"),
+    .string()
+    .describe(
+      "SceneSpecification as a JSON string (schemaVersion 1.0 object)"
+    ),
 };
 
 const parser = z.object(validateSceneSpecInputShape);
@@ -18,7 +22,22 @@ export function handleValidateSceneSpec(args: unknown): {
   errors: Array<{ path?: string; message: string }>;
 } {
   const parsed = parser.parse(args ?? {});
-  const structural = parseSceneSpecification(parsed.sceneSpec);
+  let sceneSpec: Record<string, unknown>;
+  try {
+    sceneSpec = parseSceneSpecPayload(parsed.sceneSpec);
+  } catch (err) {
+    return {
+      ok: false,
+      text: "Invalid sceneSpec JSON string",
+      errors: [
+        {
+          path: "sceneSpec",
+          message: err instanceof Error ? err.message : String(err),
+        },
+      ],
+    };
+  }
+  const structural = parseSceneSpecification(sceneSpec);
   if (!structural.ok) {
     return {
       ok: false,

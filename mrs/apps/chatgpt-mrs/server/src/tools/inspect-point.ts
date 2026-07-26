@@ -4,6 +4,7 @@ import { getSurface, sampleSurface } from "@mrs/renderer-core/surfaces";
 import { getSceneOrThrow } from "../scene-store.js";
 import { toCoreSurfaceId } from "../mrs-adapter/surface-map.js";
 import type { RendererClient } from "../mrs-adapter/renderer-client.js";
+import { vec4NumberArray } from "./schema-helpers.js";
 
 export const inspectPointInputShape = {
   sceneId: z.string(),
@@ -11,12 +12,10 @@ export const inspectPointInputShape = {
   projectedY: z.number().optional(),
   viewportWidth: z.number().optional(),
   viewportHeight: z.number().optional(),
-  origin4d: z
-    .tuple([z.number(), z.number(), z.number(), z.number()])
-    .optional(),
-  direction4d: z
-    .tuple([z.number(), z.number(), z.number(), z.number()])
-    .optional(),
+  // Homogeneous number[] — not z.tuple (OpenAI rejects items:[schema,…])
+  // Fresh schemas per field — shared instances become $ref (OpenAI rejects)
+  origin4d: vec4NumberArray().optional(),
+  direction4d: vec4NumberArray().optional(),
 };
 
 const parser = z.object(inspectPointInputShape).refine(

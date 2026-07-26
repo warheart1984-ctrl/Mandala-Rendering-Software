@@ -6,7 +6,8 @@
   "description": "MRS ChatGPT App MCP server (SSE + skybridge widget resource)",
   "scripts": {
     "start": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:schema": "tsx --test src/tools/schema-openai.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.0.1",
