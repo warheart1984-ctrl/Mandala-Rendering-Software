@@ -23,6 +23,11 @@ export class PathTracer4D {
     this.rng = options.rng ?? (() => Math.random());
   }
 
+  /**
+   * @param {object} ray
+   * @param {object} scene
+   * @param {number} depth
+   */
   trace(ray, scene, depth = 0) {
     if (depth >= this.maxDepth) return vec4(0, 0, 0, 0);
 
@@ -33,13 +38,10 @@ export class PathTracer4D {
     if (!mat) return vec4(0, 0, 0, 0);
 
     if (mat.isLight) {
-      // Direct lighting is estimated via NEE. Camera rays that hit a light
-      // still see emission; bounce hits would double-count with NEE.
-      if (depth === 0) {
-        const cosTheta = dot(neg(ray.direction), hit.normal);
-        return cosTheta > 0 ? scale(mat.emission, cosTheta) : vec4(0, 0, 0, 0);
-      }
-      return vec4(0, 0, 0, 0);
+      // Emission only — MIS vs NEE is applied by the caller that sampled this
+      // direction (camera rays have no prior BSDF; they just see the light).
+      const cosTheta = dot(neg(ray.direction), hit.normal);
+      return cosTheta > 0 ? scale(mat.emission, cosTheta) : vec4(0, 0, 0, 0);
     }
 
     if (mat.isVolume && mat.phase) {
@@ -78,6 +80,8 @@ export class PathTracer4D {
         if (cosTheta > 0 && length(f) > 0) {
           const bsdfPdf = mat.bsdf.pdf(wi, nee.wo, hit.normal);
           const wLight = this._misWeight(nee.pdf, bsdfPdf);
+          // Area-light estimator: L_e * f * cosθ / pdf_ω
+          // (pdf_ω already includes the 4D Jacobian r³ / cos_light).
           const contrib = scale(
             mul(nee.emission, f),
             (cosTheta * wLight) / (nee.pdf + 1e-9),
@@ -134,6 +138,7 @@ export class PathTracer4D {
 
   /**
    * Sample a direction toward a random hypersphere light (area → solid-angle PDF).
+   * In 4D the light surface is an S³; the Jacobian is r³ / cos (not r²).
    * @returns {{ wo, pdf, emission, dist } | null}
    */
   _sampleLight(scene, hit) {
@@ -164,13 +169,13 @@ export class PathTracer4D {
 
     const area = hypersphereArea(R);
     const pdfArea = 1 / (area + 1e-12);
-    const pdfSolid = (pdfArea * dist * dist) / (cosLight + 1e-9);
+    // 4D: dA → dω Jacobian uses r³ (S³ area scales as r³).
+    const pdfSolid = (pdfArea * dist * dist * dist) / (cosLight + 1e-9);
     const pdf = pdfSolid / lights.length;
 
     const mat = scene.getMaterial(light.materialId);
-    const rawEm = mat?.emission ?? vec4(0, 0, 0, 0);
-    // Match camera-hit light shading: foreshorten by cos at the light surface.
-    const emission = scale(rawEm, cosLight);
+    // Raw emission — cos_light lives in the estimator via pdf_ω, not here.
+    const emission = mat?.emission ?? vec4(0, 0, 0, 0);
 
     return { wo, pdf, emission, dist };
   }
@@ -193,7 +198,14 @@ export class PathTracer4D {
     const mat = scene.getMaterial(lh.materialId);
     if (!mat?.isLight) return 0;
 
-    // Match the light prim by material id on the lights list.
+    return this._hitLightPDF(scene, lh, ray);
+  }
+
+  /** Solid-angle PDF for an already-resolved light hit along `ray`. */
+  _hitLightPDF(scene, lh, ray) {
+    const lights = scene.getLights();
+    if (lights.length === 0) return 0;
+
     const light =
       lights.find((L) => L.materialId === lh.materialId) ??
       lights.find((L) => {
@@ -203,12 +215,12 @@ export class PathTracer4D {
     if (!light || !(light.radius > 0)) return 0;
 
     const dist = lh.t;
-    const cosLight = Math.max(0, -dot(wo, lh.normal));
+    const cosLight = Math.max(0, -dot(ray.direction, lh.normal));
     if (cosLight <= 0) return 0;
 
     const area = hypersphereArea(light.radius);
     const pdfArea = 1 / (area + 1e-12);
-    return ((pdfArea * dist * dist) / (cosLight + 1e-9)) / lights.length;
+    return ((pdfArea * dist * dist * dist) / (cosLight + 1e-9)) / lights.length;
   }
 
   _misWeight(pdfA, pdfB) {

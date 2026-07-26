@@ -56,6 +56,18 @@ describe("renderSceneFromSpec", () => {
     assert.deepEqual(a.png, b.png);
   });
 
+  it("center ROI is lit under NEE (not ground-only)", () => {
+    const litSpec = {
+      ...SPEC,
+      output: { width: 48, height: 48, samples: 8, maxDepth: 4, seed: 1234 },
+    };
+    const { provenance } = renderSceneFromSpec(litSpec);
+    assert.ok(
+      provenance.mean_luminance_center > 10,
+      `center ROI ${provenance.mean_luminance_center} should exceed 10 (full ${provenance.mean_luminance})`,
+    );
+  });
+
   it("rejects invalid spec with field paths", () => {
     assert.throws(
       () =>

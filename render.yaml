@@ -54,3 +54,9 @@ services:
       # (requires repo-root Dockerfile so rt4d.available=true).
       - key: GENBLAZE_IMAGE_FALLBACK_TO_RT4D
         value: "1"
+      # NIM FLUX has been returning gateway 504s, so stills are served by the
+      # deterministic RT4D path tracer instead. This is a seeded procedural 4D
+      # render, not text-to-image. Remove this key to return to NVIDIA primary;
+      # the fallback above stays armed for that case.
+      - key: GENBLAZE_IMAGE_BACKEND
+        value: rt4d

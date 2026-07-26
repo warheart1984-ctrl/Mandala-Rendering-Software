@@ -77,6 +77,8 @@ export { GPUVideoEncoder, NVENCEncoder } from "./encode/index.js";
 export { RigidBody4D } from "./physics/RigidBody4D.js";
 export { Collider4D, HyperplaneCollider, HypersphereCollider, AABBCollider4D, detectCollision } from "./physics/Collider4D.js";
 export { PhysicsWorld4D } from "./physics/PhysicsWorld4D.js";
+export * as Math3D from "./math3d/index.js";
+export * as Engine3D from "./engine3d/index.js";
 
 export { MorphTargetExporter } from "./asset-pipeline/MorphTargetExporter.js";
 export { SequentialGLBExporter } from "./asset-pipeline/SequentialGLBExporter.js";

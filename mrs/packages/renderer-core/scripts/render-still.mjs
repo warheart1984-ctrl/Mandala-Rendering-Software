@@ -177,8 +177,9 @@ function buildScene(descriptor, seed) {
   if (descriptor.materialType === "ggx") {
     scene.materials.createMaterial("surf", "ggx", {
       albedo,
-      roughness: 0.12,
-      f0: vec4(1.3, 1.3, 1.4, 1),
+      // Soft enough to read under 4D NEE at demo sample counts.
+      roughness: 0.35,
+      f0: vec4(0.85, 0.85, 0.9, 1),
     });
   } else {
     scene.materials.createMaterial("surf", "lambertian", { albedo });
@@ -186,8 +187,14 @@ function buildScene(descriptor, seed) {
   scene.materials.createMaterial("ground", "lambertian", {
     albedo: vec4(0.32, 0.34, 0.4, 1),
   });
+  // Emission scaled for the 4D area→solid-angle Jacobian (r³). Too low and
+  // stills look like dark noise; the previous r² PDF over-brightened fireflies.
   scene.materials.createMaterial("keylight", "light", {
-    emission: vec4(17, 16, 14.5, 0),
+    emission: vec4(55, 52, 48, 0),
+    albedo: vec4(1, 1, 1, 1),
+  });
+  scene.materials.createMaterial("filllight", "light", {
+    emission: vec4(18, 20, 24, 0),
     albedo: vec4(1, 1, 1, 1),
   });
 
@@ -206,7 +213,7 @@ function buildScene(descriptor, seed) {
         const r = 1.7 + jitter(0.25);
         objects.push(
           new Hypersphere(
-            vec4(Math.cos(a) * r, 0.1 + jitter(0.4), Math.sin(a) * r, jitter(0.6)),
+            vec4(Math.cos(a) * r, 0.1 + jitter(0.4), Math.sin(a) * r, 0),
             0.45 + rng() * 0.2,
           ),
         );
@@ -221,7 +228,7 @@ function buildScene(descriptor, seed) {
         const a = (i / count) * Math.PI * 2;
         objects.push(
           new Hypersphere(
-            vec4(Math.cos(a) * R, 0.15, Math.sin(a) * R, 0.45 * Math.sin(a * 2)),
+            vec4(Math.cos(a) * R, 0.15, Math.sin(a) * R, 0),
             0.34,
           ),
         );
@@ -234,7 +241,7 @@ function buildScene(descriptor, seed) {
         for (let iz = -1; iz <= 1; iz++) {
           objects.push(
             new Hypersphere(
-              vec4(ix * spacing, 0.1, iz * spacing, ((ix + iz) & 1) * 0.5),
+              vec4(ix * spacing, 0.1, iz * spacing, 0),
               0.34,
             ),
           );
@@ -244,13 +251,19 @@ function buildScene(descriptor, seed) {
     }
     case "tesseract-vertices":
     default: {
-      const s = 0.9;
+      // Project the 16 tesseract vertices into the camera's central W-slice
+      // (w→0) with a mild perspective so both cubes read as a classic
+      // tesseract diagram instead of vanishing off the hyperplane.
+      const s = 0.95;
       for (let i = 0; i < 16; i++) {
         const x = (i & 1) ? s : -s;
         const y = (i & 2) ? s : -s;
         const z = (i & 4) ? s : -s;
         const w = (i & 8) ? s : -s;
-        objects.push(new Hypersphere(vec4(x, y + 0.1, z, w), 0.28));
+        const k = 1.35 / (2.2 + w);
+        objects.push(
+          new Hypersphere(vec4(x * k * 2.0, y * k * 2.0 + 0.15, z * k * 2.0, 0), 0.26),
+        );
       }
       break;
     }
@@ -258,7 +271,9 @@ function buildScene(descriptor, seed) {
 
   for (const obj of objects) scene.addPrimitive(obj, "surf");
   scene.addPrimitive(new Hyperplane(vec4(0, 1, 0, 0), -1.4), "ground");
-  scene.addLight(new Hypersphere(vec4(2.4, 3.3, -1.6, 0.7), 0.95), "keylight");
+  // Lights high and off-axis so the camera rarely frames the emitters.
+  scene.addLight(new Hypersphere(vec4(0.4, 5.8, 0.2, 0), 0.55), "keylight");
+  scene.addLight(new Hypersphere(vec4(-3.8, 3.6, 2.4, 0), 0.4), "filllight");
   scene.build();
 
   return { scene, objectCount: objects.length };
@@ -267,9 +282,9 @@ function buildScene(descriptor, seed) {
 function buildCamera(seed, width, height) {
   const rng = mulberry32(seed ^ 0x2545f491);
   const theta = rng() * Math.PI * 2;
-  const radius = 4.3;
-  const elevation = 1.15 + rng() * 0.5;
-  const camW = (rng() - 0.5) * 1.2;
+  const radius = 5.6;
+  const elevation = 1.45 + rng() * 0.55;
+  const camW = 0; // stay in the projected slice with the geometry
   const position = {
     x: Math.cos(theta) * radius,
     y: elevation,
@@ -285,10 +300,10 @@ function buildCamera(seed, width, height) {
     ly: 0.1,
     lz: 0,
     lw: 0,
-    fovX: 52,
-    fovY: 52,
-    fovZ: 45,
-    fovW: 28,
+    fovX: 48,
+    fovY: 48,
+    fovZ: 8,
+    fovW: 8,
     width,
     height,
   });
@@ -409,7 +424,7 @@ export function renderStill(options = {}) {
   const tracer = new PathTracer4D({ maxDepth, samplesPerPixel: samples, rng });
 
   const rgba = Buffer.alloc(width * height * 4);
-  const exposure = 1.35;
+  const exposure = 2.4;
   let lumSum = 0;
   // Center ROI excludes ground band (bottom 25%) so grey floor cannot alone pass.
   let roiLumSum = 0;
@@ -427,8 +442,11 @@ export function renderStill(options = {}) {
       for (let s = 0; s < samples; s++) {
         const u1 = rng();
         const u2 = rng();
-        const u3 = rng();
-        const ray = camera.generateRay(x, y, u1, u2, u3);
+        // Fix the hyperplane sample (rz/rw) at the central 4D slice.
+        // Randomizing u3/u4 here sprays rays through the fourth dimension so
+        // finite hyperspheres appear as speckles while the infinite ground
+        // plane still fills in — the broken look users were seeing.
+        const ray = camera.generateRay(x, y, u1, u2, 0.5, 0.5);
         const hit = scene.intersect(ray);
         const L = hit ? tracer.trace(ray, scene) : backgroundColor(ray.direction, descriptor.palette);
         r += L.x;

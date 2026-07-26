@@ -445,6 +445,10 @@ const httpServer = createServer(async (req, res) => {
     res.writeHead(200, {
       "Content-Type": "image/png",
       "Cache-Control": "public, max-age=3600",
+      // Wildcard CORS is intentional here: the PNG must load inside the ChatGPT
+      // widget iframe, whose origin varies. Exposure is limited by unguessable
+      // UUID-style filenames enforced by safeRenderFileName; this app has no
+      // origin allowlist today.
       "Access-Control-Allow-Origin": "*",
     });
     fs.createReadStream(filePath).pipe(res);
