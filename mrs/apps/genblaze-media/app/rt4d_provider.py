@@ -45,6 +45,7 @@ from app.pipeline import (
 from app.render_quality import (
     quality_presets,
     resolve_quality,
+    resolve_still_render_budget,
     resolve_still_render_params,
 )
 
@@ -113,9 +114,12 @@ def rt4d_availability(settings: Settings) -> dict[str, Any]:
         "effective_default": resolve_still_render_params(settings),
         "quality_note": (
             "POST /api/generate renders at quality_default (draft caps the "
-            "RT4D_* profile at RT4D_DRAFT_*); pass quality=final for the full "
-            "RT4D_* profile."
+            "RT4D_* profile at RT4D_DRAFT_*); pass quality=final for the RT4D_* "
+            "profile. Both paths also apply a deploy-safe CPU budget clamp "
+            "(256×256 / ≤8 spp; dense tesseract-lattice ≤6 spp) unless "
+            "RT4D_ALLOW_HEAVY=1. Not photoreal."
         ),
+        "allow_heavy": bool(getattr(settings, "rt4d_allow_heavy", False)),
     }
 
 
@@ -234,8 +238,9 @@ def generate_image_rt4d(
     """Render a deterministic RT4D still and persist it via the Genblaze paths.
 
     ``quality`` is ``draft`` (default — caps the render at ``RT4D_DRAFT_*`` so a
-    CPU path trace finishes well inside ``RT4D_TIMEOUT``) or ``final`` (the full
-    ``RT4D_*`` profile). Unset falls back to ``GENBLAZE_RENDER_QUALITY_DEFAULT``.
+    CPU path trace finishes well inside ``RT4D_TIMEOUT``) or ``final`` (the
+    ``RT4D_*`` profile). Both paths apply a deploy-safe CPU budget clamp unless
+    ``RT4D_ALLOW_HEAVY=1``. Unset falls back to ``GENBLAZE_RENDER_QUALITY_DEFAULT``.
 
     Live mode does not require any external API key. When B2 is configured the
     PNG + manifest are uploaded and a presigned preview is returned; otherwise
@@ -249,7 +254,9 @@ def generate_image_rt4d(
     created_at = _utc_now()
     seed = _derive_seed(cleaned)
     resolved_quality = resolve_quality(settings, quality)
-    params = resolve_still_render_params(settings, resolved_quality)
+    params, budget_clamp = resolve_still_render_budget(
+        settings, resolved_quality, prompt=cleaned
+    )
 
     tmp_root = Path(tempfile.gettempdir()) / "mrs-genblaze-rt4d"
     tmp_root.mkdir(parents=True, exist_ok=True)
@@ -287,6 +294,8 @@ def generate_image_rt4d(
         "quality": resolved_quality,
         "requested_output": dict(params),
     }
+    if budget_clamp is not None:
+        provenance["budget_clamp"] = budget_clamp
 
     asset_key = f"{settings.storage_prefix}/rt4d/{run_id}/render.png"
     manifest_key = f"{settings.storage_prefix}/rt4d/{run_id}/manifest.json"
