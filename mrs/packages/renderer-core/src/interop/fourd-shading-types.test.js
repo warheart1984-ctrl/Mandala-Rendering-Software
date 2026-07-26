@@ -60,5 +60,8 @@ describe('fourd interop schema (declared)', () => {
     assert.equal(fourdShadingTypesSchema.status, 'declared');
     assert.equal(fourdShadingTypesSchema.hostBindings.unityShadingBuffer.status, 'partial');
     assert.equal(fourdShadingTypesSchema.hostBindings.unrealLiveLinkSendShadingData.status, 'skeleton');
+    assert.equal(fourdShadingTypesSchema.observationModeIds.Perspective4DTo3D, '0x1000000000000001');
+    assert.equal(fourdShadingTypesSchema.observationModeIds.WSliceConstant, '0x1000000000000002');
+    assert.equal(fourdShadingTypesSchema.liveLinkShadingWire.status, 'partial');
   });
 });

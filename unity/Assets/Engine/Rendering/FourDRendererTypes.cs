@@ -159,7 +159,7 @@ public static class FourDObservationModeMap
             case ObservationModeChoice.WSliceConstant:
                 return new ObservationModeId { Value = WSliceConstantId };
             default:
-                return new ObservationModeId { Value = 0 };
+                return new ObservationModeId { Value = Perspective4DTo3DId };
         }
     }
 
@@ -174,5 +174,11 @@ public static class FourDObservationModeMap
             default:
                 return FourDRendererLayout.ProjectionPerspective4DTo3D;
         }
+    }
+
+    /// <summary>JSON-safe hex for LiveLink shading_update.observationModeId.</summary>
+    public static string ToWireHex(ObservationModeChoice choice)
+    {
+        return $"0x{ToObservationModeId(choice).Value:x}";
     }
 }

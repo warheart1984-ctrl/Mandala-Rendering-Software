@@ -26,5 +26,13 @@ Both clients speak the same JSON-over-WebSocket protocol defined by `src/live-li
 
 - `mesh_update` — base64-encoded positions + indices
 - `state_snapshot` — entity transforms with 4D→3D projection
+- `shading_update` — inspection JSON for `ShadingInput4D` (+ `observationModeId`) — **partial**
 - `inspect_screen` / `inspect_ray` / `inspect_primitive` — bidirectional inspection
 - `inspect_result` — normals, curvature, topology, hyperplane distances
+
+Validate shading wire (starts ephemeral server on 9487):
+
+```bash
+cd mrs/packages/renderer-core
+npm run validate:shading-ws
+```

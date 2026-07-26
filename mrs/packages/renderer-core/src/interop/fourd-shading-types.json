@@ -27,6 +27,18 @@
     "SLICE_W_CONSTANT": 1,
     "STEREOGRAPHIC_4D_TO_3D": 2
   },
+  "observationModeIds": {
+    "Perspective4DTo3D": "0x1000000000000001",
+    "WSliceConstant": "0x1000000000000002",
+    "notes": "Host SoT mirrors Unity FourDObservationModeMap / Unreal FourDRendererV2; RFC declares uint64 Id without fixing these hex values."
+  },
+  "liveLinkShadingWire": {
+    "status": "partial",
+    "type": "shading_update",
+    "schemaVersion": "1.0",
+    "defaultUrl": "ws://127.0.0.1:9487",
+    "role": "inspection"
+  },
   "structs": {
     "Primitive4D": {
       "status": "declared",

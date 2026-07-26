@@ -55,6 +55,8 @@
     "test:engine3d": "node --test src/engine3d/engine3d.test.js",
     "test:scene-spec": "node --test src/scene-spec/scene-spec.test.js",
     "test:interop": "node --test src/interop/fourd-shading-types.test.js",
+    "test:shading-wire": "node --test src/live-link/shadingWire.test.js",
+    "validate:shading-ws": "node scripts/validate-shading-ws.mjs --harness",
     "test:render-scene": "node --test scripts/test/render-scene.test.js",
     "demo:engine3d": "node scripts/engine3d-demo.mjs",
     "render-still": "node scripts/render-still.mjs",

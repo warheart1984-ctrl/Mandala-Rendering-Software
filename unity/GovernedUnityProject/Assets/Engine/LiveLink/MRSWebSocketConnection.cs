@@ -56,6 +56,15 @@ namespace SovereignX.CIEMS.Engine.LiveLink
         public void RequestFrame(int frame) =>
             SendJson($"{{\"type\":\"request_frame\",\"frame\":{frame}}}");
 
+        /// <summary>Send arbitrary LiveLink JSON text (inspection channels, ping helpers).</summary>
+        public void SendJson(string json)
+        {
+            if (!IsConnected || string.IsNullOrEmpty(json)) return;
+            var bytes = Encoding.UTF8.GetBytes(json);
+            _ = _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,
+                CancellationToken.None);
+        }
+
         /// <summary>Drain callbacks onto the Unity main thread (call from Update).</summary>
         public void PumpMainThread()
         {
@@ -127,14 +136,6 @@ namespace SovereignX.CIEMS.Engine.LiveLink
             {
                 Debug.LogWarning($"[MRS live-link] parse: {e.Message}");
             }
-        }
-
-        void SendJson(string json)
-        {
-            if (!IsConnected) return;
-            var bytes = Encoding.UTF8.GetBytes(json);
-            _ = _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,
-                CancellationToken.None);
         }
 
         void Enqueue(Action a) => _mainThread.Enqueue(a);

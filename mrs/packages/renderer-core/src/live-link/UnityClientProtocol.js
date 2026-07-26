@@ -1,10 +1,14 @@
 import { handleSceneSpecMessage } from "./sceneSpecHandler.js";
+import { SHADING_UPDATE_TYPE, validateShadingUpdateMessage } from "./shadingWire.js";
 
 export class UnityClientProtocol {
   /**
    * @param {import("ws").WebSocket} ws
    * @param {object} clientInfo
-   * @param {{ inspector?: { handleWireMessage: (msg: object) => object } | null }} [options]
+   * @param {{
+   *   inspector?: { handleWireMessage: (msg: object) => object } | null,
+   *   onShadingUpdate?: (msg: object, clientInfo: object) => void,
+   * }} [options]
    */
   constructor(ws, clientInfo, options = {}) {
     this.ws = ws;
@@ -12,6 +16,8 @@ export class UnityClientProtocol {
     this.onCommand = null;
     /** Optional MRSInspector4D (or handleWireMessage-compatible) for inspect_* protocol. */
     this.inspector = options.inspector ?? null;
+    /** Optional host hook when a client publishes shading_update (inspection). */
+    this.onShadingUpdate = options.onShadingUpdate ?? null;
     this._setup();
   }
 
@@ -54,6 +60,21 @@ export class UnityClientProtocol {
       case "scene_spec":
         this._send(handleSceneSpecMessage(msg));
         break;
+      case SHADING_UPDATE_TYPE: {
+        const check = validateShadingUpdateMessage(msg, { requireEntries: true, maxEntries: 4096 });
+        if (!check.ok) {
+          this._send({
+            type: "shading_nack",
+            schemaVersion: "1.0",
+            ok: false,
+            errors: check.errors,
+          });
+          break;
+        }
+        if (this.onShadingUpdate) this.onShadingUpdate(msg, this.clientInfo);
+        if (this.onCommand) this.onCommand({ type: "shading_update", message: msg });
+        break;
+      }
       default:
         if (this.onCommand) this.onCommand(msg);
     }
@@ -129,6 +150,14 @@ export class UnityClientProtocol {
       timestamp: snapshot.timestamp ?? Date.now(),
       entities: snapshot.entities ?? [],
     });
+  }
+
+  /**
+   * Inspection channel: ShadingInput4D JSON (not Shade4D / PLP Scene3D).
+   * @param {object} shadingMessage
+   */
+  sendShadingUpdate(shadingMessage) {
+    this._send(shadingMessage);
   }
 
   sendRaw(text) {
