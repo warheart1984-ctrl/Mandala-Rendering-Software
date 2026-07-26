@@ -126,6 +126,81 @@ test("creature battle prompts select the procedural mythic tableau before tesser
   assert.equal(descriptor.scene, "mythic-tableau");
 });
 
+test("keywords only match at word starts (no infix hijacking)", () => {
+  // "Rendering" must not match `ring`. With neural-lattice keywords present,
+  // the dedicated archetype wins over plain lattice-grid.
+  const neural = "a luminous neural lattice, Rendering System plate";
+  assert.equal(
+    resolveSceneDescriptor({ prompt: neural, seed: hashPromptToSeed(neural) }).scene,
+    "neural-lattice",
+  );
+  // Plain lattice without mandala/neural/glyph cues still selects lattice-grid,
+  // and "Rendering" alone must not force torus-ring via infix `ring`.
+  const plainLattice = "a luminous lattice, Rendering System plate";
+  assert.equal(
+    resolveSceneDescriptor({ prompt: plainLattice, seed: hashPromptToSeed(plainLattice) }).scene,
+    "lattice-grid",
+  );
+  // "lattice" must not match `ice` and force the cool palette.
+  assert.notEqual(
+    resolveSceneDescriptor({ prompt: plainLattice, seed: 11 }).palette.name,
+    "cool",
+  );
+  // "machine" must not match `shine` and force a glossy material.
+  assert.equal(
+    resolveSceneDescriptor({ prompt: "a lattice machine", seed: 11 }).materialType,
+    "lambertian",
+  );
+  // Suffixed forms still match: rings / lattices / orbital / crystalline.
+  assert.equal(
+    resolveSceneDescriptor({ prompt: "concentric rings", seed: 11 }).scene,
+    "torus-ring",
+  );
+  assert.equal(
+    resolveSceneDescriptor({ prompt: "crystalline glyphs", seed: 11 }).materialType,
+    "ggx",
+  );
+  assert.equal(
+    resolveSceneDescriptor({ prompt: "crystalline glyphs", seed: 11 }).scene,
+    "neural-lattice",
+  );
+});
+
+test("mandala / neural-lattice prompts select the neural-lattice archetype", () => {
+  const prompt =
+    "A Sovereign-grade Mandala Rendering System scene: a luminous neural lattice " +
+    "suspended in deep space, geometric glyphs rotating around a central energy core, " +
+    "architected like a constitutional machine.";
+  assert.equal(
+    resolveSceneDescriptor({ prompt, seed: hashPromptToSeed(prompt) }).scene,
+    "neural-lattice",
+  );
+  assert.equal(
+    resolveSceneDescriptor({ prompt: "cyan neural-lattice circuit", seed: 7 }).scene,
+    "neural-lattice",
+  );
+  assert.equal(
+    resolveSceneDescriptor({ prompt: "simple mandala still", seed: 7 }).scene,
+    "neural-lattice",
+  );
+});
+
+test("neural-lattice archetype renders above blank luminance", () => {
+  const { provenance } = renderStill({
+    prompt: "sovereign mandala neural lattice energy core",
+    seed: 4242,
+    width: 48,
+    height: 48,
+    samples: 6,
+    maxDepth: 3,
+  });
+  assert.equal(provenance.scene, "neural-lattice");
+  assert.ok(
+    provenance.mean_luminance > 8,
+    `mean luminance ${provenance.mean_luminance} should exceed 8`,
+  );
+});
+
 test("camera screen-up follows world-up", () => {
   const camera = new Camera4D({
     x: 5.2,

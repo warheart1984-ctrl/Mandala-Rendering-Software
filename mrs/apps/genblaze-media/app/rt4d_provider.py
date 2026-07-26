@@ -42,6 +42,11 @@ from app.pipeline import (
     _utc_now,
     build_backend,
 )
+from app.render_quality import (
+    quality_presets,
+    resolve_quality,
+    resolve_still_render_params,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,13 +105,30 @@ def rt4d_availability(settings: Settings) -> dict[str, Any]:
         "samples": settings.rt4d_samples,
         "max_depth": settings.rt4d_max_depth,
         "timeout_seconds": settings.rt4d_timeout_seconds,
+        # What /api/generate will actually run. render_size/samples/max_depth
+        # above are the *final* profile; draft caps them so a profile sized for
+        # a dev machine cannot exceed RT4D_TIMEOUT on a small shared instance.
+        "quality_default": resolve_quality(settings),
+        "quality_presets": quality_presets(settings),
+        "effective_default": resolve_still_render_params(settings),
+        "quality_note": (
+            "POST /api/generate renders at quality_default (draft caps the "
+            "RT4D_* profile at RT4D_DRAFT_*); pass quality=final for the full "
+            "RT4D_* profile."
+        ),
     }
 
 
 def _run_render_cli(
-    settings: Settings, prompt: str, seed: int, out_png: Path
+    settings: Settings,
+    prompt: str,
+    seed: int,
+    out_png: Path,
+    params: dict[str, int],
 ) -> dict[str, Any]:
     """Invoke the node render-still CLI; return parsed provenance dict.
+
+    ``params`` carries the quality-resolved width/height/samples/maxDepth.
 
     Raises ``RuntimeError(RT4D_SETUP_HELP)`` when node/script are missing
     (HTTP 503). Raises ``RT4DRenderError`` when the CLI env is present but the
@@ -131,13 +153,13 @@ def _run_render_cli(
         "--seed",
         str(seed),
         "--width",
-        str(settings.rt4d_width),
+        str(params["width"]),
         "--height",
-        str(settings.rt4d_height),
+        str(params["height"]),
         "--samples",
-        str(settings.rt4d_samples),
+        str(params["samples"]),
         "--max-depth",
-        str(settings.rt4d_max_depth),
+        str(params["maxDepth"]),
         "--output",
         str(out_png),
     ]
@@ -186,6 +208,7 @@ def _build_manifest(
     sha256: str,
     provenance: dict[str, Any],
     asset_key: str,
+    quality: str,
 ) -> dict[str, Any]:
     return {
         "run_id": run_id,
@@ -195,6 +218,7 @@ def _build_manifest(
         "created_at": created_at,
         "asset_key": asset_key,
         "asset_sha256": sha256,
+        "quality": quality,
         "kind": "deterministic-procedural-4d-render",
         "note": (
             "Deterministic RT4D path-traced still from procedural scene selection. "
@@ -204,8 +228,14 @@ def _build_manifest(
     }
 
 
-def generate_image_rt4d(settings: Settings, prompt: str) -> GenerateResult:
+def generate_image_rt4d(
+    settings: Settings, prompt: str, quality: str | None = None
+) -> GenerateResult:
     """Render a deterministic RT4D still and persist it via the Genblaze paths.
+
+    ``quality`` is ``draft`` (default — caps the render at ``RT4D_DRAFT_*`` so a
+    CPU path trace finishes well inside ``RT4D_TIMEOUT``) or ``final`` (the full
+    ``RT4D_*`` profile). Unset falls back to ``GENBLAZE_RENDER_QUALITY_DEFAULT``.
 
     Live mode does not require any external API key. When B2 is configured the
     PNG + manifest are uploaded and a presigned preview is returned; otherwise
@@ -218,13 +248,15 @@ def generate_image_rt4d(settings: Settings, prompt: str) -> GenerateResult:
     run_id = str(uuid.uuid4())
     created_at = _utc_now()
     seed = _derive_seed(cleaned)
+    resolved_quality = resolve_quality(settings, quality)
+    params = resolve_still_render_params(settings, resolved_quality)
 
     tmp_root = Path(tempfile.gettempdir()) / "mrs-genblaze-rt4d"
     tmp_root.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="run-", dir=str(tmp_root)))
     out_png = work / "render.png"
     try:
-        provenance = _run_render_cli(settings, cleaned, seed, out_png)
+        provenance = _run_render_cli(settings, cleaned, seed, out_png, params)
         if not out_png.is_file():
             raise RT4DRenderError("RT4D render produced no output file")
         png = out_png.read_bytes()
@@ -248,7 +280,13 @@ def generate_image_rt4d(settings: Settings, prompt: str) -> GenerateResult:
             provenance.get("sha256"),
             sha256,
         )
-    provenance = {**provenance, "sha256": sha256, "seed": seed}
+    provenance = {
+        **provenance,
+        "sha256": sha256,
+        "seed": seed,
+        "quality": resolved_quality,
+        "requested_output": dict(params),
+    }
 
     asset_key = f"{settings.storage_prefix}/rt4d/{run_id}/render.png"
     manifest_key = f"{settings.storage_prefix}/rt4d/{run_id}/manifest.json"
@@ -259,6 +297,7 @@ def generate_image_rt4d(settings: Settings, prompt: str) -> GenerateResult:
         sha256=sha256,
         provenance=provenance,
         asset_key=asset_key,
+        quality=resolved_quality,
     )
 
     quality = {

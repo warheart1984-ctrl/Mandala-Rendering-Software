@@ -189,10 +189,11 @@ class GenerateRequest(BaseModel):
     quality: str = Field(
         default=DRAFT_QUALITY,
         description=(
-            "Render quality for then_scene MRS still: 'draft'/'fast' (default, "
-            "smaller/noisier, typically tens of seconds) or 'final'/'high' (RT4D_* "
-            "profile, slower). Ignored when then_scene is false."
-            "Also enabled by GENBLAZE_FLUX_THEN_SCENE=1."
+            "Render quality for the RT4D still and the then_scene MRS still: "
+            "'draft'/'fast' (default, smaller/noisier, typically tens of seconds) "
+            "or 'final'/'high' (full RT4D_* profile, slower). Draft caps the "
+            "RT4D_* profile so a CPU path trace finishes inside RT4D_TIMEOUT. "
+            "Has no effect on the NVIDIA FLUX path, which has no size knob."
         ),
     )
 
@@ -393,17 +394,18 @@ def _format_generation_failure(exc: Exception) -> str:
     return format_generation_failure(exc, warmup=_nvidia_warmup_state)
 
 
-def _dispatch_image(settings: Any, prompt: str):
+def _dispatch_image(settings: Any, prompt: str, quality: str | None = None):
     """Select the image backend and, when enabled, fall back to RT4D.
 
     - ``GENBLAZE_IMAGE_BACKEND=rt4d`` → deterministic RT4D render (no API).
     - default NVIDIA; if it fails and ``GENBLAZE_IMAGE_FALLBACK_TO_RT4D=1`` and
       the RT4D CLI/node are available, render deterministically instead of
       surfacing the NVIDIA failure (blank still, empty 504, etc.).
+    ``quality`` sizes the RT4D render only (draft caps the RT4D_* profile).
     Bad input (``ValueError``) never triggers fallback.
     """
     if settings.rt4d_selected:
-        return generate_image_rt4d(settings, prompt)
+        return generate_image_rt4d(settings, prompt, quality=quality)
     try:
         return generate_image(settings, prompt)
     except ValueError:
@@ -415,7 +417,7 @@ def _dispatch_image(settings: Any, prompt: str):
                 type(exc).__name__,
                 exc,
             )
-            gen = generate_image_rt4d(settings, prompt)
+            gen = generate_image_rt4d(settings, prompt, quality=quality)
             note = f"RT4D fallback after NVIDIA failure ({type(exc).__name__})"
             gen.detail = (gen.detail + " · " if gen.detail else "") + note
             return gen
@@ -442,7 +444,7 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
         result = (
             generate_video(settings, body.prompt)
             if video
-            else _dispatch_image(settings, body.prompt)
+            else _dispatch_image(settings, body.prompt, quality=body.quality)
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -467,6 +467,175 @@ def test_real_rt4d_cli_invocation(tmp_path, monkeypatch):
     assert (result.quality.get("mean_luminance") or 0) > 8
 
 
+def _capture_argv_run(png: bytes, sha: str, seen: dict):
+    def fake_run(argv, **_kwargs):
+        seen["argv"] = list(argv)
+        Path(argv[argv.index("--output") + 1]).write_bytes(png)
+        return MagicMock(
+            returncode=0,
+            stdout=json.dumps(
+                {
+                    "kind": "deterministic-procedural-4d-render",
+                    "scene": "torus-ring",
+                    "seed": 1,
+                    "sha256": sha,
+                    "mean_luminance": 60.0,
+                }
+            )
+            + "\n",
+            stderr="",
+        )
+
+    return fake_run
+
+
+def _argv_value(argv: list[str], flag: str) -> str:
+    return argv[argv.index(flag) + 1]
+
+
+def test_generate_defaults_to_draft_and_caps_final_profile(tmp_path, monkeypatch):
+    """Regression: the RT4D still must not run the full RT4D_* profile by default.
+
+    The deployed free-tier service returned 502 "RT4D render timed out after
+    180s" because /api/generate always rendered 448x448/20 samples. Draft is the
+    default and caps the profile, so the CLI receives the draft geometry.
+    """
+    png = _nonblank_png_bytes()
+    sha = hashlib.sha256(png).hexdigest()
+    script = tmp_path / "render-still.mjs"
+    script.write_text("// stub\n", encoding="utf-8")
+    settings = _settings(
+        rt4d_script_path=str(script),
+        rt4d_width=448,
+        rt4d_height=448,
+        rt4d_samples=20,
+        rt4d_max_depth=5,
+        b2_key_id=None,
+        b2_app_key=None,
+    )
+    seen: dict = {}
+    monkeypatch.setattr(
+        "app.rt4d_provider.subprocess.run", _capture_argv_run(png, sha, seen)
+    )
+    monkeypatch.setattr("app.rt4d_provider._find_node", lambda _p: "node")
+
+    result = generate_image_rt4d(settings, "mandala neural lattice")
+    argv = seen["argv"]
+    assert _argv_value(argv, "--width") == "256"
+    assert _argv_value(argv, "--height") == "256"
+    assert _argv_value(argv, "--samples") == "4"
+    assert _argv_value(argv, "--max-depth") == "3"
+    assert result.provenance["quality"] == "draft"
+    assert result.provenance["requested_output"]["samples"] == 4
+
+
+def test_generate_final_quality_uses_full_rt4d_profile(tmp_path, monkeypatch):
+    png = _nonblank_png_bytes()
+    sha = hashlib.sha256(png).hexdigest()
+    script = tmp_path / "render-still.mjs"
+    script.write_text("// stub\n", encoding="utf-8")
+    settings = _settings(
+        rt4d_script_path=str(script),
+        rt4d_width=448,
+        rt4d_height=448,
+        rt4d_samples=20,
+        rt4d_max_depth=5,
+        b2_key_id=None,
+        b2_app_key=None,
+    )
+    seen: dict = {}
+    monkeypatch.setattr(
+        "app.rt4d_provider.subprocess.run", _capture_argv_run(png, sha, seen)
+    )
+    monkeypatch.setattr("app.rt4d_provider._find_node", lambda _p: "node")
+
+    result = generate_image_rt4d(settings, "mandala", quality="final")
+    argv = seen["argv"]
+    assert _argv_value(argv, "--width") == "448"
+    assert _argv_value(argv, "--samples") == "20"
+    assert result.provenance["quality"] == "final"
+
+
+def test_draft_preserves_a_profile_smaller_than_the_cap(tmp_path, monkeypatch):
+    """Draft caps; it must not enlarge an already-small RT4D_* profile."""
+    png = _nonblank_png_bytes()
+    sha = hashlib.sha256(png).hexdigest()
+    script = tmp_path / "render-still.mjs"
+    script.write_text("// stub\n", encoding="utf-8")
+    settings = _settings(rt4d_script_path=str(script), b2_key_id=None, b2_app_key=None)
+    seen: dict = {}
+    monkeypatch.setattr(
+        "app.rt4d_provider.subprocess.run", _capture_argv_run(png, sha, seen)
+    )
+    monkeypatch.setattr("app.rt4d_provider._find_node", lambda _p: "node")
+
+    generate_image_rt4d(settings, "mandala")
+    argv = seen["argv"]
+    # _settings() defaults are 64x48 / 4 samples — below the 256/4 draft cap.
+    assert _argv_value(argv, "--width") == "64"
+    assert _argv_value(argv, "--height") == "48"
+
+
+def test_api_generate_forwards_quality_to_rt4d(tmp_path, monkeypatch):
+    png = _nonblank_png_bytes()
+    sha = hashlib.sha256(png).hexdigest()
+    script = tmp_path / "render-still.mjs"
+    script.write_text("// stub\n", encoding="utf-8")
+    settings = _settings(
+        rt4d_script_path=str(script),
+        rt4d_width=448,
+        rt4d_height=448,
+        rt4d_samples=20,
+        rt4d_max_depth=5,
+    )
+    seen: dict = {}
+    monkeypatch.setattr(
+        "app.rt4d_provider.subprocess.run", _capture_argv_run(png, sha, seen)
+    )
+    monkeypatch.setattr("app.rt4d_provider._find_node", lambda _p: "node")
+    monkeypatch.setattr("app.main.get_settings", lambda: settings)
+
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "recent.json")
+    client = TestClient(app)
+
+    r = client.post("/api/generate", json={"prompt": "mandala", "embed": False})
+    assert r.status_code == 200, r.text
+    assert _argv_value(seen["argv"], "--samples") == "4"
+
+    r = client.post(
+        "/api/generate",
+        json={"prompt": "mandala", "embed": False, "quality": "final"},
+    )
+    assert r.status_code == 200, r.text
+    assert _argv_value(seen["argv"], "--samples") == "20"
+
+
+def test_health_discloses_effective_generate_render_size(tmp_path, monkeypatch):
+    """Operators must be able to see what /api/generate will actually render."""
+    settings = _settings(
+        rt4d_width=448, rt4d_height=448, rt4d_samples=20, rt4d_max_depth=5
+    )
+    monkeypatch.setattr("app.main.get_settings", lambda: settings)
+
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "recent.json")
+    client = TestClient(app)
+    rt4d = client.get("/health").json()["rt4d"]
+    assert rt4d["quality_default"] == "draft"
+    assert rt4d["effective_default"] == {
+        "width": 256,
+        "height": 256,
+        "samples": 4,
+        "maxDepth": 3,
+    }
+    assert rt4d["quality_presets"]["final"]["samples"] == 20
+
+
 def test_rt4d_prompt_starting_with_dashes_passed_to_cli(tmp_path, monkeypatch):
     """Prompt values that look like flags must still reach the CLI as --prompt's value."""
     png = _nonblank_png_bytes()
