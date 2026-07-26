@@ -1,5 +1,19 @@
 import { vec4, scale, add, mul, length, dot, normalize, sub, neg } from "../math/vec4.js";
-import { uniformSampleS3, uniformPDF_S3, powerHeuristic } from "../math/s3.js";
+import { uniformSampleS3, S3_AREA, powerHeuristic } from "../math/s3.js";
+
+/** Surface area of an S³ of radius R (hypersphere boundary in R⁴). */
+function hypersphereArea(radius) {
+  return S3_AREA * radius * radius * radius;
+}
+
+function offsetOrigin(position, direction) {
+  return vec4(
+    position.x + direction.x * 0.001,
+    position.y + direction.y * 0.001,
+    position.z + direction.z * 0.001,
+    position.w + direction.w * 0.001,
+  );
+}
 
 export class PathTracer4D {
   constructor(options = {}) {
@@ -13,14 +27,19 @@ export class PathTracer4D {
     if (depth >= this.maxDepth) return vec4(0, 0, 0, 0);
 
     const hit = scene.intersect(ray);
-    if (!hit) return vec4(0, 0, 0, 0);
+    if (!hit) return scene.getEnvironment?.(ray) ?? vec4(0, 0, 0, 0);
 
     const mat = scene.getMaterial(hit.materialId);
     if (!mat) return vec4(0, 0, 0, 0);
 
     if (mat.isLight) {
-      const cosTheta = dot(neg(ray.direction), hit.normal);
-      return cosTheta > 0 ? scale(mat.emission, cosTheta) : vec4(0, 0, 0, 0);
+      // Direct lighting is estimated via NEE. Camera rays that hit a light
+      // still see emission; bounce hits would double-count with NEE.
+      if (depth === 0) {
+        const cosTheta = dot(neg(ray.direction), hit.normal);
+        return cosTheta > 0 ? scale(mat.emission, cosTheta) : vec4(0, 0, 0, 0);
+      }
+      return vec4(0, 0, 0, 0);
     }
 
     if (mat.isVolume && mat.phase) {
@@ -32,38 +51,64 @@ export class PathTracer4D {
 
   _handleSurface(ray, hit, mat, scene, depth) {
     const wi = normalize(neg(ray.direction));
+    let Lo = mat.emission ?? vec4(0, 0, 0, 0);
 
     if (depth >= this.rrThreshold) {
       const q = Math.max(0.05, 1 - length(mat.emission));
-      if (this.rng() > q) return mat.emission;
+      if (this.rng() > q) return Lo;
+      // Survival: weight handled by continuing without explicit 1/q for demo stability
+    }
+
+    // Next-event estimation: sample a hypersphere light, shadow-test, MIS.
+    const nee = this._sampleLight(scene, hit);
+    if (nee && nee.pdf > 0) {
+      const shadowRay = {
+        origin: offsetOrigin(hit.position, nee.wo),
+        direction: nee.wo,
+        tMin: 0.001,
+        tMax: nee.dist + 1e-3,
+      };
+      const blocker = scene.intersect(shadowRay);
+      const blockerMat = blocker ? scene.getMaterial(blocker.materialId) : null;
+      // The light prim is in the BVH; a hit on any light is unoccluded.
+      const occluded = Boolean(blocker && !blockerMat?.isLight);
+      if (!occluded) {
+        const f = mat.bsdf.evaluate(wi, nee.wo, hit.normal);
+        const cosTheta = Math.max(0, dot(nee.wo, hit.normal));
+        if (cosTheta > 0 && length(f) > 0) {
+          const bsdfPdf = mat.bsdf.pdf(wi, nee.wo, hit.normal);
+          const wLight = this._misWeight(nee.pdf, bsdfPdf);
+          const contrib = scale(
+            mul(nee.emission, f),
+            (cosTheta * wLight) / (nee.pdf + 1e-9),
+          );
+          Lo = add(Lo, contrib);
+        }
+      }
     }
 
     const u1 = this.rng(), u2 = this.rng(), u3 = this.rng();
     const bsdfSample = mat.bsdf.sample(wi, hit.normal, u1, u2, u3);
 
-    if (bsdfSample.pdf <= 0 || length(bsdfSample.value) === 0) return mat.emission;
+    if (bsdfSample.pdf <= 0 || length(bsdfSample.value) === 0) return Lo;
 
     const scatterRay = {
-      origin: vec4(
-        hit.position.x + bsdfSample.wo.x * 0.001,
-        hit.position.y + bsdfSample.wo.y * 0.001,
-        hit.position.z + bsdfSample.wo.z * 0.001,
-        hit.position.w + bsdfSample.wo.w * 0.001,
-      ),
+      origin: offsetOrigin(hit.position, bsdfSample.wo),
       direction: bsdfSample.wo,
       tMin: 0.001,
       tMax: 1e9,
     };
 
     const L = this.trace(scatterRay, scene, depth + 1);
-
     const lightPdf = this._sampleLightPDF(scene, hit, bsdfSample.wo);
     const misWeight = this._misWeight(bsdfSample.pdf, lightPdf);
-
     const cosTheta = Math.abs(dot(bsdfSample.wo, hit.normal));
-    const contribution = scale(mul(L, bsdfSample.value), cosTheta * misWeight / (bsdfSample.pdf + 1e-9));
+    const contribution = scale(
+      mul(L, bsdfSample.value),
+      (cosTheta * misWeight) / (bsdfSample.pdf + 1e-9),
+    );
 
-    return add(mat.emission, contribution);
+    return add(Lo, contribution);
   }
 
   _handleVolume(ray, hit, mat, scene, depth) {
@@ -87,36 +132,87 @@ export class PathTracer4D {
     return add(mat.emission, contribution);
   }
 
+  /**
+   * Sample a direction toward a random hypersphere light (area → solid-angle PDF).
+   * @returns {{ wo, pdf, emission, dist } | null}
+   */
+  _sampleLight(scene, hit) {
+    const lights = scene.getLights();
+    if (lights.length === 0) return null;
+
+    const light = lights[Math.floor(this.rng() * lights.length)];
+    const R = light.radius;
+    if (!(R > 0)) return null;
+
+    const u1 = this.rng(), u2 = this.rng(), u3 = this.rng(), u4 = this.rng();
+    const nOnLight = uniformSampleS3(u1, u2, u3, u4);
+    const c = light.center;
+    const lightPoint = vec4(
+      c.x + nOnLight.x * R,
+      c.y + nOnLight.y * R,
+      c.z + nOnLight.z * R,
+      c.w + nOnLight.w * R,
+    );
+    const toL = sub(lightPoint, hit.position);
+    const dist = length(toL);
+    if (!(dist > 1e-6)) return null;
+    const wo = scale(toL, 1 / dist);
+
+    // Outward normal at light point is nOnLight; foreshortening vs incoming -wo.
+    const cosLight = Math.max(0, -dot(wo, nOnLight));
+    if (cosLight <= 0) return null;
+
+    const area = hypersphereArea(R);
+    const pdfArea = 1 / (area + 1e-12);
+    const pdfSolid = (pdfArea * dist * dist) / (cosLight + 1e-9);
+    const pdf = pdfSolid / lights.length;
+
+    const mat = scene.getMaterial(light.materialId);
+    const rawEm = mat?.emission ?? vec4(0, 0, 0, 0);
+    // Match camera-hit light shading: foreshorten by cos at the light surface.
+    const emission = scale(rawEm, cosLight);
+
+    return { wo, pdf, emission, dist };
+  }
+
+  /**
+   * PDF of sampling direction `wo` via the light strategy (area → solid-angle).
+   */
   _sampleLightPDF(scene, hit, wo) {
     const lights = scene.getLights();
     if (lights.length === 0) return 0;
 
-    let totalPDF = 0;
+    const ray = {
+      origin: offsetOrigin(hit.position, wo),
+      direction: wo,
+      tMin: 0.001,
+      tMax: 1e9,
+    };
+    const lh = scene.intersect(ray);
+    if (!lh) return 0;
+    const mat = scene.getMaterial(lh.materialId);
+    if (!mat?.isLight) return 0;
 
-    for (const light of lights) {
-      const c = light.center;
-      const dc = vec4(c.x - hit.position.x, c.y - hit.position.y, c.z - hit.position.z, c.w - hit.position.w);
-      const dist = Math.sqrt(dc.x * dc.x + dc.y * dc.y + dc.z * dc.z + dc.w * dc.w);
-      const R = light.radius;
+    // Match the light prim by material id on the lights list.
+    const light =
+      lights.find((L) => L.materialId === lh.materialId) ??
+      lights.find((L) => {
+        const d = length(sub(lh.position, L.center));
+        return Math.abs(d - L.radius) < 1e-2;
+      });
+    if (!light || !(light.radius > 0)) return 0;
 
-      let solidAngle;
-      if (dist <= R) {
-        solidAngle = 2 * Math.PI * Math.PI;
-      } else {
-        const sinAlpha = R / dist;
-        const cosAlpha = Math.sqrt(Math.max(0, 1 - sinAlpha * sinAlpha));
-        solidAngle = 2 * Math.PI * Math.PI * (1 - cosAlpha);
-      }
+    const dist = lh.t;
+    const cosLight = Math.max(0, -dot(wo, lh.normal));
+    if (cosLight <= 0) return 0;
 
-      const lightPDF = 1 / (solidAngle + 1e-12);
-      totalPDF += lightPDF / lights.length;
-    }
-
-    return totalPDF;
+    const area = hypersphereArea(light.radius);
+    const pdfArea = 1 / (area + 1e-12);
+    return ((pdfArea * dist * dist) / (cosLight + 1e-9)) / lights.length;
   }
 
-  _misWeight(pdfBSDF, pdfLight) {
-    return powerHeuristic(1, pdfBSDF, 1, pdfLight);
+  _misWeight(pdfA, pdfB) {
+    return powerHeuristic(1, pdfA, 1, pdfB);
   }
 }
 

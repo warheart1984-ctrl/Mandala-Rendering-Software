@@ -95,6 +95,21 @@ test("render is not near-black (mean luminance well above blank threshold)", () 
   assert.ok(provenance.mean_luminance > 8, `mean luminance ${provenance.mean_luminance} should exceed 8`);
 });
 
+test("center ROI is lit (NEE — ground band alone must not pass)", () => {
+  const { provenance } = renderStill({
+    prompt: "cyan tesseract",
+    seed: 1234,
+    width: 64,
+    height: 64,
+    samples: 8,
+    maxDepth: 4,
+  });
+  assert.ok(
+    provenance.mean_luminance_center > 12,
+    `center ROI luminance ${provenance.mean_luminance_center} should exceed 12 (got full-frame ${provenance.mean_luminance})`,
+  );
+});
+
 test("prompt keywords drive scene + palette selection (procedural, not generative)", () => {
   const seed = hashPromptToSeed("tesseract");
   const d1 = resolveSceneDescriptor({ prompt: "a glowing tesseract hypercube", seed });
