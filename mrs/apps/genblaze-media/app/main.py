@@ -24,6 +24,12 @@ from app.image_ingest import (
     list_ingested,
     resolve_stored_file,
 )
+from app.image_to_scene import (
+    DISCLAIMER as IMAGE_TO_SCENE_DISCLAIMER,
+    image_to_scene_availability,
+    interpret_image_to_scene,
+    resolve_image_bytes,
+)
 from app.index_store import AssetIndex
 from app.nvidia_errors import format_generation_failure, nvidia_nim_status_from_warmup
 from app.nvidia_http import (
@@ -37,6 +43,12 @@ from app.rt4d_provider import (
     RT4D_PROVIDER_ID,
     generate_image_rt4d,
     rt4d_availability,
+)
+from app.scene_spec_provider import (
+    SCENE_SPEC_PROVIDER_ID,
+    render_scene_clip,
+    render_scene_spec,
+    scene_spec_availability,
 )
 from app.preview_cache import (
     get_preview_path,
@@ -164,6 +176,14 @@ class GenerateRequest(BaseModel):
         default=True,
         description="Also embed the prompt with NVIDIA nv-embedcode for search/provenance.",
     )
+    then_scene: bool = Field(
+        default=False,
+        description=(
+            "After a successful FLUX/RT4D still, also run image→SceneSpecification→MRS "
+            "full-frame render. Returns both assets; does not replace the FLUX still. "
+            "Also enabled by GENBLAZE_FLUX_THEN_SCENE=1."
+        ),
+    )
 
 
 class SearchRequest(BaseModel):
@@ -185,6 +205,42 @@ class ImageAnalyzeRequest(BaseModel):
     id: str | None = Field(default=None, max_length=64)
     image_base64: str | None = Field(default=None, min_length=8)
     filename: str | None = Field(default=None, max_length=200)
+
+
+class ImageToSceneRequest(BaseModel):
+    """Image → SceneSpecification → optional MRS full-frame render."""
+
+    image_base64: str | None = Field(default=None, min_length=8)
+    id: str | None = Field(default=None, max_length=64, description="Ingest id")
+    run_id: str | None = Field(
+        default=None,
+        max_length=64,
+        description="Prior generate run_id (local preview / B2)",
+    )
+    render: bool = Field(
+        default=True,
+        description="When true (hackathon default), path-trace a full MRS frame.",
+    )
+    frame: int | None = Field(default=None, ge=0, le=240)
+    force_heuristic: bool = Field(
+        default=False,
+        description="Skip NIM vision; build heuristic SceneSpecification only.",
+    )
+
+
+class RenderSceneRequest(BaseModel):
+    """SceneSpecification still render (LLM → structured scene → RT4D)."""
+
+    spec: dict[str, Any] = Field(..., description="SceneSpecification JSON object")
+    frame: int | None = Field(default=None, ge=0, le=240)
+    time: float | None = Field(default=None, ge=0)
+
+
+class RenderClipRequest(BaseModel):
+    """Sample AnimationTimeline → PNG frame zip (no MP4 encoding)."""
+
+    spec: dict[str, Any] = Field(..., description="SceneSpecification with animation")
+    max_frames: int = Field(default=24, ge=1, le=120)
 
 
 @app.get("/health")
@@ -277,6 +333,19 @@ def health() -> dict:
             "seed records variation. Requires Node + render-still.mjs (not yet in "
             "the python:3.12 Docker image)."
         ),
+        "scene_spec": scene_spec_availability(settings),
+        "scene_spec_note": (
+            "POST /api/render-scene accepts a SceneSpecification JSON and renders "
+            "a deterministic RT4D still. POST /api/render-clip returns a PNG frame "
+            "zip when animation is present — MP4 encoding is not available in-image."
+        ),
+        "image_to_scene": image_to_scene_availability(settings),
+        "image_to_scene_note": (
+            "POST /api/image-to-scene: image → SceneSpecification → optional MRS "
+            "path-traced full frame. Scene interpretation only — NOT reconstruction. "
+            "Heuristic fallback always available; NIM vision when NVIDIA_API_KEY set."
+        ),
+        "flux_then_scene": settings.flux_then_scene,
         "fal_image_fallback": False,
         "prefer_async": False,
         "async_note": (
@@ -336,10 +405,12 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RuntimeError as exc:
         # Missing NVIDIA/RT4D setup, video disabled, or B2 config — 503 with setup text.
+        # RT4D CLI crashes/timeouts raise RT4DRenderError (not RuntimeError) → 502 below.
         # Transfer/sink failures are re-raised as non-RuntimeError (see pipeline).
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
         # Include chained transfer cause when present (Genblaze SinkError omits it).
+        # Also covers RT4DRenderError (present CLI, failed/timed-out render).
         detail = _format_generation_failure(exc)
         raise HTTPException(status_code=502, detail=f"generation failed: {detail}") from exc
 
@@ -363,7 +434,153 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
     public = {k: v for k, v in entry.items() if k != "embedding_vector"}
     if "embedding_vector" in entry:
         public["embedding_stored"] = True
-    return _prefer_local_preview(public)
+    public = _prefer_local_preview(public)
+
+    # Opt-in dual path: keep FLUX/RT4D concept + add MRS scene interpretation frame.
+    if (
+        not video
+        and (body.then_scene or settings.flux_then_scene)
+        and public.get("run_id")
+    ):
+        try:
+            scene_payload = _image_to_scene_pipeline(
+                settings,
+                run_id=str(public["run_id"]),
+                render=True,
+                frame=None,
+                force_heuristic=False,
+            )
+            public["then_scene"] = scene_payload
+            public["dual_path_note"] = (
+                "FLUX/RT4D concept still preserved; then_scene is a separate "
+                "scene-interpretation + path-traced MRS full frame (not a replacement)."
+            )
+        except HTTPException as exc:
+            public["then_scene_error"] = exc.detail
+        except Exception as exc:  # noqa: BLE001 — never fail the FLUX still
+            public["then_scene_error"] = str(exc)
+    return public
+
+
+def _index_lookup_run(run_id: str) -> dict[str, Any] | None:
+    for asset in _index.list_recent(limit=80):
+        if asset.get("run_id") == run_id:
+            return asset
+    return None
+
+
+def _b2_fetch_bytes(settings: Any, asset_key: str) -> bytes | None:
+    if not settings.b2_configured or not asset_key:
+        return None
+    try:
+        from app.pipeline import build_backend
+
+        backend = build_backend(settings)
+        try:
+            get = getattr(backend, "get", None) or getattr(backend, "download", None)
+            if not callable(get):
+                return None
+            data = get(asset_key)
+            if isinstance(data, (bytes, bytearray)) and data:
+                return bytes(data)
+            # Some backends return a file-like / response object.
+            read = getattr(data, "read", None)
+            if callable(read):
+                blob = read()
+                if isinstance(blob, (bytes, bytearray)) and blob:
+                    return bytes(blob)
+        finally:
+            close = getattr(backend, "close", None)
+            if callable(close):
+                close()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("B2 fetch for image-to-scene failed: %s", exc)
+    return None
+
+
+def _image_to_scene_pipeline(
+    settings: Any,
+    *,
+    image_base64: str | None = None,
+    ingest_id: str | None = None,
+    run_id: str | None = None,
+    render: bool = True,
+    frame: int | None = None,
+    force_heuristic: bool = False,
+) -> dict[str, Any]:
+    """Resolve image → interpret → optional MRS full-frame render."""
+    try:
+        image_bytes, resolve_meta = resolve_image_bytes(
+            image_base64=image_base64,
+            ingest_id=ingest_id,
+            run_id=run_id,
+            app_dir=APP_DIR,
+            index_lookup=_index_lookup_run,
+            b2_fetch=lambda key: _b2_fetch_bytes(settings, key),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    interpreted = interpret_image_to_scene(
+        settings,
+        image_bytes,
+        force_heuristic=force_heuristic,
+    )
+    payload: dict[str, Any] = {
+        **interpreted,
+        "resolve": resolve_meta,
+        "analysis_mode": interpreted.get("analysis_mode"),
+        "note": interpreted.get("note") or IMAGE_TO_SCENE_DISCLAIMER,
+    }
+
+    if not render:
+        return payload
+
+    try:
+        result = render_scene_spec(
+            settings,
+            interpreted["spec"],
+            frame=frame,
+            storage_kind="image-to-scene",
+        )
+    except ValueError as exc:
+        err_payload = exc.args[0] if exc.args else str(exc)
+        if isinstance(err_payload, dict) and "errors" in err_payload:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "invalid or unsupported SceneSpecification after interpret",
+                    "errors": err_payload["errors"],
+                    "analysis_mode": interpreted.get("analysis_mode"),
+                    "note": IMAGE_TO_SCENE_DISCLAIMER,
+                },
+            ) from exc
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except GenerationQualityError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        detail = _format_generation_failure(exc)
+        raise HTTPException(
+            status_code=502, detail=f"image-to-scene render failed: {detail}"
+        ) from exc
+
+    entry = result.to_dict()
+    entry["modality"] = "image"
+    entry["kind"] = "image-to-scene-mrs-full-frame"
+    entry["provider_label"] = "mrs-scene-interpretation"
+    entry["analysis_mode"] = interpreted.get("analysis_mode")
+    entry["note"] = IMAGE_TO_SCENE_DISCLAIMER
+    entry["scene_source"] = interpreted.get("source")
+    entry["image_sha256"] = interpreted.get("image_sha256")
+    entry["spec"] = interpreted.get("spec")
+    _index.prepend(entry)
+    render_public = {k: v for k, v in entry.items() if k != "embedding_vector"}
+    payload["render"] = _prefer_local_preview(render_public)
+    return payload
 
 
 @app.post("/api/generate")
@@ -374,6 +591,133 @@ def api_generate(body: GenerateRequest) -> dict:
 @app.post("/api/generate-video")
 def api_generate_video(body: GenerateRequest) -> dict:
     return _run_generate_common(body, video=True)
+
+
+@app.post("/api/image-to-scene")
+def api_image_to_scene(body: ImageToSceneRequest) -> dict:
+    """Image bytes → SceneSpecification → optional MRS path-traced full frame.
+
+    Honest scope: scene interpretation + path-traced full frame — NOT reconstruction.
+    """
+    if not body.image_base64 and not body.id and not body.run_id:
+        raise HTTPException(
+            status_code=400,
+            detail="provide image_base64, id (ingest), or run_id",
+        )
+    settings = get_settings()
+    return _image_to_scene_pipeline(
+        settings,
+        image_base64=body.image_base64,
+        ingest_id=body.id,
+        run_id=body.run_id,
+        render=body.render,
+        frame=body.frame,
+        force_heuristic=body.force_heuristic,
+    )
+
+
+def _validate_spec_shape(spec: dict[str, Any]) -> list[dict[str, str]] | None:
+    """Lightweight pre-check before invoking Node (returns error list or None)."""
+    errors: list[dict[str, str]] = []
+    if not isinstance(spec, dict):
+        return [{"path": "", "message": "expected object"}]
+    if spec.get("schemaVersion") not in (None, "1.0"):
+        # Allow missing for hackathon flexibility; Node parse requires it.
+        pass
+    if "schemaVersion" not in spec:
+        errors.append({"path": "schemaVersion", "message": "required (expected \"1.0\")"})
+    if not isinstance(spec.get("id"), str) or not spec.get("id"):
+        errors.append({"path": "id", "message": "expected non-empty string"})
+    entities = spec.get("entities")
+    if not isinstance(entities, list) or len(entities) < 1:
+        errors.append({"path": "entities", "message": "expected at least 1 item(s)"})
+    return errors or None
+
+
+@app.post("/api/render-scene")
+def api_render_scene(body: RenderSceneRequest) -> dict:
+    """SceneSpecification → deterministic RT4D still → B2/local preview."""
+    shape_errors = _validate_spec_shape(body.spec)
+    if shape_errors:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "invalid SceneSpecification", "errors": shape_errors},
+        )
+
+    settings = get_settings()
+    try:
+        result = render_scene_spec(
+            settings, body.spec, frame=body.frame, time=body.time
+        )
+    except ValueError as exc:
+        payload = exc.args[0] if exc.args else str(exc)
+        if isinstance(payload, dict) and "errors" in payload:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "invalid or unsupported SceneSpecification",
+                    "errors": payload["errors"],
+                },
+            ) from exc
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except GenerationQualityError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 — RT4DRenderError → 502
+        detail = _format_generation_failure(exc)
+        raise HTTPException(
+            status_code=502, detail=f"scene-spec render failed: {detail}"
+        ) from exc
+
+    entry = result.to_dict()
+    entry["modality"] = "image"
+    entry["kind"] = "deterministic-scene-spec-4d-render"
+    _index.prepend(entry)
+    public = {k: v for k, v in entry.items() if k != "embedding_vector"}
+    return _prefer_local_preview(public)
+
+
+@app.post("/api/render-clip")
+def api_render_clip(body: RenderClipRequest) -> dict:
+    """Sample AnimationTimeline → PNG frame zip. No MP4 encoding (declared)."""
+    shape_errors = _validate_spec_shape(body.spec)
+    if shape_errors:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "invalid SceneSpecification", "errors": shape_errors},
+        )
+    if not isinstance(body.spec.get("animation"), dict):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "spec.animation is required for render-clip",
+                "errors": [{"path": "animation", "message": "required object"}],
+            },
+        )
+
+    settings = get_settings()
+    try:
+        result = render_scene_clip(
+            settings, body.spec, max_frames=body.max_frames
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        detail = _format_generation_failure(exc)
+        raise HTTPException(
+            status_code=502, detail=f"scene-spec clip failed: {detail}"
+        ) from exc
+
+    entry = {
+        **result,
+        "modality": "image",
+        "prompt": f"scene-spec-clip:{body.spec.get('id', 'unnamed')}",
+    }
+    _index.prepend(entry)
+    return entry
 
 
 @app.get("/api/assets")

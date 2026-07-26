@@ -490,13 +490,47 @@ function clampInt(v, lo, hi) {
 // CLI
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv) {
+/** Options that always take the following token as their value (even if it starts with `--`). */
+const VALUE_OPTIONS = new Set([
+  "prompt",
+  "seed",
+  "scene",
+  "palette",
+  "width",
+  "height",
+  "samples",
+  "max-depth",
+  "maxDepth",
+  "output",
+  "provenance",
+]);
+
+/**
+ * Parse CLI argv into a flag map.
+ *
+ * Value-taking options always consume the next token — including values that
+ * begin with `--` (e.g. `--prompt --weird-keyword-tesseract`). Bare `--` is
+ * treated as end-of-options and ignored. Boolean flags remain true when they
+ * have no following value.
+ */
+export function parseArgs(argv) {
   const args = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
+    if (a === "--") continue;
     if (!a.startsWith("--")) continue;
     const key = a.slice(2);
+    if (!key) continue;
     const next = argv[i + 1];
+    if (VALUE_OPTIONS.has(key)) {
+      if (next === undefined) {
+        args[key] = true;
+      } else {
+        args[key] = next;
+        i++;
+      }
+      continue;
+    }
     if (next === undefined || next.startsWith("--")) {
       args[key] = true;
     } else {

@@ -58,6 +58,15 @@ RT4D_SETUP_HELP = (
 )
 
 
+class RT4DRenderError(Exception):
+    """CLI present but render failed (crash, timeout, empty output).
+
+    Not a subclass of ``RuntimeError`` so ``main._run_generate_common`` maps it
+    to HTTP 502 (generation failure), not 503 (missing setup / redeploy).
+    Setup/missing-node/script paths keep raising ``RuntimeError(RT4D_SETUP_HELP)``.
+    """
+
+
 def _derive_seed(prompt: str) -> int:
     """Stable uint32 seed from the prompt (SHA-256 → first 4 bytes)."""
     digest = hashlib.sha256((prompt or "").encode("utf-8")).digest()
@@ -99,8 +108,9 @@ def _run_render_cli(
 ) -> dict[str, Any]:
     """Invoke the node render-still CLI; return parsed provenance dict.
 
-    Raises RuntimeError for environment problems (node/script missing) and a
-    generic RuntimeError for a CLI crash (mapped to HTTP 502 upstream).
+    Raises ``RuntimeError(RT4D_SETUP_HELP)`` when node/script are missing
+    (HTTP 503). Raises ``RT4DRenderError`` when the CLI env is present but the
+    run fails, times out, or yields unusable output (HTTP 502).
     """
     node_resolved = _find_node(settings.rt4d_node_path)
     if node_resolved is None:
@@ -109,9 +119,13 @@ def _run_render_cli(
     if not Path(script_path).is_file():
         raise RuntimeError(RT4D_SETUP_HELP)
 
+    # ``--`` end-of-options so a prompt that looks like a flag cannot be
+    # mis-parsed by any future argv consumer; render-still's parseArgs also
+    # treats value-taking options as always consuming the next token.
     argv = [
         node_resolved,
         script_path,
+        "--",
         "--prompt",
         prompt,
         "--seed",
@@ -138,14 +152,16 @@ def _run_render_cli(
     except FileNotFoundError as exc:
         raise RuntimeError(RT4D_SETUP_HELP) from exc
     except subprocess.TimeoutExpired as exc:
-        raise RuntimeError(
+        raise RT4DRenderError(
             f"RT4D render timed out after {settings.rt4d_timeout_seconds:.0f}s "
             f"(reduce RT4D_RENDER_WIDTH/HEIGHT/SAMPLES or raise RT4D_TIMEOUT)"
         ) from exc
 
     if proc.returncode != 0:
         stderr = (proc.stderr or "").strip()
-        raise RuntimeError(f"RT4D render CLI failed (exit {proc.returncode}): {stderr[:600]}")
+        raise RT4DRenderError(
+            f"RT4D render CLI failed (exit {proc.returncode}): {stderr[:600]}"
+        )
 
     stdout = (proc.stdout or "").strip()
     provenance: dict[str, Any] = {}
@@ -210,13 +226,13 @@ def generate_image_rt4d(settings: Settings, prompt: str) -> GenerateResult:
     try:
         provenance = _run_render_cli(settings, cleaned, seed, out_png)
         if not out_png.is_file():
-            raise RuntimeError("RT4D render produced no output file")
+            raise RT4DRenderError("RT4D render produced no output file")
         png = out_png.read_bytes()
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
     if not png:
-        raise RuntimeError("RT4D render produced an empty file")
+        raise RT4DRenderError("RT4D render produced an empty file")
 
     assessment = assess_image_bytes(png)
     if not assessment.ok:
