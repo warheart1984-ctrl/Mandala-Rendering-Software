@@ -21,6 +21,11 @@ from typing import Any, Callable
 
 import httpx
 
+from app.config import (
+    APP_DIR,
+    Settings,
+    validate_scene_spec_default_script_path,
+)
 from app.config import APP_DIR, REPO_ROOT, Settings
 from app.image_ingest import (
     analyze_image_bytes,

@@ -26,7 +26,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GENBLAZE_NVIDIA_WARMUP_ON_STARTUP=1 \
     GENBLAZE_CONNECT_TIMEOUT=30 \
     RT4D_NODE_PATH=node \
-    RT4D_SCRIPT_PATH=/app/renderer-core/scripts/render-still.mjs
+    RT4D_SCRIPT_PATH=/app/renderer-core/scripts/render-still.mjs \
+    SCENE_SPEC_SCRIPT_PATH=/app/renderer-core/scripts/render-scene.mjs \
+    VALIDATE_SCENE_SPEC_SCRIPT_PATH=/app/renderer-core/scripts/validate-scene-spec.mjs
 
 # genblaze-core 0.3.7 declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
 COPY mrs/apps/genblaze-media/requirements-docker.txt .
@@ -57,6 +59,15 @@ RUN node --version \
       --prompt "docker build smoke" --seed 1 \
       --width 64 --height 64 --samples 1 --output /tmp/smoke.png > /dev/null \
  && rm -f /tmp/smoke.png
+
+# Scene-spec smoke: a tiny render-scene run exercises render-scene.mjs, its
+# scene-spec import graph, capability validation, and the shared PNG encoder —
+# so a broken scene-spec layer fails the build instead of a runtime 503/502.
+RUN printf '%s' '{"schemaVersion":"1.0","kind":"SceneSpecification","id":"docker-scene-smoke","entities":[{"id":"e","geometry":{"kind":"surface","surfaceId":"tesseract"}}]}' > /tmp/scene-smoke.json \
+ && node /app/renderer-core/scripts/render-scene.mjs -- \
+      --spec /tmp/scene-smoke.json --width 32 --height 32 --samples 1 \
+      --output /tmp/scene-smoke.png > /dev/null \
+ && rm -f /tmp/scene-smoke.png /tmp/scene-smoke.json
 
 RUN mkdir -p /app/data \
  && useradd --create-home --uid 10001 appuser \

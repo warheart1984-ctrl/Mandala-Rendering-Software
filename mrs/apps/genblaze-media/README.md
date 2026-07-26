@@ -83,6 +83,8 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `GENBLAZE_IMAGE_TO_SCENE_CHAT_URL` | optional; default `https://integrate.api.nvidia.com/v1/chat/completions` |
 | `GENBLAZE_IMAGE_TO_SCENE_TIMEOUT` | optional; default `120` seconds |
 | `GENBLAZE_FLUX_THEN_SCENE` | default **off** — set `1` so successful `/api/generate` stills also run image→scene→MRS (returns both assets) |
+| `SCENE_SPEC_SCRIPT_PATH` | optional; default resolves `<repo>/mrs/packages/renderer-core/scripts/render-scene.mjs`, then the Docker layout `/app/renderer-core/scripts/render-scene.mjs` |
+| `VALIDATE_SCENE_SPEC_SCRIPT_PATH` | optional; default resolves `<repo>/mrs/packages/renderer-core/scripts/validate-scene-spec.mjs`, then the Docker layout `/app/renderer-core/scripts/validate-scene-spec.mjs` |
 | `SCENE_SPEC_SCRIPT_PATH` | optional; default `…/render-scene.mjs` |
 | `VALIDATE_SCENE_SPEC_SCRIPT_PATH` | optional; default `…/validate-scene-spec.mjs` |
 
@@ -156,6 +158,21 @@ RT4D needs two things inside the container: a `node` binary and the
   resolves to a package in `node_modules`. `package.json` is still copied
   because its `"type": "module"` is what makes the `.js` sources load as ESM.
 - `COPY mrs/packages/renderer-core/{package.json,src,scripts} ./renderer-core/`
+  — the whole `scripts` and `src` trees, so `render-still.mjs`,
+  `render-scene.mjs`, `validate-scene-spec.mjs`, and `src/scene-spec/**` all
+  land in the image.
+- ENV pins the three CLIs to the copied layout:
+  `RT4D_SCRIPT_PATH=/app/renderer-core/scripts/render-still.mjs`,
+  `SCENE_SPEC_SCRIPT_PATH=/app/renderer-core/scripts/render-scene.mjs`,
+  `VALIDATE_SCENE_SPEC_SCRIPT_PATH=/app/renderer-core/scripts/validate-scene-spec.mjs`.
+  These are belt-and-suspenders: `config.py` already resolves the Docker layout
+  (`/app/renderer-core/scripts/<name>`) when the monorepo path is absent, so
+  scene-spec / image-to-scene work in the repo-root image without operators
+  setting any override.
+- Two build-time smokes run: a 64×64/1-sample `render-still` render **and** a
+  32×32/1-sample `render-scene` render (from a minimal SceneSpecification), so a
+  broken Node layer or a missing scene-spec import fails the build instead of
+  surfacing as a runtime 503/502.
   and `RT4D_SCRIPT_PATH=/app/renderer-core/scripts/render-still.mjs`.
 - A 64×64/1-sample render runs at build time, so a broken Node layer or a
   missing import fails the build instead of surfacing as a runtime 502.
@@ -165,6 +182,7 @@ outside `mrs/apps/genblaze-media`, so the app-local Dockerfile cannot copy it.
 On Render that means: Root Directory empty, Dockerfile Path `./Dockerfile`.
 
 Verify a build locally before deploying:
+
 
 ```bash
 # from the repo root
@@ -204,6 +222,7 @@ Verify a build locally before deploying:
 # from the repo root
 docker build -t genblaze-rt4d .
 docker run --rm -e GENBLAZE_IMAGE_BACKEND=rt4d -p 8000:8000 genblaze-rt4d
+curl -s localhost:8000/health | python -m json.tool   # expect rt4d.available AND scene_spec.available true
 curl -s localhost:8000/health | python -m json.tool   # expect rt4d.available true
 curl -s -X POST localhost:8000/api/generate \
   -H 'content-type: application/json' \

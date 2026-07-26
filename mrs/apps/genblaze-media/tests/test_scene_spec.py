@@ -13,6 +13,12 @@ from fastapi.testclient import TestClient
 
 os.environ.setdefault("GENBLAZE_DRY_RUN", "1")
 
+from app.config import (
+    Settings,
+    _resolve_renderer_core_script,
+    scene_spec_default_script_path,
+    validate_scene_spec_default_script_path,
+)
 from app.config import Settings, scene_spec_default_script_path
 from app.main import app
 from app.rt4d_provider import RT4DRenderError
@@ -265,3 +271,79 @@ def test_provider_raises_rt4d_render_error_on_timeout(tmp_path, monkeypatch):
 
 def test_setup_help_constant():
     assert "render-scene.mjs" in SCENE_SPEC_SETUP_HELP
+
+
+def test_resolve_prefers_monorepo_layout(tmp_path):
+    """When the monorepo path exists it wins over the Docker fallback."""
+    mono_scripts = tmp_path / "repo" / "mrs" / "packages" / "renderer-core" / "scripts"
+    mono_scripts.mkdir(parents=True)
+    (mono_scripts / "render-scene.mjs").write_text("// mono\n", encoding="utf-8")
+
+    docker_scripts = tmp_path / "app" / "renderer-core" / "scripts"
+    docker_scripts.mkdir(parents=True)
+    (docker_scripts / "render-scene.mjs").write_text("// docker\n", encoding="utf-8")
+
+    resolved = _resolve_renderer_core_script(
+        "render-scene.mjs",
+        repo_root=tmp_path / "repo",
+        app_dir=tmp_path / "app",
+    )
+    assert resolved == mono_scripts / "render-scene.mjs"
+
+
+def test_resolve_falls_back_to_docker_layout(tmp_path):
+    """Docker image copies renderer-core to <app_dir>/renderer-core; resolve it
+    even though the monorepo path (<repo>/mrs/packages/...) is absent."""
+    repo_root = tmp_path / "app"  # /app has no mrs/packages tree
+    docker_scripts = repo_root / "renderer-core" / "scripts"
+    docker_scripts.mkdir(parents=True)
+    for name in ("render-scene.mjs", "validate-scene-spec.mjs"):
+        (docker_scripts / name).write_text("// docker\n", encoding="utf-8")
+
+    scene = _resolve_renderer_core_script(
+        "render-scene.mjs", repo_root=repo_root, app_dir=repo_root
+    )
+    validate = _resolve_renderer_core_script(
+        "validate-scene-spec.mjs", repo_root=repo_root, app_dir=repo_root
+    )
+    assert scene == docker_scripts / "render-scene.mjs"
+    assert scene.is_file()
+    assert validate == docker_scripts / "validate-scene-spec.mjs"
+    assert validate.is_file()
+
+
+def test_resolve_missing_returns_monorepo_path(tmp_path):
+    """Neither layout present → return the canonical monorepo path (not found)."""
+    resolved = _resolve_renderer_core_script(
+        "render-scene.mjs",
+        repo_root=tmp_path / "repo",
+        app_dir=tmp_path / "app",
+    )
+    assert resolved == (
+        tmp_path / "repo" / "mrs" / "packages" / "renderer-core" / "scripts"
+        / "render-scene.mjs"
+    )
+    assert not resolved.is_file()
+
+
+def test_scene_spec_availability_docker_layout(tmp_path, monkeypatch):
+    """A Docker-layout script (no env override) makes scene-spec available when
+    node resolves — the exact gap that produced the operator 503."""
+    docker_scripts = tmp_path / "app" / "renderer-core" / "scripts"
+    docker_scripts.mkdir(parents=True)
+    script = docker_scripts / "render-scene.mjs"
+    script.write_text("// docker\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "app.config._resolve_renderer_core_script",
+        lambda name, repo_root=None, app_dir=None: script
+        if name == "render-scene.mjs"
+        else docker_scripts / name,
+    )
+    monkeypatch.setattr("app.scene_spec_provider._find_node", lambda _p: "node")
+
+    # scene_spec_script_path=None → falls back to the (patched) default resolver.
+    info = scene_spec_availability(_settings(scene_spec_script_path=None))
+    assert info["script_found"] is True
+    assert info["available"] is True
+    assert info["script_path"] == str(script)
