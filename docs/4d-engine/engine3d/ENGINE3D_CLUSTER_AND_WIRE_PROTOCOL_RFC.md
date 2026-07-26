@@ -137,4 +137,5 @@ Node → scheduler: `QueueDepth { nodeId, pendingFrames, lastFrameMs }`
 |------|--------|
 | Single-process EngineHost loop | enforced in `@mrs/engine3d-core` |
 | CIEMSOverlay / MandalaMapping pure functions | partial |
-| Multi-node compose / gRPC / GPU scheduler packages | declared |
+| Engine3D → RT4D SceneBridge (capture + headless receipt) | partial — [SPEC](./ENGINE3D_SCENE_BRIDGE_SPEC_v1.0.md) / [RFC](./RFC-ENGINE3D-RT4D-INTEGRATION-1.0.md) |
+| Multi-node compose / gRPC / GPU scheduler / RenderCoordinator | declared |

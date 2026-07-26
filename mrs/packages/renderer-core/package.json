@@ -50,6 +50,7 @@
     "test:wavefront": "node --test src/render/rt4d/gpu/wavefront/wavefront.phaseb.test.js",
     "test:phasec": "node --test src/render/rt4d/physics/phasec.scaffold.test.js",
     "test:render-still": "node --test scripts/test/render-still.test.js",
+    "test:engine3d-bridge": "node --test src/render/rt4d/bridge/engine3dBridgeScene.test.js",
     "test:math3d": "node --test src/math3d/math3d.test.js",
     "test:bridge": "node --test src/bridge/bridge.test.js",
     "test:engine3d": "node --test src/engine3d/engine3d.test.js",

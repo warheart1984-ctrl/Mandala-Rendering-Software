@@ -348,3 +348,5 @@ remain **declared / deferred**.
 | `scripts/bootstrap-engine3d-cluster.sh` | Declared (not in tree) |
 | Multi-node docker-compose services | Declared (see RFC) |
 | WebGPU Mandala visualizer runtime | Declared |
+| Engine3D → RT4D SceneBridge (single-process) | Partial — see [ENGINE3D_SCENE_BRIDGE_SPEC_v1.0.md](./ENGINE3D_SCENE_BRIDGE_SPEC_v1.0.md) |
+| Cluster RenderCoordinator Channels A/B/C | Declared — **not** implemented by SceneBridge |

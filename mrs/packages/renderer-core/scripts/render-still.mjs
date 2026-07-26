@@ -23,6 +23,13 @@
  *        --width 448 --height 448 --samples 24 --seed 12345 \
  *        --output /tmp/out.png --provenance /tmp/out.json
  *
+ * Engine3D frame path (OPTIONAL, not default):
+ *   This CLI remains the Genblaze prompt→archetype still path.
+ *   Engine3D → RT4D bridge capture/receipt lives in `@mrs/engine3d-core`
+ *   (`captureEngine3DScene` / `renderEngine3dFrame`) and
+ *   `src/render/rt4d/bridge/engine3dBridgeScene.js`. Do not assume
+ *   `ENGINE3D_FRAME=1` / `--engine3d-frame` hijacks this default.
+ *
  * On success the provenance JSON is written to stdout (single line) and,
  * optionally, to the --provenance path. Exit code is non-zero on failure with
  * a diagnostic on stderr.
