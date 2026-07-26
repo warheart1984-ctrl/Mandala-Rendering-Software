@@ -230,17 +230,6 @@ const TESSERACT_PROJ_DIST = 2.2;  // 4D→3D perspective denominator offset
 const TESSERACT_PROJ_SCALE = 2.1; // projected scale (outer ≈1.60, inner ≈0.63)
 const TESSERACT_CENTER_Y = 0.55;  // lift so the outer cube floats above the plane
 const TESSERACT_BEAM_RADIUS = 0.155;
-/** Concentric mandala ring node specs for `tesseract-lattice` (exported for unit asserts). */
-export const TESSERACT_RING_SPECS = [
-  // r ≥ R·sin(π/n): 0.21 ≥ 2.05·sin(π/32)≈0.201 and 0.21 ≥ 2.55·sin(π/40)≈0.200
-  { radius: 2.05, count: 32, y: TESSERACT_CENTER_Y - 0.05, nodeRadius: 0.21 },
-  { radius: 2.55, count: 40, y: TESSERACT_CENTER_Y - 0.12, nodeRadius: 0.21 },
-];
-
-/** True when neighbouring ring nodes touch or overlap: nodeRadius ≥ radius·sin(π/count). */
-export function ringNodesTouch(radius, count, nodeRadius) {
-  return nodeRadius >= radius * Math.sin(Math.PI / count);
-}
 // Centre spacing as a fraction of the beam radius. The integrator returns
 // `emission * cosθ` for light materials, so sphere-chain beams always scallop
 // slightly at the joints; 1.35 is the readability/CPU sweet spot measured for
