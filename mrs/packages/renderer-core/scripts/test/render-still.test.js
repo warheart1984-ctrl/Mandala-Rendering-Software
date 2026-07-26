@@ -8,8 +8,10 @@ import {
   resolveSceneDescriptor,
   parseArgs,
   TESSERACT_EDGES,
+  TESSERACT_RING_SPECS,
   tesseractProjectedVertices,
   beamChain,
+  ringNodesTouch,
 } from "../render-still.mjs";
 import { Camera4D } from "../../src/render/rt4d/camera/Camera4D.js";
 import { Hypersphere } from "../../src/render/rt4d/geometry/hypersurface.js";
@@ -260,9 +262,38 @@ test("tesseract lattice has 16 vertices, 32 edges, and a bounded beam chain", ()
   assert.ok(Math.abs(chain[chain.length - 1].center.x - b.x) < 1e-9);
 });
 
+test("tesseract mandala rings satisfy the node-touch continuity inequality", () => {
+  assert.ok(TESSERACT_RING_SPECS.length >= 2);
+  let expectedNodes = 0;
+  for (const { radius, count, nodeRadius } of TESSERACT_RING_SPECS) {
+    const need = radius * Math.sin(Math.PI / count);
+    assert.ok(
+      ringNodesTouch(radius, count, nodeRadius),
+      `ring R=${radius} n=${count} r=${nodeRadius}: need >= ${need.toFixed(4)}`,
+    );
+    // Prefer denser counts over ballooning nodeRadius (review: increase n).
+    assert.ok(count >= 50, `ring count ${count} too sparse for continuity at R=${radius}`);
+    expectedNodes += count;
+  }
+  assert.equal(expectedNodes, 52 + 76);
+  // Helper sanity: the prior dotted 32/40 specs fail the same predicate.
+  assert.equal(ringNodesTouch(2.05, 32, 0.13), false);
+  assert.equal(ringNodesTouch(2.55, 40, 0.11), false);
+});
+
 test("tesseract-lattice archetype reports composition and stays above blank luminance", () => {
+  const exactPrompt =
+    "A floating tesseract made of neon-blue lattice beams, suspended inside a radial " +
+    "mandala grid. The core emits a pulsing white energy sphere, illuminating the structure " +
+    "with studio-grade rim lighting. Surrounding geometry forms concentric fractal rings, " +
+    "each with reflective metallic surfaces and soft volumetric glow.";
+  assert.equal(
+    resolveSceneDescriptor({ prompt: exactPrompt, seed: 526562436 }).scene,
+    "tesseract-lattice",
+  );
+
   const { provenance } = renderStill({
-    prompt: "neon-blue tesseract lattice beams radial mandala reflective metallic",
+    prompt: exactPrompt,
     seed: 526562436,
     width: 48,
     height: 48,
@@ -273,13 +304,17 @@ test("tesseract-lattice archetype reports composition and stays above blank lumi
   assert.equal(provenance.composition.tesseract_vertices, 16);
   assert.equal(provenance.composition.tesseract_edges, 32);
   assert.ok(provenance.composition.beam_spheres >= 32);
-  // Bound the CPU cost: sphere-chain beams must not explode object count.
+  assert.equal(provenance.composition.ring_nodes, 52 + 76);
+  // Bound the CPU cost: continuous rings add ~56 nodes (~541 total).
   assert.ok(
     provenance.object_count <= 800,
     `object_count ${provenance.object_count} exceeds the draft CPU budget`,
   );
+  assert.ok(
+    provenance.object_count >= 500,
+    `object_count ${provenance.object_count} unexpectedly low after continuous rings`,
+  );
   assert.equal(provenance.composition.emissive_cores, 1);
-  assert.ok(provenance.composition.ring_nodes >= 16);
   // Draft sample counts use soft emissive rings, not black GGX silhouettes.
   assert.equal(provenance.composition.ring_material, "ring-glow");
   assert.ok(
