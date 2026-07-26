@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "MRS ChatGPT App MCP server (SSE + skybridge widget resource)",
+  "description": "MRS 4D Renderer MCP server — deterministic procedural RT4D PNGs for ChatGPT",
   "scripts": {
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",

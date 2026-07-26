@@ -1,5 +1,5 @@
 /**
- * MRS ChatGPT App MCP server.
+ * MRS 4D Renderer — ChatGPT MCP server.
  *
  * Transports (ChatGPT Apps prefer Streamable HTTP):
  * - Streamable HTTP: POST/GET/DELETE /mcp (stateless JSON mode for OpenAI clients)
@@ -59,10 +59,15 @@ import {
   renderSceneSpecInputShape,
   handleRenderSceneSpec,
 } from "./tools/render-scene-spec.js";
+import {
+  render4dPromptInputShape,
+  handleRender4dPrompt,
+} from "./tools/render-4d-prompt.js";
 import { handleDescribeCapabilities } from "./tools/describe-capabilities.js";
 import {
   getRenderDir,
   safeRenderFileName,
+  type PngImagePayload,
 } from "./render-jobs.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -99,21 +104,41 @@ function widgetMeta(invoking: string, invoked: string) {
   } as const;
 }
 
+/** Progress-only meta — no outputTemplate, so ChatGPT does not force the viewport. */
+function renderProgressMeta(invoking: string, invoked: string) {
+  // ext-apps registerAppTool requires _meta.ui; omit openai/outputTemplate so
+  // ChatGPT does not force the viewport widget for PNG image responses.
+  return {
+    ui: { resourceUri: RESOURCE_URI },
+    "openai/toolInvocation/invoking": invoking,
+    "openai/toolInvocation/invoked": invoked,
+  } as const;
+}
+
+function mcpImageContent(image: PngImagePayload) {
+  return {
+    type: "image" as const,
+    data: image.data,
+    mimeType: image.mimeType,
+  };
+}
+
 function createMrsServer(): McpServer {
   const server = new McpServer({
-    name: "mrs-chatgpt-app",
-    version: "0.1.0",
+    name: "mrs-4d-renderer",
+    version: "0.2.0",
   });
 
   const widgetHtml = readWidgetHtml();
 
   registerAppResource(
     server,
-    "MRS 4D Viewport",
+    "MRS 4D Renderer Viewport (optional)",
     RESOURCE_URI,
     {
       mimeType: RESOURCE_MIME_TYPE,
-      description: "Interactive 4D surface viewport widget (skybridge)",
+      description:
+        "Optional interactive Scene4DDTO wireframe widget — not the path-traced PNG renderer",
     },
     async () => ({
       contents: [
@@ -266,29 +291,76 @@ function createMrsServer(): McpServer {
     server,
     "render_scene_spec_rt4d",
     {
-      title: "Render Scene Spec (RT4D)",
+      title: "Render Scene Spec (RT4D PNG)",
       description:
-        "Path-trace a SceneSpecification locally via MRS RT4D (CPU). Returns pngUrl + provenance. Not FLUX, not Genblaze. Default quality=draft.",
+        "Path-trace a SceneSpecification via local MRS RT4D (CPU) and return a PNG image plus provenance. Deterministic procedural renderer — not FLUX, not diffusion, not Genblaze. Default quality=draft.",
       inputSchema: renderSceneSpecInputShape,
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetMeta("Path-tracing scene", "RT4D still ready"),
+      _meta: renderProgressMeta("Path-tracing scene", "RT4D PNG ready"),
     },
     async (args) => {
       try {
-        const { text, render } = await handleRenderSceneSpec(args);
+        const { text, image, render } = await handleRenderSceneSpec(args);
         return {
-          content: [{ type: "text" as const, text }],
+          content: [
+            { type: "text" as const, text },
+            mcpImageContent(image),
+          ],
           structuredContent: { render },
-          _meta: widgetMeta("Path-tracing scene", "RT4D still ready"),
+          _meta: renderProgressMeta("Path-tracing scene", "RT4D PNG ready"),
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return {
-          content: [{ type: "text" as const, text: `RT4D render failed: ${message}` }],
+          content: [
+            { type: "text" as const, text: `RT4D render failed: ${message}` },
+          ],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  registerAppTool(
+    server,
+    "render_4d_prompt",
+    {
+      title: "Render 4D from Prompt (RT4D PNG)",
+      description:
+        "Render a deterministic procedural 4D still from a text prompt (prompt selects scene archetype + palette). Returns PNG image + SHA-256 provenance. NOT text-to-image / not diffusion.",
+      inputSchema: render4dPromptInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: renderProgressMeta("Rendering 4D still", "RT4D PNG ready"),
+    },
+    async (args) => {
+      try {
+        const { text, image, render } = await handleRender4dPrompt(args);
+        return {
+          content: [
+            { type: "text" as const, text },
+            mcpImageContent(image),
+          ],
+          structuredContent: { render },
+          _meta: renderProgressMeta("Rendering 4D still", "RT4D PNG ready"),
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `RT4D prompt render failed: ${message}`,
+            },
+          ],
           structuredContent: { error: message },
           isError: true,
         };
@@ -302,7 +374,7 @@ function createMrsServer(): McpServer {
     {
       title: "Describe 4DRS Capabilities",
       description:
-        "Honest capability card: supported surfaces, RT4D stills vs Canvas2D widget, and what is not included (no FLUX/Genblaze).",
+        "Honest capability card: RT4D PNG renderer vs optional Canvas2D viewport, and what is not included (no FLUX/Genblaze/diffusion).",
       inputSchema: {
         detail: z
           .enum(["summary"])
@@ -314,14 +386,14 @@ function createMrsServer(): McpServer {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetMeta("Reading capabilities", "Capabilities ready"),
+      _meta: renderProgressMeta("Reading capabilities", "Capabilities ready"),
     },
     async () => {
       const { text, capabilities } = handleDescribeCapabilities();
       return {
         content: [{ type: "text" as const, text }],
         structuredContent: { capabilities },
-        _meta: widgetMeta("Reading capabilities", "Capabilities ready"),
+        _meta: renderProgressMeta("Reading capabilities", "Capabilities ready"),
       };
     }
   );
@@ -478,7 +550,10 @@ const httpServer = createServer(async (req, res) => {
     res.end(
       JSON.stringify({
         ok: true,
-        name: "mrs-chatgpt-app",
+        name: "MRS 4D Renderer",
+        serverId: "mrs-4d-renderer",
+        description:
+          "Render deterministic procedural 4D scenes and return PNGs with provenance.",
         resourceUri: RESOURCE_URI,
         liveLinkUrl: resolveLiveLinkUrl(),
         assetsDir: ASSETS_DIR,
@@ -489,14 +564,15 @@ const httpServer = createServer(async (req, res) => {
           legacySse: `GET ${ssePath} + POST ${ssePostPath}`,
         },
         tools: [
+          "render_4d_prompt",
+          "render_scene_spec_rt4d",
+          "validate_scene_spec",
+          "describe_4drs_capabilities",
           "create_4d_scene",
           "update_4d_scene",
           "inspect_4d_point",
           "export_4d_scene",
           "replay_4d_scene",
-          "validate_scene_spec",
-          "render_scene_spec_rt4d",
-          "describe_4drs_capabilities",
         ],
       })
     );
@@ -558,6 +634,7 @@ httpServer.listen(PORT, () => {
     `  Legacy POST:     http://127.0.0.1:${PORT}${ssePostPath}?sessionId=...`
   );
   console.log(`  Health: GET http://127.0.0.1:${PORT}/health`);
+  console.log(`  Primary tools: render_4d_prompt, render_scene_spec_rt4d`);
   console.log(`  LiveLink default: ${resolveLiveLinkUrl()}`);
   console.log(`  Assets: ${ASSETS_DIR}`);
 });

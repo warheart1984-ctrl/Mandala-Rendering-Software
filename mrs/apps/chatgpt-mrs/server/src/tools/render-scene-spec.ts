@@ -6,6 +6,8 @@ import {
 import {
   runSceneSpecRender,
   type QualityPreset,
+  type PngImagePayload,
+  RENDER_CAPS,
 } from "../render-jobs.js";
 import { parseSceneSpecPayload } from "./schema-helpers.js";
 
@@ -17,22 +19,68 @@ export const renderSceneSpecInputShape = {
       "SceneSpecification as a JSON string to path-trace via local RT4D"
     ),
   quality: z
-    .enum(["draft", "standard"])
+    .enum(["smoke", "draft", "standard"])
     .optional()
-    .describe("draft=256²@8spp (~seconds); standard=448²@24spp (slower)"),
+    .describe(
+      "smoke=64²@2spp (tests); draft=256²@8spp (default); standard=448²@24spp"
+    ),
+  width: z
+    .number()
+    .int()
+    .min(RENDER_CAPS.minDim)
+    .max(RENDER_CAPS.maxDim)
+    .optional()
+    .describe(`Override width (${RENDER_CAPS.minDim}–${RENDER_CAPS.maxDim})`),
+  height: z
+    .number()
+    .int()
+    .min(RENDER_CAPS.minDim)
+    .max(RENDER_CAPS.maxDim)
+    .optional()
+    .describe(`Override height (${RENDER_CAPS.minDim}–${RENDER_CAPS.maxDim})`),
+  samples: z
+    .number()
+    .int()
+    .min(RENDER_CAPS.minSamples)
+    .max(RENDER_CAPS.maxSamples)
+    .optional()
+    .describe(`Samples per pixel (${RENDER_CAPS.minSamples}–${RENDER_CAPS.maxSamples})`),
+  maxDepth: z
+    .number()
+    .int()
+    .min(RENDER_CAPS.minDepth)
+    .max(RENDER_CAPS.maxDepth)
+    .optional()
+    .describe(`Path bounce depth (${RENDER_CAPS.minDepth}–${RENDER_CAPS.maxDepth})`),
+  seed: z
+    .number()
+    .int()
+    .optional()
+    .describe("Optional seed written into provenance when supported by the spec"),
 };
 
 const parser = z.object(renderSceneSpecInputShape);
 
-export async function handleRenderSceneSpec(args: unknown): Promise<{
+export type RenderToolResult = {
   text: string;
+  image: PngImagePayload;
   render: {
-    pngUrl: string;
     jobId: string;
+    pngUrl: string;
     quality: QualityPreset;
+    width: number;
+    height: number;
+    samples: number;
+    maxDepth: number;
+    provider: string;
+    sha256: string;
     provenance: Record<string, unknown>;
   };
-}> {
+};
+
+export async function handleRenderSceneSpec(
+  args: unknown
+): Promise<RenderToolResult> {
   const parsed = parser.parse(args ?? {});
   const quality = (parsed.quality ?? "draft") as QualityPreset;
   const sceneSpec = parseSceneSpecPayload(parsed.sceneSpec);
@@ -56,12 +104,20 @@ export async function handleRenderSceneSpec(args: unknown): Promise<{
 
   const result = await runSceneSpecRender(sceneSpec, quality);
 
+  const sha256 = result.image.sha256;
   return {
-    text: `RT4D still ready (${quality}) · ${result.pngUrl} · sha256=${String(result.provenance.sha256 ?? "—").slice(0, 12)}…`,
+    text: `RT4D PNG ready (${result.width}×${result.height} @ ${result.samples}spp, ${quality}) · sha256=${sha256.slice(0, 12)}… · provider=${result.provider}`,
+    image: result.image,
     render: {
-      pngUrl: result.pngUrl,
       jobId: result.jobId,
+      pngUrl: result.pngUrl,
       quality: result.quality,
+      width: result.width,
+      height: result.height,
+      samples: result.samples,
+      maxDepth: result.maxDepth,
+      provider: result.provider,
+      sha256,
       provenance: result.provenance,
     },
   };

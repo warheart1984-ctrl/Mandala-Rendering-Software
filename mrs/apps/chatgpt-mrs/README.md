@@ -1,97 +1,69 @@
-# MRS × ChatGPT App
+# MRS 4D Renderer × ChatGPT
 
-MCP App that exposes 4D scene tools and a skybridge viewport widget.
+MCP connector that **renders deterministic procedural 4D stills** (CPU RT4D) and returns PNGs to ChatGPT as MCP `image` content. An optional skybridge viewport widget remains for Scene4DDTO wireframe tools — it is not the primary render path.
+
+## ChatGPT connector form
+
+| Field | Value |
+|-------|--------|
+| **Name** | `MRS 4D Renderer` |
+| **Description** | `Render deterministic procedural 4D scenes and return PNGs with provenance.` |
+| **MCP URL** | `https://<your-ngrok>/mcp` (Streamable HTTP) |
+| **Auth** | No authentication |
 
 ## Architecture
 
 ```
-ChatGPT / MCP Inspector
-        │  SSE  GET /mcp  +  POST /mcp/messages
-        ▼
+ChatGPT
+   │  Streamable HTTP  POST /mcp
+   ▼
 @mrs/chatgpt-app-server  (:8000)
-  tools: create / update / inspect / export / replay
-  resource: ui://mrs-viewport/mrs-viewport.html  (text/html+skybridge)
-        │
-        ├─ in-memory Scene4DDTO Map
-        ├─ MRSInspector4D (in-process)
-        ├─ optional WS → LiveLinkServer (default ws://127.0.0.1:9487)
-        └─ widget HTML ← apps/chatgpt-mrs/assets/mrs-viewport.html
-                ▲
-                │ Vite build
-        @mrs/chatgpt-app-web → @mrs/renderer-web → @mrs/renderer-core (Canvas2D)
+  PRIMARY:
+    render_4d_prompt          → renderer-core/scripts/render-still.mjs (in-process)
+    render_scene_spec_rt4d    → renderer-core/scripts/render-scene.mjs (subprocess)
+    → content: [{type:text}, {type:image, mimeType:image/png, data:base64}]
+  OPTIONAL viewport:
+    create/update/inspect Scene4DDTO → Canvas2D widget (openai/outputTemplate)
 ```
+
+Honest scope (Drive-G-1): procedural scene selection + seeded PathTracer4D. **Not** diffusion / text-to-image / Genblaze / FLUX.
 
 ## Setup
 
 ```bash
 cd mrs
-pnpm run setup    # preferred on fresh clones (install + rebuild canvas/esbuild)
+pnpm run setup
 pnpm --filter @mrs/chatgpt-app-web build
 pnpm --filter @mrs/chatgpt-app-server start
 ```
 
-The widget uses browser Canvas2D — **native `canvas` is optional** for ChatGPT App day-to-day. It is only needed for headless PNG export (`export_4d_scene` image / ExportManager). See `mrs/README.md` → Windows native canvas.
-
-Server: `http://127.0.0.1:8000`
-
 - Health: `GET /health`
-- MCP SSE: `GET /mcp`
-- Messages: `POST /mcp/messages?sessionId=...`
+- MCP: `POST /mcp` (Streamable HTTP)
+- Legacy SSE: `GET /sse` + `POST /mcp/messages`
 
-### MCP Inspector
+## Primary tools
 
-1. Open https://modelcontextprotocol.github.io/inspector/
-2. Transport: SSE → `http://localhost:8000/mcp`
-3. Call `create_4d_scene` with `{ "surface": "tesseract" }`
+1. `render_4d_prompt` — prompt → procedural archetype → RT4D PNG (MCP image + provenance)
+2. `render_scene_spec_rt4d` — SceneSpecification JSON string → RT4D PNG (MCP image + provenance)
+3. `validate_scene_spec` / `describe_4drs_capabilities` — validation & honest capability card
 
-### ChatGPT + ngrok
+Optional viewport tools: `create_4d_scene`, `update_4d_scene`, `inspect_4d_point`, `export_4d_scene`, `replay_4d_scene`.
+
+## Tests
 
 ```bash
-ngrok http 8000
+pnpm --filter @mrs/chatgpt-app-server test
+# schema OpenAI-safety + 64×64@2spp render smoke
 ```
-
-Add the public `/mcp` URL as a ChatGPT custom MCP / app connector (per current OpenAI Apps docs). Widget MIME is `RESOURCE_MIME_TYPE` (`text/html+skybridge`).
-
-## Capability table (Drive-G-1)
-
-| Capability | Status | Evidence |
-|------------|--------|----------|
-| Create/update in-memory scene | **real** | `server/src/scene-store.ts`, tools |
-| Viewport Canvas2D render | **real** | `@mrs/renderer-web` + `CanvasRenderer` |
-| WebGPU in widget | **optional/declared** | probed; active path is Canvas2D only |
-| Inspect point (local inspector) | **real** | `MRSInspector4D.handleWireMessage` |
-| Inspect via LiveLink | **optional** | `MRS_INSPECT_VIA_LIVELINK=1` + running server on 9487 |
-| Export `json` / `mesh` | **real** | in-process DTO/mesh |
-| Export `glTF` / `image` | **best-effort** | `ExportManager` (needs native `canvas`) |
-| Export `replay` | **not_implemented** | clear structured error |
-| Replay `timeline` | **declared** | metadata only on scene |
-| Replay `cssv` | **not_implemented** | clear structured error |
-| LiveLink `set_config` on update | **best-effort** | fails soft if no server |
-
-## Versions (pinned from openai-apps-sdk-examples evidence)
-
-| Package | Pin / resolved | Source |
-|---------|----------------|--------|
-| `@modelcontextprotocol/sdk` | `^1.29.0` (resolved with ext-apps peer) | ext-apps 1.7.x peer; examples also cite `^1.12.1` |
-| `@modelcontextprotocol/ext-apps` | `^1.0.1` (resolved **1.7.4**) | openai-apps-sdk-examples / mcp_app_basics |
-| SSE transport pattern | kitchen_sink_server_node | GET `/mcp` + POST `/mcp/messages` |
-| `@openai/apps-sdk-ui` | **0.2.2** (installed) | `web/src/ui.tsx` wraps official Badge/Button; CSS via `@openai/apps-sdk-ui/css` |
 
 ## Env
 
 | Var | Default | Meaning |
 |-----|---------|---------|
 | `PORT` / `MRS_CHATGPT_PORT` | `8000` | HTTP listen |
-| `MRS_LIVELINK_PORT` | `9487` | LiveLink WS port |
-| `MRS_LIVELINK_URL` | `ws://127.0.0.1:9487` | Full WS URL |
-| `MRS_INSPECT_VIA_LIVELINK` | unset | Set `1` to try LiveLink before local inspector |
+| `MRS_PUBLIC_BASE_URL` | unset | Public origin for optional `/renders/:uuid.png` URLs |
+| `MRS_RENDER_DIR` | OS tmp | PNG job directory |
+| `MRS_RENDER_TIMEOUT_MS` | `120000` | Per-job timeout |
+| `MRS_RENDER_MAX_PNG_BYTES` | `1500000` | MCP image size cap |
+| `MRS_LIVELINK_URL` | `ws://127.0.0.1:9487` | Optional LiveLink |
 | `MRS_AUTH_MODE` | `dev` | `dev` \| `api-key` |
-| `MRS_API_KEY` | unset | Required when `api-key` mode |
-
-## Tools
-
-1. `create_4d_scene` — builds `Scene4DDTO`, stores in Map, returns widget template meta
-2. `update_4d_scene` — merges patch; best-effort LiveLink `set_config`
-3. `inspect_4d_point` — screen or ray → `MRSInspector4D`
-4. `export_4d_scene` — format-specific (see table)
-5. `replay_4d_scene` — timeline declared / cssv not_implemented
