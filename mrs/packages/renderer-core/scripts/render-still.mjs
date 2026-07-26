@@ -32,6 +32,7 @@ import { createHash } from "node:crypto";
 import { deflateSync } from "node:zlib";
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import process from "node:process";
 
 import { Scene4D } from "../src/render/rt4d/scene/Scene4D.js";
@@ -83,6 +84,7 @@ const SCENE_ARCHETYPES = [
   "torus-ring",
   "lattice-grid",
   "tesseract-vertices",
+  "mythic-tableau",
 ];
 
 const PALETTES = {
@@ -97,6 +99,7 @@ const PALETTES = {
 
 function pickScene(prompt) {
   const p = (prompt || "").toLowerCase();
+  if (/(dragon|wolf|battle|creature|mountain|tableau)/.test(p)) return "mythic-tableau";
   if (/(tesseract|hypercube|4d|four[- ]?dimension|8-cell)/.test(p)) return "tesseract-vertices";
   if (/(torus|ring|mandala|donut|halo|loop|orbit)/.test(p)) return "torus-ring";
   if (/(grid|lattice|matrix|array|mesh|net)/.test(p)) return "lattice-grid";
@@ -174,7 +177,17 @@ function buildScene(descriptor, seed) {
   const [ar, ag, ab] = descriptor.palette.albedo;
   const albedo = vec4(ar, ag, ab, 1);
 
-  if (descriptor.materialType === "ggx") {
+  if (descriptor.scene === "mythic-tableau") {
+    // Diffuse body stays readable at draft sample counts (GGX silhouettes go black).
+    scene.materials.createMaterial("surf", "lambertian", {
+      albedo: vec4(
+        Math.min(1, ar * 1.15 + 0.08),
+        Math.min(1, ag * 1.15 + 0.08),
+        Math.min(1, ab * 1.15 + 0.08),
+        1,
+      ),
+    });
+  } else if (descriptor.materialType === "ggx") {
     scene.materials.createMaterial("surf", "ggx", {
       albedo,
       // Soft enough to read under 4D NEE at demo sample counts.
@@ -185,20 +198,39 @@ function buildScene(descriptor, seed) {
     scene.materials.createMaterial("surf", "lambertian", { albedo });
   }
   scene.materials.createMaterial("ground", "lambertian", {
-    albedo: vec4(0.32, 0.34, 0.4, 1),
+    albedo: vec4(0.42, 0.45, 0.52, 1),
   });
   // Emission scaled for the 4D area→solid-angle Jacobian (r³). Too low and
   // stills look like dark noise; the previous r² PDF over-brightened fireflies.
   scene.materials.createMaterial("keylight", "light", {
-    emission: vec4(55, 52, 48, 0),
+    emission: vec4(90, 84, 76, 0),
     albedo: vec4(1, 1, 1, 1),
   });
   scene.materials.createMaterial("filllight", "light", {
-    emission: vec4(18, 20, 24, 0),
+    emission: vec4(32, 36, 42, 0),
     albedo: vec4(1, 1, 1, 1),
+  });
+  // High-roughness GGX / lambertian accents stay readable at draft sample counts.
+  // Do NOT use type "light" for in-frame accents — those render as white disks.
+  scene.materials.createMaterial("silver", "ggx", {
+    albedo: vec4(0.78, 0.88, 0.98, 1),
+    roughness: 0.55,
+    f0: vec4(0.55, 0.6, 0.7, 1),
+  });
+  scene.materials.createMaterial("gold", "ggx", {
+    albedo: vec4(0.98, 0.72, 0.18, 1),
+    roughness: 0.55,
+    f0: vec4(0.7, 0.5, 0.2, 1),
+  });
+  scene.materials.createMaterial("shadow", "lambertian", {
+    albedo: vec4(0.18, 0.2, 0.28, 1),
+  });
+  scene.materials.createMaterial("radiant-core", "lambertian", {
+    albedo: vec4(0.98, 0.9, 0.45, 1),
   });
 
   const objects = [];
+  const accents = [];
   const jitter = (amp) => (rng() - 0.5) * 2 * amp;
 
   switch (descriptor.scene) {
@@ -250,7 +282,7 @@ function buildScene(descriptor, seed) {
       break;
     }
     case "tesseract-vertices":
-    default: {
+    {
       // Project the 16 tesseract vertices into the camera's central W-slice
       // (w→0) with a mild perspective so both cubes read as a classic
       // tesseract diagram instead of vanishing off the hyperplane.
@@ -267,24 +299,81 @@ function buildScene(descriptor, seed) {
       }
       break;
     }
+    case "mythic-tableau": {
+      // Abstract creature anatomy built from deterministic 4D primitives.
+      // Compact frustum composition so body / wings / attackers / divers all read
+      // at typical orbit cameras. NOT semantic text-to-image synthesis.
+      // Mountain dragon: heavy central body, raised head, segmented folded wings.
+      objects.push(new Hypersphere(vec4(0, 0.05, 0, 0), 0.7));
+      objects.push(new Hypersphere(vec4(0.0, 0.62, -0.05, 0), 0.38));
+      objects.push(new Hypersphere(vec4(0.1, 0.95, -0.08, 0), 0.22));
+      for (const side of [-1, 1]) {
+        for (let i = 0; i < 4; i++) {
+          objects.push(
+            new Hypersphere(
+              vec4(side * (0.5 + i * 0.28), 0.5 - i * 0.1, 0.08 + i * 0.06, 0),
+              0.3 - i * 0.03,
+            ),
+          );
+        }
+      }
+
+      // Wolf-like attackers climbing from the lower foreground (in-frame).
+      for (const side of [-1, 1]) {
+        for (let i = 0; i < 3; i++) {
+          accents.push({
+            primitive: new Hypersphere(
+              vec4(side * (0.85 + i * 0.28), -0.55 + i * 0.14, -0.55 + i * 0.1, 0),
+              0.2 - i * 0.02,
+            ),
+            materialId: "shadow",
+          });
+        }
+      }
+
+      // Two descending lattice dragons form the upper triangle (kept inside FOV).
+      for (const [side, materialId] of [[-1, "silver"], [1, "gold"]]) {
+        for (let i = 0; i < 5; i++) {
+          accents.push({
+            primitive: new Hypersphere(
+              vec4(side * (1.1 - i * 0.14), 1.55 - i * 0.2, 0.1 + i * 0.05, 0),
+              0.26 - i * 0.02,
+            ),
+            materialId,
+          });
+        }
+        accents.push({
+          primitive: new Hypersphere(vec4(side * 1.1, 1.55, 0.1, 0), 0.14),
+          materialId: "radiant-core",
+        });
+      }
+      break;
+    }
+    default: {
+      objects.push(new Hypersphere(vec4(0, 0.1, 0, 0), 1.15));
+      break;
+    }
   }
 
   for (const obj of objects) scene.addPrimitive(obj, "surf");
+  for (const { primitive, materialId } of accents) scene.addPrimitive(primitive, materialId);
   scene.addPrimitive(new Hyperplane(vec4(0, 1, 0, 0), -1.4), "ground");
-  // Lights high and off-axis so the camera rarely frames the emitters.
-  scene.addLight(new Hypersphere(vec4(0.4, 5.8, 0.2, 0), 0.55), "keylight");
-  scene.addLight(new Hypersphere(vec4(-3.8, 3.6, 2.4, 0), 0.4), "filllight");
+  // Lights elevated and off to the sides — close enough to light the scene,
+  // outside the camera frustum so they do not appear as white disks.
+  scene.addLight(new Hypersphere(vec4(4.2, 7.2, -3.8, 0), 0.7), "keylight");
+  scene.addLight(new Hypersphere(vec4(-5.0, 5.8, 4.2, 0), 0.55), "filllight");
   scene.build();
 
-  return { scene, objectCount: objects.length };
+  return { scene, objectCount: objects.length + accents.length };
 }
 
 function buildCamera(seed, width, height) {
   const rng = mulberry32(seed ^ 0x2545f491);
   const theta = rng() * Math.PI * 2;
-  const radius = 5.6;
-  const elevation = 1.45 + rng() * 0.55;
+  const radius = 4.4;
+  const elevation = 1.55 + rng() * 0.25;
   const camW = 0; // stay in the projected slice with the geometry
+  const lookY = 0.45;
   const position = {
     x: Math.cos(theta) * radius,
     y: elevation,
@@ -297,17 +386,17 @@ function buildCamera(seed, width, height) {
     z: position.z,
     w: position.w,
     lx: 0,
-    ly: 0.1,
+    ly: lookY,
     lz: 0,
     lw: 0,
-    fovX: 48,
-    fovY: 48,
+    fovX: 52,
+    fovY: 52,
     fovZ: 8,
     fovW: 8,
     width,
     height,
   });
-  return { camera, position, lookAt: { x: 0, y: 0.1, z: 0, w: 0 } };
+  return { camera, position, lookAt: { x: 0, y: lookY, z: 0, w: 0 } };
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +506,7 @@ export function renderStill(options = {}) {
     seed,
   });
 
+
   const { scene, objectCount } = buildScene(descriptor, seed);
   const { camera, position, lookAt } = buildCamera(seed, width, height);
 
@@ -424,7 +514,7 @@ export function renderStill(options = {}) {
   const tracer = new PathTracer4D({ maxDepth, samplesPerPixel: samples, rng });
 
   const rgba = Buffer.alloc(width * height * 4);
-  const exposure = 2.4;
+  const exposure = descriptor.scene === "mythic-tableau" ? 3.2 : 2.4;
   let lumSum = 0;
   // Center ROI excludes ground band (bottom 25%) so grey floor cannot alone pass.
   let roiLumSum = 0;
@@ -508,6 +598,7 @@ export function renderStill(options = {}) {
     mean_luminance_center: Number(meanLuminanceCenter.toFixed(3)),
     invariant: { id: "PI-GEO-LENGTH", status: "tested", ok: invariantOk },
   };
+
 
   return { png, provenance };
 }

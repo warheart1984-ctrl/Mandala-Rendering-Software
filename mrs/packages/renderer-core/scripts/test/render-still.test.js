@@ -8,6 +8,7 @@ import {
   resolveSceneDescriptor,
   parseArgs,
 } from "../render-still.mjs";
+import { Camera4D } from "../../src/render/rt4d/camera/Camera4D.js";
 
 const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -117,6 +118,31 @@ test("prompt keywords drive scene + palette selection (procedural, not generativ
   const d2 = resolveSceneDescriptor({ prompt: "warm torus ring", seed });
   assert.equal(d2.scene, "torus-ring");
   assert.equal(d2.palette.name, "warm");
+});
+
+test("creature battle prompts select the procedural mythic tableau before tesseract accents", () => {
+  const prompt = "mythic dragon battle on a mountain with wolves and tesseract-light cores";
+  const descriptor = resolveSceneDescriptor({ prompt, seed: hashPromptToSeed(prompt) });
+  assert.equal(descriptor.scene, "mythic-tableau");
+});
+
+test("camera screen-up follows world-up", () => {
+  const camera = new Camera4D({
+    x: 5.2,
+    y: 1.4,
+    z: 1.9,
+    lx: 0,
+    ly: 0.55,
+    lz: 0,
+    width: 128,
+    height: 128,
+    fovX: 48,
+    fovY: 48,
+  });
+  assert.ok(camera.basis.up.y > 0, `basis up.y ${camera.basis.up.y} must be positive`);
+  const top = camera.generateRay(64, 0, 0.5, 0.5, 0.5, 0.5);
+  const bottom = camera.generateRay(64, 127, 0.5, 0.5, 0.5, 0.5);
+  assert.ok(top.direction.y > bottom.direction.y, "top-of-frame ray must point above bottom-of-frame ray");
 });
 
 test("explicit scene + palette overrides win", () => {

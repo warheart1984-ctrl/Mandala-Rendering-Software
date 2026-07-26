@@ -1,9 +1,11 @@
 using UnityEngine;
 
 /// <summary>
-/// Unity 4D surface renderer — wireframe (Gizmos) + solid (MeshFilter/MeshRenderer).
+/// Unity 4D surface renderer — wireframe (Gizmos) + solid (MeshFilter/MeshRenderer)
+/// + optional ShadingInput4D ComputeBuffer (inspection/debug).
 /// Mesh SoT: 4d-renderer export under StreamingAssets/surfaces.
-/// Status: partial — solid draw implemented; Play Mode CI via scripts/test-host-solid-play.mjs + optional Unity batch.
+/// Status: partial — solid draw + shading buffer fill; not BVH traversal / Shade4D.
+/// PLP remains the Scene3D host path; this buffer is an inspection channel.
 /// </summary>
 [ExecuteAlways]
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -29,6 +31,13 @@ public class FourDTesseractRenderer : MonoBehaviour
     public float speed = 1f;
     public Material solidMaterial;
 
+    [Header("Shading buffer (inspection — partial)")]
+    [Tooltip("Maps to ProjectionPolicyId 0/1 per Observation Mode RFC examples. PLP remains Scene3D host path.")]
+    public ObservationModeChoice observationMode = ObservationModeChoice.Perspective4DTo3D;
+    public uint shadingMaterialId = 0;
+    [Tooltip("When true, fills a ComputeBuffer of ShadingInput4D (one per vertex) for debug readback.")]
+    public bool enableShadingBuffer = true;
+
     Vector4[] verts4D;
     int[,] edges;
     int[] facesFlat;
@@ -40,6 +49,9 @@ public class FourDTesseractRenderer : MonoBehaviour
     Vector3[] _normals;
     Color[] _colors;
 
+    ComputeBuffer _shadingBuffer;
+    ShadingInput4D[] _shadingCpu;
+
     void Awake() => EnsureComponents();
 
     void OnEnable()
@@ -47,6 +59,12 @@ public class FourDTesseractRenderer : MonoBehaviour
         EnsureComponents();
         ReloadMesh();
         EnsureSolidMaterial();
+        EnsureShadingBuffer();
+    }
+
+    void OnDisable()
+    {
+        ReleaseShadingBuffer();
     }
 
     void OnValidate()
@@ -63,6 +81,8 @@ public class FourDTesseractRenderer : MonoBehaviour
         float t = Application.isPlaying ? Time.time * speed : Time.realtimeSinceStartup * speed;
         if (renderMode == RenderMode.Solid || renderMode == RenderMode.Both)
             UpdateSolidMesh(t);
+        if (enableShadingBuffer)
+            FillShadingBuffer(t);
     }
 
     public void SetSurface(string id)
@@ -148,6 +168,84 @@ public class FourDTesseractRenderer : MonoBehaviour
         _meshFilter.sharedMesh = _solidMesh;
         UpdateSolidVisibility();
         EnsureSolidMaterial();
+        EnsureShadingBuffer();
+    }
+
+    void EnsureShadingBuffer()
+    {
+        if (!enableShadingBuffer || verts4D == null || verts4D.Length == 0)
+        {
+            ReleaseShadingBuffer();
+            return;
+        }
+        int count = verts4D.Length;
+        if (_shadingBuffer != null && _shadingBuffer.count != count)
+            ReleaseShadingBuffer();
+        if (_shadingBuffer == null)
+        {
+            _shadingBuffer = new ComputeBuffer(count, FourDRendererLayout.ShadingInput4DStrideBytes);
+            _shadingCpu = new ShadingInput4D[count];
+        }
+        else if (_shadingCpu == null || _shadingCpu.Length != count)
+        {
+            _shadingCpu = new ShadingInput4D[count];
+        }
+    }
+
+    void ReleaseShadingBuffer()
+    {
+        if (_shadingBuffer != null)
+        {
+            _shadingBuffer.Release();
+            _shadingBuffer = null;
+        }
+        _shadingCpu = null;
+    }
+
+    /// <summary>
+    /// Fills one ShadingInput4D per vertex (Position4D / placeholder Normal4D / ViewDir4D / ids).
+    /// Status: partial inspection path — not Shade4D / BVH traversal.
+    /// </summary>
+    void FillShadingBuffer(float t)
+    {
+        EnsureShadingBuffer();
+        if (_shadingBuffer == null || _shadingCpu == null || verts4D == null) return;
+
+        uint projId = FourDObservationModeMap.ToProjectionPolicyId(observationMode);
+        Vector3 camPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
+
+        for (int i = 0; i < verts4D.Length; i++)
+        {
+            Vector4 p4 = Rotate4D(verts4D[i], t);
+            Vector3 p3 = Project3DtoWorld(Project4Dto3D(p4));
+            Vector3 view3 = (camPos - p3).normalized;
+            if (view3.sqrMagnitude < 1e-8f) view3 = Vector3.forward;
+
+            _shadingCpu[i] = new ShadingInput4D
+            {
+                Position4D = p4,
+                // Placeholder: 4D normal not derived from mesh topology here.
+                Normal4D = new Vector4(0f, 0f, 0f, 1f),
+                ViewDir4D = new Vector4(view3.x, view3.y, view3.z, 0f),
+                MaterialId = shadingMaterialId,
+                ProjectionPolicyId = projId,
+            };
+        }
+        _shadingBuffer.SetData(_shadingCpu);
+    }
+
+    /// <summary>
+    /// Main-thread readback of the inspection shading buffer. Returns a copy; empty if disabled.
+    /// Status: partial — does not imply GPU kernel consumption.
+    /// </summary>
+    public ShadingInput4D[] ReadBackShadingData()
+    {
+        if (_shadingBuffer == null || _shadingCpu == null)
+            return System.Array.Empty<ShadingInput4D>();
+        _shadingBuffer.GetData(_shadingCpu);
+        var copy = new ShadingInput4D[_shadingCpu.Length];
+        System.Array.Copy(_shadingCpu, copy, _shadingCpu.Length);
+        return copy;
     }
 
     void BuildTesseractFallback()

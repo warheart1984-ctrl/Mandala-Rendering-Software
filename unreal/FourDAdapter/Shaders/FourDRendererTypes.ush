@@ -5,6 +5,37 @@
 #ifndef FOURD_RENDERER_TYPES_USH
 #define FOURD_RENDERER_TYPES_USH
 
+// Geometry / BVH — declared only (mirrors docs/4d-engine/v2/shader-abi/FourDRendererTypes.hlsli)
+struct Primitive4D
+{
+    float4 P0;
+    float4 P1;
+    float4 P2;
+    uint   MaterialId;
+    uint   ProjectionPolicyId;
+};
+
+struct EmbeddedSurface4D
+{
+    float4 Origin;
+    float4 BasisX;
+    float4 BasisY;
+    float4 BasisZ;
+    float2 UVScale;
+    uint   MaterialId;
+    uint   ProjectionPolicyId;
+};
+
+struct BVHNode4D
+{
+    float4 BoundsMin;
+    float4 BoundsMax;
+    uint   FirstChildOrPrim;
+    uint   ChildCount;
+    uint   PrimCount;
+    uint   Flags;
+};
+
 struct Ray4D
 {
     float4 Origin;

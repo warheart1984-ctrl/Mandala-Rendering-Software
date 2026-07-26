@@ -1,0 +1,154 @@
+{
+  "schemaId": "fourd-shading-types",
+  "schemaVersion": "1.0.0",
+  "status": "declared",
+  "description": "Field-name mirror of FourDRenderer v2 RFC structs for tests and host interop. Does not claim GPU BVH traversal or photoreal shading.",
+  "rfcSources": [
+    "docs/4d-engine/v2/bvh-projection/BVH_AND_PROJECTION_RFC.md",
+    "docs/4d-engine/v2/observation/OBSERVATION_MODE_RFC.md",
+    "docs/4d-engine/v2/materials/MATERIAL_SYSTEM_RFC.md",
+    "docs/4d-engine/v2/shader-abi/SHADER_ABI.md",
+    "docs/4d-engine/v2/shader-abi/FourDRendererTypes.hlsli"
+  ],
+  "plpNote": "PLP remains the host Scene3D path (docs/4d-engine/v1/plp/PLP_V1.md). Unity ComputeBuffer / Unreal SendShadingData are inspection/debug channels only.",
+  "stridesBytes": {
+    "Ray4D": 32,
+    "Hit4D": 48,
+    "ShadingInput4D": 56,
+    "ShadingOutput3D": 40,
+    "ObservationModeDesc": 32,
+    "Material4DDesc": 36,
+    "Primitive4D": 56,
+    "EmbeddedSurface4D": 80,
+    "BVHNode4D": 48
+  },
+  "projectionPolicyIds": {
+    "PERSPECTIVE_4D_TO_3D": 0,
+    "SLICE_W_CONSTANT": 1,
+    "STEREOGRAPHIC_4D_TO_3D": 2
+  },
+  "structs": {
+    "Primitive4D": {
+      "status": "declared",
+      "fields": [
+        { "name": "P0", "type": "float4" },
+        { "name": "P1", "type": "float4" },
+        { "name": "P2", "type": "float4" },
+        { "name": "MaterialId", "type": "uint32" },
+        { "name": "ProjectionPolicyId", "type": "uint32" }
+      ],
+      "notes": "Optional P3 for tetra-like is declared in RFC prose; ABI mirror omits P3 until kernel SoT lands."
+    },
+    "EmbeddedSurface4D": {
+      "status": "declared",
+      "fields": [
+        { "name": "Origin", "type": "float4" },
+        { "name": "BasisX", "type": "float4" },
+        { "name": "BasisY", "type": "float4" },
+        { "name": "BasisZ", "type": "float4" },
+        { "name": "UVScale", "type": "float2" },
+        { "name": "MaterialId", "type": "uint32" },
+        { "name": "ProjectionPolicyId", "type": "uint32" }
+      ]
+    },
+    "BVHNode4D": {
+      "status": "declared",
+      "fields": [
+        { "name": "BoundsMin", "type": "float4" },
+        { "name": "BoundsMax", "type": "float4" },
+        { "name": "FirstChildOrPrim", "type": "uint32" },
+        { "name": "ChildCount", "type": "uint32" },
+        { "name": "PrimCount", "type": "uint32" },
+        { "name": "Flags", "type": "uint32" }
+      ],
+      "notes": "Existing MRS packed layout may alias leftChild/rightChild/firstPrim; wire ABI may diverge during port."
+    },
+    "BVH4D": {
+      "status": "declared",
+      "fields": [
+        { "name": "Nodes", "type": "BVHNode4D*" },
+        { "name": "Prims4D", "type": "Primitive4D*|EmbeddedSurface4D*" },
+        { "name": "NodeCount", "type": "uint32" },
+        { "name": "PrimCount", "type": "uint32" }
+      ],
+      "notes": "Host descriptor only; JSON mirror records counts. Pointers are not serializable."
+    },
+    "Ray4D": {
+      "status": "declared",
+      "fields": [
+        { "name": "Origin", "type": "float4" },
+        { "name": "Direction", "type": "float4" }
+      ]
+    },
+    "Hit4D": {
+      "status": "declared",
+      "fields": [
+        { "name": "Hit", "type": "uint|int (0/1)", "rfcProse": "bool" },
+        { "name": "T", "type": "float" },
+        { "name": "PrimIndex", "type": "uint32" },
+        { "name": "Position", "type": "float4", "shaderAbiAlias": "Position4D" },
+        { "name": "Normal", "type": "float4", "shaderAbiAlias": "Normal4D" }
+      ],
+      "notes": "Do not use C# bool under StructLayout.Sequential for GPU strides."
+    },
+    "ShadingInput4D": {
+      "status": "declared",
+      "fields": [
+        { "name": "Position4D", "type": "float4" },
+        { "name": "Normal4D", "type": "float4" },
+        { "name": "ViewDir4D", "type": "float4" },
+        { "name": "MaterialId", "type": "uint32" },
+        { "name": "ProjectionPolicyId", "type": "uint32" }
+      ]
+    },
+    "ShadingOutput3D": {
+      "status": "declared",
+      "fields": [
+        { "name": "Position3D", "type": "float3" },
+        { "name": "Normal3D", "type": "float3" },
+        { "name": "Radiance3D", "type": "float3" },
+        { "name": "Depth", "type": "float" }
+      ]
+    },
+    "ObservationModeId": {
+      "status": "declared",
+      "fields": [{ "name": "Value", "type": "uint64" }]
+    },
+    "ObservationModeDesc": {
+      "status": "declared",
+      "fields": [
+        { "name": "Id", "type": "ObservationModeId" },
+        { "name": "ProjectionPolicyId", "type": "uint32" },
+        { "name": "PathRoutingPolicyId", "type": "uint32" },
+        { "name": "VisibilityPolicyId", "type": "uint32" },
+        { "name": "BlendPolicyId", "type": "uint32" },
+        { "name": "WSliceMin", "type": "float" },
+        { "name": "WSliceMax", "type": "float" }
+      ]
+    },
+    "Material4DDesc": {
+      "status": "declared",
+      "fields": [
+        { "name": "MaterialId", "type": "uint32" },
+        { "name": "BSDFType", "type": "uint32" },
+        { "name": "Use4DShading", "type": "uint32" },
+        { "name": "UseHybridShading", "type": "uint32" },
+        { "name": "BaseColor", "type": "float3" },
+        { "name": "Roughness", "type": "float" },
+        { "name": "WAnisotropy", "type": "float" }
+      ]
+    }
+  },
+  "hostBindings": {
+    "unityShadingBuffer": {
+      "status": "partial",
+      "path": "unity/GovernedUnityProject/Assets/Engine/Rendering/FourDTesseractRenderer.cs",
+      "role": "inspection/debug ComputeBuffer of ShadingInput4D per vertex"
+    },
+    "unrealLiveLinkSendShadingData": {
+      "status": "skeleton",
+      "path": "unreal/FourDAdapter/Source/FourDAdapterRuntime/Public/UFourDLiveLinkClient.h",
+      "role": "binary append stub; returns false when not connected"
+    }
+  }
+}
