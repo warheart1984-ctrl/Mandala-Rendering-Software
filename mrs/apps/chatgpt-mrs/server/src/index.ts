@@ -15,6 +15,8 @@ import {
   type ServerResponse,
 } from "node:http";
 
+import { z } from "zod";
+
 import {
   registerAppResource,
   registerAppTool,
@@ -46,6 +48,19 @@ import {
   replaySceneInputShape,
   handleReplayScene,
 } from "./tools/replay-scene.js";
+import {
+  validateSceneSpecInputShape,
+  handleValidateSceneSpec,
+} from "./tools/validate-scene-spec.js";
+import {
+  renderSceneSpecInputShape,
+  handleRenderSceneSpec,
+} from "./tools/render-scene-spec.js";
+import { handleDescribeCapabilities } from "./tools/describe-capabilities.js";
+import {
+  getRenderDir,
+  safeRenderFileName,
+} from "./render-jobs.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** Widget HTML: mrs/apps/chatgpt-mrs/assets/ (Vite web build target) */
@@ -219,6 +234,95 @@ function createMrsServer(): McpServer {
     }
   );
 
+  registerAppTool(
+    server,
+    "validate_scene_spec",
+    {
+      title: "Validate Scene Specification",
+      description:
+        "Parse and capability-check a SceneSpecification for local RT4D (no render). Returns field-path errors.",
+      inputSchema: validateSceneSpecInputShape,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: widgetMeta("Validating scene spec", "Validation complete"),
+    },
+    async (args) => {
+      const { ok, text, errors } = handleValidateSceneSpec(args);
+      return {
+        content: [{ type: "text" as const, text }],
+        structuredContent: { ok, errors },
+        _meta: widgetMeta("Validating scene spec", "Validation complete"),
+      };
+    }
+  );
+
+  registerAppTool(
+    server,
+    "render_scene_spec_rt4d",
+    {
+      title: "Render Scene Spec (RT4D)",
+      description:
+        "Path-trace a SceneSpecification locally via MRS RT4D (CPU). Returns pngUrl + provenance. Not FLUX, not Genblaze. Default quality=draft.",
+      inputSchema: renderSceneSpecInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: widgetMeta("Path-tracing scene", "RT4D still ready"),
+    },
+    async (args) => {
+      try {
+        const { text, render } = await handleRenderSceneSpec(args);
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: { render },
+          _meta: widgetMeta("Path-tracing scene", "RT4D still ready"),
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `RT4D render failed: ${message}` }],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  registerAppTool(
+    server,
+    "describe_4drs_capabilities",
+    {
+      title: "Describe 4DRS Capabilities",
+      description:
+        "Honest capability card: supported surfaces, RT4D stills vs Canvas2D widget, and what is not included (no FLUX/Genblaze).",
+      inputSchema: {
+        detail: z
+          .enum(["summary"])
+          .optional()
+          .describe("Optional; omit for full capability card"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: widgetMeta("Reading capabilities", "Capabilities ready"),
+    },
+    async () => {
+      const { text, capabilities } = handleDescribeCapabilities();
+      return {
+        content: [{ type: "text" as const, text }],
+        structuredContent: { capabilities },
+        _meta: widgetMeta("Reading capabilities", "Capabilities ready"),
+      };
+    }
+  );
+
   return server;
 }
 
@@ -310,15 +414,40 @@ const httpServer = createServer(async (req, res) => {
         resourceUri: RESOURCE_URI,
         liveLinkUrl: resolveLiveLinkUrl(),
         assetsDir: ASSETS_DIR,
+        renderDir: getRenderDir(),
+        publicBaseUrl: process.env.MRS_PUBLIC_BASE_URL ?? null,
         tools: [
           "create_4d_scene",
           "update_4d_scene",
           "inspect_4d_point",
           "export_4d_scene",
           "replay_4d_scene",
+          "validate_scene_spec",
+          "render_scene_spec_rt4d",
+          "describe_4drs_capabilities",
         ],
       })
     );
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname.startsWith("/renders/")) {
+    const name = safeRenderFileName(url.pathname.slice("/renders/".length));
+    if (!name) {
+      res.writeHead(400).end("Invalid render id");
+      return;
+    }
+    const filePath = path.join(getRenderDir(), name);
+    if (!fs.existsSync(filePath)) {
+      res.writeHead(404).end("Not found");
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": "image/png",
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*",
+    });
+    fs.createReadStream(filePath).pipe(res);
     return;
   }
 

@@ -50,3 +50,7 @@ services:
       # unavailable; the probe did not successfully warm the model.
       - key: GENBLAZE_NVIDIA_WARMUP_ON_STARTUP
         value: "1"
+      # When NVIDIA NIM returns 504/unavailable, fall back to MRS RT4D stills
+      # (requires repo-root Dockerfile so rt4d.available=true).
+      - key: GENBLAZE_IMAGE_FALLBACK_TO_RT4D
+        value: "1"

@@ -29,6 +29,12 @@ export type InspectResult = Record<string, unknown> | null;
 export type ToolOutputPayload = {
   scene?: Scene4DDTO;
   inspectPath?: string;
+  render?: {
+    pngUrl?: string;
+    jobId?: string;
+    quality?: string;
+    provenance?: Record<string, unknown>;
+  };
   [key: string]: unknown;
 };
 

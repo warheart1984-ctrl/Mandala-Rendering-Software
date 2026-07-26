@@ -2,12 +2,17 @@ import { vec4, length, normalize, cross4D } from "./vec4.js";
 
 export const S3_AREA = 2 * Math.PI * Math.PI;
 
-export function uniformSampleS3(u1, u2, u3) {
-  // 4D Gaussian trick: 4 independent normals, normalized to S³
+export function uniformSampleS3(u1, u2, u3, u4) {
+  // 4D Gaussian trick: 4 independent normals, normalized to S³.
+  // u4 must be supplied for deterministic renders (do not use Math.random).
   const r1 = Math.sqrt(-2 * Math.log(u1 || 1e-30));
   const t1 = 2 * Math.PI * u2;
   const r2 = Math.sqrt(-2 * Math.log(u3 || 1e-30));
-  const t2 = 2 * Math.PI * Math.random();
+  const u4s =
+    u4 != null && Number.isFinite(u4)
+      ? u4
+      : ((u1 * 12.9898 + u2 * 78.233 + u3 * 37.719) % 1 + 1) % 1 || 1e-6;
+  const t2 = 2 * Math.PI * u4s;
   const x = r1 * Math.cos(t1);
   const y = r1 * Math.sin(t1);
   const z = r2 * Math.cos(t2);

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -424,6 +425,19 @@ def _dispatch_image(settings: Any, prompt: str):
 def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
     """Shared generate path: image or video → embed → index → response-local preview."""
     settings = get_settings()
+    # Uvicorn writes its access-log line only after the response is sent, and this
+    # path can block for the full NVIDIA pipeline budget (see
+    # settings.nvidia_pipeline_seconds). Without this the operator log shows only
+    # the periodic GET /health while a generate is in flight, which reads as
+    # "the UI never called the API". Log arrival and completion explicitly.
+    kind = "video" if video else "image"
+    started = time.monotonic()
+    logger.info(
+        "generate start · modality=%s backend=%s prompt_chars=%d",
+        kind,
+        "nvidia-video" if video else settings.image_backend,
+        len(body.prompt or ""),
+    )
     try:
         result = (
             generate_video(settings, body.prompt)
@@ -1033,7 +1047,13 @@ def media_nim_cosmos() -> RedirectResponse:
 @app.get("/", response_class=HTMLResponse)
 def ui() -> HTMLResponse:
     if STATIC_UI.is_file():
-        return HTMLResponse(STATIC_UI.read_text(encoding="utf-8"))
+        # The UI ships its behaviour in an inline <script>. Without an explicit
+        # directive a browser may heuristically cache this document, so a client
+        # can keep running a superseded copy after a redeploy.
+        return HTMLResponse(
+            STATIC_UI.read_text(encoding="utf-8"),
+            headers={"Cache-Control": "no-store"},
+        )
     return HTMLResponse("<h1>MRS Genblaze Media</h1><p>UI missing.</p>", status_code=500)
 
 

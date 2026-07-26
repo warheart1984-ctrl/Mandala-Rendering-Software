@@ -411,6 +411,13 @@ export function renderStill(options = {}) {
   const rgba = Buffer.alloc(width * height * 4);
   const exposure = 1.35;
   let lumSum = 0;
+  // Center ROI excludes ground band (bottom 25%) so grey floor cannot alone pass.
+  let roiLumSum = 0;
+  let roiCount = 0;
+  const yLo = Math.floor(height * 0.15);
+  const yHi = Math.floor(height * 0.7);
+  const xLo = Math.floor(width * 0.25);
+  const xHi = Math.floor(width * 0.75);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -437,13 +444,19 @@ export function renderStill(options = {}) {
       rgba[idx + 1] = G;
       rgba[idx + 2] = B;
       rgba[idx + 3] = 255;
-      lumSum += 0.299 * R + 0.587 * G + 0.114 * B;
+      const lum = 0.299 * R + 0.587 * G + 0.114 * B;
+      lumSum += lum;
+      if (x >= xLo && x < xHi && y >= yLo && y < yHi) {
+        roiLumSum += lum;
+        roiCount += 1;
+      }
     }
   }
 
   const png = encodePNG(width, height, rgba);
   const sha256 = createHash("sha256").update(png).digest("hex");
   const meanLuminance = lumSum / (width * height);
+  const meanLuminanceCenter = roiCount > 0 ? roiLumSum / roiCount : 0;
 
   // Cheap engine invariant evidence: length preserved under a 4D rotation of a
   // sample vector (PI-GEO-LENGTH). Uses the tested predicate, not a render gate.
@@ -474,6 +487,7 @@ export function renderStill(options = {}) {
     bytes: png.length,
     sha256,
     mean_luminance: Number(meanLuminance.toFixed(3)),
+    mean_luminance_center: Number(meanLuminanceCenter.toFixed(3)),
     invariant: { id: "PI-GEO-LENGTH", status: "tested", ok: invariantOk },
   };
 
