@@ -16,14 +16,19 @@ os.environ.setdefault("GENBLAZE_DRY_RUN", "1")
 from app.config import Settings, scene_spec_default_script_path
 from app.main import app
 from app.render_quality import (
+    DEPLOY_SAFE_SAMPLES,
+    DENSE_SCENE_SAMPLES,
     DRAFT_HEIGHT,
     DRAFT_MAX_DEPTH,
     DRAFT_SAMPLES,
     DRAFT_WIDTH,
     apply_quality_to_output,
+    is_dense_rt4d_scene,
     normalize_quality,
     quality_presets,
     resolve_quality,
+    resolve_still_render_budget,
+    resolve_still_render_params,
 )
 from app.scene_spec_provider import render_scene_spec
 
@@ -75,6 +80,7 @@ def _settings(**overrides) -> Settings:
         rt4d_draft_height=DRAFT_HEIGHT,
         rt4d_draft_samples=DRAFT_SAMPLES,
         rt4d_draft_max_depth=DRAFT_MAX_DEPTH,
+        rt4d_allow_heavy=False,
     )
     base.update(overrides)
     return Settings(**base)
@@ -132,6 +138,70 @@ def test_default_quality_is_draft():
     assert resolve_quality(settings) == "draft"
     assert resolve_quality(settings, None) == "draft"
     assert settings.render_quality_default == "draft"
+
+
+def test_resolve_still_draft_caps_even_when_rt4d_env_is_448_20():
+    settings = _settings(
+        rt4d_width=448, rt4d_height=448, rt4d_samples=20, rt4d_max_depth=5
+    )
+    params = resolve_still_render_params(settings, "draft")
+    assert params == {
+        "width": DRAFT_WIDTH,
+        "height": DRAFT_HEIGHT,
+        "samples": DRAFT_SAMPLES,
+        "maxDepth": DRAFT_MAX_DEPTH,
+    }
+
+
+def test_resolve_still_final_hard_clamps_misconfigured_env():
+    settings = _settings(
+        rt4d_width=448,
+        rt4d_height=448,
+        rt4d_samples=20,
+        rt4d_max_depth=5,
+        rt4d_allow_heavy=False,
+    )
+    params, note = resolve_still_render_budget(
+        settings, "final", prompt="cool neural lattice"
+    )
+    assert params["width"] == 256
+    assert params["height"] == 256
+    assert params["samples"] == DEPLOY_SAFE_SAMPLES
+    assert note is not None
+    assert note["before"]["samples"] == 20
+
+
+def test_resolve_still_dense_tesseract_clamps_samples_to_mid_profile():
+    settings = _settings(
+        rt4d_width=448,
+        rt4d_height=448,
+        rt4d_samples=20,
+        rt4d_max_depth=5,
+        rt4d_allow_heavy=False,
+    )
+    assert is_dense_rt4d_scene("neon mandala tesseract lattice") is True
+    params, note = resolve_still_render_budget(
+        settings, "final", prompt="neon mandala tesseract lattice"
+    )
+    assert params["samples"] == DENSE_SCENE_SAMPLES
+    assert note is not None
+    assert note["dense_scene"] is True
+
+
+def test_resolve_still_allow_heavy_skips_clamp():
+    settings = _settings(
+        rt4d_width=448,
+        rt4d_height=448,
+        rt4d_samples=20,
+        rt4d_max_depth=5,
+        rt4d_allow_heavy=True,
+    )
+    params, note = resolve_still_render_budget(
+        settings, "final", prompt="neon tesseract lattice"
+    )
+    assert params["samples"] == 20
+    assert params["width"] == 448
+    assert note is None
 
 
 def test_draft_clamp_overwrites_heavy_spec():

@@ -37,10 +37,14 @@ default to `quality=draft` (aliases: `fast`) — typically **256×256**, **4 sam
 **maxDepth 3**. Draft stills are intentionally **smaller and noisier** so judges
 usually get a frame in tens of seconds on CPU instead of waiting minutes on the
 old 448/20/5 path. Pass `quality=final` (alias: `high`) — or set
-`GENBLAZE_RENDER_QUALITY_DEFAULT=final` — for the `RT4D_*` profile (default
-448×448 / 20 / 5). Draft mode **caps** larger `spec.output` values before the
-subprocess so NIM/heuristic specs cannot force a multi-minute render on the
-default path. This does **not** claim GPU acceleration or sub-second renders.
+`GENBLAZE_RENDER_QUALITY_DEFAULT=final` — for the `RT4D_*` profile (code/default
+and `render.yaml` pin **256×256 / 6–8 samples / depth 5**; raise only after
+measuring). `/api/generate` also applies a **deploy-safe CPU budget clamp**
+(≤256 / ≤8 spp; dense `tesseract-lattice` ≤6 spp) unless `RT4D_ALLOW_HEAVY=1`,
+so an unsynced Render env cannot silently request 448/20. Draft mode **caps**
+larger `spec.output` values before the subprocess so NIM/heuristic specs cannot
+force a multi-minute render on the default path. This does **not** claim GPU
+acceleration, photorealism, or sub-second renders.
 
 Honest copy: **scene interpretation + path-traced full frame**. Responses include `analysis_mode` / `note` stating this is **not** geometric reconstruction. Phase 3 depth/mesh/pose recovery is **declared roadmap only** (see `docs/4d-engine/v2/scene-spec/IMAGE_TO_SCENE_RFC.md`).
 
@@ -100,9 +104,10 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `GENBLAZE_IMAGE_FALLBACK_TO_RT4D` | default **off** — set `1` so a blank/504 NVIDIA still falls back to one RT4D render instead of surfacing the failure |
 | `RT4D_NODE_PATH` | optional; default `node` |
 | `RT4D_SCRIPT_PATH` | optional; default `<repo>/mrs/packages/renderer-core/scripts/render-still.mjs` |
-| `RT4D_RENDER_WIDTH` / `RT4D_RENDER_HEIGHT` | optional; default `448` / `448` (clamped 16–1024) — used as the **final** quality profile |
-| `RT4D_SAMPLES` / `RT4D_MAX_DEPTH` | optional; default `20` / `5` — **final** quality profile |
+| `RT4D_RENDER_WIDTH` / `RT4D_RENDER_HEIGHT` | optional; default `256` / `256` (clamped 16–1024) — used as the **final** quality profile |
+| `RT4D_SAMPLES` / `RT4D_MAX_DEPTH` | optional; default `8` / `5` — **final** quality profile (Render blueprint pins `6`) |
 | `RT4D_TIMEOUT` | optional; default `180` seconds (clamped 10–600) |
+| `RT4D_ALLOW_HEAVY` | default **off** — set `1` to skip the deploy-safe / dense-scene sample ceilings on `/api/generate` |
 | `GENBLAZE_RENDER_QUALITY_DEFAULT` | optional; default `draft` (aliases: `fast`). Set `final` / `high` to default to the RT4D_* profile |
 | `RT4D_DRAFT_WIDTH` / `RT4D_DRAFT_HEIGHT` | optional; default `256` / `256` — draft quality caps |
 | `RT4D_DRAFT_SAMPLES` / `RT4D_DRAFT_MAX_DEPTH` | optional; default `4` / `3` — draft quality caps |
@@ -226,11 +231,13 @@ curl -s -X POST localhost:8000/api/generate \
 
 Sizing: the render is a single-threaded CPU path trace, and Render's free plan
 is a shared 0.1 CPU, so a render there is far slower than on a dev machine and
-must still finish inside the platform request timeout. `render.yaml` therefore
-pins `RT4D_RENDER_WIDTH/HEIGHT=256` and `RT4D_SAMPLES=8`. Those numbers are a
-conservative starting point, not a measured budget — time a render on the
-target plan before raising them.
-### Docker / Render follow-up (Node not yet in the image)
+must still finish inside `RT4D_TIMEOUT`. `render.yaml` therefore pins
+`RT4D_RENDER_WIDTH/HEIGHT=256`, `RT4D_SAMPLES=6`, and `RT4D_TIMEOUT=180` (dense
+`tesseract-lattice` ≈ 540 objects). **After merging env changes, sync the
+Render blueprint / dashboard env and Manual Deploy** — a code-only redeploy
+leaves stale `RT4D_*` values. Code also hard-clamps Generate stills unless
+`RT4D_ALLOW_HEAVY=1`. Time a lattice prompt on the target plan before raising
+samples.
 
 - `COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node` —
   the binary only. `npm install` is deliberately skipped: `render-still.mjs`
@@ -261,10 +268,11 @@ curl -s -X POST localhost:8000/api/generate \
 
 Sizing: the render is a single-threaded CPU path trace, and Render's free plan
 is a shared 0.1 CPU, so a render there is far slower than on a dev machine and
-must still finish inside the platform request timeout. `render.yaml` therefore
-pins `RT4D_RENDER_WIDTH/HEIGHT=256` and `RT4D_SAMPLES=8`. Those numbers are a
-conservative starting point, not a measured budget — time a render on the
-target plan before raising them.
+must still finish inside `RT4D_TIMEOUT`. `render.yaml` therefore pins
+`RT4D_RENDER_WIDTH/HEIGHT=256`, `RT4D_SAMPLES=6`, and `RT4D_TIMEOUT=180`.
+**Sync the Render blueprint/env after merge.** Code hard-clamps Generate stills
+unless `RT4D_ALLOW_HEAVY=1`. Time a lattice prompt on the target plan before
+raising samples.
 
 A live Render service still reports `/health.rt4d.available=false` until it is
 **Manually Deployed** from the **repo-root** Dockerfile (older images and the

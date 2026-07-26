@@ -179,11 +179,16 @@ class Settings:
     rt4d_node_path: str = "node"
     rt4d_script_path: str | None = None
     scene_spec_script_path: str | None = None
-    rt4d_width: int = 448
-    rt4d_height: int = 448
-    rt4d_samples: int = 20
+    # Final profile defaults match free-tier render.yaml pins so an unsynced
+    # deploy cannot silently fall back to the old 448×448 / 20-sample path.
+    rt4d_width: int = 256
+    rt4d_height: int = 256
+    rt4d_samples: int = 8
     rt4d_max_depth: int = 5
     rt4d_timeout_seconds: float = 180.0
+    # When False (default), /api/generate stills also hard-clamp above the
+    # deploy-safe ceiling even if RT4D_* env is mis-set higher.
+    rt4d_allow_heavy: bool = False
     # Scene-spec render quality: "draft" (hackathon default — smaller/noisier,
     # renders in ~tens of seconds on CPU) or "final" (RT4D_* profile above).
     render_quality_default: str = "draft"
@@ -355,9 +360,9 @@ def get_settings() -> Settings:
             val = default
         return max(lo, min(hi, val))
 
-    rt4d_width = _clamp_int("RT4D_RENDER_WIDTH", 448, 16, 1024)
-    rt4d_height = _clamp_int("RT4D_RENDER_HEIGHT", 448, 16, 1024)
-    rt4d_samples = _clamp_int("RT4D_SAMPLES", 20, 1, 512)
+    rt4d_width = _clamp_int("RT4D_RENDER_WIDTH", 256, 16, 1024)
+    rt4d_height = _clamp_int("RT4D_RENDER_HEIGHT", 256, 16, 1024)
+    rt4d_samples = _clamp_int("RT4D_SAMPLES", 8, 1, 512)
     rt4d_max_depth = _clamp_int("RT4D_MAX_DEPTH", 5, 1, 12)
     # Draft preset (hackathon default path): small/low-sample stills so judges
     # are not waiting minutes. GENBLAZE_RENDER_QUALITY_DEFAULT=final restores
@@ -370,6 +375,13 @@ def get_settings() -> Settings:
     rt4d_draft_height = _clamp_int("RT4D_DRAFT_HEIGHT", 256, 16, 1024)
     rt4d_draft_samples = _clamp_int("RT4D_DRAFT_SAMPLES", 4, 1, 512)
     rt4d_draft_max_depth = _clamp_int("RT4D_DRAFT_MAX_DEPTH", 3, 1, 12)
+    # Opt-in: skip deploy-safe / dense-scene sample ceilings (local heavy runs).
+    rt4d_allow_heavy = (os.getenv("RT4D_ALLOW_HEAVY") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     try:
         rt4d_timeout = float((os.getenv("RT4D_TIMEOUT") or "180").strip() or "180")
     except ValueError:
@@ -458,6 +470,7 @@ def get_settings() -> Settings:
         rt4d_samples=rt4d_samples,
         rt4d_max_depth=rt4d_max_depth,
         rt4d_timeout_seconds=rt4d_timeout,
+        rt4d_allow_heavy=rt4d_allow_heavy,
         render_quality_default=render_quality_default,
         rt4d_draft_width=rt4d_draft_width,
         rt4d_draft_height=rt4d_draft_height,

@@ -540,6 +540,8 @@ def test_generate_final_quality_uses_full_rt4d_profile(tmp_path, monkeypatch):
         rt4d_height=448,
         rt4d_samples=20,
         rt4d_max_depth=5,
+        # Explicit opt-in: without this, deploy-safe clamp would cap to 256/8.
+        rt4d_allow_heavy=True,
         b2_key_id=None,
         b2_app_key=None,
     )
@@ -554,6 +556,7 @@ def test_generate_final_quality_uses_full_rt4d_profile(tmp_path, monkeypatch):
     assert _argv_value(argv, "--width") == "448"
     assert _argv_value(argv, "--samples") == "20"
     assert result.provenance["quality"] == "final"
+    assert "budget_clamp" not in result.provenance
 
 
 def test_draft_preserves_a_profile_smaller_than_the_cap(tmp_path, monkeypatch):
@@ -576,6 +579,72 @@ def test_draft_preserves_a_profile_smaller_than_the_cap(tmp_path, monkeypatch):
     assert _argv_value(argv, "--height") == "48"
 
 
+def test_generate_final_clamps_misconfigured_env_without_allow_heavy(
+    tmp_path, monkeypatch
+):
+    """Unsynced RT4D_*=448/20 must not reach the CLI on the Generate path."""
+    png = _nonblank_png_bytes()
+    sha = hashlib.sha256(png).hexdigest()
+    script = tmp_path / "render-still.mjs"
+    script.write_text("// stub\n", encoding="utf-8")
+    settings = _settings(
+        rt4d_script_path=str(script),
+        rt4d_width=448,
+        rt4d_height=448,
+        rt4d_samples=20,
+        rt4d_max_depth=5,
+        rt4d_allow_heavy=False,
+        b2_key_id=None,
+        b2_app_key=None,
+    )
+    seen: dict = {}
+    monkeypatch.setattr(
+        "app.rt4d_provider.subprocess.run", _capture_argv_run(png, sha, seen)
+    )
+    monkeypatch.setattr("app.rt4d_provider._find_node", lambda _p: "node")
+
+    result = generate_image_rt4d(settings, "plain neural lattice", quality="final")
+    argv = seen["argv"]
+    assert _argv_value(argv, "--width") == "256"
+    assert _argv_value(argv, "--height") == "256"
+    assert _argv_value(argv, "--samples") == "8"
+    assert result.provenance["budget_clamp"]["applied"] is True
+    assert result.provenance["budget_clamp"]["before"]["samples"] == 20
+
+
+def test_generate_dense_lattice_clamps_final_samples_further(tmp_path, monkeypatch):
+    png = _nonblank_png_bytes()
+    sha = hashlib.sha256(png).hexdigest()
+    script = tmp_path / "render-still.mjs"
+    script.write_text("// stub\n", encoding="utf-8")
+    settings = _settings(
+        rt4d_script_path=str(script),
+        rt4d_width=448,
+        rt4d_height=448,
+        rt4d_samples=20,
+        rt4d_max_depth=5,
+        rt4d_allow_heavy=False,
+        b2_key_id=None,
+        b2_app_key=None,
+    )
+    seen: dict = {}
+    monkeypatch.setattr(
+        "app.rt4d_provider.subprocess.run", _capture_argv_run(png, sha, seen)
+    )
+    monkeypatch.setattr("app.rt4d_provider._find_node", lambda _p: "node")
+
+    result = generate_image_rt4d(
+        settings, "neon mandala tesseract lattice", quality="final"
+    )
+    argv = seen["argv"]
+    assert _argv_value(argv, "--width") == "256"
+    assert _argv_value(argv, "--samples") == "6"
+    clamp = result.provenance["budget_clamp"]
+    assert clamp["dense_scene"] is True
+    assert clamp["after"]["samples"] == 6
+    assert any("dense-scene" in r for r in clamp["reasons"])
+
+
 def test_api_generate_forwards_quality_to_rt4d(tmp_path, monkeypatch):
     png = _nonblank_png_bytes()
     sha = hashlib.sha256(png).hexdigest()
@@ -587,6 +656,8 @@ def test_api_generate_forwards_quality_to_rt4d(tmp_path, monkeypatch):
         rt4d_height=448,
         rt4d_samples=20,
         rt4d_max_depth=5,
+        # Allow heavy so quality=final can prove it forwards the full profile.
+        rt4d_allow_heavy=True,
     )
     seen: dict = {}
     monkeypatch.setattr(
@@ -634,6 +705,7 @@ def test_health_discloses_effective_generate_render_size(tmp_path, monkeypatch):
         "maxDepth": 3,
     }
     assert rt4d["quality_presets"]["final"]["samples"] == 20
+    assert rt4d["allow_heavy"] is False
 
 
 def test_rt4d_prompt_starting_with_dashes_passed_to_cli(tmp_path, monkeypatch):

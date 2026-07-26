@@ -60,18 +60,20 @@ services:
       # the fallback above stays armed for that case.
       - key: GENBLAZE_IMAGE_BACKEND
         value: rt4d
-      # Free plan is a shared 0.1 CPU and the tracer is single-threaded, so the
-      # default 448x448 / 20-sample "final" profile cannot finish inside
-      # RT4D_TIMEOUT there — measured 225s on a fast dev CPU, and the deployed
-      # service returned 502 "RT4D render timed out after 180s". Pin the smaller
-      # profile (matches mrs/apps/genblaze-media/render.yaml and the README
-      # sizing note). /api/generate defaults to quality=draft, which caps these
-      # further via RT4D_DRAFT_*; these values bound quality=final.
+      # Free plan is a shared 0.1 CPU and the tracer is single-threaded.
+      # tesseract-lattice (~540 objects) at 448×448 / 20 spp timed out at 180s
+      # in production when these env vars were unsynced (code defaults). Pin a
+      # lattice-safe mid profile: 256×256 / 6 spp with 180s timeout leaves
+      # headroom for ~3–5× slower free-tier CPUs vs a fast local machine.
+      # /api/generate defaults to quality=draft (further caps via RT4D_DRAFT_*);
+      # these values bound quality=final. Code also hard-clamps unless
+      # RT4D_ALLOW_HEAVY=1 — sync this blueprint after merge or redeploy alone
+      # is not enough if dashboard env still has old values.
       - key: RT4D_RENDER_WIDTH
         value: "256"
       - key: RT4D_RENDER_HEIGHT
         value: "256"
       - key: RT4D_SAMPLES
-        value: "8"
+        value: "6"
       - key: RT4D_TIMEOUT
-        value: "120"
+        value: "180"
