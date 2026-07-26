@@ -377,21 +377,6 @@ def health() -> dict:
             "smaller). Heuristic fallback always available; NIM vision when "
             "NVIDIA_API_KEY set."
         ),
-            "seed records variation. Requires Node + render-still.mjs (not yet in "
-            "the python:3.12 Docker image)."
-        ),
-        "scene_spec": scene_spec_availability(settings),
-        "scene_spec_note": (
-            "POST /api/render-scene accepts a SceneSpecification JSON and renders "
-            "a deterministic RT4D still. POST /api/render-clip returns a PNG frame "
-            "zip when animation is present — MP4 encoding is not available in-image."
-        ),
-        "image_to_scene": image_to_scene_availability(settings),
-        "image_to_scene_note": (
-            "POST /api/image-to-scene: image → SceneSpecification → optional MRS "
-            "path-traced full frame. Scene interpretation only — NOT reconstruction. "
-            "Heuristic fallback always available; NIM vision when NVIDIA_API_KEY set."
-        ),
         "flux_then_scene": settings.flux_then_scene,
         "fal_image_fallback": False,
         "prefer_async": False,
@@ -705,7 +690,6 @@ def api_render_scene(body: RenderSceneRequest) -> dict:
             frame=body.frame,
             time=body.time,
             quality=body.quality,
-            settings, body.spec, frame=body.frame, time=body.time
         )
     except ValueError as exc:
         payload = exc.args[0] if exc.args else str(exc)
@@ -758,7 +742,6 @@ def api_render_clip(body: RenderClipRequest) -> dict:
     try:
         result = render_scene_clip(
             settings, body.spec, max_frames=body.max_frames, quality=body.quality
-            settings, body.spec, max_frames=body.max_frames
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
