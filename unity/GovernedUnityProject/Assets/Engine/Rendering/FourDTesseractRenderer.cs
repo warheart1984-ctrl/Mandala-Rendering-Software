@@ -62,6 +62,8 @@ public class FourDTesseractRenderer : MonoBehaviour
     ShadingInput4D[] _shadingCpu;
     float _nextShadingPublishTime;
     SovereignX.CIEMS.Engine.LiveLink.MRSWebSocketConnection _shadingLiveLink;
+    /// <summary>Previous-frame publish toggle — detects falling edge so ReleaseShadingLiveLink is reachable from LateUpdate.</summary>
+    bool _wasPublishingShading;
 
     void Awake() => EnsureComponents();
 
@@ -72,12 +74,14 @@ public class FourDTesseractRenderer : MonoBehaviour
         EnsureSolidMaterial();
         EnsureShadingBuffer();
         EnsureShadingLiveLink();
+        _wasPublishingShading = publishShadingToLiveLink;
     }
 
     void OnDisable()
     {
         ReleaseShadingBuffer();
         ReleaseShadingLiveLink();
+        _wasPublishingShading = false;
     }
 
     void OnValidate()
@@ -96,8 +100,34 @@ public class FourDTesseractRenderer : MonoBehaviour
             UpdateSolidMesh(t);
         if (enableShadingBuffer)
             FillShadingBuffer(t);
-        if (publishShadingToLiveLink)
+        SyncShadingLiveLinkPublishLifecycle();
+    }
+
+    /// <summary>
+    /// Rising edge: connect and publish. Falling edge / idle-off: release socket + receive task.
+    /// Pure decision helper: <see cref="ShouldReleaseShadingLiveLinkOnToggle"/>.
+    /// </summary>
+    void SyncShadingLiveLinkPublishLifecycle()
+    {
+        bool wantPublish = publishShadingToLiveLink;
+        bool connectionOpen = _shadingLiveLink != null;
+        if (wantPublish)
             MaybePublishShadingToLiveLink();
+        else if (ShouldReleaseShadingLiveLinkOnToggle(wantPublish, _wasPublishingShading, connectionOpen))
+            ReleaseShadingLiveLink();
+        _wasPublishingShading = wantPublish;
+    }
+
+    /// <summary>
+    /// Deterministic publish-toggle cleanup gate (no Unity runtime required to reason about).
+    /// Release when publish is off and either we just turned it off or a connection is still held.
+    /// </summary>
+    public static bool ShouldReleaseShadingLiveLinkOnToggle(
+        bool publishEnabled,
+        bool wasPublishing,
+        bool connectionHeld)
+    {
+        return !publishEnabled && (wasPublishing || connectionHeld);
     }
 
     public void SetSurface(string id)

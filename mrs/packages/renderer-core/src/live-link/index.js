@@ -14,3 +14,7 @@ export {
   validateShadingUpdateMessage,
   buildShadingUpdateMessage,
 } from "./shadingWire.js";
+export {
+  shouldReleaseShadingLiveLinkOnToggle,
+  advancePublishToggleLifecycle,
+} from "./publishToggleLifecycle.js";

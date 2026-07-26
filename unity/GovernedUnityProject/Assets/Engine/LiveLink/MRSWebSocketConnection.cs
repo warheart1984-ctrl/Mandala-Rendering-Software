@@ -41,12 +41,28 @@ namespace SovereignX.CIEMS.Engine.LiveLink
             _recvTask = Task.Run(() => ConnectAndReceiveAsync(_cts.Token));
         }
 
+        /// <summary>
+        /// Idempotent: safe to call when already disconnected. Cancels CTS, aborts socket,
+        /// and clears the background receive task reference so publish-toggle OFF can stop work.
+        /// </summary>
         public void Disconnect()
         {
-            try { _cts?.Cancel(); } catch { /* ignore */ }
-            try { _ws?.Abort(); } catch { /* ignore */ }
-            _ws = null;
+            var cts = _cts;
+            var ws = _ws;
+            var recv = _recvTask;
             _cts = null;
+            _ws = null;
+            _recvTask = null;
+
+            try { cts?.Cancel(); } catch { /* ignore */ }
+            try { ws?.Abort(); } catch { /* ignore */ }
+            try
+            {
+                if (recv != null && !recv.IsCompleted)
+                    recv.Wait(TimeSpan.FromMilliseconds(250));
+            }
+            catch { /* ignore cancel/abort races */ }
+            try { cts?.Dispose(); } catch { /* ignore */ }
         }
 
         public void Dispose() => Disconnect();

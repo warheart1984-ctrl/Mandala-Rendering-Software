@@ -36,6 +36,7 @@ Interop structs prepare Trace4D → Shade4D → Project4D contracts. Unity’s `
 | --- | --- |
 | `fourd-shading-types.json` + `index.js` | declared |
 | Unity `FourDRendererTypes.cs` + buffer in `FourDTesseractRenderer` | partial |
+| Unity LiveLink publish-toggle cleanup (`ShouldReleaseShadingLiveLinkOnToggle` + Node mirror) | partial — Node gate enforced; Unity Editor Play Mode not CI-run |
 | LiveLink `shading_update` JSON (`src/live-link/shadingWire.js`, port 9487) | partial |
 | Unreal `FourDShadingTypes.h` / `FourDRendererTypes.h` + LiveLink stub | skeleton |
 | HLSL / USH headers | declared (header only) |
