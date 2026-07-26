@@ -140,7 +140,7 @@ def test_generate_rt4d_mocked_subprocess(tmp_path, monkeypatch):
     provenance = {
         "engine": "mrs-renderer-core/rt4d",
         "kind": "deterministic-procedural-4d-render",
-        "scene": "tesseract-vertices",
+        "scene": "tesseract-lattice",
         "palette": "neon",
         "seed": 1,
         "sha256": sha,
@@ -174,7 +174,7 @@ def test_generate_rt4d_mocked_subprocess(tmp_path, monkeypatch):
     assert result.status == "ok"
     assert result.asset_sha256 == sha
     assert result.provenance is not None
-    assert result.provenance["scene"] == "tesseract-vertices"
+    assert result.provenance["scene"] == "tesseract-lattice"
     assert result.quality is not None
     assert result.quality["ok"] is True
     assert result.provenance["kind"].startswith("deterministic")
@@ -462,7 +462,7 @@ def test_real_rt4d_cli_invocation(tmp_path, monkeypatch):
     assert result.provider == RT4D_PROVIDER_ID
     assert result.asset_sha256 and len(result.asset_sha256) == 64
     assert result.quality and result.quality["ok"] is True
-    assert result.provenance["scene"] == "tesseract-vertices"
+    assert result.provenance["scene"] == "tesseract-lattice"
     assert result.provenance["palette"] == "neon"
     assert (result.quality.get("mean_luminance") or 0) > 8
 
@@ -655,7 +655,7 @@ def test_rt4d_prompt_starting_with_dashes_passed_to_cli(tmp_path, monkeypatch):
             stdout=json.dumps(
                 {
                     "kind": "deterministic-procedural-4d-render",
-                    "scene": "tesseract-vertices",
+                    "scene": "tesseract-lattice",
                     "seed": 1,
                     "sha256": sha,
                     "mean_luminance": 60.0,

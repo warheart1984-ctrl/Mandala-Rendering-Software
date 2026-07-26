@@ -25,6 +25,12 @@ _QUALITY_ALIASES = {
 
 # Draft constants — also referenced by the heuristic builder and the
 # image-to-scene prompt copy. Env RT4D_DRAFT_* can tune them per deploy.
+#
+# DRAFT_SAMPLES stays at 4: the tesseract-lattice archetype (~480 sphere-chain
+# primitives) was measured locally at ~8s for 256×256 / 4 spp and ~18s for
+# 8 spp. Free-tier shared CPU is several× slower (see render.yaml notes), so
+# 8 spp risks the 120s RT4D_TIMEOUT; readability comes from emissive beams /
+# core / rings, not from raising the sample floor. Do not claim denoising.
 DRAFT_WIDTH = 256
 DRAFT_HEIGHT = 256
 DRAFT_SAMPLES = 4
