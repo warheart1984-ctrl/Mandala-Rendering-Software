@@ -44,5 +44,9 @@ describe("mandala-mapping", () => {
     assert.equal(lattice.nodes.length, 2);
     assert.equal(lattice.edges.length, 1);
     assert.deepEqual(lattice.edges[0], ["tick-0", "tick-1"]);
+    assert.deepEqual(lattice.nodes[0]!.position, [0, 0.5]);
+    assert.equal(lattice.nodes[0]!.activation, 2);
+    const again = mapping.mapReplayToLattice(replay);
+    assert.deepEqual(again, lattice);
   });
 });

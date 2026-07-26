@@ -18,6 +18,7 @@ export interface MandalaMapping {
 
 /**
  * Pure mapping helper — **partial** (unit-tested; visualizer service is declared-only).
+ * Path note: lives under `src/mandala/` (not `src/visualizer/`) to match the shipped package layout.
  */
 export class DefaultMandalaMapping implements MandalaMapping {
   mapReplayToLattice(replay: ReplayRecord[]): MandalaLattice {

@@ -19,7 +19,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:engine3d": "npm run build && node --test dist/test/engine/host-order.test.js dist/test/world/world-body.test.js dist/test/world/world-mesh.test.js dist/test/physics/physics-step.test.js dist/test/bridge/bridge-evaluate.test.js dist/test/substrate/substrate-update.test.js dist/test/renderer/renderer-basic.test.js dist/test/invariants/invariants-enforced.test.js dist/test/governance/ciems-overlay.test.js dist/test/mandala/mandala-mapping.test.js",
+    "test:engine3d": "npm run build && node --test dist/test/engine/host-order.test.js dist/test/world/world-body.test.js dist/test/world/world-mesh.test.js dist/test/physics/physics-step.test.js dist/test/bridge/bridge-evaluate.test.js dist/test/substrate/substrate-update.test.js dist/test/renderer/renderer-basic.test.js dist/test/invariants/invariants-enforced.test.js dist/test/governance/ciems-overlay.test.js dist/test/governance/dsl/default-rules.test.js dist/test/mandala/mandala-mapping.test.js dist/test/constitutional/constitutional.test.js",
     "demo:engine3d": "npm run build && node dist/demo/demo-engine3d.js"
   },
   "engines": {

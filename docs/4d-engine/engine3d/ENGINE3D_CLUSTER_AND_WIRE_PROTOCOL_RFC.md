@@ -4,6 +4,9 @@
 **Date:** 2026-07-26  
 **Authority:** Drive-G-1 — documentation must not outrun evidence.
 
+**Normative wire protocol:** [ENGINE3D_CLUSTER_AND_WIRE_PROTOCOL_SPEC_v1.0.md](./ENGINE3D_CLUSTER_AND_WIRE_PROTOCOL_SPEC_v1.0.md)  
+This RFC is a shorter design sketch. On conflicts, the SPEC wins.
+
 This RFC captures the distributed Engine3D topology and wire contracts from the
 ENGINE3D COMPLETION PLAN. Nothing in this document is enforced by CI unless a
 matching implementation and test exist under `mrs/packages/engine3d-core/`.

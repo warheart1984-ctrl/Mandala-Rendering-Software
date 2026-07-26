@@ -1,7 +1,11 @@
 export type { Clock } from "./engine/Clock.js";
 export { FixedStepClock } from "./engine/Clock.js";
 export { InputGatherer } from "./engine/InputGatherer.js";
-export type { EngineHost, DefaultEngineHostOptions } from "./engine/EngineHost.js";
+export type {
+  EngineHost,
+  DefaultEngineHostOptions,
+  EngineTickPhase,
+} from "./engine/EngineHost.js";
 export { DefaultEngineHost } from "./engine/EngineHost.js";
 
 export type { Vec3 } from "./world/Vec3.js";
@@ -59,7 +63,10 @@ export {
 
 export type { ReplayRecord } from "./replay/ReplayRecord.js";
 export type { ReplayTimeline } from "./replay/ReplayTimeline.js";
-export { InMemoryReplayTimeline } from "./replay/ReplayTimeline.js";
+export {
+  InMemoryReplayTimeline,
+  freezeReplayRecord,
+} from "./replay/ReplayTimeline.js";
 
 export type {
   GovernanceSignal,
@@ -67,6 +74,14 @@ export type {
   CIEMSOverlay,
 } from "./governance/CIEMSOverlay.js";
 export { DefaultCIEMSOverlay } from "./governance/CIEMSOverlay.js";
+
+export type {
+  GovernanceRule,
+  GovernanceRuleContext,
+  CiemsTextualDslStatus,
+} from "./governance/dsl/Rule.js";
+export { Engine3DRules } from "./governance/dsl/Engine3DRules.js";
+export { createDefaultEngine3DRules } from "./governance/rules/defaultRules.js";
 
 export type {
   MandalaNode,
