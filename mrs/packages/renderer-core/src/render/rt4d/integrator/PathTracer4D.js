@@ -1,5 +1,6 @@
 import { vec4, scale, add, mul, length, dot, normalize, sub, neg } from "../math/vec4.js";
 import { uniformSampleS3, S3_AREA, powerHeuristic } from "../math/s3.js";
+import { sampleRt4dLight } from "../lighting/Rt4dLightAdapter.js";
 
 /** Surface area of an S³ of radius R (hypersphere boundary in R⁴). */
 function hypersphereArea(radius) {
@@ -34,7 +35,7 @@ export class PathTracer4D {
     const hit = scene.intersect(ray);
     if (!hit) return scene.getEnvironment?.(ray) ?? vec4(0, 0, 0, 0);
 
-    const mat = scene.getMaterial(hit.materialId);
+    const mat = scene.getShadedMaterial?.(hit.materialId, hit) ?? scene.getMaterial(hit.materialId);
     if (!mat) return vec4(0, 0, 0, 0);
 
     if (mat.isLight) {
@@ -142,6 +143,15 @@ export class PathTracer4D {
    * @returns {{ wo, pdf, emission, dist } | null}
    */
   _sampleLight(scene, hit) {
+    const rigLights = scene.getRt4dLights?.() ?? [];
+    const directLights = rigLights.filter((light) => light.type !== "environment");
+    if (directLights.length > 0) {
+      const light = directLights[Math.floor(this.rng() * directLights.length)];
+      const sample = sampleRt4dLight(light, hit);
+      if (!sample) return null;
+      return { ...sample, pdf: sample.pdf / directLights.length };
+    }
+
     const lights = scene.getLights();
     if (lights.length === 0) return null;
 
@@ -184,6 +194,10 @@ export class PathTracer4D {
    * PDF of sampling direction `wo` via the light strategy (area → solid-angle).
    */
   _sampleLightPDF(scene, hit, wo) {
+    const rigLights = scene.getRt4dLights?.() ?? [];
+    const directLights = rigLights.filter((light) => light.type !== "environment");
+    if (directLights.length > 0) return 1 / directLights.length;
+
     const lights = scene.getLights();
     if (lights.length === 0) return 0;
 

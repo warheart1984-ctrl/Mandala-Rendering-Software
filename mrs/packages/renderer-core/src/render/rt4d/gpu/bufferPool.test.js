@@ -1,6 +1,6 @@
 import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
-import { BufferPool, StagingBuffer } from "./bufferPool.js";
+import { BufferPool, MeshBufferCache, StagingBuffer } from "./bufferPool.js";
 
 globalThis.GPUBufferUsage ??= {
   MAP_READ: 1, COPY_DST: 4, COPY_SRC: 2, STORAGE: 8,
@@ -17,6 +17,10 @@ function mockBuffer(size, usage) {
 }
 
 class MockDevice {
+  constructor() {
+    this.writes = [];
+  }
+
   createBuffer({ size, usage }) {
     return mockBuffer(size, usage);
   }
@@ -29,8 +33,12 @@ class MockDevice {
   }
 
   get queue() {
+    const self = this;
     return {
       submit() {},
+      writeBuffer(buffer, offset, source, sourceOffset, size) {
+        self.writes.push({ buffer, offset, source, sourceOffset, size });
+      },
     };
   }
 }
@@ -157,5 +165,38 @@ describe("StagingBuffer", () => {
     assert.equal(staging._buffer, null);
     // MAP_READ(1) | COPY_DST(4) = 5
     assert.equal(pool._free.get("256:5").length, 1);
+  });
+});
+
+describe("MeshBufferCache", () => {
+  it("uploads mesh buffers once for a stable key and reuses them", () => {
+    const device = new MockDevice();
+    const cache = new MeshBufferCache(device);
+    const mesh = {
+      vertices: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      indices: new Uint16Array([0, 1, 2]),
+    };
+    const a = cache.getOrCreate("mesh:tri", mesh);
+    const b = cache.getOrCreate("mesh:tri", mesh);
+    assert.equal(a, b);
+    assert.equal(cache.size(), 1);
+    assert.equal(device.writes.length, 2);
+    assert.equal(a.vertexCount, 3);
+    assert.equal(a.indexCount, 3);
+    assert.equal(a.indexFormat, "uint16");
+  });
+
+  it("ref-counts cached mesh buffers before releasing to the pool", () => {
+    const device = new MockDevice();
+    const pool = new BufferPool(device);
+    const cache = new MeshBufferCache(device, pool);
+    const mesh = { vertices: new Float32Array([0, 0, 0]), indices: new Uint32Array([0]) };
+    cache.getOrCreate("mesh:point", mesh);
+    cache.getOrCreate("mesh:point", mesh);
+    cache.release("mesh:point");
+    assert.equal(cache.size(), 1);
+    cache.release("mesh:point");
+    assert.equal(cache.size(), 0);
+    assert.ok(pool._free.size >= 1);
   });
 });

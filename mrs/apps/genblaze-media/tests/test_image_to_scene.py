@@ -18,9 +18,12 @@ from app.config import Settings, scene_spec_default_script_path
 from app.image_to_scene import (
     ANALYSIS_MODE,
     DISCLAIMER,
+    apply_source_scene_bias,
     build_heuristic_scene_spec,
+    extract_source_scene,
     interpret_image_to_scene,
     seed_from_sha256,
+    surface_id_for_source_scene,
     validate_spec_via_node,
 )
 from app.main import app
@@ -389,3 +392,73 @@ def test_api_image_to_scene_spec_only(tmp_path, monkeypatch):
     assert body["spec"]["kind"] == "SceneSpecification"
     assert "render" not in body or body.get("render") is None
     assert body["analysis_mode"] == ANALYSIS_MODE
+
+
+def test_source_scene_maps_tesseract_lattice():
+    assert surface_id_for_source_scene("tesseract-lattice") == "tesseract"
+    assert surface_id_for_source_scene("neural-lattice") == "lattice-grid"
+    assert surface_id_for_source_scene("unknown") is None
+
+
+def test_extract_source_scene_from_provenance():
+    assert (
+        extract_source_scene({"provenance": {"scene": "tesseract-lattice"}})
+        == "tesseract-lattice"
+    )
+    assert (
+        extract_source_scene({"render": {"scene": "lattice-grid"}}) == "lattice-grid"
+    )
+
+
+def test_apply_source_scene_bias_remaps_orbital_cluster():
+    spec = {
+        "schemaVersion": "1.0",
+        "kind": "SceneSpecification",
+        "id": "x",
+        "entities": [
+            {
+                "id": "primary",
+                "geometry": {"kind": "surface", "surfaceId": "orbital-cluster"},
+            }
+        ],
+        "metadata": {},
+    }
+    out = apply_source_scene_bias(
+        spec, source_scene="tesseract-lattice", force=False
+    )
+    assert out["entities"][0]["geometry"]["surfaceId"] == "tesseract"
+    assert out["metadata"]["surface_id_before_bias"] == "orbital-cluster"
+
+
+def test_interpret_biases_nim_orbital_when_source_is_lattice():
+    png = _tiny_png()
+    settings = _settings(nvidia_api_key="nvapi-test")
+    orbital_spec = {
+        **VALID_NIM_SPEC,
+        "entities": [
+            {
+                "id": "primary",
+                "materialId": "mat0",
+                "geometry": {"kind": "surface", "surfaceId": "orbital-cluster"},
+            }
+        ],
+    }
+    content = json.dumps(orbital_spec)
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        class R:
+            def json(self_inner):
+                return {"choices": [{"message": {"content": content}}]}
+
+        return R()
+
+    out = interpret_image_to_scene(
+        settings,
+        png,
+        http_post=fake_post,
+        validate_fn=lambda s: {"ok": True, "value": s},
+        source_scene="tesseract-lattice",
+    )
+    assert out["source"] == "nim-vision"
+    assert out["spec"]["entities"][0]["geometry"]["surfaceId"] == "tesseract"
+    assert out["source_scene"] == "tesseract-lattice"

@@ -32,6 +32,13 @@ export {
 } from "./convert.js";
 
 export {
+  buildTesseractLatticeSpheres,
+  buildLatticeGridSpheres,
+  tesseractEdges,
+  tesseractProjectedVerts,
+} from "./tesseractLatticeSpheres.js";
+
+export {
   sampleTimeline,
   sampleFrame,
   applyKeyframeBlend,

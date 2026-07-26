@@ -85,3 +85,64 @@ export class StagingBuffer {
     }
   }
 }
+
+export class MeshBufferCache {
+  constructor(device, pool = new BufferPool(device)) {
+    this.device = device;
+    this.pool = pool;
+    this._entries = new Map();
+  }
+
+  getOrCreate(meshKey, mesh) {
+    if (!meshKey) throw new Error("MeshBufferCache requires a stable meshKey");
+    const existing = this._entries.get(meshKey);
+    if (existing) {
+      existing.refCount++;
+      return existing;
+    }
+    const vertexData = mesh.vertices instanceof Float32Array ? mesh.vertices : new Float32Array(mesh.vertices ?? []);
+    const indexData = mesh.indices instanceof Uint32Array || mesh.indices instanceof Uint16Array ? mesh.indices : new Uint32Array(mesh.indices ?? []);
+    const vertex = this._createAndUpload(vertexData, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE);
+    const index = this._createAndUpload(indexData, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE);
+    const entry = {
+      key: meshKey,
+      vertex,
+      index,
+      vertexCount: Math.floor(vertexData.length / 3),
+      indexCount: indexData.length,
+      indexFormat: indexData instanceof Uint32Array ? "uint32" : "uint16",
+      refCount: 1,
+    };
+    this._entries.set(meshKey, entry);
+    return entry;
+  }
+
+  release(meshKey) {
+    const entry = this._entries.get(meshKey);
+    if (!entry) return;
+    entry.refCount--;
+    if (entry.refCount > 0) return;
+    this.pool.release(entry.vertex);
+    this.pool.release(entry.index);
+    this._entries.delete(meshKey);
+  }
+
+  size() {
+    return this._entries.size;
+  }
+
+  clear() {
+    for (const key of [...this._entries.keys()]) {
+      const entry = this._entries.get(key);
+      if (!entry) continue;
+      entry.refCount = 1;
+      this.release(key);
+    }
+  }
+
+  _createAndUpload(data, usage) {
+    const buffer = this.pool.acquire(Math.max(4, data.byteLength), usage);
+    if (this.device.queue?.writeBuffer) this.device.queue.writeBuffer(buffer, 0, data.buffer, data.byteOffset, data.byteLength);
+    return buffer;
+  }
+}

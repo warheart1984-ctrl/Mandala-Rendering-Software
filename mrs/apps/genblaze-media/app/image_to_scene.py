@@ -68,9 +68,25 @@ _SURFACE_BY_PALETTE = (
 )
 _SURFACE_BY_FRAMING = {
     "wide / landscape-friendly lattice": "lattice-grid",
-    "tall / portrait-friendly lattice": "orbital-cluster",
-    "square-ish / centered lattice": "torus-ring",
+    # Portrait framing used to map to orbital-cluster (6+1 bare spheres), which
+    # made NVIDIA/heuristic re-renders of lattice stills look like blob piles.
+    "tall / portrait-friendly lattice": "lattice-grid",
+    "square-ish / centered lattice": "tesseract",
 }
+
+# RT4D procedural archetype → SceneSpec surfaceId when re-interpreting a prior still.
+_SOURCE_SCENE_TO_SURFACE = {
+    "tesseract-lattice": "tesseract",
+    "tesseract-vertices": "tesseract",
+    "neural-lattice": "lattice-grid",
+    "lattice-grid": "lattice-grid",
+}
+
+# Surfaces that read as a handful of ellipsoids — replace when we know the source
+# still was a lattice/tesseract archetype.
+_WEAK_CLUSTER_SURFACES = frozenset(
+    {"orbital-cluster", "central-orb", "torus-3d", "hopf-surface"}
+)
 
 _PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "image_to_scene_spec.md"
 
@@ -127,6 +143,76 @@ def seed_from_sha256(sha256_hex: str) -> int:
     return int(digest[:8], 16) & 0xFFFFFFFF
 
 
+def surface_id_for_source_scene(source_scene: str | None) -> str | None:
+    """Map an RT4D archetype id to a SceneSpec surfaceId, or None if unknown."""
+    if not source_scene or not isinstance(source_scene, str):
+        return None
+    return _SOURCE_SCENE_TO_SURFACE.get(source_scene.strip())
+
+
+def extract_source_scene(entry: dict[str, Any] | None) -> str | None:
+    """Pull ``scene`` from a generate/index asset entry when present."""
+    if not isinstance(entry, dict):
+        return None
+    for bag in (entry.get("provenance"), entry.get("render"), entry):
+        if not isinstance(bag, dict):
+            continue
+        scene = bag.get("scene")
+        if isinstance(scene, str) and scene.strip():
+            return scene.strip()
+        nested = bag.get("render")
+        if isinstance(nested, dict):
+            scene = nested.get("scene")
+            if isinstance(scene, str) and scene.strip():
+                return scene.strip()
+    return None
+
+
+def apply_source_scene_bias(
+    spec: dict[str, Any],
+    *,
+    source_scene: str | None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Bias/remap primary surfaceId when the source still's RT4D archetype is known.
+
+    Drive-G-1: this preserves lattice *interpretation* for re-renders; it does
+    not claim geometric reconstruction of the PNG.
+    """
+    preferred = surface_id_for_source_scene(source_scene)
+    if not preferred or not isinstance(spec, dict):
+        return spec
+    entities = spec.get("entities")
+    if not isinstance(entities, list) or not entities:
+        return spec
+    primary = entities[0]
+    if not isinstance(primary, dict):
+        return spec
+    geom = primary.get("geometry")
+    if not isinstance(geom, dict) or geom.get("kind") != "surface":
+        return spec
+    current = geom.get("surfaceId")
+    if not isinstance(current, str):
+        current = ""
+    if force or current == preferred or current in _WEAK_CLUSTER_SURFACES:
+        if current != preferred:
+            geom = {**geom, "surfaceId": preferred}
+            primary = {**primary, "geometry": geom}
+            entities = [primary, *entities[1:]]
+            meta = spec.get("metadata") if isinstance(spec.get("metadata"), dict) else {}
+            return {
+                **spec,
+                "entities": entities,
+                "metadata": {
+                    **meta,
+                    "source_scene_bias": source_scene,
+                    "surface_id_before_bias": current or None,
+                    "surface_id_after_bias": preferred,
+                },
+            }
+    return spec
+
+
 def build_heuristic_scene_spec(
     analysis: dict[str, Any],
     *,
@@ -159,19 +245,10 @@ def build_heuristic_scene_spec(
 
     w = int(width or analysis.get("width") or DRAFT_WIDTH)
     h = int(height or analysis.get("height") or DRAFT_HEIGHT)
-    # Keep render size modest; clamp to RT4D caps used elsewhere.
     # Prefer the draft preset so heuristic specs don't force a long CPU path
     # before the server-side quality clamp (also draft by default).
     out_w = max(64, min(DRAFT_WIDTH, w if w <= DRAFT_WIDTH else DRAFT_WIDTH))
     out_h = max(64, min(DRAFT_HEIGHT, h if h <= DRAFT_HEIGHT else DRAFT_HEIGHT))
-    w = int(width or analysis.get("width") or 448)
-    h = int(height or analysis.get("height") or 448)
-    # Keep render size modest; clamp to RT4D caps used elsewhere.
-    out_w = max(64, min(1024, w if w <= 1024 else 448))
-    out_h = max(64, min(1024, h if h <= 1024 else 448))
-    # Prefer square-ish stills when source is huge.
-    if out_w > 512 or out_h > 512:
-        out_w, out_h = 448, 448
 
     seed = seed_from_sha256(image_sha256)
     short = (image_sha256 or uuid.uuid4().hex)[:10]
@@ -225,8 +302,6 @@ def build_heuristic_scene_spec(
             "height": out_h,
             "samples": DRAFT_SAMPLES,
             "maxDepth": DRAFT_MAX_DEPTH,
-            "samples": 20,
-            "maxDepth": 5,
             "seed": seed,
         },
         "metadata": {
@@ -371,6 +446,7 @@ def call_nim_vision(
     analysis: dict[str, Any],
     repair_errors: list[dict[str, Any]] | None = None,
     http_post: Callable[..., Any] | None = None,
+    source_scene: str | None = None,
 ) -> str:
     """Call NVIDIA integrate chat/completions with image + text priors."""
     if not settings.nvidia_configured:
@@ -378,6 +454,7 @@ def call_nim_vision(
 
     mime, b64 = _mime_and_b64(image_bytes)
     suggestion = analysis.get("suggestion") if isinstance(analysis.get("suggestion"), dict) else {}
+    preferred = surface_id_for_source_scene(source_scene)
     priors = {
         "dominant_color": analysis.get("dominant_color"),
         "width": analysis.get("width"),
@@ -387,6 +464,15 @@ def call_nim_vision(
         "mood": suggestion.get("mood"),
         "note": "Weak heuristic priors only — not depth or geometry.",
     }
+    if source_scene:
+        priors["source_rt4d_scene"] = source_scene
+    if preferred:
+        priors["preferred_surfaceId"] = preferred
+        priors["source_note"] = (
+            "This PNG is a prior MRS procedural RT4D still of the named archetype. "
+            f"Prefer surfaceId '{preferred}'. Do NOT use orbital-cluster or central-orb "
+            "for lattice/tesseract source stills — those expand to a few bare spheres."
+        )
     user_bits: list[dict[str, Any]] = [
         {
             "type": "text",
@@ -524,12 +610,17 @@ def interpret_image_to_scene(
     require_nvidia: bool = False,
     http_post: Callable[..., Any] | None = None,
     validate_fn: Callable[..., dict[str, Any]] | None = None,
+    source_scene: str | None = None,
 ) -> dict[str, Any]:
     """Core bridge: bytes → SceneSpecification + provenance fields.
 
     When ``require_nvidia`` is True, never silently fall back to the heuristic:
     missing key or NIM failure raises ``NvidiaUnavailableError`` so callers can
     keep the source RT4D still and surface "NVIDIA unavailable" honestly.
+
+    ``source_scene`` is an optional RT4D archetype id from a prior generate
+    (e.g. ``tesseract-lattice``). When set, NIM is steered toward a matching
+    surfaceId and weak cluster surfaces are remapped after interpret.
     """
     if not image_bytes:
         raise ValueError("empty image")
@@ -547,13 +638,23 @@ def interpret_image_to_scene(
     repair_attempted = False
     nim_error: str | None = None
     spec: dict[str, Any] | None = None
+    # When we know the prior still was a lattice/tesseract archetype, force the
+    # matching surfaceId even if NIM/heuristic picks a ring or torus mood.
+    force_bias = surface_id_for_source_scene(source_scene) is not None
 
     if not force_heuristic and settings.nvidia_configured:
         try:
             content = call_nim_vision(
-                settings, image_bytes, analysis=analysis, http_post=http_post
+                settings,
+                image_bytes,
+                analysis=analysis,
+                http_post=http_post,
+                source_scene=source_scene,
             )
             candidate = _ensure_seed(_extract_json_object(content), image_sha256)
+            candidate = apply_source_scene_bias(
+                candidate, source_scene=source_scene, force=force_bias
+            )
             result = validate(candidate)
             if result.get("ok"):
                 spec = candidate
@@ -567,8 +668,12 @@ def interpret_image_to_scene(
                     analysis=analysis,
                     repair_errors=errors if isinstance(errors, list) else [],
                     http_post=http_post,
+                    source_scene=source_scene,
                 )
                 candidate2 = _ensure_seed(_extract_json_object(content2), image_sha256)
+                candidate2 = apply_source_scene_bias(
+                    candidate2, source_scene=source_scene, force=force_bias
+                )
                 result2 = validate(candidate2)
                 if result2.get("ok"):
                     spec = candidate2
@@ -592,6 +697,11 @@ def interpret_image_to_scene(
 
     if spec is None:
         spec = build_heuristic_scene_spec(analysis, image_sha256=image_sha256)
+        preferred = surface_id_for_source_scene(source_scene)
+        if preferred:
+            spec = apply_source_scene_bias(
+                spec, source_scene=source_scene, force=True
+            )
         source = "heuristic-fallback"
         # Ensure heuristic always validates clean when Node SoT is present.
         check = validate(spec)
@@ -610,7 +720,7 @@ def interpret_image_to_scene(
                 },
                 image_sha256=image_sha256,
             )
-            spec["entities"][0]["geometry"]["surfaceId"] = "tesseract"
+            spec["entities"][0]["geometry"]["surfaceId"] = preferred or "tesseract"
 
     return {
         "spec": spec,
@@ -621,4 +731,5 @@ def interpret_image_to_scene(
         "note": DISCLAIMER,
         "repair_attempted": repair_attempted,
         "nim_error": nim_error,
+        "source_scene": source_scene,
     }

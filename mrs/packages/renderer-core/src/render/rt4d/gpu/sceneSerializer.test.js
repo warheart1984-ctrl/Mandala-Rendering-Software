@@ -125,6 +125,51 @@ describe("serializeScene", () => {
     assert.equal(result.counts.meshTris, 1);
   });
 
+  it("serializes typed static poly mesh instances for GPU upload", () => {
+    const device = mockDevice();
+    const scene = { primitives: [{
+      kind: "poly",
+      id: "tri-instance",
+      meshId: "tri",
+      vertices: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
+      indices: new Uint16Array([0, 1, 2]),
+      materialId: "mat_mesh",
+      evidence: { instanceHash: "inst", bakedGeometryHash: "baked" },
+    }], lights: [] };
+    mockMaterials(scene).add({ params: { albedo: { x: 0, y: 0, z: 1, w: 1 } } });
+    const result = serializeScene(scene, device, mockCamera);
+    assert.equal(result.counts.primitives, 1);
+    assert.equal(result.counts.meshTris, 1);
+  });
+
+  it("warms persistent mesh buffers while serializing typed mesh primitives", () => {
+    const device = mockDevice();
+    const cached = [];
+    const meshBufferCache = {
+      getOrCreate(key, mesh) {
+        cached.push({ key, mesh });
+        return { key, vertexCount: mesh.vertices.length / 3, indexCount: mesh.indices.length };
+      },
+    };
+    const scene = { primitives: [{
+      kind: "poly",
+      id: "tri-instance",
+      meshId: "tri",
+      localVertices: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      localIndices: new Uint16Array([0, 1, 2]),
+      vertices: new Float32Array([10, 0, 0, 11, 0, 0, 10, 1, 0]),
+      indices: new Uint16Array([0, 1, 2]),
+      localBvhKey: "mesh:tri",
+      materialId: "mat_mesh",
+    }], lights: [] };
+    mockMaterials(scene).add({ params: { albedo: { x: 0, y: 0, z: 1, w: 1 } } });
+    serializeScene(scene, device, mockCamera, { meshBufferCache });
+    assert.equal(cached.length, 1);
+    assert.equal(cached[0].key, "mesh:tri");
+    assert.equal(cached[0].mesh.vertices, scene.primitives[0].localVertices);
+  });
+
   it("serializes light sources", () => {
     const device = mockDevice();
     const scene = { primitives: [], lights: [{

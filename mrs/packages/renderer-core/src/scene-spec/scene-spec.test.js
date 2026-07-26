@@ -12,6 +12,8 @@ import {
   hashSceneSpecification,
   sampleTimeline,
   sampleFrame,
+  expandSurfaceToSpheres,
+  tesseractEdges,
 } from "./index.js";
 
 const TESSERACT_SPEC = {
@@ -148,9 +150,20 @@ describe("convertSceneSpecification", () => {
     assert.equal(a.specHash, b.specHash);
     assert.equal(a.seed, 42);
     assert.deepEqual(a.rt4d.primitives, b.rt4d.primitives);
-    assert.equal(a.rt4d.primitives.length, 16);
+    // tesseract expands to lattice family (vertices + beams + core + rings),
+    // not the legacy bare 16-vertex set.
+    assert.ok(a.rt4d.primitives.length > 100);
     assert.equal(a.worldDocument.schemaVersion, "1.0");
     assert.equal(a.worldDocument.entities[0].geometry.kind, "surface");
+  });
+
+  it("tesseract expand includes core and edge beams", () => {
+    const spheres = expandSurfaceToSpheres("tesseract");
+    assert.ok(spheres.length > 100);
+    // Largest radius should be the energy core (~0.42).
+    const maxR = Math.max(...spheres.map((s) => s.radius));
+    assert.ok(maxR >= 0.4);
+    assert.equal(tesseractEdges().length, 32);
   });
 
   it("hash is stable across object key order", () => {

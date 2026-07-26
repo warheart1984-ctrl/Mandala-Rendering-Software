@@ -1,0 +1,11 @@
+{
+  "name": "@mrs/scene-spec-playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Prototype: emit live SceneSpecification JSON only (not a parallel SoT)",
+  "scripts": {
+    "start": "node generate.mjs",
+    "test": "node generate.mjs"
+  }
+}

@@ -26,7 +26,7 @@ describe("handleSceneSpecMessage", () => {
     assert.equal(out.ok, true);
     assert.equal(out.type, "scene_spec_result");
     assert.equal(out.requestId, "r1");
-    assert.equal(out.primitiveCount, 16);
+    assert.ok(out.primitiveCount > 100);
     assert.equal(typeof out.specHash, "string");
   });
 

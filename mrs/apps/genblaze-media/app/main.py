@@ -27,6 +27,7 @@ from app.image_ingest import (
 )
 from app.image_to_scene import (
     DISCLAIMER as IMAGE_TO_SCENE_DISCLAIMER,
+    extract_source_scene,
     image_to_scene_availability,
     interpret_image_to_scene,
     resolve_image_bytes,
@@ -615,12 +616,17 @@ def _image_to_scene_pipeline(
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    source_scene = None
+    if run_id:
+        source_scene = extract_source_scene(_index_lookup_run(run_id))
+
     try:
         interpreted = interpret_image_to_scene(
             settings,
             image_bytes,
             force_heuristic=force_heuristic,
             require_nvidia=require_nvidia,
+            source_scene=source_scene,
         )
     except NvidiaUnavailableError as exc:
         status = 503 if exc.reason == "missing_key" else 502

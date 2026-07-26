@@ -5,6 +5,10 @@
 
 import { createHash } from "node:crypto";
 import { normalizeSurfaceId } from "./validate.js";
+import {
+  buildLatticeGridSpheres,
+  buildTesseractLatticeSpheres,
+} from "./tesseractLatticeSpheres.js";
 
 /**
  * Canonical JSON for hashing (sorted keys, no whitespace variance).
@@ -75,24 +79,17 @@ export function expandSurfaceToSpheres(surfaceId, transform4d = {}) {
 
   switch (sid) {
     case "tesseract": {
-      const s = 0.9;
-      for (let i = 0; i < 16; i++) {
-        push(
-          (i & 1 ? s : -s),
-          (i & 2 ? s : -s) + 0.1,
-          i & 4 ? s : -s,
-          i & 8 ? s : -s,
-          0.28,
-        );
+      // Readable 8-cell: vertices + edge beams + core + rings (same family as
+      // render-still `tesseract-lattice`). Bare 16-vertex expand looked like a
+      // sparse cluster after NVIDIA→SceneSpec re-renders of RT4D lattice stills.
+      for (const sp of buildTesseractLatticeSpheres()) {
+        push(sp.center[0], sp.center[1], sp.center[2], sp.center[3], sp.radius);
       }
       break;
     }
     case "lattice-grid": {
-      const spacing = 1.15;
-      for (let ix = -1; ix <= 1; ix++) {
-        for (let iz = -1; iz <= 1; iz++) {
-          push(ix * spacing, 0.1, iz * spacing, ((ix + iz) & 1) * 0.5, 0.34);
-        }
+      for (const sp of buildLatticeGridSpheres()) {
+        push(sp.center[0], sp.center[1], sp.center[2], sp.center[3], sp.radius);
       }
       break;
     }

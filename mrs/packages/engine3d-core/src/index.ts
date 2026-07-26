@@ -14,6 +14,169 @@ export type { Body } from "./world/Body.js";
 export { DefaultBody, isForceAccumBody } from "./world/Body.js";
 export type { WorldMesh } from "./world/WorldMesh.js";
 export { DefaultWorldMesh } from "./world/WorldMesh.js";
+export type {
+  CameraParams,
+  CameraType,
+  Engine3DWorldDocument,
+  EnvironmentParams,
+  EnvironmentPreset,
+  GeometryRef,
+  GovernedAssetKind,
+  GovernedAssetManifest,
+  AssetProvenanceRecord,
+  LightParams,
+  LightType,
+  MaterialRef,
+  MaterialType,
+  PrimitiveType,
+  QuatTuple,
+  StaticMeshAsset,
+  TextureRef,
+  TextureAsset,
+  TextureColorSpace,
+  TextureFormat,
+  TextureRole,
+  Transform,
+  UniversalMaterial,
+  Vec3Tuple,
+  WorldObject,
+  WorldObjectKind,
+  WorldGeneratorParams,
+} from "./world/WorldObject.js";
+export {
+  DEFAULT_TRANSFORM,
+  createUniversalMaterial,
+  createWorldObject,
+} from "./world/WorldObject.js";
+export {
+  UNIVERSAL_MATERIAL_TYPES,
+  buildRt4dMaterialTable,
+  hashMaterialTable,
+  materialToRt4dEntry,
+  normalizeUniversalMaterial,
+  validateUniversalMaterials,
+  type MaterialValidationIssue,
+  type MaterialValidationResult,
+  type Rt4dMaterialEntry,
+} from "./world/MaterialSystem.js";
+export {
+  buildRt4dTextureTable,
+  hashTextureTable,
+  textureToRt4dEntry,
+  validateTextureAssets,
+  validateTextureRefs,
+  type Rt4dTextureEntry,
+  type TextureValidationIssue,
+  type TextureValidationResult,
+} from "./world/TextureSystem.js";
+export {
+  buildRt4dLightTable,
+  createLightingPreset,
+  hashLightingRig,
+  lightObjectToRt4dEntry,
+  type LightingPreset,
+  type Rt4dLightEntry,
+} from "./world/LightingSystem.js";
+export {
+  buildRt4dCameraTable,
+  cameraObjectToRt4dEntry,
+  hashCameraMotion,
+  type Rt4dCameraEntry,
+} from "./world/CameraSystem.js";
+export {
+  createEnvironmentPreset,
+  environmentToRt4dEntry,
+  hashEnvironment,
+  type Rt4dEnvironmentEntry,
+} from "./world/EnvironmentSystem.js";
+export {
+  AssetRegistry,
+  hashAssetManifests,
+  validateAssetManifests,
+  type AssetValidationIssue,
+  type AssetValidationResult,
+} from "./world/AssetRegistry.js";
+export {
+  AssetProvenanceLedger,
+  createImportProvenanceRecord,
+  hashAssetProvenance,
+} from "./world/AssetProvenanceLedger.js";
+export {
+  createWorldGenerator,
+  generateWorldFromGenerator,
+  hashWorldGenerator,
+} from "./world/WorldGenerator.js";
+export {
+  hashStaticMesh,
+  hashStaticMeshTable,
+  instantiateStaticMesh,
+  invertMat4,
+  transformToMat4,
+  validateStaticMeshes,
+  type InstancedStaticMeshPrimitive,
+  type StaticMeshValidationIssue,
+  type StaticMeshValidationResult,
+} from "./world/StaticMeshSystem.js";
+export {
+  importStaticMeshesFromGlb,
+  importStaticMeshesFromObj,
+  type StaticMeshImportIssue,
+  type StaticMeshImportOptions,
+  type StaticMeshImportResult,
+} from "./world/StaticMeshImporter.js";
+export type {
+  DeformedHumanRigFrame,
+  DeformedMesh,
+  HumanBone,
+  HumanMaterials,
+  HumanMeshRef,
+  HumanMeshes,
+  HumanRig,
+  HumanRigMaterialType,
+  HumanRigMeshRole,
+  HumanRigCapabilities,
+  HumanRigValidationIssue,
+  HumanRigValidationResult,
+  HumanSkeleton,
+  Mat4Tuple,
+  MorphChannel,
+  FacialCurve,
+  FacialKeyframe,
+  FacialRig,
+  Muscle,
+  MuscleRig,
+  SoftTissueRegion,
+  Pose,
+  PoseLibrary,
+} from "./human/HumanRigTypes.js";
+export { FacialCurvePlayer } from "./human/FacialCurvePlayer.js";
+export { MuscleDeformer, type MuscleDeformationResult } from "./human/MuscleDeformer.js";
+export { MultiDeformationCompiler, type MultiDeformationState } from "./human/MultiDeformationCompiler.js";
+export {
+  HumanRigLoader,
+  loadHumanRigFromGlb,
+  type HumanRigLoadOptions,
+} from "./human/HumanRigLoader.js";
+export {
+  HumanRigDeformer,
+  computeGlobalBones,
+  deformHumanMesh,
+  deformHumanRig,
+} from "./human/HumanRigDeformer.js";
+export {
+  MorphTargetDeformer,
+  applyMorphTargets,
+  type MorphedMeshData,
+} from "./human/MorphTargetDeformer.js";
+export { validateHumanRig } from "./human/HumanRigValidator.js";
+export {
+  IDENTITY_MAT4,
+  mat4,
+  multiplyMat4,
+  normalize3,
+  transformPoint,
+  transformVector,
+} from "./human/mat4.js";
 export type { BodyRegistry } from "./world/BodyRegistry.js";
 export { DefaultBodyRegistry } from "./world/BodyRegistry.js";
 export type { World3D } from "./world/World3D.js";
@@ -111,6 +274,33 @@ export type {
   SceneBridgeCaptureInput,
   Engine3DFrameRenderRequest,
   Engine3DFrameRenderReceipt,
+  EvidenceRecordV12,
+  EvidenceRecordV20,
+  EvidenceRecordV21,
+  EvidenceRecordV3,
+  EvidenceRecordV4,
+  EvidenceRecordV5,
+  FederatedRenderPlanV5,
+  FederatedRt4dBridgePrimitiveV4,
+  FederatedRt4dBridgeSceneV4,
+  FederatedRt4dBridgeSceneV5,
+  FederatedSceneBridgeV4Options,
+  FederatedSceneBridgeV4Result,
+  FederatedSceneBridgeV5Options,
+  FederatedSceneBridgeV5Render,
+  FederatedSceneBridgeV5Result,
+  FederatedWorldEntryV4,
+  FederatedWorldV4,
+  FederationTimelineFrameV4,
+  FederationTimelineV4,
+  MultiCameraV5,
+  MultiTimelineV5,
+  Rt4dBridgePrimitive,
+  Rt4dBridgeSceneV12,
+  SceneBridgeV12Options,
+  SceneBridgeV12Result,
+  TimelineBranchV5,
+  WorldLinkV4,
 } from "./scene/index.js";
 export {
   ENGINE3D_BRIDGE_SCENE_SCHEMA,
@@ -123,4 +313,24 @@ export {
   hashCanonical,
   renderEngine3dFrame,
   ENGINE3D_FRAME_RECEIPT_MODE,
+  EvidenceBuilderV12,
+  EvidenceBuilderV20,
+  EvidenceBuilderV21,
+  EvidenceBuilderV3,
+  EvidenceBuilderV4,
+  EvidenceBuilderV5,
+  FederatedSceneBridgeV4,
+  FederatedSceneBridgeV5,
+  SceneBridgeV12,
+  canActivateSceneBridgeV3,
+  buildEvidenceRecordV12,
+  buildEvidenceRecordV20,
+  buildEvidenceRecordV21,
+  buildEvidenceRecordV3,
+  buildEvidenceRecordV4,
+  buildEvidenceRecordV5,
+  validateFederatedRenderPlanV5,
+  validateFederatedWorldV4,
+  validateMultiCameraV5,
+  validateMultiTimelineV5,
 } from "./scene/index.js";
