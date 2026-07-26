@@ -65,6 +65,10 @@ Use exactly one of:
     }
   ],
   "output": {
+    "width": 256,
+    "height": 256,
+    "samples": 4,
+    "maxDepth": 3,
     "width": 448,
     "height": 448,
     "samples": 20,
@@ -73,6 +77,20 @@ Use exactly one of:
   }
 }
 ```
+
+## Output defaults (draft)
+
+Prefer the **draft** render profile so path-traced stills finish quickly on
+CPU (typically tens of seconds; noisier / smaller than a final still):
+
+- `width` / `height`: **256**
+- `samples`: **4**
+- `maxDepth`: **3**
+
+The server may **clamp** larger values when `quality=draft` (the API default).
+Do not request 448×448 / 20 samples / depth 5 unless a final-quality still
+is explicitly required — and even then the server only uses those when the
+request sets `quality=final`.
 
 ## Material / camera guidance
 

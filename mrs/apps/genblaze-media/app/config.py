@@ -208,6 +208,13 @@ class Settings:
     rt4d_samples: int = 20
     rt4d_max_depth: int = 5
     rt4d_timeout_seconds: float = 180.0
+    # Scene-spec render quality: "draft" (hackathon default — smaller/noisier,
+    # renders in ~tens of seconds on CPU) or "final" (RT4D_* profile above).
+    render_quality_default: str = "draft"
+    rt4d_draft_width: int = 256
+    rt4d_draft_height: int = 256
+    rt4d_draft_samples: int = 4
+    rt4d_draft_max_depth: int = 3
     # Image → SceneSpecification (NIM vision + heuristic fallback)
     image_to_scene_model: str = "meta/llama-3.2-11b-vision-instruct"
     image_to_scene_chat_url: str = "https://integrate.api.nvidia.com/v1/chat/completions"
@@ -321,12 +328,12 @@ def get_settings() -> Settings:
         or os.getenv("NVIDIA_NIM_API_KEY")
         or ""
     ).strip() or None
-    # CMM-NIM-Cosmos: unset GENBLAZE_VIDEO_ENABLED defaults ON when an NVIDIA
-    # key is present. Explicit 0/false/off disables. Render blueprint pins "0"
-    # for the stills-only judge demo.
+    # Demo default (stills-only): unset GENBLAZE_VIDEO_ENABLED defaults OFF,
+    # even when an NVIDIA key is present. The Cosmos/Seedance API and pipeline
+    # stay intact — set GENBLAZE_VIDEO_ENABLED=1 to re-enable video UI + API.
     video_flag = os.getenv("GENBLAZE_VIDEO_ENABLED")
     if video_flag is None or not str(video_flag).strip():
-        video_enabled = bool(nvidia_key)
+        video_enabled = False
     else:
         video_enabled = str(video_flag).strip().lower() not in {
             "0",
@@ -376,6 +383,17 @@ def get_settings() -> Settings:
     rt4d_height = _clamp_int("RT4D_RENDER_HEIGHT", 448, 16, 1024)
     rt4d_samples = _clamp_int("RT4D_SAMPLES", 20, 1, 512)
     rt4d_max_depth = _clamp_int("RT4D_MAX_DEPTH", 5, 1, 12)
+    # Draft preset (hackathon default path): small/low-sample stills so judges
+    # are not waiting minutes. GENBLAZE_RENDER_QUALITY_DEFAULT=final restores
+    # the RT4D_* profile as the default; per-request `quality` always wins.
+    quality_raw = (
+        os.getenv("GENBLAZE_RENDER_QUALITY_DEFAULT") or "draft"
+    ).strip().lower()
+    render_quality_default = "final" if quality_raw in {"final", "high"} else "draft"
+    rt4d_draft_width = _clamp_int("RT4D_DRAFT_WIDTH", 256, 16, 1024)
+    rt4d_draft_height = _clamp_int("RT4D_DRAFT_HEIGHT", 256, 16, 1024)
+    rt4d_draft_samples = _clamp_int("RT4D_DRAFT_SAMPLES", 4, 1, 512)
+    rt4d_draft_max_depth = _clamp_int("RT4D_DRAFT_MAX_DEPTH", 3, 1, 12)
     try:
         rt4d_timeout = float((os.getenv("RT4D_TIMEOUT") or "180").strip() or "180")
     except ValueError:
@@ -464,6 +482,11 @@ def get_settings() -> Settings:
         rt4d_samples=rt4d_samples,
         rt4d_max_depth=rt4d_max_depth,
         rt4d_timeout_seconds=rt4d_timeout,
+        render_quality_default=render_quality_default,
+        rt4d_draft_width=rt4d_draft_width,
+        rt4d_draft_height=rt4d_draft_height,
+        rt4d_draft_samples=rt4d_draft_samples,
+        rt4d_draft_max_depth=rt4d_draft_max_depth,
         image_to_scene_model=image_to_scene_model,
         image_to_scene_chat_url=image_to_scene_chat_url,
         image_to_scene_timeout_seconds=image_to_scene_timeout,

@@ -268,12 +268,20 @@
         emits a SceneSpecification (NIM vision when configured, else heuristic),
         validates it, then MRS path-traces a full PNG.
         This is <strong>not</strong> geometric reconstruction, depth recovery, or mesh from photo.
+        Default quality is <strong>draft</strong> (smaller / noisier, typically tens of
+        seconds on CPU) — choose <strong>final</strong> only when you can wait longer
+        for a nicer still.
       </p>
       <form id="scene-form">
         <label for="scene-file">Image upload</label>
         <input type="file" id="scene-file" accept="image/jpeg,image/png,image/webp,image/gif" />
         <label for="scene-run-id" style="margin-top:0.75rem">Or generate run_id</label>
         <input type="text" id="scene-run-id" maxlength="64" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <label for="scene-quality" style="margin-top:0.75rem">Render quality</label>
+        <select id="scene-quality">
+          <option value="draft" selected>Draft (fast — smaller / noisier)</option>
+          <option value="final">Final (slower — RT4D profile)</option>
+        </select>
         <div class="row">
           <button type="submit" id="scene-go">Interpret + render</button>
         </div>
@@ -294,9 +302,8 @@
         People and faces may blank or degrade. <strong>NVCF cold-start:</strong> Cosmos is often slower than
         FLUX on the first hit after Render or NIM idle — even with 600s+ timeouts, expect longer
         first-request latency; keep this tab open. Larger mp4 objects cost more B2 Class C traffic.
-        This section appears when video is enabled (default when
-        <code>NVIDIA_API_KEY</code> is set and <code>GENBLAZE_VIDEO_ENABLED</code>
-        is unset; set <code>GENBLAZE_VIDEO_ENABLED=0</code> for stills-only).
+        This section is hidden by default (stills-only demo); it appears only
+        when the operator explicitly sets <code>GENBLAZE_VIDEO_ENABLED=1</code>.
       </p>
 
       <form id="video-form">
@@ -343,6 +350,8 @@
       Storage: Backblaze B2 (private bucket → presigned GET). Orchestration: Genblaze.
       Image: NVIDIA NIM FLUX (stills) or optional MRS RT4D renderer
       (<code>GENBLAZE_IMAGE_BACKEND=rt4d</code> — deterministic procedural 4D, not diffusion).
+      Video: NVIDIA NIM Cosmos (optional; off by default — set
+      <code>GENBLAZE_VIDEO_ENABLED=1</code> to re-enable).
       Video: NVIDIA NIM Cosmos (default on when NVIDIA key present; pin
       <code>GENBLAZE_VIDEO_ENABLED=0</code> for stills-only).
       Video: NVIDIA NIM Cosmos (optional; off by default).
@@ -562,6 +571,12 @@
         return;
       }
       sceneGoBtn.disabled = true;
+      const quality = document.getElementById("scene-quality").value || "draft";
+      setStatus(
+        sceneStatusEl,
+        quality === "final"
+          ? "Interpreting image → SceneSpecification → MRS full-frame (final quality; may take longer)…"
+          : "Interpreting image → SceneSpecification → MRS draft still (fast / noisier)…",
       setStatus(
         sceneStatusEl,
         "Interpreting image → SceneSpecification → MRS full-frame path trace…",
@@ -569,6 +584,7 @@
       );
       scenePreview.hidden = true;
       try {
+        const body = { render: true, quality };
         const body = { render: true };
         if (file) {
           body.image_base64 = await fileToDataUrl(file);

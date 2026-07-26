@@ -238,8 +238,8 @@ def generate_video(settings: Settings, prompt: str) -> VideoGenerateResult:
         raise ValueError("prompt is required")
     if not settings.video_enabled:
         raise RuntimeError(
-            "Video path disabled (GENBLAZE_VIDEO_ENABLED=0). "
-            "Re-enable to use /api/generate-video "
+            "Video path disabled (off by default for the stills-only demo). "
+            "Set GENBLAZE_VIDEO_ENABLED=1 to use /api/generate-video "
             "(GENBLAZE_VIDEO_BACKEND=nvidia|seedance)."
         )
 

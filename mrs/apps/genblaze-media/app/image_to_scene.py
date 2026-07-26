@@ -35,6 +35,14 @@ from app.image_ingest import (
     resolve_stored_file,
 )
 from app.preview_cache import get_preview_path, is_run_id
+from app.render_quality import (
+    DRAFT_HEIGHT,
+    DRAFT_MAX_DEPTH,
+    DRAFT_SAMPLES,
+    DRAFT_WIDTH,
+    quality_presets,
+    resolve_quality,
+)
 from app.rt4d_provider import _find_node
 
 logger = logging.getLogger(__name__)
@@ -91,6 +99,8 @@ def image_to_scene_availability(settings: Settings) -> dict[str, Any]:
         "validate_script_found": validate_script.is_file(),
         "render_script_found": render_script.is_file(),
         "node_found": node is not None,
+        "quality_default": resolve_quality(settings),
+        "quality_presets": quality_presets(settings),
         "note": DISCLAIMER,
         "analysis_mode": ANALYSIS_MODE,
     }
@@ -143,6 +153,13 @@ def build_heuristic_scene_spec(
     else:
         surface_id = _SURFACE_BY_FRAMING.get(framing, "tesseract")
 
+    w = int(width or analysis.get("width") or DRAFT_WIDTH)
+    h = int(height or analysis.get("height") or DRAFT_HEIGHT)
+    # Keep render size modest; clamp to RT4D caps used elsewhere.
+    # Prefer the draft preset so heuristic specs don't force a long CPU path
+    # before the server-side quality clamp (also draft by default).
+    out_w = max(64, min(DRAFT_WIDTH, w if w <= DRAFT_WIDTH else DRAFT_WIDTH))
+    out_h = max(64, min(DRAFT_HEIGHT, h if h <= DRAFT_HEIGHT else DRAFT_HEIGHT))
     w = int(width or analysis.get("width") or 448)
     h = int(height or analysis.get("height") or 448)
     # Keep render size modest; clamp to RT4D caps used elsewhere.
@@ -202,6 +219,8 @@ def build_heuristic_scene_spec(
         "output": {
             "width": out_w,
             "height": out_h,
+            "samples": DRAFT_SAMPLES,
+            "maxDepth": DRAFT_MAX_DEPTH,
             "samples": 20,
             "maxDepth": 5,
             "seed": seed,
