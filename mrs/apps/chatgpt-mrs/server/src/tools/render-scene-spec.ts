@@ -7,11 +7,15 @@ import {
   runSceneSpecRender,
   type QualityPreset,
 } from "../render-jobs.js";
+import { parseSceneSpecPayload } from "./schema-helpers.js";
 
 export const renderSceneSpecInputShape = {
+  // Stringified JSON — OpenAI rejects z.record(z.unknown()) → additionalProperties:{}
   sceneSpec: z
-    .record(z.unknown())
-    .describe("SceneSpecification JSON object to path-trace via local RT4D"),
+    .string()
+    .describe(
+      "SceneSpecification as a JSON string to path-trace via local RT4D"
+    ),
   quality: z
     .enum(["draft", "standard"])
     .optional()
@@ -31,8 +35,9 @@ export async function handleRenderSceneSpec(args: unknown): Promise<{
 }> {
   const parsed = parser.parse(args ?? {});
   const quality = (parsed.quality ?? "draft") as QualityPreset;
+  const sceneSpec = parseSceneSpecPayload(parsed.sceneSpec);
 
-  const structural = parseSceneSpecification(parsed.sceneSpec);
+  const structural = parseSceneSpecification(sceneSpec);
   if (!structural.ok) {
     const msg = structural.errors
       .map((e: { path?: string; message: string }) =>
@@ -49,10 +54,7 @@ export async function handleRenderSceneSpec(args: unknown): Promise<{
     throw new Error(`unsupported SceneSpecification: ${msg}`);
   }
 
-  const result = await runSceneSpecRender(
-    parsed.sceneSpec as Record<string, unknown>,
-    quality
-  );
+  const result = await runSceneSpecRender(sceneSpec, quality);
 
   return {
     text: `RT4D still ready (${quality}) · ${result.pngUrl} · sha256=${String(result.provenance.sha256 ?? "—").slice(0, 12)}…`,

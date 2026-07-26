@@ -1,10 +1,12 @@
 /**
  * MRS ChatGPT App MCP server.
  *
- * Transport: SSE (GET /mcp + POST /mcp/messages) — matches kitchen_sink_server_node.
+ * Transports (ChatGPT Apps prefer Streamable HTTP):
+ * - Streamable HTTP: POST/GET/DELETE /mcp (stateless JSON mode for OpenAI clients)
+ * - Legacy SSE: GET /sse + POST /mcp/messages (MCP Inspector / older clients)
+ *
  * Tool/resource registration: registerAppTool + registerAppResource + RESOURCE_MIME_TYPE
- * from @modelcontextprotocol/ext-apps (pinned ^1.0.1 per openai-apps-sdk-examples).
- * SDK: @modelcontextprotocol/sdk ^1.12.1 (mcp_app_basics_node evidence).
+ * from @modelcontextprotocol/ext-apps. SDK: @modelcontextprotocol/sdk ^1.29.0.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -24,6 +26,7 @@ import {
 } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
 import { createAuthenticator } from "./mrs-adapter/authenticator.js";
 import { RendererClient } from "./mrs-adapter/renderer-client.js";
@@ -326,25 +329,94 @@ function createMrsServer(): McpServer {
   return server;
 }
 
-type SessionRecord = {
+type SseSessionRecord = {
   server: McpServer;
   transport: SSEServerTransport;
 };
 
-const sessions = new Map<string, SessionRecord>();
-const ssePath = "/mcp";
-const postPath = "/mcp/messages";
+const sseSessions = new Map<string, SseSessionRecord>();
+/** ChatGPT / OpenAI Apps primary endpoint (Streamable HTTP). */
+const mcpPath = "/mcp";
+/** Legacy SSE for MCP Inspector and older clients. */
+const ssePath = "/sse";
+const ssePostPath = "/mcp/messages";
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "content-type, accept, mcp-session-id, mcp-protocol-version",
+  "Access-Control-Expose-Headers": "mcp-session-id",
+} as const;
+
+/**
+ * Streamable HTTP (stateless + JSON) — preferred by ChatGPT Apps / OpenAI MCP clients.
+ * Creates a fresh server+transport per POST so OpenAI's session lifecycle does not
+ * trip stateful DELETE/session-terminated failures.
+ */
+async function handleStreamableHttp(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
+
+  if (req.method === "GET" || req.method === "DELETE") {
+    res.writeHead(405, { "Content-Type": "application/json", Allow: "POST" });
+    res.end(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Method not allowed. Use POST /mcp (Streamable HTTP).",
+        },
+        id: null,
+      })
+    );
+    return;
+  }
+
+  const server = createMrsServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
+  });
+
+  const cleanup = () => {
+    void transport.close().catch(() => undefined);
+    void server.close().catch(() => undefined);
+  };
+  res.on("close", cleanup);
+
+  try {
+    await server.connect(transport);
+    await transport.handleRequest(req, res);
+  } catch (error) {
+    console.error("Streamable HTTP request failed", error);
+    cleanup();
+    if (!res.headersSent) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          error: { code: -32603, message: "Internal server error" },
+          id: null,
+        })
+      );
+    }
+  }
+}
 
 async function handleSseRequest(res: ServerResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   const server = createMrsServer();
-  const transport = new SSEServerTransport(postPath, res);
+  const transport = new SSEServerTransport(ssePostPath, res);
   const sessionId = transport.sessionId;
-  sessions.set(sessionId, { server, transport });
+  sseSessions.set(sessionId, { server, transport });
 
-  transport.onclose = async () => {
-    sessions.delete(sessionId);
-    await server.close();
+  // Avoid recursive close: server.close() → transport.close() → onclose → server.close().
+  transport.onclose = () => {
+    sseSessions.delete(sessionId);
   };
   transport.onerror = (error) => {
     console.error("SSE transport error", error);
@@ -353,7 +425,7 @@ async function handleSseRequest(res: ServerResponse) {
   try {
     await server.connect(transport);
   } catch (error) {
-    sessions.delete(sessionId);
+    sseSessions.delete(sessionId);
     console.error("Failed to start SSE session", error);
     if (!res.headersSent) {
       res.writeHead(500).end("Failed to establish SSE connection");
@@ -361,7 +433,7 @@ async function handleSseRequest(res: ServerResponse) {
   }
 }
 
-async function handlePostMessage(
+async function handleSsePostMessage(
   req: IncomingMessage,
   res: ServerResponse,
   url: URL
@@ -373,7 +445,7 @@ async function handlePostMessage(
     res.writeHead(400).end("Missing sessionId query parameter");
     return;
   }
-  const session = sessions.get(sessionId);
+  const session = sseSessions.get(sessionId);
   if (!session) {
     res.writeHead(404).end("Unknown session");
     return;
@@ -396,11 +468,7 @@ const httpServer = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
 
   if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "content-type",
-    });
+    res.writeHead(204, { ...CORS_HEADERS });
     res.end();
     return;
   }
@@ -416,6 +484,10 @@ const httpServer = createServer(async (req, res) => {
         assetsDir: ASSETS_DIR,
         renderDir: getRenderDir(),
         publicBaseUrl: process.env.MRS_PUBLIC_BASE_URL ?? null,
+        transports: {
+          streamableHttp: `POST ${mcpPath}`,
+          legacySse: `GET ${ssePath} + POST ${ssePostPath}`,
+        },
         tools: [
           "create_4d_scene",
           "update_4d_scene",
@@ -455,13 +527,23 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  // Primary: Streamable HTTP for ChatGPT (POST /mcp). GET/DELETE → 405 in stateless mode.
+  if (
+    url.pathname === mcpPath &&
+    (req.method === "POST" || req.method === "GET" || req.method === "DELETE")
+  ) {
+    await handleStreamableHttp(req, res);
+    return;
+  }
+
+  // Legacy SSE (Inspector): moved off /mcp so it no longer conflicts with ChatGPT.
   if (req.method === "GET" && url.pathname === ssePath) {
     await handleSseRequest(res);
     return;
   }
 
-  if (req.method === "POST" && url.pathname === postPath) {
-    await handlePostMessage(req, res, url);
+  if (req.method === "POST" && url.pathname === ssePostPath) {
+    await handleSsePostMessage(req, res, url);
     return;
   }
 
@@ -470,8 +552,11 @@ const httpServer = createServer(async (req, res) => {
 
 httpServer.listen(PORT, () => {
   console.log(`MRS ChatGPT MCP server listening on http://127.0.0.1:${PORT}`);
-  console.log(`  SSE:  GET  http://127.0.0.1:${PORT}${ssePath}`);
-  console.log(`  POST: http://127.0.0.1:${PORT}${postPath}?sessionId=...`);
+  console.log(`  Streamable HTTP: POST http://127.0.0.1:${PORT}${mcpPath}`);
+  console.log(`  Legacy SSE:      GET  http://127.0.0.1:${PORT}${ssePath}`);
+  console.log(
+    `  Legacy POST:     http://127.0.0.1:${PORT}${ssePostPath}?sessionId=...`
+  );
   console.log(`  Health: GET http://127.0.0.1:${PORT}/health`);
   console.log(`  LiveLink default: ${resolveLiveLinkUrl()}`);
   console.log(`  Assets: ${ASSETS_DIR}`);

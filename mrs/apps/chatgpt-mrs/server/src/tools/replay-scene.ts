@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getSceneOrThrow, sceneStore } from "../scene-store.js";
+import { numberPairArray } from "./schema-helpers.js";
 
 export const replaySceneInputShape = {
   sceneId: z.string(),
@@ -8,7 +9,8 @@ export const replaySceneInputShape = {
     .describe(
       "timeline: attaches declared keyframe placeholders; cssv: not_implemented in this slice"
     ),
-  timeRange: z.tuple([z.number(), z.number()]).optional(),
+  // Homogeneous number[] — not z.tuple (OpenAI rejects items:[schema,…])
+  timeRange: numberPairArray().optional(),
   fps: z.number().optional(),
 };
 
