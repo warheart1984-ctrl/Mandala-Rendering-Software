@@ -33,6 +33,13 @@ def test_static_index_inline_script_parses_and_posts_generate() -> None:
     assert 'id="still-quality"' in html
     assert 'document.getElementById("still-quality")' in script
     assert "quality: stillQuality" in script
+    # Progress copy must stay backend-neutral until /health resolves.
+    assert "if (health === null)" in script
+    assert 'progressMsg = "Generating…"' in script
+    assert "avoid naming FLUX or RT4D in progress copy" in script
+    # FLUX cold-start copy only after health is known and backend is not RT4D.
+    assert "FLUX may take 1–3 min on cold start" in script
+    assert "MRS RT4D deterministic path trace" in script
 
     assert CORRUPT_NESTED_STATUS not in script
     # Duplicate body without quality was left after a nested setStatus merge; reject that alone.

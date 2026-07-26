@@ -501,13 +501,13 @@
       if (!prompt) return;
       const peopleHint = /\b(person|people|human|man|woman|girl|boy|face|skin|portrait|photoreal)\b/i.test(prompt);
       goBtn.disabled = true;
-      // The FLUX warnings (cold start, people blanking) apply only to the NVIDIA
-      // diffusion path. On the RT4D backend the prompt selects a procedural 4D
-      // scene and the CPU path tracer renders it — different failure modes and
-      // different honest description.
+      // Three-way progress copy (matches the health===null comment above):
+      // unknown → neutral; RT4D → path-trace wording; NVIDIA → FLUX cold-start.
       let progressMsg;
       const stillQuality = document.getElementById("still-quality")?.value || "draft";
-      if (isRt4dBackend()) {
+      if (health === null) {
+        progressMsg = "Generating…";
+      } else if (isRt4dBackend()) {
         progressMsg =
           "Rendering… MRS RT4D deterministic path trace (procedural 4D scene " +
           "selection — not diffusion, not text-to-image). Quality=" +

@@ -10,7 +10,7 @@ import type { RendererCore } from "../renderer/RendererCore.js";
 import type { LiftedState4D } from "../substrate/LiftedState.js";
 import type { VisualMod } from "../substrate/VisualMod.js";
 import type { ReplayTimeline } from "../replay/ReplayTimeline.js";
-import type { ReplayRecord } from "../replay/ReplayRecord.js";
+import type { ReplayRecordDraft } from "../replay/ReplayRecord.js";
 import {
   createStructuralInvariants,
   TickInvariantState,
@@ -116,7 +116,7 @@ export class DefaultEngineHost implements EngineHost {
 
     // 7. constitutional replay record
     this.notePhase("replay");
-    const record: ReplayRecord = {
+    const record: ReplayRecordDraft = {
       tickIndex: this.tickIndex,
       time: inputs.time,
       dt: inputs.dt,
