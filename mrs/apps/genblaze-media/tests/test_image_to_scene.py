@@ -145,6 +145,10 @@ def test_heuristic_builder_validate_clean(tmp_path, monkeypatch):
     assert spec["entities"][0]["geometry"]["kind"] == "surface"
     assert "meshRef" not in str(spec)
     assert spec["output"]["seed"] == seed_from_sha256(sha)
+    assert spec["output"]["samples"] == 4
+    assert spec["output"]["maxDepth"] == 3
+    assert spec["output"]["width"] <= 256
+    assert spec["output"]["height"] <= 256
 
     settings = _settings()
     # Prefer real Node SoT when available; else soft structural path.
