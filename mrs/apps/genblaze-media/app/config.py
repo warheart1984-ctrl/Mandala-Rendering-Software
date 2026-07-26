@@ -31,21 +31,66 @@ def resolve_repo_root(app_dir: Path = APP_DIR) -> Path:
 REPO_ROOT = resolve_repo_root()
 
 
-def rt4d_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
-    """Default path to the renderer-core render-still CLI in the monorepo.
+def _resolve_renderer_core_script(
+    name: str,
+    repo_root: Path = REPO_ROOT,
+    app_dir: Path = APP_DIR,
+) -> Path:
+    """Resolve a renderer-core ``scripts/<name>`` file across known layouts.
 
-    In the app-only Docker image this path will not exist; the provider treats a
-    missing script (or missing node) as ``rt4d_available = False`` and the
-    ``/health`` endpoint reports it, rather than raising at import time.
+    Two layouts are supported without operators setting an env override:
+
+    * Monorepo checkout — ``<repo>/mrs/packages/renderer-core/scripts/<name>``.
+    * Repo-root Docker image — the Dockerfile copies ``renderer-core`` to
+      ``/app/renderer-core``, so the file lives at
+      ``<app_dir>/renderer-core/scripts/<name>`` (``app_dir`` is ``/app``).
+
+    The first existing candidate wins. When neither exists (e.g. the app-only
+    Docker image that bundles no renderer-core), the monorepo path is returned
+    so callers still surface a canonical location in errors and ``/health``
+    reports ``script_found: false`` rather than crashing.
     """
-    return (
-        repo_root
-        / "mrs"
-        / "packages"
-        / "renderer-core"
-        / "scripts"
-        / "render-still.mjs"
+    monorepo = (
+        repo_root / "mrs" / "packages" / "renderer-core" / "scripts" / name
     )
+    if monorepo.is_file():
+        return monorepo
+    docker = app_dir / "renderer-core" / "scripts" / name
+    if docker.is_file():
+        return docker
+    return monorepo
+
+
+def rt4d_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
+    """Default path to the renderer-core render-still CLI.
+
+    Resolves the monorepo checkout path first, then the repo-root Docker image
+    layout (``/app/renderer-core/scripts/render-still.mjs``). In the app-only
+    Docker image neither exists; the provider treats a missing script (or
+    missing node) as ``rt4d_available = False`` and the ``/health`` endpoint
+    reports it, rather than raising at import time.
+    """
+    return _resolve_renderer_core_script("render-still.mjs", repo_root)
+
+
+def scene_spec_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
+    """Default path to the SceneSpecification render-scene CLI.
+
+    Docker-layout aware (see :func:`_resolve_renderer_core_script`) so the
+    repo-root image resolves ``/app/renderer-core/scripts/render-scene.mjs``
+    without requiring ``SCENE_SPEC_SCRIPT_PATH``.
+    """
+    return _resolve_renderer_core_script("render-scene.mjs", repo_root)
+
+
+def validate_scene_spec_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
+    """Default path to SceneSpecification capability validator (Node SoT).
+
+    Docker-layout aware so the repo-root image resolves
+    ``/app/renderer-core/scripts/validate-scene-spec.mjs`` without requiring
+    ``VALIDATE_SCENE_SPEC_SCRIPT_PATH``.
+    """
+    return _resolve_renderer_core_script("validate-scene-spec.mjs", repo_root)
 
 
 def scene_spec_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
