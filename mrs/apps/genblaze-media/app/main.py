@@ -271,6 +271,9 @@ def health() -> dict:
         "rt4d_note": (
             "Deterministic procedural 4D path-traced stills via renderer-core. "
             "NOT text-to-image / not diffusion. Prompt selects a scene archetype; "
+            "seed records variation. Requires Node + render-still.mjs; the "
+            "rt4d.available field above is the authoritative check for this "
+            "running image."
             "seed records variation. Requires Node + render-still.mjs (not yet in "
             "the python:3.12 Docker image)."
         ),
