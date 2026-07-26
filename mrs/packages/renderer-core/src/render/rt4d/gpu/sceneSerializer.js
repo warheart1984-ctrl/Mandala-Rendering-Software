@@ -10,7 +10,7 @@ export const PRIM_TYPE_SPHERE = 0;
 export const PRIM_TYPE_PLANE = 1;
 export const PRIM_TYPE_MESH_TRI = 2;
 
-export function serializeScene(scene, device, camera) {
+export function serializeScene(scene, device, camera, options = {}) {
   const primitives = scene.primitives ?? [];
   const lights = scene.lights ?? [];
 
@@ -23,6 +23,13 @@ export function serializeScene(scene, device, camera) {
   for (let i = 0; i < primitives.length; i++) {
     const p = primitives[i];
     const matId = materialIndex(scene, p.materialId);
+    if (options.meshBufferCache && (p.kind === "poly" || p.kind === "skinned-mesh") && p.vertices && p.indices) {
+      const key = p.localBvhKey ?? p.evidence?.meshAssetHash ?? p.evidence?.bakedGeometryHash ?? p.meshId ?? p.id;
+      p.gpuMeshBuffer = options.meshBufferCache.getOrCreate(key, {
+        vertices: p.localVertices ?? p.vertices,
+        indices: p.localIndices ?? p.indices,
+      });
+    }
 
     if (p.center && p.radius != null && !p.normal) {
       spheres.push(packSphere(p, matId));
@@ -32,7 +39,7 @@ export function serializeScene(scene, device, camera) {
       planes.push(packPlane(p, matId));
       primTypes.push(PRIM_TYPE_PLANE);
       primOffsets.push(planes.length - 1);
-    } else if (p.faces || p.v0 != null) {
+    } else if (p.faces || p.v0 != null || ((p.kind === "poly" || p.kind === "skinned-mesh") && p.vertices && p.indices)) {
       const tris = packMeshTris(p, matId);
       for (const tri of tris) {
         meshTris.push(tri);
@@ -99,6 +106,9 @@ function packPlane(p, matId) {
 }
 
 function packMeshTris(p, matId) {
+  if ((p.kind === "poly" || p.kind === "skinned-mesh") && p.vertices && p.indices) {
+    return packIndexedMeshTris(p, matId);
+  }
   const tris = [];
   const faces = p.faces ?? [];
   const verts = p.vertices ?? [];
@@ -122,6 +132,54 @@ function packMeshTris(p, matId) {
       v2: [v2.x, v2.y, v2.z, v2.w],
       n0: n, n1: n, n2: n,
       materialId: matId,
+    });
+  }
+  return tris;
+}
+
+function readTypedVec3(values, index) {
+  if (Array.isArray(values[index])) {
+    const v = values[index];
+    return { x: v[0] ?? 0, y: v[1] ?? 0, z: v[2] ?? 0, w: v[3] ?? 0 };
+  }
+  const o = index * 3;
+  return { x: values[o] ?? 0, y: values[o + 1] ?? 0, z: values[o + 2] ?? 0, w: 0 };
+}
+
+function packIndexedMeshTris(p, matId) {
+  const tris = [];
+  const vertices = p.vertices ?? [];
+  const normals = p.normals ?? null;
+  const indices = p.indices ?? [];
+  for (let i = 0; i + 2 < indices.length; i += 3) {
+    const i0 = indices[i], i1 = indices[i + 1], i2 = indices[i + 2];
+    const v0 = readTypedVec3(vertices, i0);
+    const v1 = readTypedVec3(vertices, i1);
+    const v2 = readTypedVec3(vertices, i2);
+    let n0, n1, n2;
+    if (normals) {
+      n0 = readTypedVec3(normals, i0);
+      n1 = readTypedVec3(normals, i1);
+      n2 = readTypedVec3(normals, i2);
+    } else {
+      const e1x = v1.x - v0.x, e1y = v1.y - v0.y, e1z = v1.z - v0.z;
+      const e2x = v2.x - v0.x, e2y = v2.y - v0.y, e2z = v2.z - v0.z;
+      const n = normalize4(e1y * e2z - e1z * e2y, e1z * e2x - e1x * e2z, e1x * e2y - e1y * e2x, 0);
+      n0 = { x: n[0], y: n[1], z: n[2], w: n[3] };
+      n1 = n0;
+      n2 = n0;
+    }
+    tris.push({
+      v0: [v0.x, v0.y, v0.z, v0.w],
+      v1: [v1.x, v1.y, v1.z, v1.w],
+      v2: [v2.x, v2.y, v2.z, v2.w],
+      n0: [n0.x, n0.y, n0.z, n0.w],
+      n1: [n1.x, n1.y, n1.z, n1.w],
+      n2: [n2.x, n2.y, n2.z, n2.w],
+      materialId: matId,
+      meshId: p.meshId,
+      instanceId: p.id,
+      instanceHash: p.evidence?.instanceHash,
     });
   }
   return tris;

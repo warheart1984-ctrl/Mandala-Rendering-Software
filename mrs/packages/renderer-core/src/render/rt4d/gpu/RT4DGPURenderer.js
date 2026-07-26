@@ -3,7 +3,7 @@
  * Multi-dispatch compute pipeline: raygen → BVH → shade (loop) → accumulate
  * Phase B: engineMode "wavefront" routes to WavefrontPipelineAdapter.
  */
-import { BufferPool, StagingBuffer } from "./bufferPool.js";
+import { BufferPool, MeshBufferCache, StagingBuffer } from "./bufferPool.js";
 import { serializeScene } from "./sceneSerializer.js";
 import { BindGroupManager } from "./bindGroupManager.js";
 import { RAYGEN_WGSL, SHADE_WGSL, ACCUM_WGSL } from "./shaders.js";
@@ -27,6 +27,7 @@ export class RT4DGPURenderer {
     this.device = null;
     this.bindGroupMgr = null;
     this.bufferPool = null;
+    this.meshBufferCache = null;
     this.sceneBuffers = null;
 
     this._pipelines = {};
@@ -52,6 +53,7 @@ export class RT4DGPURenderer {
 
     this.bindGroupMgr = new BindGroupManager(this.device);
     this.bufferPool = new BufferPool(this.device);
+    this.meshBufferCache = new MeshBufferCache(this.device, this.bufferPool);
     this._staging = new StagingBuffer(this.device, this.bufferPool);
 
     await this._createPipelines();
@@ -138,7 +140,7 @@ export class RT4DGPURenderer {
   }
 
   serializeScene(scene, camera) {
-    this.sceneBuffers = serializeScene(scene, this.device, camera);
+    this.sceneBuffers = serializeScene(scene, this.device, camera, { meshBufferCache: this.meshBufferCache });
   }
 
   async render(scene, camera, options = {}) {
@@ -306,6 +308,7 @@ export class RT4DGPURenderer {
 
   destroy() {
     if (this._staging) this._staging.destroy();
+    this.meshBufferCache?.clear?.();
     if (this.bufferPool) this.bufferPool.destroy();
     for (const buf of Object.values(this._rayBuffers ?? {})) {
       buf?.destroy?.();

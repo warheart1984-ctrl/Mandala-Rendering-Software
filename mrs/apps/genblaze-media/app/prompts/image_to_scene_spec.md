@@ -95,7 +95,8 @@ request sets `quality=final`.
 ## Material / camera guidance
 
 - Map the image’s dominant palette into `materials[].color` (`#RRGGBB`).
-- Choose a surface archetype that loosely matches mood (grid/lattice → `lattice-grid`; ring/torus → `clifford-torus` or `torus-ring`; crystalline → `tesseract`; orbital → `orbital-cluster`).
+- Choose a surface archetype that loosely matches mood (grid/lattice → `lattice-grid`; ring/torus → `clifford-torus` or `torus-ring`; crystalline / hypercube / neon lattice beams → `tesseract`; orbital → `orbital-cluster`).
+- When priors include `source_rt4d_scene` / `preferred_surfaceId` (prior MRS procedural still), **use that preferred surfaceId**. Do **not** emit `orbital-cluster` or `central-orb` for tesseract/lattice source stills — those expand to a few bare spheres and lose the lattice.
 - Keep `camera.position4d` / `target4d` as length-4 number arrays; place the camera outside the origin looking toward it.
 - If you omit `output.seed`, the server will set it deterministically from the image SHA-256.
 

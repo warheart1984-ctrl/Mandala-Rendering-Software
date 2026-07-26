@@ -33,15 +33,22 @@ export {
 } from "./invariants/index.js";
 
 export { Camera4D } from "./camera/Camera4D.js";
+export { CharacterCamera, DEFAULT_CHARACTER_CAMERA, normalizeCharacterCameraConfig } from "./camera/CharacterCamera.js";
 
 export { Hypersphere, Hyperplane, ImplicitHypersurface } from "./geometry/hypersurface.js";
 export { Volume4D, ExponentialFog } from "./geometry/volume.js";
 export { Mesh4D, HyperTriangle } from "./geometry/mesh4d.js";
+export { SdfPrimitiveIntersector, wrapPrimitiveIntersector } from "./geometry/PrimitiveIntersectors.js";
 
 export { BSDF4D, Lambertian4D } from "./material/bsdf4d.js";
 export { GGX4D } from "./material/ggx4d.js";
 export { PhaseFunction4D, Isotropic4D, HenyeyGreenstein4D } from "./material/phase4d.js";
 export { MaterialSystem } from "./material/MaterialSystem.js";
+export { MaterialRegistry, MATERIAL_KINDS, normalizeMaterialEntry, rt4dMaterialToLegacyParams } from "./material/MaterialRegistry.js";
+export { SkinnedMeshIntersector, buildDynamicBvh, intersectAabb, traverseDynamicBvh, generateTriangleNormal } from "./intersection/index.js";
+export { createPortraitLightingRig, DEFAULT_PORTRAIT_LIGHTING_RIG, normalizePortraitLightingRig } from "./lighting/index.js";
+export { environmentToEmission, normalizeRt4dLight, sampleRt4dLight } from "./lighting/Rt4dLightAdapter.js";
+export { CharacterEvidenceBuilder, UniversalEvidenceBuilder, canonicalRt4dJson, sha256Hex } from "./evidence/index.js";
 
 export { PathTracer4D, SampleAccumulator } from "./integrator/PathTracer4D.js";
 
