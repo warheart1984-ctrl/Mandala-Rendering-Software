@@ -219,7 +219,6 @@ def render_scene_spec(
 
     ``storage_kind`` selects the B2/local key segment (e.g. ``scene-spec`` or
     ``image-to-scene``). ``quality`` is ``draft`` (default) or ``final``.
-    ``image-to-scene``).
     """
     if not isinstance(spec, dict):
         raise ValueError("spec must be a JSON object")
@@ -240,7 +239,6 @@ def render_scene_spec(
     try:
         provenance = _run_scene_cli(
             settings, spec, out_png, frame=frame, time=time, quality=quality
-            settings, spec, out_png, frame=frame, time=time
         )
         if not out_png.is_file():
             raise RT4DRenderError("Scene-spec render produced no output file")
