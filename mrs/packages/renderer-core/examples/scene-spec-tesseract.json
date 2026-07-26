@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "SceneSpecification",
+  "id": "hackathon-tesseract-spin",
+  "name": "Rotating cyan tesseract",
+  "description": "Example SceneSpecification for Genblaze / render-scene demo",
+  "materials": [
+    {
+      "id": "neon",
+      "color": "#1accff",
+      "opacity": 1,
+      "wireframe": false
+    }
+  ],
+  "entities": [
+    {
+      "id": "tess",
+      "name": "Tesseract",
+      "materialId": "neon",
+      "transform4d": {
+        "rotate": { "xw": 0.4, "zw": 0.2 }
+      },
+      "geometry": {
+        "kind": "surface",
+        "surfaceId": "tesseract"
+      }
+    }
+  ],
+  "defaultObservation": {
+    "modeId": "perspective_w",
+    "params": { "d4": 4 }
+  },
+  "camera": {
+    "position4d": [4.3, 1.4, 0.2, 0.1],
+    "target4d": [0, 0.1, 0, 0],
+    "fovX": 52,
+    "fovY": 52,
+    "fovZ": 45,
+    "fovW": 28
+  },
+  "lights": [
+    {
+      "id": "key",
+      "center": [2.4, 3.3, -1.6, 0.7],
+      "radius": 0.95,
+      "emission": [17, 16, 14.5]
+    }
+  ],
+  "output": {
+    "width": 448,
+    "height": 448,
+    "samples": 20,
+    "maxDepth": 5,
+    "seed": 42
+  },
+  "animation": {
+    "duration": 2,
+    "fps": 8,
+    "keyframes": [
+      {
+        "time": 0,
+        "entities": {
+          "tess": { "transform4d": { "rotate": { "xw": 0, "zw": 0.2 } } }
+        }
+      },
+      {
+        "time": 2,
+        "entities": {
+          "tess": {
+            "transform4d": { "rotate": { "xw": 6.283185307179586, "zw": 0.2 } }
+          }
+        }
+      }
+    ]
+  }
+}

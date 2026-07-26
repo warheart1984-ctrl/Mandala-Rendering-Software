@@ -64,6 +64,31 @@ export declare class CanvasRenderer {
   ): void;
 }
 
+/** WebGPU mesh rasterizer — device must be acquired by the caller. */
+export declare class GPUMeshRenderer {
+  constructor(device: unknown, options?: Record<string, unknown>);
+  width: number;
+  height: number;
+  renderMode: string;
+  init(): Promise<GPUMeshRenderer>;
+  uploadMesh(mesh: Mesh4D): void;
+  renderFrame(
+    t: number,
+    rs?: Record<string, unknown>,
+    textureView?: unknown
+  ): Promise<Record<string, unknown>>;
+  resize(w: number, h: number): void;
+  setRenderMode(m: string): void;
+  release(): void;
+}
+
+export declare function createGPUMeshRenderer(
+  device: unknown,
+  options?: Record<string, unknown>
+): Promise<GPUMeshRenderer>;
+
+export declare function isMeshRendererSupported(scope?: typeof globalThis): boolean;
+
 export declare class MRSInspector4D {
   constructor(options?: Record<string, unknown>);
   handleWireMessage(msg: unknown): unknown;

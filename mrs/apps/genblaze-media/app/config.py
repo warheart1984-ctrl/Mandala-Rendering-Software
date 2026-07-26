@@ -48,6 +48,30 @@ def rt4d_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
     )
 
 
+def scene_spec_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
+    """Default path to the SceneSpecification render-scene CLI."""
+    return (
+        repo_root
+        / "mrs"
+        / "packages"
+        / "renderer-core"
+        / "scripts"
+        / "render-scene.mjs"
+    )
+
+
+def validate_scene_spec_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
+    """Default path to SceneSpecification capability validator (Node SoT)."""
+    return (
+        repo_root
+        / "mrs"
+        / "packages"
+        / "renderer-core"
+        / "scripts"
+        / "validate-scene-spec.mjs"
+    )
+
+
 def _load_dotenv_files() -> list[str]:
     """Load repo-root `.env` then app-local `.env` without clobbering process env.
 
@@ -133,15 +157,29 @@ class Settings:
     image_fallback_to_rt4d: bool = False
     rt4d_node_path: str = "node"
     rt4d_script_path: str | None = None
+    scene_spec_script_path: str | None = None
     rt4d_width: int = 448
     rt4d_height: int = 448
     rt4d_samples: int = 20
     rt4d_max_depth: int = 5
     rt4d_timeout_seconds: float = 180.0
+    # Image → SceneSpecification (NIM vision + heuristic fallback)
+    image_to_scene_model: str = "meta/llama-3.2-11b-vision-instruct"
+    image_to_scene_chat_url: str = "https://integrate.api.nvidia.com/v1/chat/completions"
+    image_to_scene_timeout_seconds: float = 120.0
+    validate_scene_spec_script_path: str | None = None
+    flux_then_scene: bool = False
 
     @property
     def nvidia_configured(self) -> bool:
         return bool(self.nvidia_api_key)
+
+    @property
+    def resolved_validate_scene_spec_script(self) -> str:
+        """Explicit override, else validate-scene-spec.mjs default."""
+        return self.validate_scene_spec_script_path or str(
+            validate_scene_spec_default_script_path()
+        )
 
     @property
     def rt4d_selected(self) -> bool:
@@ -152,6 +190,11 @@ class Settings:
     def resolved_rt4d_script(self) -> str:
         """Explicit RT4D_SCRIPT_PATH override, else the monorepo default path."""
         return self.rt4d_script_path or str(rt4d_default_script_path())
+
+    @property
+    def resolved_scene_spec_script(self) -> str:
+        """Explicit SCENE_SPEC_SCRIPT_PATH override, else render-scene.mjs default."""
+        return self.scene_spec_script_path or str(scene_spec_default_script_path())
 
     @property
     def seedance_configured(self) -> bool:
@@ -273,6 +316,9 @@ def get_settings() -> Settings:
     ).strip().lower() in {"1", "true", "yes", "on"}
     rt4d_node_path = (os.getenv("RT4D_NODE_PATH") or "node").strip() or "node"
     rt4d_script_override = (os.getenv("RT4D_SCRIPT_PATH") or "").strip() or None
+    scene_spec_script_override = (
+        os.getenv("SCENE_SPEC_SCRIPT_PATH") or ""
+    ).strip() or None
 
     def _clamp_int(name: str, default: int, lo: int, hi: int) -> int:
         try:
@@ -290,6 +336,31 @@ def get_settings() -> Settings:
     except ValueError:
         rt4d_timeout = 180.0
     rt4d_timeout = max(10.0, min(600.0, rt4d_timeout))
+
+    image_to_scene_model = (
+        os.getenv("GENBLAZE_IMAGE_TO_SCENE_MODEL")
+        or "meta/llama-3.2-11b-vision-instruct"
+    ).strip()
+    image_to_scene_chat_url = (
+        os.getenv("GENBLAZE_IMAGE_TO_SCENE_CHAT_URL")
+        or "https://integrate.api.nvidia.com/v1/chat/completions"
+    ).strip()
+    try:
+        image_to_scene_timeout = float(
+            (os.getenv("GENBLAZE_IMAGE_TO_SCENE_TIMEOUT") or "120").strip() or "120"
+        )
+    except ValueError:
+        image_to_scene_timeout = 120.0
+    image_to_scene_timeout = max(15.0, min(600.0, image_to_scene_timeout))
+    validate_scene_spec_override = (
+        os.getenv("VALIDATE_SCENE_SPEC_SCRIPT_PATH") or ""
+    ).strip() or None
+    flux_then_scene = (os.getenv("GENBLAZE_FLUX_THEN_SCENE") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
     return Settings(
         nvidia_api_key=nvidia_key,
@@ -342,11 +413,17 @@ def get_settings() -> Settings:
         image_fallback_to_rt4d=image_fallback_to_rt4d,
         rt4d_node_path=rt4d_node_path,
         rt4d_script_path=rt4d_script_override,
+        scene_spec_script_path=scene_spec_script_override,
         rt4d_width=rt4d_width,
         rt4d_height=rt4d_height,
         rt4d_samples=rt4d_samples,
         rt4d_max_depth=rt4d_max_depth,
         rt4d_timeout_seconds=rt4d_timeout,
+        image_to_scene_model=image_to_scene_model,
+        image_to_scene_chat_url=image_to_scene_chat_url,
+        image_to_scene_timeout_seconds=image_to_scene_timeout,
+        validate_scene_spec_script_path=validate_scene_spec_override,
+        flux_then_scene=flux_then_scene,
     )
 
 

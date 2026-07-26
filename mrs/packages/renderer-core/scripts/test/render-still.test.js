@@ -6,6 +6,7 @@ import {
   encodePNG,
   hashPromptToSeed,
   resolveSceneDescriptor,
+  parseArgs,
 } from "../render-still.mjs";
 
 const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -15,6 +16,47 @@ function readIHDR(png) {
   const off = 16;
   return { width: png.readUInt32BE(off), height: png.readUInt32BE(off + 4) };
 }
+
+test("parseArgs consumes prompt values that start with --", () => {
+  const args = parseArgs([
+    "--",
+    "--prompt",
+    "--weird-keyword-tesseract",
+    "--seed",
+    "99",
+    "--width",
+    "64",
+    "--height",
+    "48",
+    "--samples",
+    "4",
+    "--max-depth",
+    "3",
+    "--output",
+    "/tmp/out.png",
+  ]);
+  assert.equal(args.prompt, "--weird-keyword-tesseract");
+  assert.equal(args.seed, "99");
+  assert.equal(args.width, "64");
+  assert.equal(args.height, "48");
+  assert.equal(args.samples, "4");
+  assert.equal(args["max-depth"], "3");
+  assert.equal(args.output, "/tmp/out.png");
+});
+
+test("parseArgs keeps numeric-looking values as strings for clampInt", () => {
+  const args = parseArgs(["--seed", "0", "--width", "128", "--samples", "24"]);
+  assert.equal(args.seed, "0");
+  assert.equal(Number(args.seed), 0);
+  assert.equal(Number(args.width), 128);
+  assert.equal(Number(args.samples), 24);
+});
+
+test("parseArgs treats unknown flags without values as booleans", () => {
+  const args = parseArgs(["--verbose", "--output", "x.png"]);
+  assert.equal(args.verbose, true);
+  assert.equal(args.output, "x.png");
+});
 
 test("renderStill writes a valid PNG with requested dimensions", () => {
   const { png, provenance } = renderStill({

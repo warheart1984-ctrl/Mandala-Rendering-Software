@@ -1,3 +1,5 @@
+import { handleSceneSpecMessage } from "./sceneSpecHandler.js";
+
 export class UnityClientProtocol {
   /**
    * @param {import("ws").WebSocket} ws
@@ -48,6 +50,9 @@ export class UnityClientProtocol {
         break;
       case "request_frame":
         if (this.onCommand) this.onCommand({ type: "frame", frame: msg.frame ?? 0, requestId: msg.requestId });
+        break;
+      case "scene_spec":
+        this._send(handleSceneSpecMessage(msg));
         break;
       default:
         if (this.onCommand) this.onCommand(msg);

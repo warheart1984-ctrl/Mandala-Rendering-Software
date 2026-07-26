@@ -6,6 +6,8 @@ Thin **FastAPI** service: user prompt → **Genblaze** (`genblaze-nvidia` + `gen
 | --- | --- |
 | Product story | **Declared:** provenanced *concept* stills for MRS / 4D scene authoring |
 | Genblaze 4D render | **Not claimed** — Genblaze's NVIDIA path generates 2D (NIM FLUX); MRS remains the 4D renderer |
+| RT4D image backend | **Prepared** — `GENBLAZE_IMAGE_BACKEND=rt4d` shells out to renderer-core `render-still.mjs` for deterministic procedural 4D stills (NOT text-to-image). Requires Node; the **repo-root** Dockerfile bundles Node 22 + renderer-core; the app-local one cannot. Live Render RT4D is only verified after Manual Deploy + `/health.rt4d.available: true` |
+| Image → SceneSpecification | **Prepared** — `POST /api/image-to-scene` interprets a still (NIM vision or heuristic) into SceneSpecification, then MRS path-traces a full frame. **Not** geometric reconstruction / photogrammetry |
 | RT4D image backend | **Prepared** — `GENBLAZE_IMAGE_BACKEND=rt4d` shells out to renderer-core `render-still.mjs` for deterministic procedural 4D stills (NOT text-to-image). Requires Node; the **repo-root** Dockerfile bundles it, the app-local one cannot. Render deploy **not yet verified** — check `/health.rt4d.available` |
 | Operator deploy | **Prepared** — Dockerfile + `render.yaml` (Render free web) |
 | Live NIM generate | **Requires** `NVIDIA_API_KEY` at runtime (default backend) |
@@ -21,6 +23,14 @@ Operators type a prompt for a concept image. The **default** service calls NVIDI
 Optionally, set `GENBLAZE_IMAGE_BACKEND=rt4d` to skip NVIDIA entirely and produce a **deterministic procedural 4D still** via the MRS `renderer-core` RT4D path tracer (keyword → scene archetype + palette; seed → camera/placement). That path is **not** text-to-image and does **not** claim photorealism or semantic image synthesis. Same prompt (same seed) → byte-identical PNG. It cannot 504 on an upstream generative API because there is none.
 
 This does **not** mean Genblaze's NVIDIA path renders 4D scenes.
+
+### Image → MRS scene (hackathon D path)
+
+`POST /api/image-to-scene` accepts an uploaded still (`image_base64`), an ingest `id`, or a prior generate `run_id`, emits a **SceneSpecification** (NVIDIA NIM multimodal when `NVIDIA_API_KEY` is set; otherwise or on failure a **heuristic** builder), validates via Node SoT (`validate-scene-spec.mjs`), and by default path-traces a **full MRS frame** under `{prefix}/image-to-scene/{run_id}/`.
+
+Honest copy: **scene interpretation + path-traced full frame**. Responses include `analysis_mode` / `note` stating this is **not** geometric reconstruction. Phase 3 depth/mesh/pose recovery is **declared roadmap only** (see `docs/4d-engine/v2/scene-spec/IMAGE_TO_SCENE_RFC.md`).
+
+Dual FLUX + MRS: set `GENBLAZE_FLUX_THEN_SCENE=1` or pass `"then_scene": true` on `POST /api/generate`. The FLUX concept still is **kept**; the MRS frame is returned alongside under `then_scene` with separate modality/provider labels.
 
 ## Setup
 
@@ -69,6 +79,12 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `RT4D_RENDER_WIDTH` / `RT4D_RENDER_HEIGHT` | optional; default `448` / `448` (clamped 16–1024) |
 | `RT4D_SAMPLES` / `RT4D_MAX_DEPTH` | optional; default `20` / `5` |
 | `RT4D_TIMEOUT` | optional; default `180` seconds (clamped 10–600) |
+| `GENBLAZE_IMAGE_TO_SCENE_MODEL` | optional; default `meta/llama-3.2-11b-vision-instruct` (NIM vision-capable slug) |
+| `GENBLAZE_IMAGE_TO_SCENE_CHAT_URL` | optional; default `https://integrate.api.nvidia.com/v1/chat/completions` |
+| `GENBLAZE_IMAGE_TO_SCENE_TIMEOUT` | optional; default `120` seconds |
+| `GENBLAZE_FLUX_THEN_SCENE` | default **off** — set `1` so successful `/api/generate` stills also run image→scene→MRS (returns both assets) |
+| `SCENE_SPEC_SCRIPT_PATH` | optional; default `…/render-scene.mjs` |
+| `VALIDATE_SCENE_SPEC_SCRIPT_PATH` | optional; default `…/validate-scene-spec.mjs` |
 
 Seedance-only knobs are also listed in [`env.seedance.example`](./env.seedance.example) (not auto-loaded — copy into your real `.env`).
 
@@ -84,6 +100,19 @@ Get a free NIM key: [build.nvidia.com](https://build.nvidia.com/).
 | Provenance | Seed, scene id, palette, camera, samples, max depth, PNG sha256, cheap PI-GEO-LENGTH invariant evidence |
 | Local enable | `GENBLAZE_IMAGE_BACKEND=rt4d` + Node 18+ on PATH + monorepo `renderer-core` checkout |
 | Docker | The **repo-root** Dockerfile bundles Node 22 + `renderer-core` sources (build-time render smoke test). The **app-local** Dockerfile does not — its context cannot reach `mrs/packages/renderer-core` |
+| Deployed Render service | Treat live `/health.rt4d.available: true` (after Manual Deploy from the repo-root Dockerfile) as the only evidence. Older / app-local images report `false` even with env set |
+| HTTP errors (RT4D) | Missing Node/script → **503** (setup). CLI crash / timeout / empty PNG → `RT4DRenderError` → **502** (generation). Covered by `tests/test_rt4d.py` (PR #40) |
+| Prompts starting with `--` | Accepted — value is passed as `--prompt`'s argument (not re-parsed as flags) |
+
+### What changed (operator pointer)
+
+| Landed | Notes |
+| --- | --- |
+| **Merged** (#39) | Repo-root Docker image bundles Node + `renderer-core`; do **not** expect RT4D from the app-local Dockerfile |
+| **PR #40** (open on this branch) | 502 vs 503 split for RT4D failures; prompts whose text starts with `--` |
+| Health `rt4d_note` | Describes the procedural path; **`rt4d.available`** is authoritative for whether this running image has Node + script (not a “Node missing from Docker” claim — root Dockerfile includes it) |
+
+Monorepo summary: [`mrs/README.md`](../../README.md) → Operator changelog.
 | Deployed Render service | Declared, **not yet verified on Render**. Treat `/health.rt4d.available` on the live URL as the only evidence; a service on an older image still reports `false` until redeployed |
 
 ### Enable locally
@@ -98,6 +127,16 @@ set RT4D_SAMPLES=12
 uvicorn app.main:app --host 127.0.0.1 --port 8787
 curl -s http://127.0.0.1:8787/health | findstr /i rt4d
 curl -s -X POST http://127.0.0.1:8787/api/generate -H "content-type: application/json" -d "{\"prompt\":\"cyan tesseract lattice\",\"embed\":false}"
+```
+
+### Image → MRS scene (curl)
+
+```bash
+# Heuristic interpret + MRS full-frame render (no NIM vision required)
+curl -s -X POST http://127.0.0.1:8787/api/image-to-scene -H "content-type: application/json" -d "{\"image_base64\":\"<base64 or data-url>\",\"render\":true,\"force_heuristic\":true}"
+
+# Dual FLUX concept + MRS frame (keeps both)
+curl -s -X POST http://127.0.0.1:8787/api/generate -H "content-type: application/json" -d "{\"prompt\":\"neon lattice\",\"embed\":false,\"then_scene\":true}"
 ```
 
 Or keep NVIDIA as primary and opt into fallback:
@@ -145,17 +184,43 @@ conservative starting point, not a measured budget — time a render on the
 target plan before raising them.
 ### Docker / Render follow-up (Node not yet in the image)
 
-The root / app Dockerfiles install Python only. To make `rt4d` work on Render you must add Node to the image (example, not applied in this change):
+- `COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node` —
+  the binary only. `npm install` is deliberately skipped: `render-still.mjs`
+  imports node builtins plus `src/render/rt4d/**`, so nothing in the render path
+  resolves to a package in `node_modules`. `package.json` is still copied
+  because its `"type": "module"` is what makes the `.js` sources load as ESM.
+- `COPY mrs/packages/renderer-core/{package.json,src,scripts} ./renderer-core/`
+  and `RT4D_SCRIPT_PATH=/app/renderer-core/scripts/render-still.mjs`.
+- A 64×64/1-sample render runs at build time, so a broken Node layer or a
+  missing import fails the build instead of surfacing as a runtime 502.
 
-```dockerfile
-# Example follow-up — do NOT claim this is already deployed:
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm \
- && rm -rf /var/lib/apt/lists/*
-# Also COPY mrs/packages/renderer-core into the image (or a multi-stage build)
-# and set RT4D_SCRIPT_PATH accordingly.
+**Build context must be the repo root.** `mrs/packages/renderer-core` sits
+outside `mrs/apps/genblaze-media`, so the app-local Dockerfile cannot copy it.
+On Render that means: Root Directory empty, Dockerfile Path `./Dockerfile`.
+
+Verify a build locally before deploying:
+
+```bash
+# from the repo root
+docker build -t genblaze-rt4d .
+docker run --rm -e GENBLAZE_IMAGE_BACKEND=rt4d -p 8000:8000 genblaze-rt4d
+curl -s localhost:8000/health | python -m json.tool   # expect rt4d.available true
+curl -s -X POST localhost:8000/api/generate \
+  -H 'content-type: application/json' \
+  -d '{"prompt":"cyan tesseract lattice","embed":false}'
 ```
 
-Until that lands, `/health.rt4d.available` will be `false` on the deployed image even when `GENBLAZE_IMAGE_BACKEND=rt4d` is set. Local monorepo runs work today.
+Sizing: the render is a single-threaded CPU path trace, and Render's free plan
+is a shared 0.1 CPU, so a render there is far slower than on a dev machine and
+must still finish inside the platform request timeout. `render.yaml` therefore
+pins `RT4D_RENDER_WIDTH/HEIGHT=256` and `RT4D_SAMPLES=8`. Those numbers are a
+conservative starting point, not a measured budget — time a render on the
+target plan before raising them.
+
+A live Render service still reports `/health.rt4d.available=false` until it is
+**Manually Deployed** from the **repo-root** Dockerfile (older images and the
+app-local image have no Node). Do not treat dashboard env alone as proof —
+confirm `rt4d.available: true` on the live URL before claiming RT4D works.
 
 ## Run locally
 
@@ -191,10 +256,12 @@ If `NVIDIA_API_KEY` is missing, `/health` still boots and reports setup help; `P
 ### Render (preferred free path)
 
 1. Push this repo (or connect the Git remote) to Render.
-2. New **Web Service** → Docker → set **Root Directory** to `mrs/apps/genblaze-media` (or use the Blueprint `render.yaml` from that folder).
-3. Set env vars (names above; values only in the dashboard — never commit).
+2. New **Web Service** → Docker:
+   - **NVIDIA stills only:** Root Directory `mrs/apps/genblaze-media` (app-local Dockerfile; no RT4D).
+   - **RT4D / Node bundled:** Root Directory **empty**, Dockerfile Path `./Dockerfile` (repo root). The app-local context cannot reach `mrs/packages/renderer-core`.
+3. Set env vars (names above; values only in the dashboard — never commit). For RT4D set `GENBLAZE_IMAGE_BACKEND=rt4d`.
 4. Deploy. Service binds `0.0.0.0:$PORT` via the Dockerfile `CMD`.
-5. Open the public `https://….onrender.com/` URL for judges; hit `/health` first (ensure `B2_PROBE_ON_HEALTH=0` so health checks do not ListObjects).
+5. Open the public `https://….onrender.com/` URL for judges; hit `/health` first (ensure `B2_PROBE_ON_HEALTH=0` so health checks do not ListObjects). For RT4D, require `rt4d.available: true` before claiming it works.
 
 **Redeploy required:** code fixes do **not** apply live until you redeploy. After redeploy, confirm `/health` shows `nvidia_timeouts.nvcf_poll_seconds: 300`, `image_ingest_routes: true`, and inspect `nvidia_nim_status` / `nvidia_warmup`.
 
@@ -271,6 +338,9 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 | `NVIDIA image generate failed (504): {"_raw": ""}` | Upstream gateway returned no diagnostic body. If warmup also returns 504, `/health.nvidia_nim_status` reports unavailable. Raise poll to 300, wait and retry once, or opt into delayed retry with double-bill risk. No fal image fallback is wired. |
 | `asset transfer(s) failed; manifest was not uploaded` | NVIDIA FLUX returns base64; Genblaze writes `file://` under CWD (`/app` in Docker). `AssetTransfer` only allowlists system temp — transfer fails and SinkError omits the cause. Fix: write NVIDIA payloads under `tempfile` + surface underlying transfer exception in the API detail |
 | Solid black / empty JPEG after “success” | Observed: valid ~6 KiB 1024² JPEG, mean luminance 0, one color — common when FLUX.1-schnell NIM blanks photoreal-people prompts. Pipeline rejects near-black stills with HTTP **422**, strips trailing meta-commentary, optionally retries once with an abstract geometry rewrite (`GENBLAZE_ABSTRACT_RETRY`, default on), and best-effort deletes the rejected B2 asset/manifest |
+| RT4D `503` (setup) | `node` or `render-still.mjs` missing on this image — use repo-root Dockerfile + Manual Deploy, or local Node 18+ + monorepo checkout |
+| RT4D `502` (generation) | Node/script present but CLI crashed, timed out, or wrote empty/missing PNG (`RT4DRenderError`) — inspect detail; not fixed by env alone |
+| RT4D prompt starts with `--` | Supported; string is the prompt value, not extra CLI flags |
 | Broken image icon / preview errors after successful generate | Metadata + B2 keys exist, but browser GET of the private presigned URL returns **AccessDenied: Transaction cap exceeded** (B2 free-tier daily caps). Fix: serve UI from same-origin `/api/preview/{run_id}` local cache after generate; wait for Caps & Alerts reset (~00:00 GMT) before more B2 traffic |
 | Cosmos 2.0 model-not-found | Operator catalog probe reported `nvidia/cosmos-2.0-diffusion-text2world` as `DEAD`; it is not available in the probed upstream NVCF catalog. Use `nvidia/cosmos-1.0-7b-diffusion-text2world`, or the `nvidia/cosmos-1.0-12b-diffusion-text2world` fallback when available on the key. The live path refreshes model validation before generation. |
 | `GENBLAZE_DRY_RUN=1` | Offline unit-test path only — not for Devpost live demos |
@@ -278,9 +348,11 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| GET | `/health` | Boots always; NVIDIA/B2/RT4D flags; ListObjects probe only if `B2_PROBE_ON_HEALTH=1` |
-| POST | `/api/generate` | Live Genblaze FLUX→B2 (default), or RT4D when `GENBLAZE_IMAGE_BACKEND=rt4d`; 503 if the selected backend is not configured |
+| GET | `/health` | Boots always; NVIDIA/B2/RT4D flags; `image_to_scene` probe; ListObjects probe only if `B2_PROBE_ON_HEALTH=1` |
+| POST | `/api/generate` | Live Genblaze FLUX→B2 (default), or RT4D when `GENBLAZE_IMAGE_BACKEND=rt4d`; optional `then_scene` / `GENBLAZE_FLUX_THEN_SCENE` dual MRS frame; **503** if setup missing; RT4D CLI failure → **502** |
 | POST | `/api/generate-video` | Selected Cosmos or Seedance backend → B2; 503 if disabled or its credential is missing |
+| POST | `/api/image-to-scene` | Image → SceneSpecification → optional MRS full-frame path trace (`render` default **true**). Scene interpretation — **not** reconstruction |
+| POST | `/api/render-scene` | SceneSpecification JSON → RT4D still |
 | GET | `/api/assets` | Local recent index (capped); optional `?modality=image\|video` |
 | GET | `/media/stills` · `/media/nvidia` · `/media/nim-cosmos` | 302 into SPA hash anchors |
 | GET | `/` | Single-page UI (stills; Cosmos section hidden unless video enabled) |

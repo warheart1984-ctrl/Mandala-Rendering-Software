@@ -6,13 +6,28 @@ pnpm workspace for the Mathematical Reality Substrate (MRS) renderer and ChatGPT
 
 | Package | Path | Role |
 |---------|------|------|
-| `@mrs/renderer-core` | `packages/renderer-core` | Former `4d-renderer/` — surfaces, CanvasRenderer, inspector, LiveLink; PI-* / cross-runtime / SX-PTIG (see package README) |
-| `@mrs/scene-schema` | `packages/scene-schema` | `Scene4DDTO` tool/widget contract |
-| `@mrs/renderer-web` | `packages/renderer-web` | Browser Canvas2D host (WebGPU optional/declared only) |
+| `@mrs/renderer-core` | `packages/renderer-core` | Former `4d-renderer/` — surfaces, CanvasRenderer, inspector, LiveLink, PLP; PI-* / cross-runtime / SX-PTIG (see package README) |
+| `@mrs/scene-schema` | `packages/scene-schema` | `Scene4DDTO` + WorldDocument DTOs; validators / serialize (see package README) |
+| `@mrs/renderer-web` | `packages/renderer-web` | Browser host: WebGPU via GPUMeshRenderer when available, else Canvas2D (unit-tested fallback; not yet verified on a live GPU in CI) |
 | `@mrs/chatgpt-app-server` | `apps/chatgpt-mrs/server` | MCP SSE server + 5 tools |
 | `@mrs/chatgpt-app-web` | `apps/chatgpt-mrs/web` | Vite React skybridge widget |
 | `cros` (Python) | `packages/cros` | CROS scaffold — CI-001..006, dual profiles, Seedance adapter **skeleton**; not a farm |
-| genblaze-media | `apps/genblaze-media` | FastAPI FLUX→B2 stills MVP; video opt-in (Cosmos / Seedance); `/cros` docs page only |
+| genblaze-media | `apps/genblaze-media` | FastAPI FLUX→B2 stills MVP; optional RT4D image backend; video opt-in (Cosmos / Seedance); `/cros` docs page only |
+
+## Operator changelog (recent)
+
+Drive-G-1 status tags. Package rows marked **working tree** are uncommitted WIP on this branch tip — not on `main` until a PR lands.
+
+| Area | What changed | How to enable / check | Status |
+|------|--------------|----------------------|--------|
+| **Genblaze image→scene** | `POST /api/image-to-scene`: image → SceneSpecification (NIM vision or heuristic) → MRS path-traced full frame under `{prefix}/image-to-scene/`. Opt-in dual FLUX+MRS via `GENBLAZE_FLUX_THEN_SCENE` / `then_scene`. | `/health.image_to_scene`; `apps/genblaze-media` README; RFC `docs/4d-engine/v2/scene-spec/IMAGE_TO_SCENE_RFC.md` | **Working tree** — Phase 1 scene interpretation **enforced** in tests; Phase 3 reconstruction **declared** only |
+| **Genblaze RT4D Docker** | Repo-root `Dockerfile` bundles Node 22 + `renderer-core` (`render-still.mjs`). App-local Dockerfile cannot (context cannot reach `mrs/packages/…`). | Render: Root Directory **empty**, Dockerfile Path `./Dockerfile`; set `GENBLAZE_IMAGE_BACKEND=rt4d`. After **Manual Deploy**, require `GET /health` → `rt4d.available: true`. | **Merged** (#39 / #38); live Render only proven after that health check — not claimed from env alone |
+| **Genblaze RT4D errors** | Setup gaps (missing `node` / script) → **503**; CLI crash / timeout / empty PNG → `RT4DRenderError` → **502**. Prompt values starting with `--` accepted by `parseArgs`. | `/health.rt4d`; unit tests in `apps/genblaze-media/tests/test_rt4d.py` | **On branch / PR #40** (open) |
+| **renderer-web** | Wires existing `GPUMeshRenderer` when WebGPU init succeeds; otherwise Canvas2D (no throw). | Browser with WebGPU; unit tests under `packages/renderer-web` | **Working tree** — unit-tested; live GPU browser verification **not yet claimed** |
+| **scene-schema** | `validateScene4DDTO`, deeper world validation, serialize/deserialize, `SURFACE_ID_ALIAS_MAP`, `tsc` → `dist/` | `packages/scene-schema` README + `npm test` | **Working tree** — sibling SurfaceId duplicates **not** migrated |
+| **plp/** (`renderer-core`) | Live orchestration: 6-plane rotate, `slice_hyperplane`, live/partial status, meshRef/sdfRef dispatch, wireframe edges, diagnostics, real lineage. URI loaders still partial. | `packages/renderer-core/src/plp/` + `projectWorld.test.js` | **Working tree** — skeleton markers cleared in production plp source; uri loaders **partial** |
+
+Genblaze operator detail: `apps/genblaze-media/README.md` (RT4D section, Render Dockerfile context, 502/503 table).
 
 ## Migration note
 
@@ -86,7 +101,7 @@ See `apps/chatgpt-mrs/README.md` for MCP Inspector / ChatGPT / ngrok.
 
 Headless PNG (CLI `4d-render`, gallery `generate.mjs`, ExportManager image) needs the **cairo-backed** `canvas` native addon. This is **not** required for:
 
-- ChatGPT skybridge widget / `@mrs/renderer-web` (browser Canvas2D)
+- ChatGPT skybridge widget / `@mrs/renderer-web` (browser Canvas2D; WebGPU when available — see packages table)
 - Browser `examples/web-demo.html`
 - RT4D math tests / inspector smokes that avoid PNG
 

@@ -153,6 +153,30 @@
       font-size: 0.8rem;
       color: var(--muted);
     }
+    .side-by-side {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+      margin-top: 0.75rem;
+    }
+    @media (max-width: 640px) {
+      .side-by-side { grid-template-columns: 1fr; }
+    }
+    .side-by-side figure { margin: 0; }
+    .side-by-side figcaption {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--ink);
+      font: inherit;
+    }
   </style>
 </head>
 <body>
@@ -166,6 +190,9 @@
       procedural 4D still (NOT text-to-image / not diffusion). Concept plates for the
       4D renderer — FLUX does not simulate 4D worlds. Cosmos video is an optional
       operator path (off by default for this demo).
+      Optional: <strong>Image → MRS scene</strong> interprets a still into a
+      SceneSpecification and path-traces a full frame (scene interpretation — not
+      geometric reconstruction).
     </p>
 
     <p class="lede">
@@ -208,6 +235,10 @@
           <button type="submit" id="go">Generate</button>
           <button type="button" class="secondary" id="refresh">Refresh assets</button>
         </div>
+        <label style="margin-top:0.75rem;font-weight:400;display:flex;gap:0.5rem;align-items:center;">
+          <input type="checkbox" id="then-scene" />
+          Also interpret → MRS full frame (keeps FLUX concept; dual previews)
+        </label>
       </form>
 
       <div id="status" class="status"></div>
@@ -216,6 +247,42 @@
         <h2>Latest still</h2>
         <div class="meta" id="result-meta"></div>
         <img id="preview" alt="Generated concept" hidden />
+        <div class="side-by-side" id="dual-previews" hidden>
+          <figure>
+            <figcaption>FLUX / concept still</figcaption>
+            <img id="preview-flux" alt="FLUX concept" />
+          </figure>
+          <figure>
+            <figcaption>MRS path-traced full frame (scene interpretation)</figcaption>
+            <img id="preview-mrs" alt="MRS scene interpretation" />
+          </figure>
+        </div>
+      </section>
+    </section>
+
+    <section class="path" id="image-to-scene">
+      <h2>Image → MRS scene</h2>
+      <p class="tips" role="note">
+        <strong>Scene interpretation + path-traced full frame.</strong>
+        Upload a photo or paste a prior generate <code>run_id</code>. The service
+        emits a SceneSpecification (NIM vision when configured, else heuristic),
+        validates it, then MRS path-traces a full PNG.
+        This is <strong>not</strong> geometric reconstruction, depth recovery, or mesh from photo.
+      </p>
+      <form id="scene-form">
+        <label for="scene-file">Image upload</label>
+        <input type="file" id="scene-file" accept="image/jpeg,image/png,image/webp,image/gif" />
+        <label for="scene-run-id" style="margin-top:0.75rem">Or generate run_id</label>
+        <input type="text" id="scene-run-id" maxlength="64" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <div class="row">
+          <button type="submit" id="scene-go">Interpret + render</button>
+        </div>
+      </form>
+      <div id="scene-status" class="status"></div>
+      <section class="result" id="scene-result" hidden>
+        <h2>MRS scene frame</h2>
+        <div class="meta" id="scene-result-meta"></div>
+        <img id="scene-preview" alt="MRS path-traced scene" hidden />
       </section>
     </section>
 
@@ -297,6 +364,23 @@
     const videoResultMeta = document.getElementById("video-result-meta");
     const videoPreview = document.getElementById("video-preview");
     const videoGoBtn = document.getElementById("video-go");
+    const sceneStatusEl = document.getElementById("scene-status");
+    const sceneResultEl = document.getElementById("scene-result");
+    const sceneResultMeta = document.getElementById("scene-result-meta");
+    const scenePreview = document.getElementById("scene-preview");
+    const sceneGoBtn = document.getElementById("scene-go");
+    const dualPreviews = document.getElementById("dual-previews");
+    const previewFlux = document.getElementById("preview-flux");
+    const previewMrs = document.getElementById("preview-mrs");
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error("read failed"));
+        reader.readAsDataURL(file);
+      });
+    }
 
     function setStatus(el, msg, kind) {
       el.textContent = msg || "";
@@ -408,11 +492,13 @@
         ""
       );
       preview.hidden = true;
+      if (dualPreviews) dualPreviews.hidden = true;
       try {
+        const thenScene = document.getElementById("then-scene")?.checked === true;
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, embed: true }),
+          body: JSON.stringify({ prompt, embed: true, then_scene: thenScene }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -427,7 +513,14 @@
         }
         resultEl.hidden = false;
         renderEntry(resultMeta, data);
-        if (data.preview_url) {
+        dualPreviews.hidden = true;
+        preview.hidden = true;
+        if (data.then_scene && data.then_scene.render && data.then_scene.render.preview_url) {
+          dualPreviews.hidden = false;
+          previewFlux.src = data.preview_url || "";
+          previewMrs.src = data.then_scene.render.preview_url;
+          preview.hidden = true;
+        } else if (data.preview_url) {
           preview.src = data.preview_url;
           preview.hidden = false;
           preview.onerror = () => {
@@ -440,12 +533,91 @@
             );
           };
         }
-        setStatus(statusEl, data.dry_run ? "Dry-run complete (not live NIM)." : "Done.", data.dry_run ? "warn" : "");
+        let doneMsg = data.dry_run ? "Dry-run complete (not live NIM)." : "Done.";
+        if (data.then_scene) {
+          doneMsg += " Dual path: FLUX concept + MRS scene interpretation frame.";
+        } else if (data.then_scene_error) {
+          doneMsg += " then_scene skipped: " + (
+            typeof data.then_scene_error === "string"
+              ? data.then_scene_error
+              : JSON.stringify(data.then_scene_error)
+          );
+        }
+        setStatus(statusEl, doneMsg, data.dry_run ? "warn" : "");
         await loadAssets();
       } catch (err) {
         setStatus(statusEl, String(err), "err");
       } finally {
         goBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("scene-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const fileInput = document.getElementById("scene-file");
+      const runId = document.getElementById("scene-run-id").value.trim();
+      const file = fileInput.files && fileInput.files[0];
+      if (!file && !runId) {
+        setStatus(sceneStatusEl, "Choose an image or paste a run_id.", "warn");
+        return;
+      }
+      sceneGoBtn.disabled = true;
+      setStatus(
+        sceneStatusEl,
+        "Interpreting image → SceneSpecification → MRS full-frame path trace…",
+        ""
+      );
+      scenePreview.hidden = true;
+      try {
+        const body = { render: true };
+        if (file) {
+          body.image_base64 = await fileToDataUrl(file);
+        } else {
+          body.run_id = runId;
+        }
+        const res = await fetch("/api/image-to-scene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = data.detail || res.statusText;
+          setStatus(
+            sceneStatusEl,
+            typeof detail === "string" ? detail : JSON.stringify(detail),
+            "err"
+          );
+          return;
+        }
+        sceneResultEl.hidden = false;
+        const render = data.render || {};
+        renderEntry(sceneResultMeta, {
+          ...render,
+          analysis_mode: data.analysis_mode,
+          scene_source: data.source,
+          note: data.note,
+          image_sha256: data.image_sha256,
+        });
+        const lines = (sceneResultMeta.textContent || "").split("\n");
+        lines.push("analysis_mode: " + (data.analysis_mode || "—"));
+        lines.push("scene_source: " + (data.source || "—"));
+        if (data.note) lines.push(data.note);
+        sceneResultMeta.textContent = lines.join("\n");
+        if (render.preview_url) {
+          scenePreview.src = render.preview_url;
+          scenePreview.hidden = false;
+        }
+        setStatus(
+          sceneStatusEl,
+          "Done · " + (data.source || "—") + " · scene interpretation (not reconstruction).",
+          ""
+        );
+        await loadAssets();
+      } catch (err) {
+        setStatus(sceneStatusEl, String(err), "err");
+      } finally {
+        sceneGoBtn.disabled = false;
       }
     });
 

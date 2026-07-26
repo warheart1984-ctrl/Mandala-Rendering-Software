@@ -16,6 +16,7 @@
     "./inspector": "./src/inspector/index.js",
     "./live-link": "./src/live-link/index.js",
     "./plp": "./src/plp/index.js",
+    "./scene-spec": "./src/scene-spec/index.js",
     "./rt4d": "./src/render/rt4d/index.js",
     "./rt4d/math": "./src/render/rt4d/math/index.js",
     "./rt4d/invariants": "./src/render/rt4d/invariants/index.js",
@@ -42,7 +43,10 @@
     "test:wavefront": "node --test src/render/rt4d/gpu/wavefront/wavefront.phaseb.test.js",
     "test:phasec": "node --test src/render/rt4d/physics/phasec.scaffold.test.js",
     "test:render-still": "node --test scripts/test/render-still.test.js",
-    "render-still": "node scripts/render-still.mjs"
+    "test:scene-spec": "node --test src/scene-spec/scene-spec.test.js",
+    "test:render-scene": "node --test scripts/test/render-scene.test.js",
+    "render-still": "node scripts/render-still.mjs",
+    "render-scene": "node scripts/render-scene.mjs"
   },
   "dependencies": {
     "canvas": "^3.1.0",
