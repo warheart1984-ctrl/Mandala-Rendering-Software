@@ -44,7 +44,7 @@ RUN node --test \
 
 # 9. Smoke test: render a still from a procedural scene
 RUN node mrs/packages/renderer-core/scripts/render-still.mjs \
-    --prompt "tesseract lattice" \
+    --prompt "docker build smoke" \
     --width 64 --height 64 --samples 1 --seed 1 \
     --output /tmp/smoke.png \
     && rm -f /tmp/smoke.png
