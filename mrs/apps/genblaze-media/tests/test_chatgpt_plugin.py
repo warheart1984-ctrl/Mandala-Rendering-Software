@@ -175,3 +175,22 @@ def test_bearer_required_when_plugin_key_set(tmp_path, monkeypatch):
     assert client.get("/plugin/openapi.json").status_code == 200
     manifest = client.get("/.well-known/ai-plugin.json").json()
     assert manifest["auth"]["type"] == "service_http"
+
+
+def test_cors_not_auto_enabled_by_plugin_key(monkeypatch):
+    """CHATGPT_PLUGIN_KEY must not silently open allow_origins=['*']."""
+    monkeypatch.setenv("CHATGPT_PLUGIN_KEY", "plugin-secret-for-cors-test")
+    monkeypatch.delenv("GENBLAZE_CORS_ALLOW_ALL", raising=False)
+    from app.config import get_settings
+
+    settings = get_settings()
+    assert settings.chatgpt_plugin_key == "plugin-secret-for-cors-test"
+    assert settings.cors_allow_all is False
+
+
+def test_cors_explicit_allow_all(monkeypatch):
+    monkeypatch.setenv("GENBLAZE_CORS_ALLOW_ALL", "1")
+    monkeypatch.delenv("CHATGPT_PLUGIN_KEY", raising=False)
+    from app.config import get_settings
+
+    assert get_settings().cors_allow_all is True

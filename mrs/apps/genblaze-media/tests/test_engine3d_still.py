@@ -24,6 +24,9 @@ from app.engine3d_sequence_provider import (
 )
 from app.engine3d_still_provider import (
     ENGINE3D_STILL_KIND,
+    Engine3dStillPathError,
+    engine3d_still_availability,
+    resolve_engine3d_cli_path,
     engine3d_still_availability,
 )
 from app.main import app
@@ -146,6 +149,74 @@ def test_engine3d_still_availability_shape():
     assert "available" in avail
     assert "note" in avail
     assert "sphere-bridge" in avail["note"].lower() or "NOT RT4D" in avail["note"]
+
+
+def test_resolve_engine3d_cli_path_rejects_traversal(tmp_path):
+    """``../../etc/passwd`` style paths must not reach the Node CLI."""
+    with pytest.raises(Engine3dStillPathError, match="\\.\\."):
+        resolve_engine3d_cli_path(
+            "../../etc/passwd",
+            field="world_path",
+            repo_root=tmp_path,
+        )
+    with pytest.raises(Engine3dStillPathError, match="allowlisted"):
+        resolve_engine3d_cli_path(
+            "/etc/passwd",
+            field="human_glb",
+            repo_root=tmp_path,
+        )
+
+
+def test_resolve_engine3d_cli_path_allows_fixture_and_operator(tmp_path, monkeypatch):
+    assets = tmp_path / "mrs" / "assets" / "human"
+    assets.mkdir(parents=True)
+    fixture = assets / "HumanFaceRigged.glb"
+    fixture.write_bytes(b"glTF")
+    op_root = tmp_path / "operator-assets" / "human"
+    op_root.mkdir(parents=True)
+    op_glb = op_root / "HumanFaceRigged.glb"
+    op_glb.write_bytes(b"glTF")
+
+    resolved_fixture = resolve_engine3d_cli_path(
+        "mrs/assets/human/HumanFaceRigged.glb",
+        field="human_glb",
+        repo_root=tmp_path,
+    )
+    assert resolved_fixture == str(fixture.resolve())
+
+    resolved_op = resolve_engine3d_cli_path(
+        str(op_glb),
+        field="human_glb",
+        repo_root=tmp_path,
+    )
+    assert resolved_op == str(op_glb.resolve())
+
+    custom = tmp_path / "custom-op" / "human"
+    custom.mkdir(parents=True)
+    custom_glb = custom / "face.glb"
+    custom_glb.write_bytes(b"glTF")
+    monkeypatch.setenv("OPERATOR_ASSETS_ROOT", str(tmp_path / "custom-op"))
+    resolved_custom = resolve_engine3d_cli_path(
+        str(custom_glb),
+        field="human_glb",
+        repo_root=tmp_path,
+    )
+    assert resolved_custom == str(custom_glb.resolve())
+
+
+def test_api_engine3d_still_rejects_path_traversal(tmp_path, monkeypatch):
+    monkeypatch.setattr("app.main.get_settings", lambda: _settings())
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "recent.json")
+    client = TestClient(app)
+    resp = client.post(
+        "/api/engine3d-still",
+        json={"world_path": "../../etc/passwd", "width": 64, "height": 64},
+    )
+    assert resp.status_code == 400
+    assert ".." in resp.json()["detail"] or "allowlisted" in resp.json()["detail"]
 
 
 def test_health_exposes_engine3d_still(tmp_path, monkeypatch):
