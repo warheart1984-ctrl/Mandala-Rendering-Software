@@ -50,6 +50,97 @@ Honest copy: **scene interpretation + path-traced full frame**. Responses includ
 
 Pass `"require_nvidia": true` on `/api/image-to-scene` to forbid the silent heuristic fallback (missing key → **503**, NIM 5xx/504 → **502** with `nvidia_unavailable: true`; the source still is unchanged).
 
+#### Structure still → AI polish (img2img diffusion cleanup)
+
+`POST /api/polish-still` applies **diffusion img2img** (fal.ai FLUX by default) to a prior
+generate/RT4D `run_id`. The structure pass stays as the MRS RT4D path trace; the AI model
+refines materials, contrast, and noise. This is **not** geometric reconstruction and does
+**not** claim MRS rendered the final pixel values.
+
+```bash
+curl -s -X POST http://127.0.0.1:8787/api/polish-still \
+  -H "content-type: application/json" \
+  -d '{"run_id":"<prior-uuid>","prompt":"enhance materials, add dramatic lighting","strength":0.45}'
+```
+
+**Two distinct actions:** operators have three separate tools:
+- **Generate RT4D** — structure still
+- **Polish** — same pixels, diffusion cleanup (img2img)
+- **NIM interpret** — new SceneSpec + MRS still (vision, not img2img)
+
+**Recommended strength:** 0.35–0.55 for abstract/lattice scenes so the geometry stays
+readable. Higher strength may erase the lattice structure. Server-side caps are applied
+when the source scene is `tesseract-lattice`.
+
+**Config:** set `GENBLAZE_POLISH_ENABLED=1` and `FAL_KEY` (fal.ai, also used for Seedance
+video). The provider is fal.ai FLUX image-to-image; NVIDIA NIM is attempted first when
+`GENBLAZE_POLISH_BACKEND=auto` (default) or `=nvidia`, but NIM FLUX may be T2I-only on
+your key.
+
+**Billing:** each polish call consumes a separate fal.ai API invocation (or NVIDIA NIM
+call). Documented in the response `manifest.polish_provider` field.
+
+**One-shot generate:** pass `"then_polish": true` on `POST /api/generate` to produce both
+the structure still and a polished version in one call. Optional `polish_prompt` and
+`polish_strength` control the polish step independently.
+
+### Engine3D structure → polish (+ optional RT4D background)
+
+`POST /api/engine3d-still` soft-rasters Engine3D triangles (demo portrait meshes or
+optional HumanRig GLB) into a beauty PNG with optional depth/normal AOVs. Pass
+`rt4d_background_run_id` to composite the subject over a prior RT4D lattice/mandala
+still. Pass `polish: true` + `prompt` to run the existing fal FLUX img2img polish path.
+
+```bash
+# Build engine3d-core once:
+#   cd mrs/packages/engine3d-core && npm run build
+
+curl -s -X POST http://127.0.0.1:8787/api/engine3d-still \
+  -H "content-type: application/json" \
+  -d '{"width":256,"height":256,"polish":true,"prompt":"cinematic portrait, detailed skin","polish_strength":0.45}'
+```
+
+Honest scope: Engine3D owns subject **geometry**; polish owns skin/hair realism;
+RT4D owns mandala/lattice **backgrounds** only. Do not route head meshes through
+the SceneBridge hypersphere path for portraits. See
+`docs/4d-engine/engine3d/ENGINE3D_CONSTITUTIONAL_SUITE_v1.0.md`.
+
+Requires Node + built `engine3d-core` (`/health.engine3d_still.available`).
+Docker (repo-root Dockerfile) builds and smokes this path.
+
+### Engine3D short cinematic sequence
+
+`POST /api/engine3d-sequence` evaluates a short orbit timeline and soft-rasters
+structure frames. Preview is the first `*_final.png`. Not an 8K render farm;
+per-frame polish is intentionally out of scope here (use still + polish).
+
+```bash
+curl -s -X POST http://127.0.0.1:8787/api/engine3d-sequence \
+  -H "content-type: application/json" \
+  -d '{"width":64,"height":48,"duration":0.5,"fps":4}'
+```
+
+See `docs/4d-engine/engine3d/ENGINE3D_CINEMATIC_FOUNDATION_v1.0.md`.
+
+### ChatGPT / Custom GPT Actions (Engine3D plugin)
+
+ChatGPT no longer installs third-party **Plugins** from a storefront. The same
+manifest + OpenAPI pattern still works for **Custom GPT → Actions**:
+
+1. Expose Genblaze over HTTPS (Render or `ngrok http 8787`).
+2. Optionally set `GENBLAZE_PUBLIC_BASE_URL=https://<host>` and
+   `CHATGPT_PLUGIN_KEY=<long-random>` (bearer on Engine3D routes).
+3. Set `GENBLAZE_CORS_ALLOW_ALL=1` if Actions need browser CORS (auto-on when
+   plugin key is set).
+4. In Custom GPT Actions, import:
+   `https://<host>/plugin/openapi.json`
+5. Discovery (optional): `https://<host>/.well-known/ai-plugin.json`
+
+Honest limits in the tool description: soft-raster max **1024px**, RT4D is
+**background-only**, polish needs `GENBLAZE_POLISH_ENABLED` + `FAL_KEY`. Response
+shape is `{ structure, polish?, composite?, note }` with `preview_url` — not a
+flat map of filesystem paths.
+
 ### RT4D still → NVIDIA (NIM vision)
 
 `POST /api/rt4d-to-nvidia` takes a prior generate `run_id` (local preview or B2), sends that PNG to **NVIDIA NIM vision** (`GENBLAZE_IMAGE_TO_SCENE_MODEL`, default `meta/llama-3.2-11b-vision-instruct` at `GENBLAZE_IMAGE_TO_SCENE_CHAT_URL`), and optionally re-renders an MRS frame. This reuses the image→scene path with `require_nvidia=true`.
@@ -115,6 +206,14 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `GENBLAZE_IMAGE_TO_SCENE_CHAT_URL` | optional; default `https://integrate.api.nvidia.com/v1/chat/completions` |
 | `GENBLAZE_IMAGE_TO_SCENE_TIMEOUT` | optional; default `120` seconds |
 | `GENBLAZE_FLUX_THEN_SCENE` | default **off** — set `1` so successful `/api/generate` stills also run image→scene→MRS (returns both assets) |
+| `GENBLAZE_POLISH_ENABLED` | default **off** — set `1` to enable `/api/polish-still` diffusion img2img path |
+| `GENBLAZE_POLISH_MODEL` | optional; default `fal-ai/flux/dev/image-to-image` (fal.ai). For NVIDIA NIM: `black-forest-labs/flux.1-schnell` |
+| `GENBLAZE_POLISH_DEFAULT_STRENGTH` | optional; default `0.45` (clamped 0.0–1.0). Lower for structure preservation |
+| `GENBLAZE_POLISH_BACKEND` | optional; `auto` (default — try NVIDIA then fal), `fal`, or `nvidia` |
+| `FAL_KEY` | fal.ai API key for img2img polish (also used for Seedance video). Required when `GENBLAZE_POLISH_BACKEND=fal` or `auto` |
+| `ENGINE3D_STILL_ENABLED` | default **on** — set `0` to disable `/api/engine3d-still` |
+| `ENGINE3D_STILL_SCRIPT_PATH` | optional; default `…/engine3d-core/scripts/render-engine3d-still.mjs` |
+| `ENGINE3D_STILL_TIMEOUT` | optional; default `120` seconds |
 | `SCENE_SPEC_SCRIPT_PATH` | optional; default resolves `<repo>/mrs/packages/renderer-core/scripts/render-scene.mjs`, then the Docker layout `/app/renderer-core/scripts/render-scene.mjs` |
 | `VALIDATE_SCENE_SPEC_SCRIPT_PATH` | optional; default resolves `<repo>/mrs/packages/renderer-core/scripts/validate-scene-spec.mjs`, then the Docker layout `/app/renderer-core/scripts/validate-scene-spec.mjs` |
 | `SCENE_SPEC_SCRIPT_PATH` | optional; default `…/render-scene.mjs` |
@@ -410,6 +509,11 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 | POST | `/api/generate-video` | Selected Cosmos or Seedance backend → B2; 503 if disabled or its credential is missing |
 | POST | `/api/image-to-scene` | Image → SceneSpecification → optional MRS full-frame path trace (`render` default **true**, `quality` default **draft**; optional `require_nvidia`). Scene interpretation — **not** reconstruction |
 | POST | `/api/rt4d-to-nvidia` | Prior still `run_id` → NIM vision → optional MRS re-render (`require_nvidia`); **503** missing key, **502** NIM 5xx/504; **not** img2img |
+| POST | `/api/polish-still` | Prior still `run_id` → diffusion img2img polish (fal.ai FLUX); **503** polish disabled/missing key, **502** upstream failure; structure still unchanged |
+| GET | `/.well-known/ai-plugin.json` | ChatGPT-style plugin manifest (absolute URLs; auth none or bearer) |
+| GET | `/plugin/openapi.json` | Scoped OpenAPI for Engine3D still Actions (full app schema remains `/openapi.json`) |
+| POST | `/api/engine3d-still` | Engine3D soft-raster structure (beauty+AOVs); optional `rt4d_background_run_id` composite; optional `polish`; **not** RT4D sphere-bridge for faces |
+| POST | `/api/engine3d-sequence` | Short Engine3D soft-raster orbit sequence (structure); first-frame preview; **not** 8K farm / per-frame polish |
 | POST | `/api/render-scene` | SceneSpecification JSON → RT4D still (`quality` default **draft**; pass `final` for RT4D_* profile) |
 | GET | `/api/assets` | Local recent index (capped); optional `?modality=image\|video` |
 | GET | `/media/stills` · `/media/nvidia` · `/media/nim-cosmos` | 302 into SPA hash anchors |

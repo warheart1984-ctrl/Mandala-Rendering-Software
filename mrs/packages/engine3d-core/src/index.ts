@@ -319,6 +319,7 @@ export {
   fnv1a32Hex,
   hashCanonical,
   renderEngine3dFrame,
+  renderEngine3dStill,
   ENGINE3D_FRAME_RECEIPT_MODE,
   EvidenceBuilderV12,
   EvidenceBuilderV20,
@@ -341,3 +342,62 @@ export {
   validateMultiCameraV5,
   validateMultiTimelineV5,
 } from "./scene/index.js";
+
+export {
+  HeadlessGLStillRenderer,
+  renderStillBuffers,
+  writeStillPngs,
+  encodePngRgba,
+  sha256Hex,
+  type RasterCamera,
+  type RasterMesh,
+  type RasterStillRequest,
+  type RasterStillBuffers,
+  type RasterStillFiles,
+} from "./renderer/raster/HeadlessStillRenderer.js";
+
+export {
+  buildBoxMesh,
+  buildUvSphereMesh,
+  buildDemoPortraitMeshes,
+  buildPortraitRasterMeshesFromHumanRig,
+  worldMeshToRasterMesh,
+} from "./renderer/raster/portraitMeshes.js";
+
+export type {
+  Timeline,
+  AnimationTrack,
+  Keyframe,
+  KeyframeValue,
+  InterpMode,
+  TrackTarget,
+} from "./timeline/index.js";
+export {
+  assertValidTimeline,
+  frameCount,
+  frameTime,
+  evaluateTrack,
+  evaluateProperty,
+  evaluateCameraEye,
+  defaultOrbitTimeline,
+  slerp,
+} from "./timeline/index.js";
+
+export {
+  Engine3DCinematicRuntime,
+  ENGINE3D_SEQUENCE_RECORD_SCHEMA,
+  type CinematicRuntimeConfig,
+  type Engine3dSequenceRecord,
+  type SequenceFramePaths,
+} from "./runtime/Engine3DCinematicRuntime.js";
+export { MemoryModel8k, type MemoryBudget } from "./runtime/MemoryModel8k.js";
+export { TileRenderer3D, type TileConfig } from "./renderer/TileRenderer3D.js";
+export {
+  RenderFarmController,
+  type RenderNodeInfo,
+  type SequenceJob,
+} from "./farm/RenderFarmController.js";
+export {
+  SequenceExporter,
+  type SequenceExportConfig,
+} from "./export/SequenceExporter.js";

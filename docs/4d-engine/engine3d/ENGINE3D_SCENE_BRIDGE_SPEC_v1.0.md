@@ -18,6 +18,11 @@ Define a **read-only** capture path from Engine3D world state (`World3D`, `Body`
 This bridge does **not** replace Genblaze prompt→archetype stills
 (`renderer-core/scripts/render-still.mjs`).
 
+**Portrait structure:** hypersphere bridge output is **not** a valid anatomical
+structure source for Genblaze polish. Portrait stills use Engine3D raster AOVs
+(`renderEngine3dStill` / beauty+depth+normal) per
+[ENGINE3D_CONSTITUTIONAL_SUITE_v1.0](./ENGINE3D_CONSTITUTIONAL_SUITE_v1.0.md).
+
 ## 2. Constitutional requirements (CR)
 
 | ID | Requirement | Status |

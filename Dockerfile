@@ -5,8 +5,19 @@
 # mrs/packages/renderer-core, which is outside mrs/apps/genblaze-media.
 # The app-local Dockerfile cannot bundle it.
 
-# Node is pinned to bookworm so the copied binary links against a glibc no
-# newer than the Python base image's.
+# Soft-raster Engine3D structure stills (beauty+AOVs) for portrait polish path.
+# Build engine3d-core TypeScript in the Node stage, then copy dist+scripts.
+FROM node:22-bookworm-slim AS engine3d-build
+WORKDIR /build
+COPY mrs/packages/engine3d-core/package.json ./
+COPY mrs/packages/engine3d-core/tsconfig.json ./
+COPY mrs/packages/engine3d-core/src ./src
+COPY mrs/packages/engine3d-core/test ./test
+COPY mrs/packages/engine3d-core/scripts ./scripts
+RUN npm install typescript@5.9.2 \
+ && npx tsc -p tsconfig.json
+
+# Node binary stage (glibc-aligned with bookworm).
 FROM node:22-bookworm-slim AS nodebin
 
 FROM python:3.12-slim
@@ -28,7 +39,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     RT4D_NODE_PATH=node \
     RT4D_SCRIPT_PATH=/app/renderer-core/scripts/render-still.mjs \
     SCENE_SPEC_SCRIPT_PATH=/app/renderer-core/scripts/render-scene.mjs \
-    VALIDATE_SCENE_SPEC_SCRIPT_PATH=/app/renderer-core/scripts/validate-scene-spec.mjs
+    VALIDATE_SCENE_SPEC_SCRIPT_PATH=/app/renderer-core/scripts/validate-scene-spec.mjs \
+    ENGINE3D_STILL_SCRIPT_PATH=/app/engine3d-core/scripts/render-engine3d-still.mjs \
+    ENGINE3D_STILL_ENABLED=1 \
+    ENGINE3D_SEQUENCE_SCRIPT_PATH=/app/engine3d-core/scripts/render-engine3d-sequence.mjs \
+    ENGINE3D_SEQUENCE_ENABLED=1
 
 # genblaze-core 0.3.7 declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
 COPY mrs/apps/genblaze-media/requirements-docker.txt .
@@ -54,6 +69,12 @@ COPY mrs/packages/renderer-core/package.json ./renderer-core/package.json
 COPY mrs/packages/renderer-core/src ./renderer-core/src
 COPY mrs/packages/renderer-core/scripts ./renderer-core/scripts
 
+# Engine3D soft-raster still CLI (CPU; no native WebGL required).
+COPY --from=engine3d-build /build/package.json ./engine3d-core/package.json
+COPY --from=engine3d-build /build/dist ./engine3d-core/dist
+COPY --from=engine3d-build /build/scripts ./engine3d-core/scripts
+COPY mrs/packages/engine3d-core/src ./engine3d-core/src
+
 RUN node --version \
  && node /app/renderer-core/scripts/render-still.mjs \
       --prompt "docker build smoke" --seed 1 \
@@ -73,6 +94,18 @@ RUN printf '%s' '{"schemaVersion":"1.0","kind":"SceneSpecification","id":"docker
 # Runtime first-boot also runs this via docker-entrypoint.sh (marker /app/data/.engine3d-first-run).
 RUN node /app/renderer-core/scripts/engine3d-demo.mjs 4 > /tmp/engine3d-smoke.json \
  && rm -f /tmp/engine3d-smoke.json
+
+# Engine3D structure still smoke (demo portrait soft-raster).
+RUN ENGINE3D_STILL=1 node /app/engine3d-core/scripts/render-engine3d-still.mjs \
+      --engine3d-still --out-dir /tmp/e3d-still --width 64 --height 64 \
+      --aov depth,normal > /tmp/e3d-still.json \
+ && rm -rf /tmp/e3d-still /tmp/e3d-still.json
+
+# Engine3D short cinematic sequence smoke (2 frames @ 4fps / 0.5s).
+RUN ENGINE3D_SEQUENCE=1 node /app/engine3d-core/scripts/render-engine3d-sequence.mjs \
+      --engine3d-sequence --out-dir /tmp/e3d-seq --width 48 --height 36 \
+      --duration 0.5 --fps 4 > /tmp/e3d-seq.json \
+ && rm -rf /tmp/e3d-seq /tmp/e3d-seq.json
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh

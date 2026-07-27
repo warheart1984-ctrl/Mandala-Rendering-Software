@@ -243,11 +243,27 @@
           <button type="button" class="secondary" id="send-rt4d-nvidia" hidden disabled>
             Send RT4D still → NVIDIA
           </button>
+          <button type="button" class="secondary" id="polish-still" hidden disabled>
+            Polish with FLUX (img2img)
+          </button>
         </div>
         <label style="margin-top:0.75rem;font-weight:400;display:flex;gap:0.5rem;align-items:center;">
           <input type="checkbox" id="then-scene" />
           <span id="then-scene-label">Also interpret → MRS full frame (keeps concept still; dual previews)</span>
         </label>
+        <div id="polish-controls" hidden style="margin-top:0.75rem;padding:0.75rem;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,0.18);">
+          <label for="polish-prompt">Polish prompt (optional; default = same as generate)</label>
+          <textarea id="polish-prompt" maxlength="2000" placeholder="e.g. enhance materials, add dramatic lighting, refine contrast"></textarea>
+          <label for="polish-strength" style="margin-top:0.5rem">Strength: <span id="polish-strength-val">0.45</span></label>
+          <input type="range" id="polish-strength" min="0" max="100" value="45" style="width:100%" />
+          <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--muted);margin-top:-0.25rem">
+            <span>0.00 (identical)</span>
+            <span>1.00 (fully new)</span>
+          </div>
+          <div style="margin-top:0.5rem;font-size:0.85rem;color:var(--muted)">
+            Structure pass = MRS; polish = diffusion edit. Strength 0.35–0.55 recommended for lattice/abstract.
+          </div>
+        </div>
       </form>
 
       <div id="status" class="status"></div>
@@ -307,6 +323,43 @@
         <h2>MRS scene frame</h2>
         <div class="meta" id="scene-result-meta"></div>
         <img id="scene-preview" alt="MRS path-traced scene" hidden />
+      </section>
+    </section>
+
+    <section class="path" id="engine3d-still">
+      <h2>Engine3D structure → polish</h2>
+      <p class="tips" role="note">
+        <strong>Portrait structure path.</strong>
+        Soft-raster Engine3D triangles (demo head/shoulders or optional HumanRig GLB)
+        produce a beauty PNG (+ depth/normal AOVs). Optional RT4D background
+        composite, then optional fal FLUX img2img polish.
+        Faces/skin come from <em>polish</em> — not RT4D sphere-bridge.
+        Requires <code>/health.engine3d_still.available</code> and (for polish)
+        <code>GENBLAZE_POLISH_ENABLED=1</code> + <code>FAL_KEY</code>.
+      </p>
+      <form id="e3d-form">
+        <label for="e3d-width">Width</label>
+        <input type="number" id="e3d-width" min="64" max="1024" value="256" />
+        <label for="e3d-height" style="margin-top:0.5rem">Height</label>
+        <input type="number" id="e3d-height" min="64" max="1024" value="256" />
+        <label for="e3d-bg-run" style="margin-top:0.75rem">Optional RT4D background run_id</label>
+        <input type="text" id="e3d-bg-run" maxlength="64" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <label style="margin-top:0.75rem;font-weight:400;display:flex;gap:0.5rem;align-items:center;">
+          <input type="checkbox" id="e3d-polish" />
+          Also polish with FLUX img2img
+        </label>
+        <label for="e3d-prompt" style="margin-top:0.5rem">Polish prompt</label>
+        <textarea id="e3d-prompt" maxlength="2000"
+          placeholder="cinematic portrait, dramatic rim light, detailed skin"></textarea>
+        <div class="row">
+          <button type="submit" id="e3d-go">Render Engine3D structure</button>
+        </div>
+      </form>
+      <div id="e3d-status" class="status"></div>
+      <section class="result" id="e3d-result" hidden>
+        <h2>Engine3D / composite / polish</h2>
+        <div class="meta" id="e3d-result-meta"></div>
+        <img id="e3d-preview" alt="Engine3D structure or polish" hidden />
       </section>
     </section>
 
@@ -395,6 +448,11 @@
     const previewFlux = document.getElementById("preview-flux");
     const previewMrs = document.getElementById("preview-mrs");
     const sendRt4dNvidiaBtn = document.getElementById("send-rt4d-nvidia");
+    const polishBtn = document.getElementById("polish-still");
+    const polishControls = document.getElementById("polish-controls");
+    const polishPrompt = document.getElementById("polish-prompt");
+    const polishStrength = document.getElementById("polish-strength");
+    const polishStrengthVal = document.getElementById("polish-strength-val");
     const previewFluxCaption = document.getElementById("preview-flux-caption");
     const thenSceneLabel = document.getElementById("then-scene-label");
 
@@ -414,6 +472,16 @@
       const show = hasStill && (isRt4dBackend() || latestStill.provider === "rt4d-render");
       sendRt4dNvidiaBtn.hidden = !show;
       sendRt4dNvidiaBtn.disabled = !show;
+      const polishAvailable = health && health.polish && health.polish.available;
+      if (polishBtn) {
+        const showPolish = !!polishAvailable && hasStill;
+        polishBtn.hidden = !showPolish;
+        polishBtn.disabled = !showPolish;
+      }
+      if (polishControls) {
+        const showPolishControls = !!polishAvailable;
+        polishControls.hidden = !showPolishControls;
+      }
       if (thenSceneLabel) {
         thenSceneLabel.textContent = isRt4dBackend()
           ? "Also interpret with NVIDIA → MRS full frame (keeps RT4D still; dual previews)"
@@ -424,6 +492,14 @@
           ? "RT4D still"
           : "Concept / FLUX still";
       }
+    }
+
+    // Polish strength slider live value.
+    if (polishStrength && polishStrengthVal) {
+      polishStrength.addEventListener("input", () => {
+        const v = parseInt(polishStrength.value, 10) / 100;
+        polishStrengthVal.textContent = v.toFixed(2);
+      });
     }
 
     function rememberLatestStill(data) {
@@ -636,9 +712,15 @@
             " · quality " + (p.quality || "—") +
             " (deterministic procedural 4D — not diffusion).";
           if (nvidiaVisionReady()) {
-            doneMsg += " Use “Send RT4D still → NVIDIA” to interpret with NIM vision.";
+            doneMsg += " Use \u201cSend RT4D still \u2192 NVIDIA\u201d to interpret with NIM vision.";
+            if (health && health.polish && health.polish.available) {
+              doneMsg += " Also \u201cPolish with FLUX (img2img)\u201d for diffusion cleanup.";
+            }
           } else if (health && !health.nvidia_configured) {
             doneMsg += " NVIDIA_API_KEY missing — RT4D still is usable; NVIDIA interpret unavailable.";
+            if (health && health.polish && health.polish.available) {
+              doneMsg += " \u201cPolish with FLUX (img2img)\u201d available for diffusion cleanup.";
+            }
           }
         }
         if (data.then_scene) {
@@ -912,6 +994,159 @@
       });
     }
 
+    if (polishBtn) {
+      polishBtn.addEventListener("click", async () => {
+        if (!latestStill || !latestStill.run_id) {
+          setStatus(statusEl, "Generate an RT4D still first.", "warn");
+          return;
+        }
+        polishBtn.disabled = true;
+        goBtn.disabled = true;
+        const polishPromptVal = (polishPrompt && polishPrompt.value.trim()) || "";
+        const strength = polishStrength
+          ? parseInt(polishStrength.value, 10) / 100
+          : 0.45;
+        setStatus(
+          statusEl,
+          "Polishing RT4D still with FLUX img2img (diffusion cleanup)…",
+          ""
+        );
+        try {
+          const body = {
+            run_id: latestStill.run_id,
+            prompt: polishPromptVal || "enhance materials, refine contrast and lighting",
+            strength,
+          };
+          const res = await fetch("/api/polish-still", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const msg = data.detail && typeof data.detail === "object"
+              ? (data.detail.message || JSON.stringify(data.detail))
+              : (typeof data.detail === "string" ? data.detail : "Polish failed");
+            setStatus(statusEl, msg, "err");
+            if (latestStill.preview_url) {
+              preview.src = latestStill.preview_url;
+              preview.hidden = false;
+              dualPreviews.hidden = true;
+            }
+            return;
+          }
+          resultEl.hidden = false;
+          dualPreviews.hidden = true;
+          preview.hidden = false;
+          preview.src = data.preview_url || latestStill.preview_url;
+          renderEntry(resultMeta, {
+            run_id: data.run_id,
+            model: data.model,
+            provider: data.provider,
+            asset_sha256: data.asset_sha256,
+            source_run_id: data.structure_run_id,
+            strength: data.strength,
+            img2img: true,
+          });
+          setStatus(
+            statusEl,
+            "Done · Polish via " + (data.provider || "—") +
+              " (strength=" + data.strength + ") · " +
+              "Structure pass = MRS; polish = diffusion edit.",
+            ""
+          );
+          await loadAssets();
+        } catch (err) {
+          setStatus(statusEl, String(err), "err");
+        } finally {
+          goBtn.disabled = false;
+          updateRt4dNvidiaControls();
+        }
+      });
+    }
+
+    const e3dForm = document.getElementById("e3d-form");
+    const e3dStatus = document.getElementById("e3d-status");
+    const e3dResult = document.getElementById("e3d-result");
+    const e3dMeta = document.getElementById("e3d-result-meta");
+    const e3dPreview = document.getElementById("e3d-preview");
+    const e3dGo = document.getElementById("e3d-go");
+    if (e3dForm) {
+      e3dForm.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        e3dGo.disabled = true;
+        const doPolish = document.getElementById("e3d-polish")?.checked;
+        const polishPrompt = document.getElementById("e3d-prompt")?.value.trim() || "";
+        if (doPolish && !polishPrompt) {
+          setStatus(e3dStatus, "Polish prompt required when polish is checked.", "warn");
+          e3dGo.disabled = false;
+          return;
+        }
+        setStatus(e3dStatus, "Rendering Engine3D structure still…", "");
+        try {
+          const body = {
+            width: Number(document.getElementById("e3d-width").value) || 256,
+            height: Number(document.getElementById("e3d-height").value) || 256,
+            aov_depth: true,
+            aov_normal: true,
+            polish: !!doPolish,
+          };
+          const bg = document.getElementById("e3d-bg-run")?.value.trim();
+          if (bg) body.rt4d_background_run_id = bg;
+          if (doPolish) {
+            body.prompt = polishPrompt;
+            body.polish_strength = 0.45;
+          }
+          const res = await fetch("/api/engine3d-still", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const detail = data.detail || res.statusText;
+            setStatus(
+              e3dStatus,
+              typeof detail === "string" ? detail : JSON.stringify(detail),
+              "err"
+            );
+            return;
+          }
+          e3dResult.hidden = false;
+          const show =
+            (data.polish && data.polish.preview_url) ||
+            (data.composite && data.composite.preview_url) ||
+            (data.structure && data.structure.preview_url);
+          const metaSrc = data.polish || data.composite || data.structure || {};
+          renderEntry(e3dMeta, {
+            ...metaSrc,
+            structure_source:
+              (data.composite && "engine3d_composite") ||
+              (data.structure && data.structure.structure_source) ||
+              "engine3d_raster",
+            note: data.note,
+          });
+          if (show) {
+            e3dPreview.src = show;
+            e3dPreview.hidden = false;
+          }
+          setStatus(
+            e3dStatus,
+            "Done · Engine3D structure" +
+              (data.composite ? " + RT4D composite" : "") +
+              (data.polish ? " + polish" : "") +
+              " · not RT4D sphere-bridge for faces.",
+            ""
+          );
+          await loadAssets();
+        } catch (err) {
+          setStatus(e3dStatus, String(err), "err");
+        } finally {
+          e3dGo.disabled = false;
+        }
+      });
+    }
+
     fetch("/health").then(r => r.json()).then(h => {
       health = h;
       updateRt4dNvidiaControls();
@@ -955,6 +1190,7 @@
             " · " + backendLabel +
             nimDown +
             visionNote +
+            (h.polish && h.polish.available ? " · polish ready" : "") +
             (h.image_fallback_to_rt4d ? " · RT4D fallback on" : "") +
             (videoOn
               ? (" · video " + (h.video_model || "—"))

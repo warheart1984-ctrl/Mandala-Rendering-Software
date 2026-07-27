@@ -110,19 +110,36 @@ def build_nvidia_vision_provenance(
 
 
 def rt4d_to_nvidia_availability(settings: Settings) -> dict[str, Any]:
-    """Cheap /health disclosure — does not claim img2img."""
+    """Cheap /health disclosure — img2img_wired true only when polish is configured.
+
+    The ``img2img_wired`` field tracks the separate ``/api/polish-still`` path
+    (diffusion img2img cleanup), not NIM vision. When polish is configured and
+    enabled this flips to true so operators know img2img is available elsewhere
+    in the app, even though this specific ``/api/rt4d-to-nvidia`` endpoint
+    remains NIM-vision-only.
+    """
+    polish_available = bool(
+        settings.polish_enabled
+        and (
+            settings.fal_api_key
+            or (settings.polish_backend == "nvidia" and settings.nvidia_configured)
+        )
+    )
     return {
         "available": bool(settings.nvidia_configured),
         "capability": RT4D_TO_NVIDIA_CAPABILITY,
         "kind": RT4D_TO_NVIDIA_KIND,
         "model": settings.image_to_scene_model,
         "endpoint": settings.image_to_scene_chat_url,
-        "img2img_wired": False,
+        "img2img_wired": polish_available,
+        "polish_backend": settings.polish_backend if polish_available else None,
         "note": (
             "POST /api/rt4d-to-nvidia sends a prior still (run_id) to NIM vision → "
-            "SceneSpecification → optional MRS re-render. No NVIDIA img2img endpoint "
-            "is configured in this app. Requires NVIDIA_API_KEY; fails clearly on "
-            "missing key or NIM 5xx/504 without replacing the RT4D still."
+            "SceneSpecification → optional MRS re-render. img2img_wired=true means "
+            "a separate POST /api/polish-still endpoint is configured (diffusion "
+            "img2img). This endpoint remains NIM-vision-only. Requires "
+            "NVIDIA_API_KEY; fails clearly on missing key or NIM 5xx/504 without "
+            "replacing the RT4D still."
         ),
     }
 

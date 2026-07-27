@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/schemas/engine3d-sequence-record/1.0.json",
+  "title": "Engine3DSequenceRecord",
+  "description": "Provenance for Engine3D cinematic short sequences. Drive-G-1: structure_source required; 4K/8K labels are resolution declarations, not performance guarantees.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "sequence_id",
+    "timeline_id",
+    "world_id",
+    "camera_id",
+    "resolution",
+    "fps",
+    "frame_count",
+    "frames",
+    "structure_source"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "engine3d-sequence-record/1.0"
+    },
+    "sequence_id": { "type": "string", "minLength": 1 },
+    "timeline_id": { "type": "string", "minLength": 1 },
+    "world_id": { "type": "string", "minLength": 1 },
+    "camera_id": { "type": "string", "minLength": 1 },
+    "resolution": {
+      "type": "object",
+      "required": ["label", "width", "height"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "enum": ["preview", "1080p", "4K", "8K", "custom"]
+        },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "fps": { "type": "number", "exclusiveMinimum": 0 },
+    "frame_count": { "type": "integer", "minimum": 1 },
+    "frame_start": { "type": "integer", "minimum": 0 },
+    "frame_end": { "type": "integer", "minimum": 0 },
+    "structure_source": {
+      "type": "string",
+      "enum": ["engine3d_raster", "engine3d_composite", "flux_plate"]
+    },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["frame_index", "beauty_path"],
+        "properties": {
+          "frame_index": { "type": "integer", "minimum": 0 },
+          "beauty_path": { "type": "string" },
+          "depth_path": { "type": ["string", "null"] },
+          "normal_path": { "type": ["string", "null"] },
+          "polished_path": { "type": ["string", "null"] },
+          "rt4d_background_path": { "type": ["string", "null"] },
+          "composite_path": { "type": ["string", "null"] },
+          "final_path": { "type": ["string", "null"] },
+          "timestamp": { "type": "string" }
+        }
+      }
+    },
+    "note": { "type": "string" },
+    "timestamp": { "type": "string" }
+  }
+}
