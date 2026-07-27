@@ -13,6 +13,15 @@ describe("Rt4dLightAdapter", () => {
     }
   });
 
+  it("generates deterministic light IDs when no id provided", () => {
+    const light1 = normalizeRt4dLight({ type: "point", color: [1, 1, 1], intensity: 1 });
+    const light2 = normalizeRt4dLight({ type: "point", color: [1, 1, 1], intensity: 1 });
+    const light3 = normalizeRt4dLight({ type: "point", color: [1, 1, 1], intensity: 1 });
+    assert.equal(light1.id, "point-0");
+    assert.equal(light2.id, "point-1");
+    assert.equal(light3.id, "point-2");
+  });
+
   it("samples point and directional lights toward a hit", () => {
     const hit = { position: vec4(0, 0, 0, 0) };
     const point = sampleRt4dLight({ id: "p", type: "point", color: [1, 1, 1], intensity: 4, position: [0, 0, 2] }, hit);

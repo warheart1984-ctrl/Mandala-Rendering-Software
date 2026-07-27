@@ -102,6 +102,13 @@ export {
   hashAssetProvenance,
 } from "./world/AssetProvenanceLedger.js";
 export {
+  bridgePrimitiveToRt4d,
+  bridgeCameraToRt4d,
+  bridgeSceneToRt4d,
+  materialHintToRt4dId,
+  assignRt4dMaterials,
+  type Rt4dVertexTuple,
+} from "./scene/Rt4dAdapter.js";
   createWorldGenerator,
   generateWorldFromGenerator,
   hashWorldGenerator,

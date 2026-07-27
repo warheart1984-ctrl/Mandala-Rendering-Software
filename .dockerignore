@@ -1,34 +1,51 @@
-# Root build context for Genblaze media on Render
+# Docker build context exclusions
+
+# VCS
 .git
+.gitignore
 .github
-.opencode
+
+# Large directories
+/unreal
+/unity
+/4d-renderer/demo
+/demo
+/native
+/native-preview
+
+# Non-essential subdirs
+/css
+/cssv/client
+/engine/test
+/schemas
+/ci
+/constitution
+/config
+
+# Docs (large)
+/docs
+*.md
+CITATION.cff
+.zenodo.json
+
+# Dependencies (fresh install)
 node_modules
 **/node_modules
 **/.venv
 **/__pycache__
-**/.pytest_cache
-vendor
-unreal
-unity
-4d-renderer
-demo
-docs
-examples
-output
-native
-native-preview
-css
-cssv
-engine
-schemas
-scripts
-ci
-constitution
-config
-*.md
-!mrs/apps/genblaze-media/README.md
+**/node_modules
+
+# Env/secrets
 .env
 .env.*
+!.env.example
+
+# Logs/temp
 *.log
 *.zip
-docker-compose.yml
+/output
+/tmp
+
+# OS
+.DS_Store
+Thumbs.db

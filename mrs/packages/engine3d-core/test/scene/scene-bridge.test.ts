@@ -9,6 +9,9 @@ import {
   captureEngine3DScene,
   hashCanonical,
   renderEngine3dFrame,
+  bridgePrimitiveToRt4d,
+  bridgeSceneToRt4d,
+  materialHintToRt4dId,
 } from "../../src/scene/index.js";
 
 function makeWorld() {
@@ -83,8 +86,8 @@ describe("Engine3DSceneBridge", () => {
     assert.equal(typeof evidence.sceneHash, "string");
     assert.equal(evidence.primitiveCount, scene.primitives.length);
     assert.ok(evidence.primitiveCount >= 2); // two bodies minimum
-    assert.equal(scene.mappingNotes.polyMeshTriangles, "declared");
-    assert.equal(scene.schemaVersion, "engine3d-bridge-scene/1.0");
+    assert.equal(scene.mappingNotes.polyMeshTriangles, "implemented");
+    assert.equal(scene.schemaVersion, "engine3d-bridge-scene/1.1");
   });
 
   it("maps heavier bodies to larger sphere radii", () => {
@@ -129,5 +132,107 @@ describe("Engine3DSceneBridge", () => {
       primitiveCount: r1.primitiveCount,
       imageStatus: r1.imageStatus,
     }));
+  });
+
+  it("extracts triangle primitives when indices available", () => {
+    const verts = new Float32Array([
+      0, 0, 0,  // v0
+      1, 0, 0,  // v1
+      0, 1, 0,  // v2
+      1, 1, 0,  // v3
+    ]);
+    const indices = new Uint32Array([0, 1, 2, 1, 3, 2]); // 2 triangles
+    const mesh = new DefaultWorldMesh(verts, new Float32Array(12), indices);
+    const world = new DefaultWorld3D(mesh);
+    const { scene } = captureEngine3DScene({
+      world,
+      frameIndex: 0,
+      seed: 123,
+      options: { maxMeshTriangles: 10 },
+    });
+    const triangles = scene.primitives.filter((p) => p.kind === "triangle");
+    assert.ok(triangles.length >= 1);
+    const tri = triangles[0];
+    assert.ok(tri);
+    assert.equal(tri.source, "mesh_triangle");
+    assert.ok(tri.triangle);
+    assert.equal(tri.triangle!.vertices.length, 9); // 3 vertices * 3 coords
+    assert.equal(tri.triangle!.indices.length, 3);
+  });
+
+  it("skips triangle extraction when indices empty", () => {
+    const verts = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
+    const mesh = new DefaultWorldMesh(verts, new Float32Array(9), new Uint32Array());
+    const world = new DefaultWorld3D(mesh);
+    const { scene } = captureEngine3DScene({
+      world,
+      frameIndex: 0,
+      seed: 1,
+    });
+    const triangles = scene.primitives.filter((p) => p.kind === "triangle");
+    assert.equal(triangles.length, 0);
+  });
+
+  it("RT4D adapter converts hypersphere primitive", () => {
+    const prim = {
+      kind: "hypersphere" as const,
+      id: "test-sphere",
+      center: [1, 2, 3, 0.5] as const,
+      radius: 0.75,
+      source: "body" as const,
+      sourceId: "body1",
+      materialHint: "surf",
+    };
+    const rt4d = bridgePrimitiveToRt4d(prim);
+    assert.equal(rt4d.kind, "hypersphere");
+    if (rt4d.kind === "hypersphere") {
+      assert.deepEqual((rt4d.data as { center: typeof prim.center }).center, prim.center);
+      assert.equal((rt4d.data as { radius: number }).radius, prim.radius);
+    }
+    assert.equal(rt4d.materialHint, "surf");
+  });
+
+  it("RT4D adapter converts triangle primitive", () => {
+    const prim = {
+      kind: "triangle" as const,
+      id: "test-triangle",
+      center: [0, 0, 0, 0.1] as const,
+      radius: 0.5,
+      source: "mesh_triangle" as const,
+      sourceId: "t0",
+      materialHint: "surf",
+      triangle: {
+        vertices: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        indices: new Uint32Array([0, 1, 2]),
+      },
+    };
+    const rt4d = bridgePrimitiveToRt4d(prim);
+    assert.equal(rt4d.kind, "hypertriangle");
+    if (rt4d.kind === "hypertriangle") {
+      assert.ok((rt4d.data as { vertices: unknown[] }).vertices);
+      assert.equal((rt4d.data as { vertices: unknown[] }).vertices.length, 3);
+      const firstVert = (rt4d.data as { vertices: typeof prim.center[] }).vertices[0];
+      assert.ok(firstVert);
+      assert.equal(firstVert[3], 0.1); // w-coordinate from center
+      assert.deepEqual((rt4d.data as { indices: number[] }).indices, [0, 1, 2]);
+    }
+  });
+
+  it("RT4D adapter converts full scene", () => {
+    const world = makeWorld();
+    const captured = captureEngine3DScene({ world, frameIndex: 5, seed: 999 });
+    const rt4dScene = bridgeSceneToRt4d(captured.scene);
+    assert.ok(rt4dScene.primitives.length > 0);
+    assert.ok(rt4dScene.camera);
+    assert.equal(rt4dScene.metadata.frameIndex, 5);
+    assert.equal(rt4dScene.metadata.seed, 999);
+    assert.equal(rt4dScene.metadata.primitiveCount, rt4dScene.primitives.length);
+  });
+
+  it("material hint mapping", () => {
+    assert.equal(materialHintToRt4dId("surf"), "lambertian");
+    assert.equal(materialHintToRt4dId("shadow"), "shadow-catcher");
+    assert.equal(materialHintToRt4dId("radiant-core"), "emissive");
+    assert.equal(materialHintToRt4dId("unknown"), "default");
   });
 });

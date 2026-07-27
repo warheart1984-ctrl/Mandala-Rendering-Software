@@ -113,3 +113,12 @@ export {
   type FederatedSceneBridgeV5Render,
   type FederatedSceneBridgeV5Result,
 } from "./FederatedSceneBridgeV5.js";
+
+export {
+  bridgePrimitiveToRt4d,
+  bridgeCameraToRt4d,
+  bridgeSceneToRt4d,
+  materialHintToRt4dId,
+  assignRt4dMaterials,
+  type Rt4dVertexTuple,
+} from "./Rt4dAdapter.js";
