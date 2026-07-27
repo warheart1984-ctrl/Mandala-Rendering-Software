@@ -112,5 +112,3 @@ export function defaultFaceSmileTimeline(opts?: {
 export * from "./types.js";
 export * from "./interpolate.js";
 export { faceTimelineExample } from "./FaceTimelineExample.js";
-export * from "./types.js";
-export * from "./interpolate.js";

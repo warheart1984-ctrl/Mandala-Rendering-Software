@@ -181,11 +181,6 @@ export class Engine3DCinematicRuntime {
     const worldId =
       this.cfg.worldId ??
       (loadedFace ? `face-rig:${loadedFace.assetKind}` : "demo-portrait");
-    const meshes = this.cfg.meshes?.length
-      ? this.cfg.meshes
-      : buildDemoPortraitMeshes();
-    const cameraId = this.cfg.cameraId ?? "cam0";
-    const worldId = this.cfg.worldId ?? "demo-portrait";
     const frames: SequenceFramePaths[] = [];
 
     for (let f = frameStart; f <= frameEnd; f++) {
@@ -249,7 +244,6 @@ export class Engine3DCinematicRuntime {
         "Engine3D soft-raster short sequence (structure AOVs). " +
         "NOT photoreal; NOT 8K film farm. Polish/RT4D/composite via Genblaze." +
         (loadedFace ? ` Face rig asset=${loadedFace.assetKind}.` : ""),
-        "NOT photoreal; NOT 8K film farm. Polish/RT4D/composite via Genblaze.",
     };
 
     writeFileSync(

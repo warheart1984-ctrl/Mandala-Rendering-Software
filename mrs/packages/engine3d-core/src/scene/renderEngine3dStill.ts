@@ -7,7 +7,6 @@
 
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
-import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   HeadlessGLStillRenderer,
@@ -221,16 +220,6 @@ function resolveMeshes(req: Engine3dStillRequest): {
     faceRig: false,
     faceAsset: "none",
   };
-function resolveMeshes(req: Engine3dStillRequest): RasterMesh[] {
-  if (req.meshes && req.meshes.length > 0) return req.meshes;
-  if (req.humanGlb) {
-    const fromRig = buildPortraitRasterMeshesFromHumanRig(req.humanGlb, req.poseId);
-    if (fromRig && fromRig.length > 0) return fromRig;
-  }
-  if (req.world) {
-    return [worldMeshToRasterMesh("world-mesh", req.world.mesh)];
-  }
-  return buildDemoPortraitMeshes();
 }
 
 /**
@@ -251,10 +240,6 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
   const rasterReq: RasterStillRequest = {
     camera,
     meshes: resolved.meshes,
-  const meshes = resolveMeshes(req);
-  const rasterReq: RasterStillRequest = {
-    camera,
-    meshes,
     aov: {
       depth: req.aov?.depth !== false,
       normal: req.aov?.normal !== false,
@@ -269,7 +254,6 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
       : req.world
         ? "world3d"
         : "demo-portrait");
-    (req.humanGlb ? `human-glb:${req.humanGlb}` : req.world ? "world3d" : "demo-portrait");
 
   const structureRecord: Engine3dStructureRecord = {
     schemaVersion: ENGINE3D_STRUCTURE_RECORD_SCHEMA,
@@ -298,9 +282,6 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
       (resolved.faceRig
         ? ` Face rig present (asset=${resolved.faceAsset}).`
         : " Demo sphere-head (not a governed face mesh)."),
-    note:
-      "Engine3D soft-raster structure still (beauty + AOVs). " +
-      "NOT photoreal skin; NOT RT4D sphere-bridge. Polish separately via Genblaze.",
   };
 
   return {

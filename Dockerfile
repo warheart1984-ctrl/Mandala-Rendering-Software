@@ -17,11 +17,6 @@ COPY mrs/packages/engine3d-core/scripts ./scripts
 # src uses node:* APIs; tests are excluded via tsconfig.build.json (image only needs dist/src).
 RUN npm install typescript@5.9.2 @types/node@22 \
  && npx tsc -p tsconfig.build.json
-COPY mrs/packages/engine3d-core/src ./src
-COPY mrs/packages/engine3d-core/test ./test
-COPY mrs/packages/engine3d-core/scripts ./scripts
-RUN npm install typescript@5.9.2 \
- && npx tsc -p tsconfig.json
 
 # Node binary stage (glibc-aligned with bookworm).
 FROM node:22-bookworm-slim AS nodebin

@@ -79,7 +79,6 @@ async function main() {
   }
 
   const { renderEngine3dStill, defaultFaceRiggedGlbPath } = await loadApi();
-  const { renderEngine3dStill } = await loadApi();
 
   const cameraPartial = worldDoc?.camera
     ? {
@@ -110,11 +109,6 @@ async function main() {
     humanGlb,
     poseId: typeof args["pose-id"] === "string" ? args["pose-id"] : undefined,
     preferFaceFixture: args["no-face-fixture"] !== true,
-    worldId: worldDoc?.id || (typeof args.world === "string" ? args.world : "demo-portrait"),
-    cameraId: cameraPartial?.id,
-    camera: cameraPartial,
-    humanGlb: typeof args["human-glb"] === "string" ? args["human-glb"] : undefined,
-    poseId: typeof args["pose-id"] === "string" ? args["pose-id"] : undefined,
     aov,
   });
 
