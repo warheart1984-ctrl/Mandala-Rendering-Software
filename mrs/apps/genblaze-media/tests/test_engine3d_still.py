@@ -202,12 +202,60 @@ def test_api_engine3d_still_mocked(tmp_path, monkeypatch):
 
 
 def test_api_engine3d_still_polish_requires_prompt(tmp_path, monkeypatch):
+    """Legacy name: empty prompt is now allowed (face/generic defaults apply)."""
     monkeypatch.setattr(
         "app.main.get_settings",
         lambda: _settings(polish_enabled=True, fal_api_key="fal-test"),
     )
     from app import main as main_mod
     from app.index_store import AssetIndex
+    from app.pipeline import GenerateResult
+    from app.preview_cache import put_preview
+
+    main_mod._index = AssetIndex(tmp_path / "recent.json")
+    png = _tiny_png()
+
+    def fake_gen(settings, **kwargs):
+        run_id = "11111111-1111-1111-1111-111111111111"
+        from app.config import APP_DIR
+
+        put_preview(APP_DIR, run_id, png)
+        return GenerateResult(
+            run_id=run_id,
+            prompt="engine3d-still:demo",
+            model="mrs-engine3d-core/soft-raster",
+            provider="engine3d-still",
+            status="ok",
+            asset_key=f"genblaze-media/engine3d-still/{run_id}/beauty.png",
+            manifest_key=f"genblaze-media/engine3d-still/{run_id}/manifest.json",
+            asset_sha256="a" * 64,
+            preview_url=f"/api/preview/{run_id}",
+            created_at="2026-01-01T00:00:00+00:00",
+            dry_run=False,
+            provenance={
+                "kind": ENGINE3D_STILL_KIND,
+                "structure_source": "engine3d_raster",
+                "structure_record": {"face_rig": True, "face_asset": "fixture"},
+            },
+        )
+
+    def fake_polish(*_args, **_kwargs):
+        return {
+            "run_id": "33333333-3333-3333-3333-333333333333",
+            "preview_url": "/api/preview/33333333-3333-3333-3333-333333333333",
+            "model": "fal-ai/flux/dev/image-to-image",
+            "provider": "fal",
+            "asset_sha256": "c" * 64,
+        }
+
+    monkeypatch.setattr("app.main.generate_engine3d_still", fake_gen)
+    monkeypatch.setattr("app.main._polish_pipeline", fake_polish)
+    client = TestClient(app)
+    resp = client.post("/api/engine3d-still", json={"polish": True, "width": 64, "height": 64})
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert "polish" in body
+    assert body.get("face_polish", {}).get("face_rig") is True
 
     main_mod._index = AssetIndex(tmp_path / "recent.json")
     client = TestClient(app)

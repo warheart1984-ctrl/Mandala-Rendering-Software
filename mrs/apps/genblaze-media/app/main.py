@@ -41,6 +41,10 @@ from app.engine3d_still_provider import (
     engine3d_still_availability,
     generate_engine3d_still,
 )
+from app.face_polish_defaults import (
+    resolve_face_polish_prompt,
+    resolve_face_polish_strength,
+)
 from app.image_ingest import (
     analyze_image_bytes,
     analyze_ingested,
@@ -1187,6 +1191,12 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
     RT4D sphere-bridge.
     """
     settings = get_settings()
+    # Face-aware polish may supply a default prompt when structure has face_rig;
+    # still require an explicit prompt for non-face polish requests.
+    if body.polish and not (body.prompt or "").strip():
+        # Allow empty prompt — face defaults applied later if face_rig; otherwise
+        # resolve_face_polish_prompt still returns a generic cinematic prompt.
+        pass
     if body.polish and not (body.prompt or "").strip():
         raise HTTPException(
             status_code=400,
@@ -1220,6 +1230,17 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
     structure_entry["modality"] = "image"
     structure_entry["kind"] = ENGINE3D_STILL_KIND
     structure_entry["structure_source"] = "engine3d_raster"
+    prov = structure_entry.get("provenance")
+    if isinstance(prov, dict):
+        structure_entry["face_rig"] = bool(prov.get("face_rig"))
+        structure_entry["face_asset"] = prov.get("face_asset") or "none"
+        sr = prov.get("structure_record")
+        if isinstance(sr, dict):
+            structure_entry["face_rig"] = bool(
+                structure_entry.get("face_rig") or sr.get("face_rig")
+            )
+            if sr.get("face_asset"):
+                structure_entry["face_asset"] = sr.get("face_asset")
     _index.prepend(structure_entry)
     structure_public = _prefer_local_preview(
         {k: v for k, v in structure_entry.items() if k != "embedding_vector"}
@@ -1294,10 +1315,47 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
         polish_run_id = comp_run
 
     if body.polish:
+        face_rig = False
+        struct_prov = getattr(structure, "provenance", None)
+        if isinstance(struct_prov, dict):
+            sr = struct_prov.get("structure_record") or struct_prov
+            if isinstance(sr, dict) and sr.get("face_rig"):
+                face_rig = True
+        # Also sniff public structure entry
+        if structure_public.get("face_rig") or (
+            isinstance(structure_public.get("provenance"), dict)
+            and (
+                structure_public["provenance"].get("face_rig")
+                or (structure_public["provenance"].get("structure_record") or {}).get(
+                    "face_rig"
+                )
+            )
+        ):
+            face_rig = True
+
+        polish_prompt = resolve_face_polish_prompt(body.prompt, face_rig=face_rig)
+        polish_strength = resolve_face_polish_strength(
+            body.polish_strength,
+            face_rig=face_rig,
+            default_strength=settings.polish_default_strength,
+        )
         try:
             polish_payload = _polish_pipeline(
                 settings,
                 run_id=polish_run_id,
+                prompt=polish_prompt,
+                strength=polish_strength,
+            )
+            payload["polish"] = polish_payload
+            payload["face_polish"] = {
+                "face_rig": face_rig,
+                "prompt_used": polish_prompt,
+                "strength_used": polish_strength,
+                "note": (
+                    "Face-aware defaults are prompt/strength guidance only — "
+                    "diffusion does not geometrically lock silhouette."
+                ),
+            }
                 prompt=str(body.prompt).strip(),
                 strength=body.polish_strength,
             )

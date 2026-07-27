@@ -22,6 +22,9 @@
     "test:engine3d": "npm run build && node --test dist/test/engine/host-order.test.js dist/test/world/world-body.test.js dist/test/world/world-mesh.test.js dist/test/physics/physics-step.test.js dist/test/bridge/bridge-evaluate.test.js dist/test/substrate/substrate-update.test.js dist/test/renderer/renderer-basic.test.js dist/test/renderer/raster-still.test.js dist/test/runtime/cinematic-sequence.test.js dist/test/invariants/invariants-enforced.test.js dist/test/governance/ciems-overlay.test.js dist/test/governance/dsl/default-rules.test.js dist/test/mandala/mandala-mapping.test.js dist/test/constitutional/constitutional.test.js dist/test/scene/scene-bridge.test.js",
     "test:raster-still": "npm run build && node --test dist/test/renderer/raster-still.test.js",
     "test:cinematic": "npm run build && node --test dist/test/runtime/cinematic-sequence.test.js",
+    "test:face": "npm run build && node --test dist/test/face/face-rig.test.js",
+    "build:face-fixture": "node scripts/build-face-fixture-glb.mjs",
+    "validate:face-glb": "npm run build && node scripts/validate-face-glb.mjs",
     "render:engine3d-still": "npm run build && node scripts/render-engine3d-still.mjs --engine3d-still",
     "render:engine3d-sequence": "npm run build && node scripts/render-engine3d-sequence.mjs --engine3d-sequence",
     "test:scene-bridge": "npm run build && node --test dist/test/scene/scene-bridge.test.js",
@@ -31,6 +34,7 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "@types/node": "^22.13.10",
     "typescript": "^5.9.2"
   },
   "license": "MIT"

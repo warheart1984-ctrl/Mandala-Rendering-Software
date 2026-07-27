@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { vec4 } from "../math/vec4.js";
+import { clearSharedMeshBvhCache, sharedMeshBvhCacheSize, SkinnedMeshIntersector, createSharedBvhCache } from "./SkinnedMeshIntersector.js";
 import { clearSharedMeshBvhCache, sharedMeshBvhCacheSize, SkinnedMeshIntersector } from "./SkinnedMeshIntersector.js";
 
 describe("SkinnedMeshIntersector", () => {

@@ -17,6 +17,15 @@ import {
 } from "../renderer/raster/HeadlessStillRenderer.js";
 import { buildDemoPortraitMeshes } from "../renderer/raster/portraitMeshes.js";
 import {
+  applyFacePose,
+  facePoseFromTimeline,
+  loadFaceRig,
+  type FaceRigConfig,
+  type LoadedFaceRig,
+} from "../face/index.js";
+import type { DeformedMesh } from "../human/HumanRigTypes.js";
+import { IDENTITY_MAT4 } from "../human/mat4.js";
+import {
   assertValidTimeline,
   evaluateCameraEye,
   frameCount,
@@ -43,6 +52,8 @@ export interface CinematicRuntimeConfig {
   aov?: { depth?: boolean; normal?: boolean };
   /** Resolution label for sequence record (declared target, not a guarantee). */
   resolutionLabel?: "preview" | "1080p" | "4K" | "8K" | "custom";
+  /** Optional face rig — when set, timeline face tracks deform the face each frame. */
+  faceRig?: FaceRigConfig;
 }
 
 export interface SequenceFramePaths {
@@ -105,6 +116,35 @@ function padFrame(f: number): string {
   return String(f).padStart(4, "0");
 }
 
+function deformedToRasterMeshes(meshes: readonly DeformedMesh[]): RasterMesh[] {
+  return meshes.map((mesh) => {
+    const role = String(mesh.role ?? mesh.id ?? "part");
+    const mat = String(mesh.materialId ?? "");
+    let baseColor: [number, number, number] = [0.9, 0.74, 0.62];
+    if (/eye/i.test(role) || /eye/i.test(mat)) baseColor = [0.15, 0.2, 0.35];
+    else if (/mouth/i.test(role) || /mouth/i.test(mat)) baseColor = [0.75, 0.35, 0.35];
+    else if (/skin|head|face/i.test(role) || /skin|face/i.test(mat)) {
+      baseColor = [0.9, 0.74, 0.62];
+    } else {
+      baseColor = [0.15, 0.15, 0.18];
+    }
+    return {
+      id: `face:${role}`,
+      positions: mesh.vertices,
+      normals:
+        mesh.normals && mesh.normals.length === mesh.vertices.length
+          ? mesh.normals
+          : new Float32Array(mesh.vertices.length),
+      indices:
+        mesh.indices instanceof Uint32Array
+          ? mesh.indices
+          : new Uint32Array(mesh.indices),
+      modelMatrix: IDENTITY_MAT4,
+      baseColor,
+    };
+  });
+}
+
 /**
  * Evaluate timeline + soft-raster each assigned frame into `outputDir`.
  * Does not call polish / RT4D / FFmpeg.
@@ -127,6 +167,20 @@ export class Engine3DCinematicRuntime {
     const outDir = join(this.cfg.outputDir, sequenceId);
     mkdirSync(outDir, { recursive: true });
 
+    let loadedFace: LoadedFaceRig | null = null;
+    if (this.cfg.faceRig) {
+      loadedFace = loadFaceRig(this.cfg.faceRig);
+    }
+
+    const staticMeshes = this.cfg.meshes?.length
+      ? this.cfg.meshes
+      : loadedFace
+        ? null
+        : buildDemoPortraitMeshes();
+    const cameraId = this.cfg.cameraId ?? "cam0";
+    const worldId =
+      this.cfg.worldId ??
+      (loadedFace ? `face-rig:${loadedFace.assetKind}` : "demo-portrait");
     const meshes = this.cfg.meshes?.length
       ? this.cfg.meshes
       : buildDemoPortraitMeshes();
@@ -139,6 +193,15 @@ export class Engine3DCinematicRuntime {
       const camera = baseCamera(width, height, cameraId);
       const eye = evaluateCameraEye(this.cfg.timeline, t);
       if (eye) camera.eye = [eye[0], eye[1], eye[2]];
+
+      let meshes: RasterMesh[];
+      if (loadedFace) {
+        const facePose = facePoseFromTimeline(this.cfg.timeline, t);
+        const deformed = applyFacePose(loadedFace, facePose);
+        meshes = deformedToRasterMeshes(deformed.meshes);
+      } else {
+        meshes = staticMeshes!;
+      }
 
       const prefix = `frame_${padFrame(f)}_`;
       const finalPath = join(outDir, `${prefix}final.png`);
@@ -184,6 +247,8 @@ export class Engine3DCinematicRuntime {
       timestamp: utcNow(),
       note:
         "Engine3D soft-raster short sequence (structure AOVs). " +
+        "NOT photoreal; NOT 8K film farm. Polish/RT4D/composite via Genblaze." +
+        (loadedFace ? ` Face rig asset=${loadedFace.assetKind}.` : ""),
         "NOT photoreal; NOT 8K film farm. Polish/RT4D/composite via Genblaze.",
     };
 

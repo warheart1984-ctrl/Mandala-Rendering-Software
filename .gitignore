@@ -70,3 +70,10 @@ mrs/packages/renderer-core/_debug_*.png
 mrs/packages/renderer-web/_webgpu-smoke/_out/
 *.wip-full
 *.receipt-wip
+
+# Operator-provided production face GLBs (keep README / .gitkeep tracked)
+operator-assets/**/*.glb
+operator-assets/**/*.gltf
+operator-assets/**/*.bin
+!operator-assets/**/README.md
+!operator-assets/**/.gitkeep

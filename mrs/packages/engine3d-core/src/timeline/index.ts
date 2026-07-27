@@ -68,5 +68,49 @@ export function defaultOrbitTimeline(opts?: {
   return tl;
 }
 
+/**
+ * Neutral → smile → smile+squint (ENGINE3D_FACE_TIMELINE_SPEC_v1.0).
+ */
+export function defaultFaceSmileTimeline(opts?: {
+  id?: string;
+  duration?: number;
+  fps?: number;
+}): Timeline {
+  const duration = opts?.duration ?? 1;
+  const fps = opts?.fps ?? 8;
+  const tl: Timeline = {
+    id: opts?.id ?? "demo-face-smile",
+    duration,
+    fps,
+    tracks: [
+      {
+        id: "face.Smile",
+        target: "face_blendshape",
+        property: "Smile",
+        keyframes: [
+          { time: 0, value: 0, interp: "linear" },
+          { time: duration / 2, value: 0.35, interp: "linear" },
+          { time: duration, value: 0.7, interp: "linear" },
+        ],
+      },
+      {
+        id: "face.Squint",
+        target: "face_blendshape",
+        property: "Squint",
+        keyframes: [
+          { time: 0, value: 0, interp: "linear" },
+          { time: duration / 2, value: 0, interp: "linear" },
+          { time: duration, value: 0.4, interp: "linear" },
+        ],
+      },
+    ],
+  };
+  assertValidTimeline(tl);
+  return tl;
+}
+
+export * from "./types.js";
+export * from "./interpolate.js";
+export { faceTimelineExample } from "./FaceTimelineExample.js";
 export * from "./types.js";
 export * from "./interpolate.js";

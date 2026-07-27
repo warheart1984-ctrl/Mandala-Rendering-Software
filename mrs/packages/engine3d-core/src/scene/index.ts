@@ -35,6 +35,18 @@ export {
 } from "./renderEngine3dFrame.js";
 
 export {
+  renderEngine3dStill,
+  ENGINE3D_STRUCTURE_RECORD_SCHEMA,
+  defaultFaceRiggedGlbPath,
+  type Engine3dStillRequest,
+  type Engine3dStillResult,
+  type Engine3dStructureRecord,
+  type FaceRigDetailEvidence,
+  type FacePoseEvidence,
+  type StructureSource,
+} from "./renderEngine3dStill.js";
+
+export {
   EvidenceBuilderV12,
   buildEvidenceRecordV12,
   type EvidenceRecordV12,

@@ -37,7 +37,9 @@
     "demo:engine3d-core": "npm run demo:engine3d --prefix mrs/packages/engine3d-core",
     "genblaze:media": "cd mrs/apps/genblaze-media && python -m uvicorn app.main:app --host 0.0.0.0 --port 8787",
     "flux:smoke": "node mrs/apps/genblaze-media/scripts/flux-smoke.mjs",
-    "flux:smoke:py": "cd mrs/apps/genblaze-media && .venv/Scripts/python.exe scripts/flux_smoke.py"
+    "flux:smoke:py": "cd mrs/apps/genblaze-media && .venv/Scripts/python.exe scripts/flux_smoke.py",
+    "operator:face-install": "node scripts/operator-face-install.mjs",
+    "test:face": "npm run test:face --prefix mrs/packages/engine3d-core"
   },
   "dependencies": {
     "4d-renderer": "file:./4d-renderer",
