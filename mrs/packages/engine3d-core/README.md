@@ -23,9 +23,10 @@ order, standalone implementation (no WaveField dependency).
 | CIEMSOverlay / MandalaMapping pure helpers | **partial** (unit-tested) |
 | Governance DSL (`Engine3DRules` + default rules) | **partial** (unit-tested; `.ciems` parser declared) |
 | Constitutional suite (order, freeze, substrate, rules) | **partial** (real checks + skipped declared tests) |
-| SceneBridge → RT4D intermediate + headless receipt | **partial** — spheres/point samples; mesh triangles **declared** |
+| SceneBridge → RT4D intermediate + headless receipt | **partial** — spheres/point samples; mesh triangles **declared**; **not** portrait structure |
+| Soft-raster structure still (`renderEngine3dStill`) | **prepared** — beauty + depth/normal AOVs; Genblaze `/api/engine3d-still` |
 | Cluster / GPU scheduler / wire protocols / RenderCoordinator | **declared** — see SPEC + RFC |
-| Engine3D constitution / rulebook / ledger docs | **declared** — `docs/4d-engine/engine3d/` |
+| Engine3D constitution / rulebook / ledger docs | **declared** — `docs/4d-engine/engine3d/` incl. [ENGINE3D_CONSTITUTIONAL_SUITE_v1.0](../../../docs/4d-engine/engine3d/ENGINE3D_CONSTITUTIONAL_SUITE_v1.0.md) |
 
 SceneBridge docs: `docs/4d-engine/engine3d/ENGINE3D_SCENE_BRIDGE_SPEC_v1.0.md`  
 Does **not** replace Genblaze `render-still.mjs` archetype stills.

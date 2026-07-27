@@ -202,10 +202,42 @@ class Settings:
     image_to_scene_timeout_seconds: float = 120.0
     validate_scene_spec_script_path: str | None = None
     flux_then_scene: bool = False
+    # --- Image polish (img2img diffusion cleanup) ---
+    polish_enabled: bool = False
+    polish_model: str | None = None
+    polish_default_strength: float = 0.45
+    polish_backend: str = "auto"
+    # --- Engine3D structure still (soft-raster beauty+AOVs) ---
+    engine3d_still_enabled: bool = True
+    engine3d_still_script_path: str | None = None
+    engine3d_still_timeout_seconds: float = 120.0
+    # --- Engine3D short cinematic sequence (soft-raster orbit) ---
+    engine3d_sequence_enabled: bool = True
+    engine3d_sequence_script_path: str | None = None
+    engine3d_sequence_timeout_seconds: float = 180.0
+    engine3d_sequence_max_frames: int = 24
+    # --- ChatGPT / Custom GPT plugin ---
+    chatgpt_plugin_key: str | None = None
+    public_base_url: str | None = None
+    cors_allow_all: bool = False
 
     @property
     def nvidia_configured(self) -> bool:
         return bool(self.nvidia_api_key)
+
+    @property
+    def resolved_engine3d_still_script(self) -> str:
+        from app.engine3d_still_provider import engine3d_still_default_script_path
+
+        return self.engine3d_still_script_path or str(engine3d_still_default_script_path())
+
+    @property
+    def resolved_engine3d_sequence_script(self) -> str:
+        from app.engine3d_sequence_provider import engine3d_sequence_default_script_path
+
+        return self.engine3d_sequence_script_path or str(
+            engine3d_sequence_default_script_path()
+        )
 
     @property
     def resolved_validate_scene_spec_script(self) -> str:
@@ -413,6 +445,73 @@ def get_settings() -> Settings:
         "on",
     }
 
+    # --- Image polish (img2img diffusion cleanup) ---
+    polish_enabled = (os.getenv("GENBLAZE_POLISH_ENABLED") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    polish_model = (os.getenv("GENBLAZE_POLISH_MODEL") or "").strip() or None
+    try:
+        polish_strength = float(
+            (os.getenv("GENBLAZE_POLISH_DEFAULT_STRENGTH") or "0.45").strip() or "0.45"
+        )
+    except ValueError:
+        polish_strength = 0.45
+    polish_strength = max(0.0, min(1.0, polish_strength))
+    polish_backend_raw = (os.getenv("GENBLAZE_POLISH_BACKEND") or "auto").strip().lower()
+    if polish_backend_raw in ("fal", "nvidia"):
+        polish_backend = polish_backend_raw
+    else:
+        polish_backend = "auto"
+
+    # --- Engine3D structure still ---
+    # Default ON when script/node exist; operators can pin ENGINE3D_STILL_ENABLED=0.
+    engine3d_still_env = (os.getenv("ENGINE3D_STILL_ENABLED") or "1").strip().lower()
+    engine3d_still_enabled = engine3d_still_env not in {"0", "false", "no", "off"}
+    engine3d_still_script_override = (
+        os.getenv("ENGINE3D_STILL_SCRIPT_PATH") or ""
+    ).strip() or None
+    try:
+        engine3d_still_timeout = float(
+            (os.getenv("ENGINE3D_STILL_TIMEOUT") or "120").strip() or "120"
+        )
+    except ValueError:
+        engine3d_still_timeout = 120.0
+    engine3d_still_timeout = max(15.0, min(600.0, engine3d_still_timeout))
+
+    # --- Engine3D short sequence ---
+    engine3d_sequence_env = (os.getenv("ENGINE3D_SEQUENCE_ENABLED") or "1").strip().lower()
+    engine3d_sequence_enabled = engine3d_sequence_env not in {"0", "false", "no", "off"}
+    engine3d_sequence_script_override = (
+        os.getenv("ENGINE3D_SEQUENCE_SCRIPT_PATH") or ""
+    ).strip() or None
+    try:
+        engine3d_sequence_timeout = float(
+            (os.getenv("ENGINE3D_SEQUENCE_TIMEOUT") or "180").strip() or "180"
+        )
+    except ValueError:
+        engine3d_sequence_timeout = 180.0
+    engine3d_sequence_timeout = max(30.0, min(900.0, engine3d_sequence_timeout))
+    try:
+        engine3d_sequence_max_frames = int(
+            (os.getenv("ENGINE3D_SEQUENCE_MAX_FRAMES") or "24").strip() or "24"
+        )
+    except ValueError:
+        engine3d_sequence_max_frames = 24
+    engine3d_sequence_max_frames = max(2, min(120, engine3d_sequence_max_frames))
+
+    chatgpt_plugin_key = (os.getenv("CHATGPT_PLUGIN_KEY") or "").strip() or None
+    public_base_url = (os.getenv("GENBLAZE_PUBLIC_BASE_URL") or "").strip() or None
+    cors_env = (os.getenv("GENBLAZE_CORS_ALLOW_ALL") or "").strip().lower()
+    # Default: widen CORS when plugin key set or explicit flag (ChatGPT/Custom GPT).
+    cors_allow_all = cors_env in {"1", "true", "yes", "on"} or (
+        cors_env == "" and chatgpt_plugin_key is not None
+    )
+    if cors_env in {"0", "false", "no", "off"}:
+        cors_allow_all = False
+
     return Settings(
         nvidia_api_key=nvidia_key,
         fal_api_key=fal_key,
@@ -481,6 +580,20 @@ def get_settings() -> Settings:
         image_to_scene_timeout_seconds=image_to_scene_timeout,
         validate_scene_spec_script_path=validate_scene_spec_override,
         flux_then_scene=flux_then_scene,
+        polish_enabled=polish_enabled,
+        polish_model=polish_model,
+        polish_default_strength=polish_strength,
+        polish_backend=polish_backend,
+        engine3d_still_enabled=engine3d_still_enabled,
+        engine3d_still_script_path=engine3d_still_script_override,
+        engine3d_still_timeout_seconds=engine3d_still_timeout,
+        engine3d_sequence_enabled=engine3d_sequence_enabled,
+        engine3d_sequence_script_path=engine3d_sequence_script_override,
+        engine3d_sequence_timeout_seconds=engine3d_sequence_timeout,
+        engine3d_sequence_max_frames=engine3d_sequence_max_frames,
+        chatgpt_plugin_key=chatgpt_plugin_key,
+        public_base_url=public_base_url,
+        cors_allow_all=cors_allow_all,
     )
 
 

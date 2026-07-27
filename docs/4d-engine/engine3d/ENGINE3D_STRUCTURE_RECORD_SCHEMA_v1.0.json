@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/schemas/engine3d-structure-record/1.0.json",
+  "title": "Engine3DStructureRecord",
+  "description": "Canonical provenance record for Engine3D structure stills (beauty + optional AOVs). Drive-G-1: structure_source must be declared; RT4D sphere-bridge is not a valid portrait structure source.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "run_id",
+    "world_id",
+    "camera_id",
+    "beauty_path",
+    "structure_source",
+    "timestamp"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "engine3d-structure-record/1.0"
+    },
+    "run_id": { "type": "string", "minLength": 1 },
+    "world_id": { "type": "string", "minLength": 1 },
+    "camera_id": { "type": "string", "minLength": 1 },
+    "beauty_path": { "type": "string", "minLength": 1 },
+    "beauty_sha256": { "type": ["string", "null"] },
+    "depth_path": { "type": ["string", "null"] },
+    "depth_sha256": { "type": ["string", "null"] },
+    "normal_path": { "type": ["string", "null"] },
+    "normal_sha256": { "type": ["string", "null"] },
+    "rt4d_background_path": { "type": ["string", "null"] },
+    "rt4d_background_run_id": { "type": ["string", "null"] },
+    "composite_structure_path": { "type": ["string", "null"] },
+    "polished_png_path": { "type": ["string", "null"] },
+    "polish_strength": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "polish_prompt": { "type": ["string", "null"] },
+    "structure_source": {
+      "type": "string",
+      "enum": ["engine3d", "engine3d_raster", "engine3d_composite", "flux_plate"]
+    },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "note": { "type": "string" }
+  }
+}

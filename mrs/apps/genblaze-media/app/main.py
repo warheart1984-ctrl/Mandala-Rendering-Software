@@ -10,11 +10,37 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field, ValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.chatgpt_plugin import (
+    PLUGIN_PROTECTED_PREFIXES,
+    build_ai_plugin_manifest,
+    build_plugin_openapi,
+    plugin_availability,
+    resolve_public_base,
+)
 from app.config import APP_DIR, NVIDIA_SETUP_HELP, SEEDANCE_SETUP_HELP, get_settings
+from app.composite_still import (
+    CompositeError,
+    composite_provenance,
+    composite_sha256,
+    composite_subject_over_background,
+)
 from app.embeddings import cosine_similarity, embed_texts, embedding_summary
+from app.engine3d_sequence_provider import (
+    ENGINE3D_SEQUENCE_KIND,
+    Engine3dSequenceError,
+    engine3d_sequence_availability,
+    generate_engine3d_sequence,
+)
+from app.engine3d_still_provider import (
+    ENGINE3D_STILL_KIND,
+    Engine3dStillError,
+    engine3d_still_availability,
+    generate_engine3d_still,
+)
 from app.image_ingest import (
     analyze_image_bytes,
     analyze_ingested,
@@ -24,6 +50,12 @@ from app.image_ingest import (
     is_safe_ingest_id,
     list_ingested,
     resolve_stored_file,
+)
+from app.image_polish import (
+    PolishError,
+    PolishNotConfiguredError,
+    polish_availability,
+    polish_image,
 )
 from app.image_to_scene import (
     DISCLAIMER as IMAGE_TO_SCENE_DISCLAIMER,
@@ -64,6 +96,7 @@ from app.preview_cache import (
     is_run_id,
     local_preview_url,
     media_type_for_path,
+    put_preview,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,6 +106,8 @@ INDEX_PATH = APP_DIR / "data" / "recent-assets.json"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 STATIC_UI = STATIC_DIR / "index.html"
 STATIC_CROS = STATIC_DIR / "cros.html"
+STATIC_LEGAL = STATIC_DIR / "legal.html"
+STATIC_LOGO = STATIC_DIR / "assets" / "engine3d-logo.svg"
 
 # Last startup warmup probe result (no secrets) — exposed on /health.
 _nvidia_warmup_state: dict[str, Any] | None = None
@@ -153,16 +188,47 @@ app = FastAPI(
         "GENBLAZE_IMAGE_BACKEND=rt4d uses the MRS RT4D path tracer for "
         "deterministic procedural 4D stills (NOT text-to-image). "
         "Image ingest stores operator photos and returns heuristic 4D "
-        "suggestions — does not claim Genblaze renders or reconstructs 4D scenes."
+        "suggestions — does not claim Genblaze renders or reconstructs 4D scenes. "
+        "ChatGPT/Custom GPT: see /.well-known/ai-plugin.json and /plugin/openapi.json."
     ),
-    version="0.2.3",
+    version="0.2.4",
     lifespan=_lifespan,
 )
 
-# Allow 4DRS Copilot browser fallback (Vite :1420) and local operator UIs.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+
+class _ChatgptPluginAuthMiddleware(BaseHTTPMiddleware):
+    """Optional bearer gate for Engine3D plugin paths when CHATGPT_PLUGIN_KEY is set."""
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        settings = get_settings()
+        expected = (settings.chatgpt_plugin_key or "").strip()
+        if not expected:
+            return await call_next(request)
+        path = request.url.path
+        if path not in PLUGIN_PROTECTED_PREFIXES:
+            return await call_next(request)
+        auth = request.headers.get("authorization") or ""
+        if auth == f"Bearer {expected}":
+            return await call_next(request)
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error": "unauthorized",
+                "detail": "Authorization: Bearer <CHATGPT_PLUGIN_KEY> required",
+            },
+        )
+
+
+# CORS: local operator UIs by default; widen when GENBLAZE_CORS_ALLOW_ALL=1
+# (or when CHATGPT_PLUGIN_KEY is set — see load_settings).
+_cors_settings = get_settings()
+_cors_origins: list[str] | str
+if _cors_settings.cors_allow_all:
+    _cors_origins = ["*"]
+else:
+    _cors_origins = [
         "http://localhost:1420",
         "http://127.0.0.1:1420",
         "http://localhost:8787",
@@ -170,11 +236,16 @@ app.add_middleware(
         "tauri://localhost",
         "http://tauri.localhost",
         "https://tauri.localhost",
-    ],
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+app.add_middleware(_ChatgptPluginAuthMiddleware)
 
 _index = AssetIndex(INDEX_PATH)
 
@@ -201,6 +272,33 @@ class GenerateRequest(BaseModel):
             "or 'final'/'high' (full RT4D_* profile, slower). Draft caps the "
             "RT4D_* profile so a CPU path trace finishes inside RT4D_TIMEOUT. "
             "Has no effect on the NVIDIA FLUX path, which has no size knob."
+        ),
+    )
+    then_polish: bool = Field(
+        default=False,
+        description=(
+            "After a successful RT4D still, also run diffusion img2img polish "
+            "via the configured provider (fal.ai FLUX by default). Returns both "
+            "assets; does not replace the structure still. Structure pass = MRS; "
+            "polish = diffusion edit."
+        ),
+    )
+    polish_prompt: str | None = Field(
+        default=None,
+        max_length=2000,
+        description=(
+            "Optional separate prompt for the img2img polish step. "
+            "When omitted, the main prompt is reused."
+        ),
+    )
+    polish_strength: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Img2img strength (0.0 = identical, 1.0 = fully new). "
+            "Default from GENBLAZE_POLISH_DEFAULT_STRENGTH (env). "
+            "Abstract/lattice scenes: 0.35-0.55 recommended."
         ),
     )
 
@@ -280,6 +378,73 @@ class Rt4dToNvidiaRequest(BaseModel):
         default=DRAFT_QUALITY,
         description="MRS re-render quality: draft/fast (default) or final/high.",
     )
+
+
+class PolishStillRequest(BaseModel):
+    """Apply diffusion img2img polish to a prior generate/RT4D still."""
+
+    run_id: str = Field(
+        ...,
+        min_length=8,
+        max_length=64,
+        description="Prior generate run_id whose PNG is the img2img input",
+    )
+    prompt: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000,
+        description="Polish / refine prompt for the img2img model",
+    )
+    strength: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Img2img strength; default from GENBLAZE_POLISH_DEFAULT_STRENGTH",
+    )
+    quality: str | None = Field(default=None, description="Reserved quality hint")
+
+
+class Engine3dStillRequest(BaseModel):
+    """Engine3D structure still (+ optional RT4D composite + polish)."""
+
+    world_path: str | None = Field(
+        default=None,
+        max_length=512,
+        description="Optional path to world JSON (camera + id)",
+    )
+    human_glb: str | None = Field(
+        default=None,
+        max_length=512,
+        description="Optional HumanRig GLB path; falls back to demo portrait meshes",
+    )
+    width: int = Field(default=256, ge=16, le=1024)
+    height: int = Field(default=256, ge=16, le=1024)
+    aov_depth: bool = Field(default=True)
+    aov_normal: bool = Field(default=True)
+    polish: bool = Field(
+        default=False,
+        description="When true, run diffusion polish on the structure (or composite) still",
+    )
+    prompt: str | None = Field(
+        default=None,
+        max_length=2000,
+        description="Polish prompt (required when polish=true)",
+    )
+    polish_strength: float | None = Field(default=None, ge=0.0, le=1.0)
+    rt4d_background_run_id: str | None = Field(
+        default=None,
+        max_length=64,
+        description="Optional prior RT4D/generate run_id used as background plate",
+    )
+
+
+class Engine3dSequenceRequest(BaseModel):
+    """Short Engine3D soft-raster cinematic sequence (structure AOVs only)."""
+
+    width: int = Field(default=64, ge=16, le=512)
+    height: int = Field(default=48, ge=16, le=512)
+    duration: float = Field(default=0.5, ge=0.1, le=5.0)
+    fps: float = Field(default=4.0, ge=1.0, le=24.0)
 
 
 class RenderSceneRequest(BaseModel):
@@ -414,6 +579,25 @@ def health() -> dict:
             "NVIDIA_API_KEY set. Pass require_nvidia=true to forbid heuristic fallback."
         ),
         "rt4d_to_nvidia": rt4d_to_nvidia_availability(settings),
+        "polish": polish_availability(settings),
+        "polish_note": (
+            "POST /api/polish-still applies diffusion img2img (fal.ai FLUX) to a "
+            "prior RT4D/generate still. Structure pass = MRS RT4D; polish = "
+            "diffusion edit. Not geometric reconstruction. Set "
+            "GENBLAZE_POLISH_ENABLED=1 and configure FAL_KEY."
+        ),
+        "engine3d_still": engine3d_still_availability(settings),
+        "engine3d_still_note": (
+            "POST /api/engine3d-still renders Engine3D triangle structure "
+            "(beauty + optional depth/normal). Optional RT4D background composite "
+            "and polish. Faces/skin require polish — not RT4D sphere-bridge."
+        ),
+        "engine3d_sequence": engine3d_sequence_availability(settings),
+        "engine3d_sequence_note": (
+            "POST /api/engine3d-sequence renders a short Engine3D soft-raster "
+            "orbit sequence (structure). NOT 8K farm; NOT per-frame polish."
+        ),
+        "chatgpt_plugin": plugin_availability(settings),
         "flux_then_scene": settings.flux_then_scene,
         "fal_image_fallback": False,
         "prefer_async": False,
@@ -543,6 +727,30 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
             public["then_scene_error"] = exc.detail
         except Exception as exc:  # noqa: BLE001 — never fail the FLUX still
             public["then_scene_error"] = str(exc)
+    # Opt-in polish path: after successful generate, also run diffusion img2img.
+    if (
+        not video
+        and body.then_polish
+        and settings.polish_enabled
+        and public.get("run_id")
+    ):
+        try:
+            pol_res = _polish_pipeline(
+                settings,
+                run_id=str(public["run_id"]),
+                prompt=body.polish_prompt or body.prompt,
+                strength=body.polish_strength,
+            )
+            public["polish"] = pol_res
+            public["dual_path_note"] = (
+                "Structure still preserved; polish is a separate diffusion edit "
+                "(not a replacement)."
+            )
+        except HTTPException as exc:
+            public["polish_error"] = exc.detail
+        except Exception as exc:  # noqa: BLE001 — never fail the original still
+            public["polish_error"] = str(exc)
+
     logger.info(
         "generate done · modality=%s run=%s elapsed_s=%.1f",
         kind,
@@ -729,6 +937,69 @@ def _image_to_scene_pipeline(
     return payload
 
 
+def _polish_pipeline(
+    settings: Any,
+    *,
+    run_id: str,
+    prompt: str,
+    strength: float | None = None,
+) -> dict[str, Any]:
+    """Resolve prior still → polish → return payload (no index, caller owns that)."""
+    try:
+        image_bytes, resolve_meta = resolve_image_bytes(
+            image_base64=None,
+            ingest_id=None,
+            run_id=run_id,
+            app_dir=APP_DIR,
+            index_lookup=_index_lookup_run,
+            b2_fetch=lambda key: _b2_fetch_bytes(settings, key),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    source_entry = _index_lookup_run(run_id)
+    source_sha256 = None
+    if isinstance(source_entry, dict):
+        source_sha256 = source_entry.get("asset_sha256")
+
+    try:
+        result = polish_image(
+            settings,
+            image_bytes,
+            prompt,
+            structure_run_id=run_id,
+            structure_sha256=source_sha256,
+            strength=strength,
+        )
+    except PolishNotConfiguredError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except PolishError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    payload = result.to_dict()
+    # Index the polish result.
+    entry: dict[str, Any] = {
+        "run_id": payload["run_id"],
+        "prompt": prompt,
+        "model": payload["model"],
+        "provider": payload["provider"],
+        "status": "ok",
+        "asset_sha256": payload["asset_sha256"],
+        "preview_url": payload["preview_url"],
+        "created_at": payload["created_at"],
+        "modality": "image",
+        "kind": "img2img-polish",
+        "source_run_id": run_id,
+        "img2img": True,
+        "detail": payload.get("detail"),
+        "manifest": payload.get("manifest"),
+    }
+    _index.prepend(entry)
+    return {"polish_run_id": result.run_id, **payload}
+
+
 @app.post("/api/generate")
 def api_generate(body: GenerateRequest) -> dict:
     return _run_generate_common(body, video=False)
@@ -817,6 +1088,264 @@ def _validate_spec_shape(spec: dict[str, Any]) -> list[dict[str, str]] | None:
     if not isinstance(entities, list) or len(entities) < 1:
         errors.append({"path": "entities", "message": "expected at least 1 item(s)"})
     return errors or None
+
+
+@app.post("/api/polish-still")
+def api_polish_still(body: PolishStillRequest) -> dict:
+    """Prior generate/RT4D still (run_id) → diffusion img2img polish.
+
+    Structure pass = MRS RT4D; polish = diffusion edit. The source still is
+    unchanged; a new run_id is returned for the polished result.
+
+    Requires GENBLAZE_POLISH_ENABLED=1 and one of:
+    - FAL_KEY (for fal.ai FLUX image-to-image)
+    - NVIDIA_API_KEY (if NIM supports img2img on your key — not guaranteed)
+    """
+    settings = get_settings()
+
+    if not settings.polish_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Image polish is disabled. Set GENBLAZE_POLISH_ENABLED=1 and "
+                "configure FAL_KEY (or NVIDIA_API_KEY if NIM supports img2img)."
+            ),
+        )
+
+    rid = (body.run_id or "").strip()
+    if not rid or not is_run_id(rid):
+        raise HTTPException(status_code=400, detail="invalid run_id")
+
+    # Resolve image bytes from local preview cache or B2.
+    try:
+        image_bytes, resolve_meta = resolve_image_bytes(
+            image_base64=None,
+            ingest_id=None,
+            run_id=rid,
+            app_dir=APP_DIR,
+            index_lookup=_index_lookup_run,
+            b2_fetch=lambda key: _b2_fetch_bytes(settings, key),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    # Look up the source entry for provenance.
+    source_entry = _index_lookup_run(rid)
+    source_sha256 = None
+    if isinstance(source_entry, dict):
+        source_sha256 = source_entry.get("asset_sha256")
+
+    try:
+        result = polish_image(
+            settings,
+            image_bytes,
+            body.prompt,
+            structure_run_id=rid,
+            structure_sha256=source_sha256,
+            strength=body.strength,
+            quality=body.quality,
+        )
+    except PolishNotConfiguredError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except PolishError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    payload = result.to_dict()
+    payload["resolve"] = resolve_meta if isinstance(resolve_meta, dict) else {}
+    payload["source_run_id"] = rid
+
+    # Index the polish result so it appears in /api/assets.
+    entry: dict[str, Any] = {
+        "run_id": payload["run_id"],
+        "prompt": body.prompt,
+        "model": payload["model"],
+        "provider": payload["provider"],
+        "status": "ok",
+        "asset_sha256": payload["asset_sha256"],
+        "preview_url": payload["preview_url"],
+        "created_at": payload["created_at"],
+        "modality": "image",
+        "kind": "img2img-polish",
+        "source_run_id": rid,
+        "img2img": True,
+        "detail": payload.get("detail"),
+        "manifest": payload.get("manifest"),
+    }
+    _index.prepend(entry)
+
+    return payload
+
+
+@app.post("/api/engine3d-still")
+def api_engine3d_still(body: Engine3dStillRequest) -> dict:
+    """Engine3D structure still → optional RT4D composite → optional polish.
+
+    Structure = Engine3D soft-raster triangles (beauty + AOVs). RT4D may supply
+    a background plate only. Faces/skin require polish (diffusion) — never
+    RT4D sphere-bridge.
+    """
+    settings = get_settings()
+    if body.polish and not (body.prompt or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail="prompt is required when polish=true",
+        )
+    if body.polish and not settings.polish_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "polish=true but image polish is disabled. "
+                "Set GENBLAZE_POLISH_ENABLED=1 and configure FAL_KEY."
+            ),
+        )
+
+    try:
+        structure = generate_engine3d_still(
+            settings,
+            width=body.width,
+            height=body.height,
+            aov_depth=body.aov_depth,
+            aov_normal=body.aov_normal,
+            world_path=body.world_path,
+            human_glb=body.human_glb,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Engine3dStillError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    structure_entry = structure.to_dict()
+    structure_entry["modality"] = "image"
+    structure_entry["kind"] = ENGINE3D_STILL_KIND
+    structure_entry["structure_source"] = "engine3d_raster"
+    _index.prepend(structure_entry)
+    structure_public = _prefer_local_preview(
+        {k: v for k, v in structure_entry.items() if k != "embedding_vector"}
+    )
+
+    payload: dict[str, Any] = {
+        "structure": structure_public,
+        "note": (
+            "Engine3D soft-raster structure still. NOT photoreal skin; "
+            "NOT RT4D sphere-bridge. Optional composite/polish are separate."
+        ),
+    }
+
+    polish_run_id = str(structure.run_id)
+    bg_rid = (body.rt4d_background_run_id or "").strip() or None
+
+    if bg_rid:
+        if not is_run_id(bg_rid):
+            raise HTTPException(status_code=400, detail="invalid rt4d_background_run_id")
+        try:
+            subject_bytes, _ = resolve_image_bytes(
+                run_id=str(structure.run_id),
+                app_dir=APP_DIR,
+                index_lookup=_index_lookup_run,
+                b2_fetch=lambda key: _b2_fetch_bytes(settings, key),
+            )
+            bg_bytes, _ = resolve_image_bytes(
+                run_id=bg_rid,
+                app_dir=APP_DIR,
+                index_lookup=_index_lookup_run,
+                b2_fetch=lambda key: _b2_fetch_bytes(settings, key),
+            )
+            composite_png = composite_subject_over_background(
+                background_png=bg_bytes,
+                subject_png=subject_bytes,
+                target_size=(body.width, body.height),
+            )
+        except (ValueError, FileNotFoundError) as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except CompositeError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+        import uuid as _uuid
+        from app.pipeline import _utc_now as _utc
+
+        comp_run = str(_uuid.uuid4())
+        put_preview(APP_DIR, comp_run, composite_png)
+        comp_sha = composite_sha256(composite_png)
+        comp_entry: dict[str, Any] = {
+            "run_id": comp_run,
+            "prompt": f"composite:{structure.run_id}+{bg_rid}",
+            "model": "mrs-genblaze/composite",
+            "provider": "engine3d-rt4d-composite",
+            "status": "ok",
+            "asset_sha256": comp_sha,
+            "preview_url": f"/api/preview/{comp_run}",
+            "created_at": _utc(),
+            "modality": "image",
+            "kind": "engine3d-rt4d-composite",
+            "structure_source": "engine3d_composite",
+            "structure_run_id": structure.run_id,
+            "rt4d_background_run_id": bg_rid,
+            "provenance": composite_provenance(
+                structure_run_id=str(structure.run_id),
+                rt4d_background_run_id=bg_rid,
+                composite_sha256_hex=comp_sha,
+                resized=True,
+            ),
+        }
+        _index.prepend(comp_entry)
+        payload["composite"] = _prefer_local_preview(comp_entry)
+        polish_run_id = comp_run
+
+    if body.polish:
+        try:
+            polish_payload = _polish_pipeline(
+                settings,
+                run_id=polish_run_id,
+                prompt=str(body.prompt).strip(),
+                strength=body.polish_strength,
+            )
+            payload["polish"] = polish_payload
+        except HTTPException:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            payload["polish_error"] = str(exc)
+
+    return payload
+
+
+@app.post("/api/engine3d-sequence")
+def api_engine3d_sequence(body: Engine3dSequenceRequest) -> dict:
+    """Short Engine3D soft-raster cinematic sequence (structure AOVs).
+
+    Orbit camera timeline; preview is the first final frame. NOT 8K farm,
+    NOT per-frame polish, NOT RT4D sphere-bridge for faces.
+    """
+    settings = get_settings()
+    try:
+        result = generate_engine3d_sequence(
+            settings,
+            width=body.width,
+            height=body.height,
+            duration=body.duration,
+            fps=body.fps,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Engine3dSequenceError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    entry = result.to_dict()
+    entry["modality"] = "image"
+    entry["kind"] = ENGINE3D_SEQUENCE_KIND
+    entry["structure_source"] = "engine3d_raster"
+    _index.prepend(entry)
+    public = _prefer_local_preview(
+        {k: v for k, v in entry.items() if k != "embedding_vector"}
+    )
+    return {
+        "sequence": public,
+        "note": (
+            "Engine3D soft-raster short sequence. First frame previewed. "
+            "NOT photoreal; NOT 8K farm; polish/RT4D composite not applied here."
+        ),
+    }
 
 
 @app.post("/api/render-scene")
@@ -1204,3 +1733,36 @@ def cros_page() -> HTMLResponse:
         "<h1>CROS</h1><p>Page missing. See <code>mrs/packages/cros/README.md</code>.</p>",
         status_code=500,
     )
+
+
+@app.get("/.well-known/ai-plugin.json")
+def chatgpt_ai_plugin_manifest(request: Request) -> JSONResponse:
+    """ChatGPT / Custom GPT plugin manifest (absolute URLs from request or env)."""
+    settings = get_settings()
+    base = resolve_public_base(settings, str(request.base_url))
+    require_bearer = bool((settings.chatgpt_plugin_key or "").strip())
+    body = build_ai_plugin_manifest(base, require_bearer=require_bearer)
+    return JSONResponse(body)
+
+
+@app.get("/plugin/openapi.json")
+def chatgpt_plugin_openapi(request: Request) -> JSONResponse:
+    """Scoped OpenAPI for Engine3D plugin / Custom GPT Actions."""
+    settings = get_settings()
+    base = resolve_public_base(settings, str(request.base_url))
+    require_bearer = bool((settings.chatgpt_plugin_key or "").strip())
+    return JSONResponse(build_plugin_openapi(base, require_bearer=require_bearer))
+
+
+@app.get("/assets/engine3d-logo.svg")
+def engine3d_logo() -> FileResponse:
+    if not STATIC_LOGO.is_file():
+        raise HTTPException(status_code=404, detail="logo missing")
+    return FileResponse(STATIC_LOGO, media_type="image/svg+xml")
+
+
+@app.get("/legal", response_class=HTMLResponse)
+def legal_page() -> HTMLResponse:
+    if STATIC_LEGAL.is_file():
+        return HTMLResponse(STATIC_LEGAL.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>Legal</h1><p>Page missing.</p>", status_code=500)
