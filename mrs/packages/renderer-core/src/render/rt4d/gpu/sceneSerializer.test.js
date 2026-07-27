@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { serializeScene, PRIM_TYPE_SPHERE, PRIM_TYPE_PLANE, PRIM_TYPE_MESH_TRI } from "./sceneSerializer.js";
+import { serializeScene, meshGpuBufferCacheKey, PRIM_TYPE_SPHERE, PRIM_TYPE_PLANE, PRIM_TYPE_MESH_TRI } from "./sceneSerializer.js";
 
 globalThis.GPUBufferUsage ??= {
   MAP_READ: 1, COPY_DST: 4, COPY_SRC: 2, STORAGE: 8,
@@ -168,6 +168,72 @@ describe("serializeScene", () => {
     assert.equal(cached.length, 1);
     assert.equal(cached[0].key, "mesh:tri");
     assert.equal(cached[0].mesh.vertices, scene.primitives[0].localVertices);
+  });
+
+  it("keys skinned mesh GPU buffers on deformation hash across two poses", () => {
+    const device = mockDevice();
+    const cached = [];
+    const meshBufferCache = {
+      getOrCreate(key, mesh) {
+        const entry = { key, mesh, identity: cached.length };
+        cached.push(entry);
+        return entry;
+      },
+    };
+    const base = {
+      kind: "skinned-mesh",
+      id: "character:body",
+      meshId: "body",
+      indices: new Uint16Array([0, 1, 2]),
+      materialId: "mat_mesh",
+    };
+    const poseA = {
+      ...base,
+      vertices: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      evidence: { meshDeformationHash: "pose-a", boneHash: "bones-a" },
+    };
+    const poseB = {
+      ...base,
+      vertices: new Float32Array([0, 0.5, 0, 1, 0.5, 0, 0, 1.5, 0]),
+      evidence: { meshDeformationHash: "pose-b", boneHash: "bones-b" },
+    };
+    assert.notEqual(meshGpuBufferCacheKey(poseA), meshGpuBufferCacheKey(poseB));
+    assert.match(meshGpuBufferCacheKey(poseA), /pose-a/);
+    assert.match(meshGpuBufferCacheKey(poseB), /pose-b/);
+
+    const sceneA = { primitives: [poseA], lights: [] };
+    const sceneB = { primitives: [poseB], lights: [] };
+    mockMaterials(sceneA).add({ params: { albedo: { x: 1, y: 1, z: 1, w: 1 } } });
+    sceneB.materials = sceneA.materials;
+    serializeScene(sceneA, device, mockCamera, { meshBufferCache });
+    serializeScene(sceneB, device, mockCamera, { meshBufferCache });
+    assert.equal(cached.length, 2);
+    assert.notEqual(cached[0].key, cached[1].key);
+    assert.notEqual(cached[0].identity, cached[1].identity);
+    assert.notEqual(cached[0].mesh.vertices, cached[1].mesh.vertices);
+  });
+
+  it("does not cache skinned meshes under a bare stable id when pose hash is missing", () => {
+    const device = mockDevice();
+    const cached = [];
+    const meshBufferCache = {
+      getOrCreate(key) {
+        cached.push(key);
+        return { key };
+      },
+    };
+    const scene = { primitives: [{
+      kind: "skinned-mesh",
+      id: "character:body",
+      vertices: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+      indices: new Uint16Array([0, 1, 2]),
+      materialId: "mat_mesh",
+    }], lights: [] };
+    mockMaterials(scene).add({ params: { albedo: { x: 1, y: 1, z: 1, w: 1 } } });
+    assert.equal(meshGpuBufferCacheKey(scene.primitives[0]), null);
+    serializeScene(scene, device, mockCamera, { meshBufferCache });
+    assert.equal(cached.length, 0);
+    assert.equal(scene.primitives[0].gpuMeshBuffer, undefined);
   });
 
   it("serializes light sources", () => {

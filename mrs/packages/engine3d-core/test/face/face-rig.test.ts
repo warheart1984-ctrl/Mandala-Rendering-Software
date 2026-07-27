@@ -185,6 +185,27 @@ describe("face rig fixture", () => {
     assert.ok(deformed);
     assert.ok(deformed!.meshes.length > 0);
   });
+
+  it("defaultCamera keeps fallbacks when world camera omits eye/lookAt", async () => {
+    const { defaultCamera, DEFAULT_BRIDGE_CAMERA } = await import("../../src/index.js");
+    const cam = defaultCamera(64, 48, {
+      id: "world-cam",
+      eye: undefined,
+      lookAt: undefined,
+      up: undefined,
+    } as never);
+    assert.equal(cam.id, "world-cam");
+    assert.deepEqual(cam.eye, [
+      DEFAULT_BRIDGE_CAMERA.eye[0],
+      DEFAULT_BRIDGE_CAMERA.eye[1],
+      DEFAULT_BRIDGE_CAMERA.eye[2],
+    ]);
+    assert.deepEqual(cam.lookAt, [
+      DEFAULT_BRIDGE_CAMERA.lookAt[0],
+      DEFAULT_BRIDGE_CAMERA.lookAt[1],
+      DEFAULT_BRIDGE_CAMERA.lookAt[2],
+    ]);
+  });
 });
 
 // silence unused in some bundlers

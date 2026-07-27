@@ -189,9 +189,6 @@ def engine3d_still_availability(settings: Settings) -> dict[str, Any]:
             "Face structure: mrs/assets/human/HumanFaceRigged.glb (fixture) or operator GLB. "
             "See ENGINE3D_FACE_STRUCTURE_SPEC_v1.0."
         ),
-            "Optional polish via existing img2img path. NOT RT4D sphere-bridge for faces. "
-            + ("" if available else ENGINE3D_STILL_SETUP_HELP)
-        ),
     }
 
 
@@ -241,9 +238,6 @@ def _run_still_cli(
         safe_glb = resolve_engine3d_cli_path(human_glb, field="human_glb")
         if safe_glb:
             argv.extend(["--human-glb", safe_glb])
-        argv.extend(["--world", world_path])
-    if human_glb:
-        argv.extend(["--human-glb", human_glb])
 
     timeout = float(getattr(settings, "engine3d_still_timeout_seconds", 120.0))
     try:

@@ -162,6 +162,13 @@ def test_bearer_required_when_plugin_key_set(tmp_path, monkeypatch):
     denied = client.post("/api/engine3d-still", json={"width": 64, "height": 64})
     assert denied.status_code == 401
 
+    # Sub-paths must also be gated (prefix match, not exact-only).
+    nested = client.post(
+        "/api/engine3d-still/extra",
+        json={"width": 64, "height": 64},
+    )
+    assert nested.status_code == 401
+
     # Wrong token
     bad = client.post(
         "/api/engine3d-still",
@@ -175,6 +182,18 @@ def test_bearer_required_when_plugin_key_set(tmp_path, monkeypatch):
     assert client.get("/plugin/openapi.json").status_code == 200
     manifest = client.get("/.well-known/ai-plugin.json").json()
     assert manifest["auth"]["type"] == "service_http"
+
+
+def test_is_plugin_protected_path_prefix_match():
+    from app.chatgpt_plugin import is_plugin_protected_path
+
+    assert is_plugin_protected_path("/api/engine3d-still") is True
+    assert is_plugin_protected_path("/api/engine3d-still/") is True
+    assert is_plugin_protected_path("/api/engine3d-still/nested") is True
+    assert is_plugin_protected_path("/api/engine3d-sequence") is True
+    assert is_plugin_protected_path("/api/polish-still") is True
+    assert is_plugin_protected_path("/api/generate") is False
+    assert is_plugin_protected_path("/health") is False
 
 
 def test_cors_not_auto_enabled_by_plugin_key(monkeypatch):

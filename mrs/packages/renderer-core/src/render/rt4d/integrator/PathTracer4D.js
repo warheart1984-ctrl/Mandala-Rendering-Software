@@ -192,11 +192,16 @@ export class PathTracer4D {
 
   /**
    * PDF of sampling direction `wo` via the light strategy (area → solid-angle).
+   *
+   * Governed light-rig analytic lights (point/directional/spot/area-as-Dirac)
+   * are delta distributions sampled only via NEE. Their continuous directional
+   * PDF for an arbitrary BSDF direction is 0 — not the discrete selection
+   * probability 1/n (that factor stays on the NEE sample pdf only).
    */
   _sampleLightPDF(scene, hit, wo) {
     const rigLights = scene.getRt4dLights?.() ?? [];
     const directLights = rigLights.filter((light) => light.type !== "environment");
-    if (directLights.length > 0) return 1 / directLights.length;
+    if (directLights.length > 0) return 0;
 
     const lights = scene.getLights();
     if (lights.length === 0) return 0;
