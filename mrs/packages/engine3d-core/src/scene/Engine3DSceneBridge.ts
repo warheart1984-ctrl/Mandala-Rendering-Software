@@ -8,7 +8,7 @@
  * Status: **partial**
  *   - Body → hypersphere (radius from mass): enforced by tests
  *   - Mesh vertices → capped point hyperspheres: enforced by tests
- *   - Triangle mesh path-trace: declared (not implemented)
+ *   - Triangle mesh path-trace: implemented (when indices available)
  *   - Deterministic hashes: enforced by tests
  */
 
@@ -33,6 +33,7 @@ const DEFAULT_MAX_MESH_SAMPLES = 64;
 const DEFAULT_BASE_BODY_RADIUS = 0.35;
 const DEFAULT_MESH_SAMPLE_RADIUS = 0.08;
 const DEFAULT_MAX_MANDALA_NODES = 32;
+const DEFAULT_MAX_MESH_TRIANGLES = 128;
 
 export const DEFAULT_BRIDGE_CAMERA: BridgeCameraDescriptor = Object.freeze({
   eye: [0, 1.6, 4.5, 0] as Vec4Tuple,
@@ -161,6 +162,73 @@ function mapMeshVertices(
   return out;
 }
 
+function mapMeshTriangles(
+  vertices: Float32Array,
+  indices: Uint16Array | Uint32Array,
+  seed: number,
+  maxTriangles: number,
+): BridgePrimitive[] {
+  const out: BridgePrimitive[] = [];
+  const vertexCount = Math.floor(vertices.length / 3);
+  const indexCount = indices.length;
+  
+  if (vertexCount === 0 || indexCount === 0 || maxTriangles <= 0) return out;
+  if (indexCount % 3 !== 0) return out; // Invalid triangle data
+  
+  const triangleCount = indexCount / 3;
+  const step = Math.max(1, Math.ceil(triangleCount / maxTriangles));
+  
+  let emitted = 0;
+  for (let i = 0; i < triangleCount && emitted < maxTriangles; i += step) {
+    const i0 = indices[i * 3] ?? 0;
+    const i1 = indices[i * 3 + 1] ?? 0;
+    const i2 = indices[i * 3 + 2] ?? 0;
+    
+    if (i0 >= vertexCount || i1 >= vertexCount || i2 >= vertexCount) continue;
+    
+    const v0x = vertices[i0 * 3] ?? 0;
+    const v0y = vertices[i0 * 3 + 1] ?? 0;
+    const v0z = vertices[i0 * 3 + 2] ?? 0;
+    const v1x = vertices[i1 * 3] ?? 0;
+    const v1y = vertices[i1 * 3 + 1] ?? 0;
+    const v1z = vertices[i1 * 3 + 2] ?? 0;
+    const v2x = vertices[i2 * 3] ?? 0;
+    const v2y = vertices[i2 * 3 + 1] ?? 0;
+    const v2z = vertices[i2 * 3 + 2] ?? 0;
+    
+    // Calculate triangle center
+    const cx = (v0x + v1x + v2x) / 3;
+    const cy = (v0y + v1y + v2y) / 3;
+    const cz = (v0z + v1z + v2z) / 3;
+    const w = ((((seed ^ (i * 0x9e3779b9)) >>> 0) % 1001) / 1000 - 0.5) * 0.1;
+    
+    // Calculate bounding radius
+    const r0 = Math.sqrt((v0x - cx) ** 2 + (v0y - cy) ** 2 + (v0z - cz) ** 2);
+    const r1 = Math.sqrt((v1x - cx) ** 2 + (v1y - cy) ** 2 + (v1z - cz) ** 2);
+    const r2 = Math.sqrt((v2x - cx) ** 2 + (v2y - cy) ** 2 + (v2z - cz) ** 2);
+    const radius = round6(Math.max(r0, r1, r2) * 1.1); // 10% padding
+    
+    const triVertices = new Float32Array([v0x, v0y, v0z, v1x, v1y, v1z, v2x, v2y, v2z]);
+    const triIndices = new Uint32Array([0, 1, 2]);
+    
+    out.push({
+      kind: "triangle",
+      id: `mesh:t${i}`,
+      center: vec4(cx, cy, cz, w),
+      radius,
+      source: "mesh_triangle",
+      sourceId: `t${i}`,
+      materialHint: "surf",
+      triangle: {
+        vertices: triVertices,
+        indices: triIndices,
+      },
+    });
+    emitted++;
+  }
+  return out;
+}
+
 function mapMandalaNodes(
   lattice: MandalaLattice,
   maxNodes: number,
@@ -225,11 +293,19 @@ export function captureEngine3DScene(
   const meshR = options.meshSampleRadius ?? DEFAULT_MESH_SAMPLE_RADIUS;
   const maxMandala = options.maxMandalaNodes ?? DEFAULT_MAX_MANDALA_NODES;
   const includeMandala = options.includeMandalaNodes !== false;
+  const includeTriangles = options.includeMeshTriangles !== false;
+  const maxTriangles = options.maxMeshTriangles ?? DEFAULT_MAX_MESH_TRIANGLES;
 
   const primitives: BridgePrimitive[] = [
     ...mapBodies(world.bodies, seed >>> 0, frameIndex | 0, baseR),
     ...mapMeshVertices(world.mesh.vertices, seed >>> 0, maxMesh, meshR),
   ];
+  
+  // Add triangle primitives when indices are available
+  if (includeTriangles && world.mesh.indices && world.mesh.indices.length > 0) {
+    primitives.push(...mapMeshTriangles(world.mesh.vertices, world.mesh.indices, seed >>> 0, maxTriangles));
+  }
+  
   if (includeMandala && mandalaLattice) {
     primitives.push(...mapMandalaNodes(mandalaLattice, maxMandala));
   }
@@ -256,7 +332,7 @@ export function captureEngine3DScene(
     camera: cam,
     lattice,
     mappingNotes: {
-      polyMeshTriangles: "declared",
+      polyMeshTriangles: "implemented",
       bodyApproximation: "sphere_from_mass",
       meshVertices: "point_hypersphere_samples_capped",
       lattice: "visualMod_and_optional_mandala_nodes",

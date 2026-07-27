@@ -1,0 +1,56 @@
+# ------------------------------------------------------------
+# MRS RT4D — Sovereign 4D Path Tracer
+# Deterministic, minimal, production-ready Dockerfile
+# ------------------------------------------------------------
+
+# 1. Base image: Node 20 LTS (deterministic)
+FROM node:20-slim AS base
+
+# 2. Install system dependencies for canvas native module
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpng-dev \
+    libjpeg-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. Create working directory
+WORKDIR /usr/src/mrs-rt4d
+
+# 4. Copy renderer-core package.json + lockfile as the root for dependency
+#    resolution. The renderer-core is self-contained — no workspace deps on
+#    engine3d-core at runtime. This avoids root workspace conflicts.
+COPY mrs/packages/renderer-core/package.json ./package.json
+COPY mrs/packages/renderer-core/package-lock.json ./package-lock.json
+
+# 5. Install dependencies using npm ci (NEVER npm install)
+RUN npm ci
+
+# 6. Copy renderer-core source tree
+COPY mrs/packages/renderer-core/src ./mrs/packages/renderer-core/src
+COPY mrs/packages/renderer-core/scripts ./mrs/packages/renderer-core/scripts
+
+# 7. Copy demo assets
+COPY mrs/demo ./mrs/demo
+
+# 8. Run the RT4D test suite (101 tests must pass)
+RUN node --test \
+    mrs/packages/renderer-core/scripts/test/glb-importer.test.js \
+    mrs/packages/renderer-core/scripts/test/render-still.test.js \
+    mrs/packages/renderer-core/scripts/test/triangle-mesh.test.js \
+    mrs/packages/renderer-core/scripts/test/glb-texture-decoder.test.js \
+    mrs/packages/renderer-core/scripts/test/render-animation-glb.test.js \
+    mrs/packages/renderer-core/scripts/test/render-scene.test.js \
+    mrs/packages/renderer-core/scripts/test/cpu-gpu-comparison.test.js
+
+# 9. Smoke test: render a still from a procedural scene
+RUN node mrs/packages/renderer-core/scripts/render-still.mjs \
+    --prompt "tesseract lattice" \
+    --width 64 --height 64 --samples 1 --seed 1 \
+    --output /tmp/smoke.png \
+    && rm -f /tmp/smoke.png
+
+# 10. Default output directory
+RUN mkdir -p /renders
+
+# 11. Default command (prints help)
+CMD ["node", "mrs/packages/renderer-core/scripts/render-still.mjs", "--help"]

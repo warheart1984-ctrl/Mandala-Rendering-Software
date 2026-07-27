@@ -10,6 +10,11 @@ function colorToEmission(color = [1, 1, 1], intensity = 1) {
   return vec4((color[0] ?? 1) * intensity, (color[1] ?? 1) * intensity, (color[2] ?? 1) * intensity, intensity);
 }
 
+let lightIdCounter = 0;
+
+export function normalizeRt4dLight(light) {
+  return {
+    id: String(light.id ?? `${light.type ?? "light"}-${lightIdCounter++}`),
 export function normalizeRt4dLight(light) {
   return {
     id: String(light.id ?? `${light.type ?? "light"}-${Math.random()}`),

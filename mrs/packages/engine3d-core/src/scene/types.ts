@@ -8,11 +8,11 @@
  *     RT4D still path uses Hypersphere/Hyperplane primitives).
  */
 
-export const ENGINE3D_BRIDGE_SCENE_SCHEMA = "engine3d-bridge-scene/1.0" as const;
+export const ENGINE3D_BRIDGE_SCENE_SCHEMA = "engine3d-bridge-scene/1.1" as const;
 
-export type BridgePrimitiveKind = "hypersphere" | "point_sample";
+export type BridgePrimitiveKind = "hypersphere" | "point_sample" | "triangle";
 
-export type BridgePrimitiveSource = "body" | "mesh_vertex" | "lattice_node";
+export type BridgePrimitiveSource = "body" | "mesh_vertex" | "lattice_node" | "mesh_triangle";
 
 /** 4D center: xyz from Engine3D, w from seed/frame jitter or lattice channel. */
 export type Vec4Tuple = readonly [number, number, number, number];
@@ -25,6 +25,12 @@ export interface BridgePrimitive {
   source: BridgePrimitiveSource;
   sourceId?: string;
   materialHint?: string;
+  /** Triangle mesh data (only when kind === "triangle") */
+  triangle?: {
+    vertices: Float32Array;
+    normals?: Float32Array;
+    indices: Uint16Array | Uint32Array;
+  };
 }
 
 /**
@@ -46,8 +52,8 @@ export interface BridgeLatticeDescriptor {
 }
 
 export interface BridgeMappingNotes {
-  /** Triangle meshes are not path-traced as triangles today. */
-  polyMeshTriangles: "declared";
+  /** Triangle meshes are now path-traced as triangles when indices available. */
+  polyMeshTriangles: "implemented";
   bodyApproximation: "sphere_from_mass";
   meshVertices: "point_hypersphere_samples_capped";
   lattice: "visualMod_and_optional_mandala_nodes";
@@ -91,4 +97,8 @@ export interface SceneBridgeCaptureOptions {
   includeMandalaNodes?: boolean;
   /** Max mandala nodes to sample (default 32). */
   maxMandalaNodes?: number;
+  /** Extract triangle meshes when indices available (default true). */
+  includeMeshTriangles?: boolean;
+  /** Max triangles to extract per mesh (default 128). */
+  maxMeshTriangles?: number;
 }

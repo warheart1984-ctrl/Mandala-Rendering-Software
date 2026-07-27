@@ -108,4 +108,18 @@ describe("SkinnedMeshIntersector", () => {
     assert.ok(Math.abs(hit.position.z - 4) < 1e-6);
     assert.equal(sharedMeshBvhCacheSize(), 1);
   });
+
+  it("uses instance-specific BVH cache when provided", () => {
+    clearSharedMeshBvhCache();
+    const customCache = createSharedBvhCache();
+    const primitive = {
+      kind: "poly",
+      vertices: new Float32Array([-1, -1, 4, 1, -1, 4, 0, 1, 4]),
+      indices: new Uint32Array([0, 1, 2]),
+      evidence: { bakedGeometryHash: "custom-cache-test" },
+    };
+    const intersector = new SkinnedMeshIntersector(primitive, { bvhCache: customCache });
+    assert.equal(customCache.size, 1);
+    assert.equal(sharedMeshBvhCacheSize(), 0);
+  });
 });
