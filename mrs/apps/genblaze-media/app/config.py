@@ -508,12 +508,6 @@ def get_settings() -> Settings:
     # Explicit only — do not widen CORS just because CHATGPT_PLUGIN_KEY is set.
     # Bearer auth (plugin key) is independent of CORS.
     cors_allow_all = cors_env in {"1", "true", "yes", "on"}
-    # Default: widen CORS when plugin key set or explicit flag (ChatGPT/Custom GPT).
-    cors_allow_all = cors_env in {"1", "true", "yes", "on"} or (
-        cors_env == "" and chatgpt_plugin_key is not None
-    )
-    if cors_env in {"0", "false", "no", "off"}:
-        cors_allow_all = False
 
     return Settings(
         nvidia_api_key=nvidia_key,

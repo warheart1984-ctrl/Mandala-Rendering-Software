@@ -196,68 +196,6 @@ def _fal_img2img(
         raise
     except httpx.HTTPError as exc:
         raise PolishError(f"fal img2img transport error: {exc}") from exc
-    try:
-        with httpx.Client(timeout=httpx.Timeout(timeout, connect=30.0)) as client:
-            resp = client.post(endpoint, json=payload, headers=headers)
-    except httpx.HTTPError as exc:
-        raise PolishError(f"fal img2img transport error: {exc}") from exc
-
-    if resp.status_code != 200:
-        raise PolishError(
-            f"fal img2img failed HTTP {resp.status_code}: {resp.text[:500]}"
-        )
-
-    try:
-        body = resp.json()
-    except ValueError as exc:
-        raise PolishError(f"fal img2img response is not JSON: {exc}") from exc
-
-    images = body.get("images") or []
-    if not images:
-        # Some fal endpoints return image_url directly.
-        img_url = body.get("image_url") or body.get("output")
-        if isinstance(img_url, str) and img_url.startswith("http"):
-            try:
-                img_resp = client.get(img_url)
-                img_resp.raise_for_status()
-                return img_resp.content
-            except httpx.HTTPError as exc:
-                raise PolishError(
-                    f"fal img2img image download failed: {exc}"
-                ) from exc
-        raise PolishError("fal img2img response has no images")
-
-    img_data = images[0]
-    if isinstance(img_data, dict):
-        url = img_data.get("url") or ""
-        if url and url.startswith("http"):
-            try:
-                img_resp = client.get(url)
-                img_resp.raise_for_status()
-                return img_resp.content
-            except httpx.HTTPError as exc:
-                raise PolishError(
-                    f"fal img2img image download failed: {exc}"
-                ) from exc
-        b64 = img_data.get("content") or img_data.get("base64") or ""
-        if b64:
-            return base64.b64decode(b64)
-
-    if isinstance(img_data, str):
-        if img_data.startswith("http"):
-            try:
-                img_resp = client.get(img_data)
-                img_resp.raise_for_status()
-                return img_resp.content
-            except httpx.HTTPError as exc:
-                raise PolishError(
-                    f"fal img2img image download failed: {exc}"
-                ) from exc
-        return base64.b64decode(img_data)
-
-    raise PolishError(
-        "fal img2img response format not recognised (no decodable image)"
-    )
 
 
 def _try_nvidia_img2img(

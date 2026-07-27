@@ -23,12 +23,21 @@ from app.config import Settings
 PLUGIN_OPENAPI_PATH = "/plugin/openapi.json"
 PLUGIN_MANIFEST_PATH = "/.well-known/ai-plugin.json"
 
-# Paths gated when CHATGPT_PLUGIN_KEY is set.
+# Path prefixes gated when CHATGPT_PLUGIN_KEY is set (exact path or sub-paths).
 PLUGIN_PROTECTED_PREFIXES = (
     "/api/engine3d-still",
     "/api/engine3d-sequence",
     "/api/polish-still",
 )
+
+
+def is_plugin_protected_path(path: str) -> bool:
+    """True when ``path`` is an exact protected route or a sub-path of one."""
+    normalized = (path or "").split("?", 1)[0]
+    for prefix in PLUGIN_PROTECTED_PREFIXES:
+        if normalized == prefix or normalized.startswith(prefix + "/"):
+            return True
+    return False
 
 
 def resolve_public_base(settings: Settings, request_base: str) -> str:

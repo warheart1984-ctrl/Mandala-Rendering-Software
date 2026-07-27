@@ -15,9 +15,6 @@ let lightIdCounter = 0;
 export function normalizeRt4dLight(light) {
   return {
     id: String(light.id ?? `${light.type ?? "light"}-${lightIdCounter++}`),
-export function normalizeRt4dLight(light) {
-  return {
-    id: String(light.id ?? `${light.type ?? "light"}-${Math.random()}`),
     type: light.type ?? "point",
     color: light.color ?? [1, 1, 1],
     intensity: Number.isFinite(light.intensity) ? light.intensity : 1,

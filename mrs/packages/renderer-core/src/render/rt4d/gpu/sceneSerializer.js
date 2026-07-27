@@ -10,6 +10,29 @@ export const PRIM_TYPE_SPHERE = 0;
 export const PRIM_TYPE_PLANE = 1;
 export const PRIM_TYPE_MESH_TRI = 2;
 
+/**
+ * GPU mesh-buffer cache key.
+ * Static meshes use stable asset/local keys. Skinned/deformed meshes must key
+ * on pose/deformation content — never a bare primitive id alone (that freezes
+ * the first uploaded pose for the rest of an animation).
+ * @returns {string|null} null → skip cache (dynamic mesh without content hash)
+ */
+export function meshGpuBufferCacheKey(p) {
+  if (p.localBvhKey) return p.localBvhKey;
+  const evidence = p.evidence ?? {};
+  if (evidence.meshAssetHash) return evidence.meshAssetHash;
+  if (evidence.bakedGeometryHash) return evidence.bakedGeometryHash;
+  const poseHash =
+    evidence.meshDeformationHash
+    ?? evidence.morphHash
+    ?? evidence.boneHash
+    ?? null;
+  if (poseHash) return `${p.meshId ?? p.id ?? "mesh"}:${poseHash}`;
+  // Skinned without a pose hash: do not cache under a stable id.
+  if (p.kind === "skinned-mesh") return null;
+  return p.meshId ?? p.id ?? null;
+}
+
 export function serializeScene(scene, device, camera, options = {}) {
   const primitives = scene.primitives ?? [];
   const lights = scene.lights ?? [];
@@ -24,11 +47,13 @@ export function serializeScene(scene, device, camera, options = {}) {
     const p = primitives[i];
     const matId = materialIndex(scene, p.materialId);
     if (options.meshBufferCache && (p.kind === "poly" || p.kind === "skinned-mesh") && p.vertices && p.indices) {
-      const key = p.localBvhKey ?? p.evidence?.meshAssetHash ?? p.evidence?.bakedGeometryHash ?? p.meshId ?? p.id;
-      p.gpuMeshBuffer = options.meshBufferCache.getOrCreate(key, {
-        vertices: p.localVertices ?? p.vertices,
-        indices: p.localIndices ?? p.indices,
-      });
+      const key = meshGpuBufferCacheKey(p);
+      if (key != null) {
+        p.gpuMeshBuffer = options.meshBufferCache.getOrCreate(key, {
+          vertices: p.localVertices ?? p.vertices,
+          indices: p.localIndices ?? p.indices,
+        });
+      }
     }
 
     if (p.center && p.radius != null && !p.normal) {

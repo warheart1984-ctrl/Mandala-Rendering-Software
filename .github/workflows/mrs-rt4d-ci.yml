@@ -21,7 +21,6 @@ jobs:
 
       - name: Install dependencies
         run: cd mrs/packages/renderer-core && npm ci
-        run: npm ci
 
       - name: Run RT4D test suite
         run: |

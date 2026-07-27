@@ -122,11 +122,19 @@ function utcNow(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-function defaultCamera(width: number, height: number, partial?: Partial<RasterCamera>): RasterCamera {
+/** Build raster camera with safe defaults (incomplete world cameras cannot wipe eye/lookAt). */
+export function defaultCamera(
+  width: number,
+  height: number,
+  partial?: Partial<RasterCamera>,
+): RasterCamera {
   const eye = DEFAULT_BRIDGE_CAMERA.eye;
   const lookAt = DEFAULT_BRIDGE_CAMERA.lookAt;
   const up = DEFAULT_BRIDGE_CAMERA.up;
+  // Apply `partial` first, then re-assert fallbacks so missing eye/lookAt/up
+  // (undefined keys from incomplete world JSON) cannot wipe defaults.
   return {
+    ...partial,
     id: partial?.id ?? "bridge-default",
     eye: partial?.eye ?? [eye[0], eye[1], eye[2]],
     lookAt: partial?.lookAt ?? [lookAt[0], lookAt[1], lookAt[2]],
@@ -134,7 +142,6 @@ function defaultCamera(width: number, height: number, partial?: Partial<RasterCa
     fovY: partial?.fovY ?? DEFAULT_BRIDGE_CAMERA.fovY,
     near: partial?.near ?? 0.1,
     far: partial?.far ?? 40,
-    ...partial,
     width: partial?.width ?? width,
     height: partial?.height ?? height,
   };

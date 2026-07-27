@@ -27,7 +27,6 @@ from app.engine3d_still_provider import (
     Engine3dStillPathError,
     engine3d_still_availability,
     resolve_engine3d_cli_path,
-    engine3d_still_availability,
 )
 from app.main import app
 from app.pipeline import GenerateResult
@@ -135,6 +134,12 @@ def test_composite_subject_over_background():
     )
     assert out[:8] == b"\x89PNG\r\n\x1a\n"
     assert len(composite_sha256(out)) == 64
+    # No-alpha heuristic: dark studio corner should reveal background blue channel.
+    out_img = Image.open(io.BytesIO(out)).convert("RGB")
+    corner = out_img.getpixel((5, 5))
+    subject_px = out_img.getpixel((40, 40))
+    assert corner[2] > 50  # background blue shows through clear region
+    assert subject_px[0] > 150  # opaque subject skin remains
     prov = composite_provenance(
         structure_run_id="a",
         rt4d_background_run_id="b",
@@ -142,6 +147,29 @@ def test_composite_subject_over_background():
         resized=True,
     )
     assert prov["structure_source"] == "engine3d_composite"
+
+
+def test_composite_no_alpha_heuristic_vectorized_large():
+    """Regression: no-alpha path must stay vectorized (no O(n) Python pixels at 256²)."""
+    from PIL import Image
+
+    size = 256
+    bg = Image.new("RGB", (size, size), (10, 20, 80))
+    sub = Image.new("RGB", (size, size), (20, 20, 25))  # all clear-ish
+    for y in range(80, 180):
+        for x in range(80, 180):
+            sub.putpixel((x, y), (210, 160, 130))
+    bbuf = io.BytesIO()
+    sbuf = io.BytesIO()
+    bg.save(bbuf, format="PNG")
+    sub.save(sbuf, format="PNG")
+    out = composite_subject_over_background(
+        background_png=bbuf.getvalue(),
+        subject_png=sbuf.getvalue(),
+    )
+    img = Image.open(io.BytesIO(out)).convert("RGB")
+    assert img.getpixel((10, 10))[2] > 50
+    assert img.getpixel((120, 120))[0] > 150
 
 
 def test_engine3d_still_availability_shape():
@@ -327,11 +355,6 @@ def test_api_engine3d_still_polish_requires_prompt(tmp_path, monkeypatch):
     body = resp.json()
     assert "polish" in body
     assert body.get("face_polish", {}).get("face_rig") is True
-
-    main_mod._index = AssetIndex(tmp_path / "recent.json")
-    client = TestClient(app)
-    resp = client.post("/api/engine3d-still", json={"polish": True})
-    assert resp.status_code == 400
 
 
 def test_engine3d_sequence_availability_shape():

@@ -52,28 +52,44 @@ def composite_subject_over_background(
         sub = sub.resize(bg.size, Image.Resampling.LANCZOS)
 
     # Build soft mask: opaque where subject differs from dark clear color.
-    pixels = sub.load()
-    w, h = sub.size
-    assert pixels is not None
-    has_alpha = False
-    for y in range(0, h, max(1, h // 32)):
-        for x in range(0, w, max(1, w // 32)):
-            if pixels[x, y][3] < 250:
-                has_alpha = True
-                break
-        if has_alpha:
-            break
+    # Vectorized path — avoid per-pixel Python loops at 1024²+.
+    try:
+        import numpy as np
+    except ImportError:  # pragma: no cover
+        np = None  # type: ignore[assignment]
 
-    if not has_alpha:
-        # Heuristic: treat near-clear (dark gray studio) as transparent.
-        for y in range(h):
-            for x in range(w):
-                r, g, b, a = pixels[x, y]
-                # Default clear in soft raster is ~0.12,0.13,0.16 → ~31,33,41
-                if r < 55 and g < 55 and b < 60:
-                    pixels[x, y] = (r, g, b, 0)
-                else:
-                    pixels[x, y] = (r, g, b, 255)
+    w, h = sub.size
+    if np is not None:
+        arr = np.asarray(sub, dtype=np.uint8)
+        step_y = max(1, h // 32)
+        step_x = max(1, w // 32)
+        has_alpha = bool(np.any(arr[::step_y, ::step_x, 3] < 250))
+        if not has_alpha:
+            # Default clear in soft raster is ~0.12,0.13,0.16 → ~31,33,41
+            clear = (arr[:, :, 0] < 55) & (arr[:, :, 1] < 55) & (arr[:, :, 2] < 60)
+            alpha = np.where(clear, np.uint8(0), np.uint8(255))
+            arr = arr.copy()
+            arr[:, :, 3] = alpha
+            sub = Image.fromarray(arr, mode="RGBA")
+    else:
+        pixels = sub.load()
+        assert pixels is not None
+        has_alpha = False
+        for y in range(0, h, max(1, h // 32)):
+            for x in range(0, w, max(1, w // 32)):
+                if pixels[x, y][3] < 250:
+                    has_alpha = True
+                    break
+            if has_alpha:
+                break
+        if not has_alpha:
+            for y in range(h):
+                for x in range(w):
+                    r, g, b, _a = pixels[x, y]
+                    if r < 55 and g < 55 and b < 60:
+                        pixels[x, y] = (r, g, b, 0)
+                    else:
+                        pixels[x, y] = (r, g, b, 255)
 
     out = Image.alpha_composite(bg, sub)
     buf = io.BytesIO()

@@ -36,6 +36,7 @@ export {
 
 export {
   renderEngine3dStill,
+  defaultCamera,
   ENGINE3D_STRUCTURE_RECORD_SCHEMA,
   defaultFaceRiggedGlbPath,
   type Engine3dStillRequest,

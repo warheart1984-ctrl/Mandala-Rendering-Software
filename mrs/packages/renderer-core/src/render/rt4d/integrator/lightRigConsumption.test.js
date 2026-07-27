@@ -40,4 +40,26 @@ describe("PathTracer4D governed light/environment consumption", () => {
     assert.equal(color.x, 0.4);
     assert.equal(color.z, 2);
   });
+
+  it("treats analytic light-rig lights as delta for BSDF MIS (light PDF is 0)", () => {
+    const scene = new Scene4D();
+    scene.materials.createMaterial("mat", "lambertian", { albedo: vec4(1, 1, 1, 1) });
+    scene.consumeBridgeLighting({
+      lightRig: [
+        { id: "sun", type: "directional", color: [1, 1, 1], intensity: 1, direction: [0, -1, 0] },
+        { id: "lamp", type: "point", color: [1, 1, 1], intensity: 4, position: [0, 2, 0] },
+      ],
+      environment: { preset: "void", color: [0, 0, 0], intensity: 0 },
+    });
+    const tracer = new PathTracer4D({ maxDepth: 1, rng: () => 0 });
+    const hit = { position: vec4(0, 0, 0, 0), normal: vec4(0, 1, 0, 0), materialId: "mat" };
+    // Arbitrary BSDF directions must not get a nonzero continuous light PDF.
+    assert.equal(tracer._sampleLightPDF(scene, hit, vec4(1, 0, 0, 0)), 0);
+    assert.equal(tracer._sampleLightPDF(scene, hit, vec4(0, 1, 0, 0)), 0);
+    assert.equal(tracer._sampleLightPDF(scene, hit, vec4(0, 0, 1, 0)), 0);
+    // NEE still samples with discrete selection pdf 1/n (not used as continuous MIS dir pdf).
+    const nee = tracer._sampleLight(scene, hit);
+    assert.ok(nee);
+    assert.ok(Math.abs(nee.pdf - 0.5) < 1e-9);
+  });
 });
