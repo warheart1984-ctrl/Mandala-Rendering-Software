@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -38,6 +39,10 @@ from app.engine3d_sequence_provider import (
 from app.engine3d_still_provider import (
     ENGINE3D_STILL_KIND,
     Engine3dStillError,
+    Engine3dStillPathError,
+    engine3d_still_availability,
+    generate_engine3d_still,
+    resolve_engine3d_cli_path,
     engine3d_still_availability,
     generate_engine3d_still,
 )
@@ -214,6 +219,9 @@ class _ChatgptPluginAuthMiddleware(BaseHTTPMiddleware):
         if path not in PLUGIN_PROTECTED_PREFIXES:
             return await call_next(request)
         auth = request.headers.get("authorization") or ""
+        expected_header = f"Bearer {expected}"
+        # Constant-time compare; mismatched lengths still return False safely.
+        if hmac.compare_digest(auth, expected_header):
         if auth == f"Bearer {expected}":
             return await call_next(request)
         return JSONResponse(
@@ -225,6 +233,8 @@ class _ChatgptPluginAuthMiddleware(BaseHTTPMiddleware):
         )
 
 
+# CORS: local operator UIs by default; widen only when GENBLAZE_CORS_ALLOW_ALL=1.
+# CHATGPT_PLUGIN_KEY enables bearer auth only — it does not auto-open CORS.
 # CORS: local operator UIs by default; widen when GENBLAZE_CORS_ALLOW_ALL=1
 # (or when CHATGPT_PLUGIN_KEY is set — see load_settings).
 _cors_settings = get_settings()
@@ -1212,12 +1222,23 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
         )
 
     try:
+        world_path = resolve_engine3d_cli_path(body.world_path, field="world_path")
+        human_glb = resolve_engine3d_cli_path(body.human_glb, field="human_glb")
+    except Engine3dStillPathError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
         structure = generate_engine3d_still(
             settings,
             width=body.width,
             height=body.height,
             aov_depth=body.aov_depth,
             aov_normal=body.aov_normal,
+            world_path=world_path,
+            human_glb=human_glb,
+        )
+    except Engine3dStillPathError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
             world_path=body.world_path,
             human_glb=body.human_glb,
         )

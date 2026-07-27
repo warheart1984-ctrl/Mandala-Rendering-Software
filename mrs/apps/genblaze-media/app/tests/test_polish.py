@@ -215,6 +215,83 @@ class TestFalImg2Img:
         result = _fal_img2img("test-key", png, "refine")
         assert result == png
 
+    def test_url_download_uses_open_client(self):
+        """Regression: image URL fetch must happen before the httpx context exits."""
+        png = _dummy_png()
+        state = {"entered": False, "exited": False, "get_while_open": False}
+
+        class TrackingClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                state["entered"] = True
+                return self
+
+            def __exit__(self, *args):
+                state["exited"] = True
+                return False
+
+            def post(self, *args, **kwargs):
+                assert not state["exited"]
+                resp = MagicMock(status_code=200)
+                resp.json.return_value = {
+                    "images": [{"url": "https://fal.run/media/test-output.png"}],
+                }
+                return resp
+
+            def get(self, url, *args, **kwargs):
+                assert state["entered"] and not state["exited"], (
+                    "client.get called after httpx Client context closed"
+                )
+                state["get_while_open"] = True
+                resp = MagicMock(status_code=200, content=png)
+                resp.raise_for_status = MagicMock()
+                return resp
+
+        with patch("app.image_polish.httpx.Client", TrackingClient):
+            result = _fal_img2img("test-key", png, "refine")
+
+        assert result == png
+        assert state["get_while_open"] is True
+        assert state["exited"] is True
+
+    def test_top_level_image_url_download_uses_open_client(self):
+        """Same regression for fal responses that return image_url (no images[])."""
+        png = _dummy_png()
+        state = {"exited": False, "get_while_open": False}
+
+        class TrackingClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                state["exited"] = True
+                return False
+
+            def post(self, *args, **kwargs):
+                resp = MagicMock(status_code=200)
+                resp.json.return_value = {
+                    "image_url": "https://fal.run/media/direct.png",
+                }
+                return resp
+
+            def get(self, url, *args, **kwargs):
+                assert not state["exited"]
+                state["get_while_open"] = True
+                resp = MagicMock(status_code=200, content=png)
+                resp.raise_for_status = MagicMock()
+                return resp
+
+        with patch("app.image_polish.httpx.Client", TrackingClient):
+            result = _fal_img2img("test-key", png, "refine")
+
+        assert result == png
+        assert state["get_while_open"] is True
+
     @patch("app.image_polish.httpx.Client")
     def test_success_base64_response(self, mock_client_cls):
         import base64

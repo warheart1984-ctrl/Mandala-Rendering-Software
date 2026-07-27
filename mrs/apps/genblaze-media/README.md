@@ -133,6 +133,8 @@ manifest + OpenAPI pattern still works for **Custom GPT → Actions**:
 1. Expose Genblaze over HTTPS (Render or `ngrok http 8787`).
 2. Optionally set `GENBLAZE_PUBLIC_BASE_URL=https://<host>` and
    `CHATGPT_PLUGIN_KEY=<long-random>` (bearer on Engine3D routes).
+3. Set `GENBLAZE_CORS_ALLOW_ALL=1` if Actions need browser CORS (explicit;
+   `CHATGPT_PLUGIN_KEY` does **not** auto-enable CORS).
 3. Set `GENBLAZE_CORS_ALLOW_ALL=1` if Actions need browser CORS (auto-on when
    plugin key is set).
 4. In Custom GPT Actions, import:

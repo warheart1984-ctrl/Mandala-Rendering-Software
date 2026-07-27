@@ -49,6 +49,97 @@ class Engine3dStillError(Exception):
     """CLI present but still render failed."""
 
 
+class Engine3dStillPathError(ValueError):
+    """world_path / human_glb outside allowlisted roots (path traversal)."""
+
+
+def engine3d_cli_path_allow_roots(
+    repo_root: Path = REPO_ROOT,
+    *,
+    operator_assets_root: str | None = None,
+) -> list[Path]:
+    """Roots allowed for ``--world`` / ``--human-glb`` CLI arguments.
+
+    Fixture GLBs live under ``mrs/assets``; operator overrides under
+    ``operator-assets`` (or ``OPERATOR_ASSETS_ROOT``). Temp Genblaze work
+    dirs are included so operator-exported plates can be reused safely.
+    """
+    roots: list[Path] = [
+        (repo_root / "mrs" / "assets").resolve(),
+        (repo_root / "operator-assets").resolve(),
+        (APP_DIR / "assets").resolve(),
+        (Path(tempfile.gettempdir()) / "mrs-genblaze-engine3d").resolve(),
+    ]
+    raw_op = (
+        operator_assets_root
+        if operator_assets_root is not None
+        else (os.getenv("OPERATOR_ASSETS_ROOT") or "").strip()
+    )
+    if raw_op:
+        roots.append(Path(raw_op).expanduser().resolve())
+    # Deduplicate while preserving order.
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for root in roots:
+        if root in seen:
+            continue
+        seen.add(root)
+        unique.append(root)
+    return unique
+
+
+def _is_under_root(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def resolve_engine3d_cli_path(
+    raw: str | None,
+    *,
+    field: str = "path",
+    repo_root: Path = REPO_ROOT,
+    must_exist: bool = False,
+) -> str | None:
+    """Resolve and allowlist a CLI file path; raise on traversal / escape.
+
+    Relative paths are resolved against ``repo_root``. Absolute paths are
+    accepted only when they resolve under an allowlisted root.
+    """
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text:
+        return None
+    if "\x00" in text:
+        raise Engine3dStillPathError(f"{field} contains a null byte")
+
+    # Reject obvious traversal tokens before resolve (Windows + POSIX).
+    parts = Path(text.replace("\\", "/")).parts
+    if ".." in parts:
+        raise Engine3dStillPathError(
+            f"{field} must not contain '..' path segments"
+        )
+
+    candidate = Path(text)
+    if not candidate.is_absolute():
+        candidate = (repo_root / candidate).resolve()
+    else:
+        candidate = candidate.resolve()
+
+    allow = engine3d_cli_path_allow_roots(repo_root)
+    if not any(_is_under_root(candidate, root) for root in allow):
+        raise Engine3dStillPathError(
+            f"{field} must resolve under an allowlisted asset root "
+            f"(mrs/assets, operator-assets, or OPERATOR_ASSETS_ROOT)"
+        )
+    if must_exist and not candidate.is_file():
+        raise Engine3dStillPathError(f"{field} does not exist: {candidate}")
+    return str(candidate)
+
+
 def engine3d_still_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
     monorepo = (
         repo_root
@@ -143,6 +234,13 @@ def _run_still_cli(
         aov,
     ]
     if world_path:
+        safe_world = resolve_engine3d_cli_path(world_path, field="world_path")
+        if safe_world:
+            argv.extend(["--world", safe_world])
+    if human_glb:
+        safe_glb = resolve_engine3d_cli_path(human_glb, field="human_glb")
+        if safe_glb:
+            argv.extend(["--human-glb", safe_glb])
         argv.extend(["--world", world_path])
     if human_glb:
         argv.extend(["--human-glb", human_glb])
