@@ -6,6 +6,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync } from "node:fs";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -19,17 +20,44 @@ import {
   buildPortraitRasterMeshesFromHumanRig,
   worldMeshToRasterMesh,
 } from "../renderer/raster/portraitMeshes.js";
+import {
+  defaultFaceRigConfig,
+  detectFaceAssetKind,
+  loadFaceRig,
+  neutralFacePose,
+  resolveHumanFacePath,
+  defaultFaceRiggedGlbPath,
+} from "../face/index.js";
 import type { World3D } from "../world/World3D.js";
 import { DEFAULT_BRIDGE_CAMERA } from "./Engine3DSceneBridge.js";
 
 export const ENGINE3D_STRUCTURE_RECORD_SCHEMA =
   "engine3d-structure-record/1.0" as const;
 
+/** Prefer operator GLB when present; else in-repo fixture. Re-exported for API stability. */
+export { defaultFaceRiggedGlbPath };
+
 export type StructureSource =
   | "engine3d"
   | "engine3d_raster"
   | "engine3d_composite"
   | "flux_plate";
+
+/** Nested face rig evidence on structure stills (keeps boolean `face_rig`). */
+export interface FaceRigDetailEvidence {
+  mesh_path: string;
+  armature_name: string;
+  bones: string[];
+  blendshapes: string[];
+  asset_kind?: "fixture" | "operator";
+}
+
+/** Nested face pose evidence; stills without timeline use a neutral default. */
+export interface FacePoseEvidence {
+  time: number;
+  bones: Record<string, number[]>;
+  expressions: { name: string; weight: number }[];
+}
 
 export interface Engine3dStructureRecord {
   schemaVersion: typeof ENGINE3D_STRUCTURE_RECORD_SCHEMA;
@@ -53,6 +81,14 @@ export interface Engine3dStructureRecord {
   height?: number;
   timestamp: string;
   note?: string;
+  /** True when a face/HumanRig GLB was used for structure. */
+  face_rig?: boolean;
+  /** fixture = in-repo synthetic; operator = supplied production asset. */
+  face_asset?: "fixture" | "operator" | "none";
+  /** Discovered rig names + mesh path when a face GLB is used. */
+  face_rig_detail?: FaceRigDetailEvidence;
+  /** Pose applied for this still (neutral when no timeline pose). */
+  face_pose?: FacePoseEvidence;
 }
 
 export interface Engine3dStillRequest {
@@ -69,6 +105,8 @@ export interface Engine3dStillRequest {
   /** Override camera; defaults from BridgeCameraDescriptor + size. */
   camera?: Partial<RasterCamera>;
   aov?: { depth?: boolean; normal?: boolean };
+  /** Prefer face fixture when true and humanGlb omitted (default true). */
+  preferFaceFixture?: boolean;
   meshes?: RasterMesh[];
   runId?: string;
 }
@@ -103,6 +141,86 @@ function defaultCamera(width: number, height: number, partial?: Partial<RasterCa
   };
 }
 
+function discoverFaceRigDetail(
+  meshPath: string,
+  faceAsset: "fixture" | "operator",
+): FaceRigDetailEvidence | undefined {
+  try {
+    const loaded = loadFaceRig({
+      ...defaultFaceRigConfig(meshPath),
+      strict: false,
+    });
+    const bones = loaded.rig.skeleton.bones.map((b) => b.id);
+    const blendshapes = new Set<string>();
+    for (const mesh of loaded.rig.meshes.all) {
+      for (const ch of mesh.morphChannels) blendshapes.add(ch.id);
+    }
+    return {
+      mesh_path: meshPath,
+      armature_name: loaded.config.armatureName,
+      bones,
+      blendshapes: [...blendshapes],
+      asset_kind: faceAsset,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveMeshes(req: Engine3dStillRequest): {
+  meshes: RasterMesh[];
+  faceRig: boolean;
+  faceAsset: "fixture" | "operator" | "none";
+  humanGlb?: string;
+  faceRigDetail?: FaceRigDetailEvidence;
+  facePose?: FacePoseEvidence;
+} {
+  if (req.meshes && req.meshes.length > 0) {
+    return { meshes: req.meshes, faceRig: false, faceAsset: "none" };
+  }
+  let humanGlb = req.humanGlb;
+  let faceAsset: "fixture" | "operator" | "none" = "none";
+  if (!humanGlb && req.preferFaceFixture !== false) {
+    const resolved = resolveHumanFacePath("HumanFaceRigged");
+    if (existsSync(resolved.path)) {
+      humanGlb = resolved.path;
+      faceAsset = resolved.face_asset;
+    }
+  } else if (humanGlb) {
+    faceAsset = detectFaceAssetKind(humanGlb);
+  }
+  if (humanGlb) {
+    const fromRig = buildPortraitRasterMeshesFromHumanRig(humanGlb, req.poseId);
+    if (fromRig && fromRig.length > 0) {
+      const kind = faceAsset === "none" ? "operator" : faceAsset;
+      const faceRigDetail = discoverFaceRigDetail(humanGlb, kind);
+      const neutral = neutralFacePose(0);
+      return {
+        meshes: fromRig,
+        faceRig: true,
+        faceAsset,
+        humanGlb,
+        faceRigDetail,
+        facePose: {
+          time: neutral.time,
+          bones: { ...neutral.bones },
+          expressions: [...neutral.expressions],
+        },
+      };
+    }
+  }
+  if (req.world) {
+    return {
+      meshes: [worldMeshToRasterMesh("world-mesh", req.world.mesh)],
+      faceRig: false,
+      faceAsset: "none",
+    };
+  }
+  return {
+    meshes: buildDemoPortraitMeshes(),
+    faceRig: false,
+    faceAsset: "none",
+  };
 function resolveMeshes(req: Engine3dStillRequest): RasterMesh[] {
   if (req.meshes && req.meshes.length > 0) return req.meshes;
   if (req.humanGlb) {
@@ -129,6 +247,10 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
     ...req.camera,
     id: req.cameraId ?? req.camera?.id ?? "cam0",
   });
+  const resolved = resolveMeshes(req);
+  const rasterReq: RasterStillRequest = {
+    camera,
+    meshes: resolved.meshes,
   const meshes = resolveMeshes(req);
   const rasterReq: RasterStillRequest = {
     camera,
@@ -142,6 +264,11 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
   const files = new HeadlessGLStillRenderer(rasterReq).renderToDir(outDir);
   const worldId =
     req.worldId ??
+    (resolved.humanGlb
+      ? `human-glb:${resolved.faceAsset}`
+      : req.world
+        ? "world3d"
+        : "demo-portrait");
     (req.humanGlb ? `human-glb:${req.humanGlb}` : req.world ? "world3d" : "demo-portrait");
 
   const structureRecord: Engine3dStructureRecord = {
@@ -159,6 +286,18 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
     width,
     height,
     timestamp: utcNow(),
+    face_rig: resolved.faceRig,
+    face_asset: resolved.faceAsset,
+    ...(resolved.faceRigDetail
+      ? { face_rig_detail: resolved.faceRigDetail }
+      : {}),
+    ...(resolved.facePose ? { face_pose: resolved.facePose } : {}),
+    note:
+      "Engine3D soft-raster structure still (beauty + AOVs). " +
+      "NOT photoreal skin; NOT RT4D sphere-bridge. Polish separately via Genblaze." +
+      (resolved.faceRig
+        ? ` Face rig present (asset=${resolved.faceAsset}).`
+        : " Demo sphere-head (not a governed face mesh)."),
     note:
       "Engine3D soft-raster structure still (beauty + AOVs). " +
       "NOT photoreal skin; NOT RT4D sphere-bridge. Polish separately via Genblaze.",

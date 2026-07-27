@@ -6,6 +6,13 @@
 
 export type InterpMode = "step" | "linear" | "cubic" | "spherical";
 
+export type TrackTarget =
+  | "camera"
+  | "mesh"
+  | "material"
+  | "custom"
+  | "face_bone"
+  | "face_blendshape";
 export type TrackTarget = "camera" | "mesh" | "material" | "custom";
 
 export type KeyframeValue =

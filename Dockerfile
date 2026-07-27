@@ -11,6 +11,12 @@ FROM node:22-bookworm-slim AS engine3d-build
 WORKDIR /build
 COPY mrs/packages/engine3d-core/package.json ./
 COPY mrs/packages/engine3d-core/tsconfig.json ./
+COPY mrs/packages/engine3d-core/tsconfig.build.json ./
+COPY mrs/packages/engine3d-core/src ./src
+COPY mrs/packages/engine3d-core/scripts ./scripts
+# src uses node:* APIs; tests are excluded via tsconfig.build.json (image only needs dist/src).
+RUN npm install typescript@5.9.2 @types/node@22 \
+ && npx tsc -p tsconfig.build.json
 COPY mrs/packages/engine3d-core/src ./src
 COPY mrs/packages/engine3d-core/test ./test
 COPY mrs/packages/engine3d-core/scripts ./scripts
@@ -74,6 +80,14 @@ COPY --from=engine3d-build /build/package.json ./engine3d-core/package.json
 COPY --from=engine3d-build /build/dist ./engine3d-core/dist
 COPY --from=engine3d-build /build/scripts ./engine3d-core/scripts
 COPY mrs/packages/engine3d-core/src ./engine3d-core/src
+# Face fixture GLBs (synthetic; not production anatomy).
+# Optional operator overrides: do NOT COPY production GLBs into the image.
+# Mount a volume at /operator-assets (or set OPERATOR_ASSETS_ROOT) with:
+#   /operator-assets/human/HumanFaceRigged.glb
+#   /operator-assets/human/HumanFaceNeutral.glb
+# Runtime prefers OPERATOR_ASSETS_ROOT/human/*.glb over /app/assets/human fixtures.
+COPY mrs/assets ./assets
+# ENV OPERATOR_ASSETS_ROOT=/operator-assets
 
 RUN node --version \
  && node /app/renderer-core/scripts/render-still.mjs \

@@ -90,6 +90,14 @@ def engine3d_still_availability(settings: Settings) -> dict[str, Any]:
         "timeout_seconds": float(getattr(settings, "engine3d_still_timeout_seconds", 120.0)),
         "note": (
             "POST /api/engine3d-still renders Engine3D triangle structure (beauty+AOVs). "
+            "Uses HumanFaceRigged.glb fixture when present. Optional polish via existing "
+            "img2img path. NOT RT4D sphere-bridge for faces. "
+            + ("" if available else ENGINE3D_STILL_SETUP_HELP)
+        ),
+        "face_fixture_note": (
+            "Face structure: mrs/assets/human/HumanFaceRigged.glb (fixture) or operator GLB. "
+            "See ENGINE3D_FACE_STRUCTURE_SPEC_v1.0."
+        ),
             "Optional polish via existing img2img path. NOT RT4D sphere-bridge for faces. "
             + ("" if available else ENGINE3D_STILL_SETUP_HELP)
         ),
@@ -238,6 +246,8 @@ def generate_engine3d_still(
         "asset_sha256": sha256,
         "structure_source": provenance.get("structure_source") or "engine3d_raster",
         "structure_record": provenance,
+        "face_rig": bool(provenance.get("face_rig")),
+        "face_asset": provenance.get("face_asset") or "none",
         "note": (
             "Engine3D soft-raster structure still. NOT photoreal skin; "
             "NOT RT4D sphere-bridge. Optional polish is a separate diffusion step."

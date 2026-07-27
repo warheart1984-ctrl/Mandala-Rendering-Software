@@ -112,6 +112,10 @@ export class SkinnedMeshIntersector {
 
   _buildOrReuseBvh(options = {}) {
     if (!this.bvhKey) return buildDynamicBvh(this.vertices, this.indices, options);
+    const cached = this.bvhCache.get(this.bvhKey);
+    if (cached) return cached;
+    const bvh = buildDynamicBvh(this.vertices, this.indices, options);
+    this.bvhCache.set(this.bvhKey, bvh);
     const cached = sharedBvhCache.get(this.bvhKey);
     if (cached) return cached;
     const bvh = buildDynamicBvh(this.vertices, this.indices, options);
