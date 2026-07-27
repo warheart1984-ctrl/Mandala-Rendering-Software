@@ -109,10 +109,6 @@ export {
   assignRt4dMaterials,
   type Rt4dVertexTuple,
 } from "./scene/Rt4dAdapter.js";
-  createWorldGenerator,
-  generateWorldFromGenerator,
-  hashWorldGenerator,
-} from "./world/WorldGenerator.js";
 export {
   hashStaticMesh,
   hashStaticMeshTable,
@@ -337,9 +333,6 @@ export {
   defaultFaceRiggedGlbPath,
   ENGINE3D_FRAME_RECEIPT_MODE,
   ENGINE3D_STRUCTURE_RECORD_SCHEMA,
-  ENGINE3D_FRAME_RECEIPT_MODE,
-  ENGINE3D_STRUCTURE_RECORD_SCHEMA,
-  ENGINE3D_FRAME_RECEIPT_MODE,
   EvidenceBuilderV12,
   EvidenceBuilderV20,
   EvidenceBuilderV21,
@@ -430,9 +423,6 @@ export {
   normalizeHumanFaceName,
   defaultFaceNeutralGlbPath,
 } from "./face/index.js";
-
-  slerp,
-} from "./timeline/index.js";
 
 export {
   Engine3DCinematicRuntime,
