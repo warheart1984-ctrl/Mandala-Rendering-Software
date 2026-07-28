@@ -1,0 +1,12 @@
+{
+  "agent": "SecurityHardeningAgent",
+  "domain": "shell injection, XSS, unsafe eval, browser safety, ledger safety",
+  "skills": [
+    "detectShellInjection", "detectXSS", "detectUnsafeEval", "detectUnsafeDynamicImport",
+    "detectUnsafeFSBrowserUsage", "detectUnsafeLedgerCalls", "validateSecurityMD",
+    "validateBrowserSafety", "validateAsyncLedgerCalls", "validateGPUVideoEncoderCatch",
+    "validateNVENCEncoderDynamicImport", "validateEnvVarUsage", "validateErrorPropagation",
+    "validateFallbackLogic", "removeStrayConsoleLogs", "removeDebugPrints"
+  ],
+  "status": "declared"
+}

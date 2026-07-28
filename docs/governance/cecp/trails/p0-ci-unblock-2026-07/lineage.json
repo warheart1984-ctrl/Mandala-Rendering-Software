@@ -1,0 +1,14 @@
+{
+  "trailId": "p0-ci-unblock-2026-07",
+  "lineage": [
+    { "stage": 1, "role": "Architect", "artifact": "01-architect-adr.md" },
+    { "stage": 2, "role": "Builder", "artifact": "02-builder-scaffold-manifest.md" },
+    { "stage": 3, "role": "Implementor", "artifact": "03-implementor-notes.md" },
+    { "stage": 4, "role": "Reviewer", "artifact": "04-reviewer-conformance.md" },
+    { "stage": 5, "role": "Inspector", "artifact": "05-inspector-acceptance.md" },
+    { "stage": 6, "role": "ESFR", "artifact": "06-engineer-standards.md" }
+  ],
+  "verdictArtifact": "08-esfr-verdict.json",
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "committed": false
+}

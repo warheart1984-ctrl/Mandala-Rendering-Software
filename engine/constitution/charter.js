@@ -6,7 +6,7 @@
 
 export const CHARTER = Object.freeze({
   id: "charter.4dce.v1",
-  version: "1.1.0",
+  version: "1.0.0",
   name: "4D Cinematic Engine — Constitutional Charter",
   purpose: [
     "Governed cognitive runtime for 4D cinematic render and export",
@@ -41,11 +41,11 @@ export const CHARTER = Object.freeze({
     },
   ]),
   organs: Object.freeze({
-    governanceKernel: { id: "organ.gk", status: "partial" },
+    governanceKernel: { id: "organ.gk", status: "enforced" },
     cse: { id: "organ.cse", status: "enforced" },
     isl: { id: "organ.isl", status: "partial" },
     evidenceLayer: { id: "organ.evidence", status: "partial" },
-    ckl: { id: "organ.ckl", status: "declared" },
+    ckl: { id: "organ.ckl", status: "enforced" },
   }),
   /** Geometric invariants for the cinematic 4D renderer. */
   cinematic4d: Object.freeze({

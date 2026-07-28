@@ -95,6 +95,72 @@ export class Hyperplane {
   }
 }
 
+export class OrientedCapsule {
+  constructor(pointA, pointB, radius) {
+    this.a = vec4(pointA.x, pointA.y, pointA.z, pointA.w);
+    this.b = vec4(pointB.x, pointB.y, pointB.z, pointB.w);
+    this.radius = radius;
+    this.axis = sub(this.b, this.a);
+    this.bb = dot(this.axis, this.axis);
+    this._capA = new Hypersphere(this.a, radius);
+    this._capB = new Hypersphere(this.b, radius);
+  }
+
+  getCenter() {
+    const c = vec4((this.a.x + this.b.x) / 2, (this.a.y + this.b.y) / 2, (this.a.z + this.b.z) / 2, (this.a.w + this.b.w) / 2);
+    return [c.x, c.y, c.z, c.w];
+  }
+
+  getBounds() {
+    const r = this.radius;
+    return {
+      min: vec4(Math.min(this.a.x, this.b.x) - r, Math.min(this.a.y, this.b.y) - r, Math.min(this.a.z, this.b.z) - r, Math.min(this.a.w, this.b.w) - r),
+      max: vec4(Math.max(this.a.x, this.b.x) + r, Math.max(this.a.y, this.b.y) + r, Math.max(this.a.z, this.b.z) + r, Math.max(this.a.w, this.b.w) + r),
+    };
+  }
+
+  intersect(ray) {
+    const O = ray.origin;
+    const D = ray.direction;
+    const A = this.a;
+    const BA = this.axis;
+    const OA = sub(O, A);
+    const dd = dot(D, D);
+    const bd = dot(BA, D);
+    const od = dot(OA, D);
+    const ob = dot(OA, BA);
+    const oo = dot(OA, OA);
+    const bb = this.bb;
+    const Aq = dd * bb - bd * bd;
+    if (Aq === 0) return this._intersectCaps(ray);
+    const Bq = 2 * (od * bb - ob * bd);
+    const Cq = oo * bb - ob * ob - this.radius * this.radius * bb;
+    let disc = Bq * Bq - 4 * Aq * Cq;
+    if (disc < 0) return this._intersectCaps(ray);
+    disc = Math.sqrt(disc);
+    for (const t of [(-Bq - disc) / (2 * Aq), (-Bq + disc) / (2 * Aq)]) {
+      if (t < ray.tMin || t > ray.tMax) continue;
+      const s = (ob + t * bd) / bb;
+      if (s >= 0 && s <= 1) {
+        const pos = vec4(O.x + t * D.x, O.y + t * D.y, O.z + t * D.z, O.w + t * D.w);
+        const cp = vec4(A.x + s * BA.x, A.y + s * BA.y, A.z + s * BA.z, A.w + s * BA.w);
+        return { t, position: pos, normal: normalize(sub(pos, cp)), materialId: this.materialId ?? "default" };
+      }
+    }
+    return this._intersectCaps(ray);
+  }
+
+  _intersectCaps(ray) {
+    const hitA = this._capA.intersect(ray);
+    const tA = hitA ? hitA.t : Infinity;
+    const hitB = this._capB.intersect(ray);
+    const tB = hitB ? hitB.t : Infinity;
+    const hit = tA < tB ? hitA : hitB;
+    if (hit) hit.materialId = this.materialId ?? "default";
+    return hit;
+  }
+}
+
 export class ImplicitHypersurface {
   constructor(sdf, options = {}) {
     this.sdf = sdf;

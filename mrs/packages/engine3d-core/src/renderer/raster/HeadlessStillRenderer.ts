@@ -15,8 +15,10 @@ import { writeFileSync } from "node:fs";
 import { transformPoint, transformVector, normalize3 } from "../../human/mat4.js";
 import type { Mat4Tuple } from "../../human/HumanRigTypes.js";
 import { shadeRasterFragment } from "./RasterMaterial.js";
-// TextureSampler deferred: binder + uvs path is low-risk only when atlas maps
-// are bound; STATUS: declared gap — materials shade without texture lookup.
+import {
+  applySampledMapsToMaterial,
+  type TextureBinder,
+} from "./TextureSampler.js";
 
 export type Vec3 = readonly [number, number, number];
 
@@ -54,6 +56,11 @@ export interface RasterStillRequest {
   aov?: { depth?: boolean; normal?: boolean };
   /** Clear color for beauty (linear RGB 0–1). Default dark gray. */
   clearColor?: Vec3;
+  /**
+   * Optional texture binder for per-pixel UV sampling when meshes carry `uvs`
+   * and materials list `textureRefs`. Status: **enforced** by texture-uv tests.
+   */
+  textures?: TextureBinder;
 }
 
 export interface RasterStillBuffers {
@@ -206,6 +213,11 @@ type ClipV = {
   r: number;
   g: number;
   b: number;
+  u: number;
+  v: number;
+  wx: number;
+  wy: number;
+  wz: number;
 };
 
 function edge(ax: number, ay: number, bx: number, by: number, cx: number, cy: number): number {
@@ -262,13 +274,27 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
     const model = mesh.modelMatrix;
     const mvp = mulMat4(viewProj, model);
     const triCount = Math.floor(idx.length / 3);
+    const uvs = mesh.uvs;
+    const wantTex =
+      !!req.textures &&
+      !!mesh.material &&
+      (mesh.material.textureRefs?.length ?? 0) > 0 &&
+      !!uvs &&
+      uvs.length >= (vp.length / 3) * 2;
 
     for (let t = 0; t < triCount; t++) {
       const i0 = idx[t * 3]! * 3;
       const i1 = idx[t * 3 + 1]! * 3;
       const i2 = idx[t * 3 + 2]! * 3;
+      const vi0 = idx[t * 3]!;
+      const vi1 = idx[t * 3 + 1]!;
+      const vi2 = idx[t * 3 + 2]!;
       const verts: ClipV[] = [];
-      for (const ii of [i0, i1, i2]) {
+      for (const [ii, vi] of [
+        [i0, vi0],
+        [i1, vi1],
+        [i2, vi2],
+      ] as const) {
         const px = vp[ii] ?? 0;
         const py = vp[ii + 1] ?? 0;
         const pz = vp[ii + 2] ?? 0;
@@ -285,8 +311,8 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
         let r: number;
         let g: number;
         let b: number;
-        if (mesh.material) {
-          // View approx: toward camera from vertex (eye - worldPos), use light as fallback via shadeRasterFragment
+        if (mesh.material && !wantTex) {
+          // View approx: toward camera from vertex (eye - worldPos)
           const viewDir: Vec3 = normalize3(
             camera.eye[0] - wx,
             camera.eye[1] - wy,
@@ -301,13 +327,19 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
           r = rgb[0];
           g = rgb[1];
           b = rgb[2];
-        } else {
+        } else if (!wantTex) {
           // Legacy Lambert: baseColor * (0.2 + 0.8 * ndl)
           const shade = 0.2 + 0.8 * ndl;
           r = mesh.baseColor[0] * shade;
           g = mesh.baseColor[1] * shade;
           b = mesh.baseColor[2] * shade;
+        } else {
+          // Per-pixel texture path shades in the fragment loop.
+          r = 1;
+          g = 1;
+          b = 1;
         }
+        const uOff = vi * 2;
         verts.push({
           x,
           y,
@@ -319,6 +351,11 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
           r,
           g,
           b,
+          u: wantTex ? (uvs![uOff] ?? 0) : 0,
+          v: wantTex ? (uvs![uOff + 1] ?? 0) : 0,
+          wx,
+          wy,
+          wz,
         });
       }
 
@@ -334,6 +371,11 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
         r: number;
         g: number;
         b: number;
+        u: number;
+        v: number;
+        wx: number;
+        wy: number;
+        wz: number;
       }> = [];
       let behind = false;
       for (const v of verts) {
@@ -359,6 +401,11 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
           r: v.r,
           g: v.g,
           b: v.b,
+          u: v.u,
+          v: v.v,
+          wx: v.wx,
+          wy: v.wy,
+          wz: v.wz,
         });
       }
       if (behind || scr.length !== 3) continue;
@@ -394,9 +441,42 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
           zBuf[pix] = zndc;
 
           const o = pix * 4;
-          const rr = b0 * a.r + b1 * b.r + b2 * c.r;
-          const gg = b0 * a.g + b1 * b.g + b2 * c.g;
-          const bb = b0 * a.b + b1 * b.b + b2 * c.b;
+          let rr: number;
+          let gg: number;
+          let bb: number;
+          if (wantTex && mesh.material && req.textures) {
+            const u = b0 * a.u + b1 * b.u + b2 * c.u;
+            const v = b0 * a.v + b1 * b.v + b2 * c.v;
+            const nx = b0 * a.nx + b1 * b.nx + b2 * c.nx;
+            const ny = b0 * a.ny + b1 * b.ny + b2 * c.ny;
+            const nz = b0 * a.nz + b1 * b.nz + b2 * c.nz;
+            const [nnx, nny, nnz] = normalize3(nx, ny, nz);
+            const wx = b0 * a.wx + b1 * b.wx + b2 * c.wx;
+            const wy = b0 * a.wy + b1 * b.wy + b2 * c.wy;
+            const wz = b0 * a.wz + b1 * b.wz + b2 * c.wz;
+            const maps = req.textures.sampleMaps(
+              mesh.material,
+              mesh.material.textureRefs,
+              [u, v],
+              [nnx, nny, nnz],
+            );
+            const shadedMat = applySampledMapsToMaterial(mesh.material, maps);
+            const nUse = maps.normal ?? ([nnx, nny, nnz] as Vec3);
+            const viewDir = normalize3(
+              camera.eye[0] - wx,
+              camera.eye[1] - wy,
+              camera.eye[2] - wz,
+            );
+            const rgb = shadeRasterFragment(shadedMat, nUse, light, viewDir);
+            const ao = maps.ao ?? 1;
+            rr = rgb[0] * ao;
+            gg = rgb[1] * ao;
+            bb = rgb[2] * ao;
+          } else {
+            rr = b0 * a.r + b1 * b.r + b2 * c.r;
+            gg = b0 * a.g + b1 * b.g + b2 * c.g;
+            bb = b0 * a.b + b1 * b.b + b2 * c.b;
+          }
           beauty[o] = Math.max(0, Math.min(255, Math.round(rr * 255)));
           beauty[o + 1] = Math.max(0, Math.min(255, Math.round(gg * 255)));
           beauty[o + 2] = Math.max(0, Math.min(255, Math.round(bb * 255)));

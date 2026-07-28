@@ -1,0 +1,37 @@
+{
+  "trailId": "sovereign-x-vendor-router-2026-07",
+  "feature": "Sovereign X Router — NVIDIA+AMD vendor skill capability registration (upstream-only)",
+  "started": "2026-07-28",
+  "branch": "feat/engine3d-genblaze-cinematic-plugin",
+  "pr": 83,
+  "overallStatus": "partial",
+  "mode": ["Boundary-Guardian", "Anchor", "Runtime-Sage"],
+  "actorMode": "Anchor",
+  "softwareCreationMode": ["Protocol", "Boundary-Guardian"],
+  "cognitive-profile": "Guardian",
+  "siblingTrails": ["vendor-skills-fixup-2026-07", "printer-gpu-quality-speed-2026-07"],
+  "registryPath": "mrs/packages/sovereign-x-router/data/vendor-capability-registry.json",
+  "package": "@mrs/sovereign-x-router",
+  "stages": {
+    "01-architect": "complete",
+    "02-builder": "complete",
+    "03-implementor": "complete",
+    "04-reviewer": "PASS_WITH_GAPS",
+    "05-inspector": "PASS_WITH_GAPS",
+    "06-esfr": "PASS_WITH_GAPS"
+  },
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "testEvidence": {
+    "command": "node --test mrs/packages/sovereign-x-router/test/vendor-router.test.js",
+    "pass": 10,
+    "fail": 0
+  },
+  "hardBans": [
+    "gpu.print.beauty",
+    "gpu.print.deterministic_plates",
+    "gpu.rt4d.sot",
+    "gpu.denoise.evidence",
+    "gpu.integrator.print"
+  ]
+}

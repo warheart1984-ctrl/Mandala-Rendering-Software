@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4dce.local/schemas/ProvenanceFrame.schema.json",
+  "title": "ProvenanceFrame",
+  "type": "object",
+  "required": ["intentId", "timelineId", "worldId", "timeSeconds", "parameters"],
+  "properties": {
+    "intentId": { "type": "string" },
+    "timelineId": { "type": "string" },
+    "worldId": { "type": "string" },
+    "timeSeconds": { "type": "number" },
+    "parameters": { "type": "object" }
+  },
+  "additionalProperties": true
+}

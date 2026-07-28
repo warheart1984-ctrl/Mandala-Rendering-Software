@@ -5,10 +5,23 @@
   "type": "module",
   "main": "src/index.js",
   "types": "types.d.ts",
+  "files": [
+    "src/**/*.js",
+    "src/**/*.wgsl",
+    "src/**/*.json",
+    "schemas/**",
+    "types.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "types": "./types.d.ts",
       "default": "./src/index.js"
+    },
+    "./node": {
+      "types": "./types.d.ts",
+      "default": "./src/node.js"
     },
     "./surfaces": "./src/surfaces/index.js",
     "./math": "./src/math/index.js",

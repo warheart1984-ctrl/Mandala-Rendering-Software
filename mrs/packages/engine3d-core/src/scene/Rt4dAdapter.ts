@@ -57,6 +57,20 @@ export function bridgePrimitiveToRt4d(primitive: BridgePrimitive): {
         },
         materialHint: primitive.materialHint,
       };
+    case "oriented_capsule":
+      if (!primitive.capsule) {
+        throw new Error(`Oriented capsule primitive ${primitive.id} missing capsule endpoints`);
+      }
+      return {
+        kind: "oriented-capsule",
+        data: {
+          a: primitive.capsule.a,
+          b: primitive.capsule.b,
+          radius: primitive.radius,
+          center: primitive.center,
+        },
+        materialHint: primitive.materialHint,
+      };
     default:
       throw new Error(`Unknown primitive kind: ${(primitive as BridgePrimitive).kind}`);
   }

@@ -1,0 +1,229 @@
+mandala_agents:
+  ConstitutionalGovernanceAgent:
+    description: "Ensures charter, CKL, CSE, and policies remain constitutionally aligned."
+    skills:
+      - detectCharterVersionDrift
+      - validateOrganStatuses
+      - enforceOrganStateCorrectness
+      - syncCharterWithDocs
+      - validateConstitutionalInvariants
+      - detectMissingOrganDefinitions
+      - validateGovernanceKernelState
+      - detectCKLPrecedentDrift
+      - validateCKLFilters
+      - validateCKLLoadDefaultPath
+      - validateCKLModifierLogic
+      - validateCKLTruthinessRules
+      - validateCKLRecentDenialsLogic
+      - validateCKLDecisionTypes
+      - validateCSEStateTransitions
+      - validateCSEIntentParsing
+      - validateCSEEvidenceRouting
+      - validateCSEDeterminismRequired
+      - validateCSEErrorPropagation
+      - validateDefaultPolicies
+      - detectMissingPolicyBindings
+      - validatePolicySchemas
+      - validatePolicyEnforcementPaths
+      - generateGovernanceTests
+      - generateCKLTests
+      - generateCSETests
+      - generatePolicyTests
+      - generateConstitutionalRoutingTests
+      - detectCharterImplementationDrift
+      - detectCKLTestDrift
+      - detectPolicyRuntimeDrift
+      - detectCSERouterDrift
+
+  GPUWebGPUAgent:
+    description: "Validates WebGPU correctness, pipelines, shaders, and GPU safety."
+    skills:
+      - validateGPUTextureUsage
+      - validateGPUBufferUsage
+      - validateStoreOpLoadOp
+      - validateRenderPipelineConfig
+      - validateComputePipelineConfig
+      - validateShaderModuleCreation
+      - validateBindGroupLayouts
+      - validateSamplerUsage
+      - validateSharedGPUImageBinaryParsing
+      - validateSharedFramePreviewParsing
+      - validateGPURenderPipelineLifecycle
+      - validateGPUMeshRendererSupport
+      - validateEnvironmentMapperUsage
+      - validateShadowMapperPipeline
+      - validatePostProcessorUniformLayout
+      - validateComputeMeshSamplerShaderGen
+      - validateGPUPreviewClientFallback
+      - generateMockWebGPUDevice
+      - generateGPUPipelineTests
+      - generateShaderTests
+      - generateComputeTests
+      - generatePreviewTests
+      - detectUnsafeGPUUsage
+      - detectIncorrectBufferMapping
+      - detectIncorrectTextureCreation
+      - detectIncorrectPipelineStoreOp
+
+  RendererCoreAgent:
+    description: "Ensures renderer-core correctness, ESM hygiene, and module integrity."
+    skills:
+      - validateModuleBoundaries
+      - validateESMImports
+      - validateDynamicImports
+      - validatePathToFileURLUsage
+      - validateTimelineSerializer
+      - validateReplayService
+      - validateProvenanceRecorder
+      - validateConformanceChecker
+      - validateNVENCEncoder
+      - validateGPUVideoEncoder
+      - validateSurfaceSyncScript
+      - validateRendererWebBuildStep
+      - validateSchemas
+      - validatePackageFilesField
+
+  SecurityHardeningAgent:
+    description: "Performs full security scans and hardening across the engine."
+    skills:
+      - detectShellInjection
+      - detectXSS
+      - detectUnsafeEval
+      - detectUnsafeDynamicImport
+      - detectUnsafeFSBrowserUsage
+      - detectUnsafeLedgerCalls
+      - validateSecurityMD
+      - validateBrowserSafety
+      - validateAsyncLedgerCalls
+      - validateGPUVideoEncoderCatch
+      - validateNVENCEncoderDynamicImport
+      - validateEnvVarUsage
+      - validateErrorPropagation
+      - validateFallbackLogic
+      - removeStrayConsoleLogs
+      - removeDebugPrints
+
+  ConformanceAgent:
+    description: "Validates conformance rules, schemas, and test coverage."
+    skills:
+      - validateConformanceSchemas
+      - validateConformanceRules
+      - validateConformanceTestCoverage
+      - validateConformanceErrors
+      - detectConformanceDrift
+      - generateConformanceTests
+      - validateConformanceCheckerLogic
+
+  ReplayAgent:
+    description: "Ensures replay determinism and lineage correctness."
+    skills:
+      - validateReplayRecord
+      - validateReplayPlayback
+      - validateReplayDeterminism
+      - validateReplayErrorPropagation
+      - generateReplayTests
+      - validateReplayLineage
+
+  ProvenanceAgent:
+    description: "Ensures provenance correctness and hashing integrity."
+    skills:
+      - validateProvenanceRecord
+      - validateProvenanceLineage
+      - validateProvenanceHashing
+      - validateProvenanceSchema
+      - generateProvenanceTests
+
+  GenblazeAgent:
+    description: "Governs Genblaze, BYOK, and assist-only creative pipelines."
+    skills:
+      - validateBYOKSessionStorage
+      - validateHeaderInjection
+      - validateModelOverride
+      - validateHostedBYOKFlag
+      - validateKeyNeverLogged
+      - validateKeyNeverPersisted
+      - validateKeyNeverPrinter
+      - validateSettingsPanel
+      - validateDiagnosticsPanel
+      - validateModelMarketplace
+      - validateFaceCreationUI
+      - validateSceneSpecVisualizer
+      - validateGenblazePipeline
+      - validateAssistOnlyDomain
+      - validateDeterminismBoundaries
+
+  MultiHostAgent:
+    description: "Ensures Browser, Unity, and Unreal hosts remain constitutionally aligned."
+    skills:
+      - validateBrowserHost
+      - validateUnityHost
+      - validateUnrealHost
+      - validateHostAdapters
+      - validateHostRouting
+      - validateHostDeterminismBoundaries
+      - validateHostSafety
+
+  DocumentationAgent:
+    description: "Generates charters, whitepapers, manuals, and governance docs."
+    skills:
+      - generateCharters
+      - generateWhitepapers
+      - generateOperatorManuals
+      - generateGovernanceDocs
+      - generateGPUConstitution
+      - generateBYOKCharter
+      - generatePipelineDiagrams
+      - generateLineageDocs
+      - generateConformanceDocs
+      - generateReplayDocs
+
+  CIAgent:
+    description: "Maintains CI pipeline correctness and coverage."
+    skills:
+      - validateCIPipeline
+      - validateTestRunner
+      - validateCoverage
+      - validateBuildSteps
+      - validateLinting
+      - validateFormatting
+      - validatePackageFields
+
+  CodeQualityAgent:
+    description: "Ensures code quality, readability, and maintainability."
+    skills:
+      - validateNaming
+      - validateStructure
+      - validateModuleBoundaries
+      - validateComments
+      - validateReadability
+      - validateMaintainability
+      - validateDeadCode
+      - validateUnusedImports
+
+  TestGenerationAgent:
+    description: "Generates all test suites across the engine."
+    skills:
+      - generateNodeTestSuites
+      - generateMockDevices
+      - generateMockEncoders
+      - generateMockPipelines
+      - generateGovernanceTests
+      - generateGPUTests
+      - generateConformanceTests
+      - generateReplayTests
+      - generateProvenanceTests
+      - generateBYOKTests
+      - generateSceneSpecTests
+      - generateCharacterSpecTests
+
+  ConstitutionalComplianceAgent:
+    description: "Ensures full constitutional compliance across all domains."
+    skills:
+      - validateDeterminismBoundaries
+      - validateAssistOnlyGPU
+      - validateSovereignCPUPrint
+      - validateEvidenceChainPurity
+      - validateConstitutionalRouting
+      - validateConstitutionalInvariants
+      - validateComplianceTestSuite
+      - generateComplianceTests

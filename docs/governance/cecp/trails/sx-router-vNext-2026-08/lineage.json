@@ -1,0 +1,21 @@
+{
+  "trailId": "sx-router-vNext-2026-08",
+  "started": "2026-07-28",
+  "pr": 83,
+  "parentTrails": ["vendor-gpu-integration-2026-07"],
+  "childTrails": ["gpu-determinism-2026-09"],
+  "stages": [
+    { "id": "01", "role": "Architect", "modes": ["sage", "Strategist", "Pipeline-Conductor"], "file": "01-architect-adr.md" },
+    { "id": "02", "role": "Builder", "modes": ["Constructor", "Blueprint"], "file": "02-builder-scaffold-manifest.md" },
+    { "id": "03", "role": "Implementor", "modes": ["Compiler", "Integrator"], "file": "03-implementor-notes.md" },
+    { "id": "04", "role": "Reviewer", "modes": ["Scholar", "Boundary-Guardian", "Conformance"], "file": "04-reviewer-conformance.md" },
+    { "id": "05", "role": "Inspector", "modes": ["Sentinel", "Testwright", "Librarian"], "file": "05-inspector-acceptance.md" },
+    { "id": "06", "role": "ESFR", "modes": ["Anchor"], "file": "06-engineer-standards.md", "ESFRVerdict": "PASS_WITH_GAPS", "PromotionEligibility": "PROMOTE_WITH_GAPS" }
+  ],
+  "phases": {
+    "1": { "status": "Done", "link": "vendor-gpu-integration-2026-07", "promotion": "PROMOTE_WITH_GAPS" },
+    "2": { "status": "Draft", "tag": "declared" },
+    "3": { "status": "Draft", "tag": "declared" },
+    "4": { "status": "Draft", "tag": "declared" }
+  }
+}

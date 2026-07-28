@@ -1,0 +1,16 @@
+<!-- mandala-agent/drift-radar/index.html -->
+<html>
+  <head><title>Mandala Drift Radar</title></head>
+  <body>
+    <h1>Mandala Drift Radar</h1>
+    <pre id="radar"></pre>
+    <script>
+      fetch("drift-radar.json")
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById("radar").textContent =
+            JSON.stringify(data, null, 2);
+        });
+    </script>
+  </body>
+</html>

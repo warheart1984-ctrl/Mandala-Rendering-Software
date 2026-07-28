@@ -1,0 +1,55 @@
+{
+  "trailId": "gpu-determinism-phase1-2026-08",
+  "namespace": "cecp.trail.gpu-determinism-phase1-2026-08",
+  "pr": 83,
+  "prAnnouncementDraft": 84,
+  "tipBase": "2a33b31116f5f4a5c1417860367653b6fa6ecc7b",
+  "overallStatus": "partial",
+  "inspectorVerdict": "PASS_WITH_GAPS",
+  "esfrVerdict": "PASS_WITH_GAPS",
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "modes": {
+    "architect": ["Sage", "Strategist", "Scholar"],
+    "builder": ["Constructor", "Blueprint"],
+    "implementor": ["Compiler", "Integrator"],
+    "reviewer": ["Scholar", "Boundary-Guardian", "Conformance"],
+    "inspector": ["Sentinel", "Testwright", "Librarian"],
+    "esfr": ["Anchor", "Bard"]
+  },
+  "fullSuiteConsulted": true,
+  "fullSuiteDeepRun": false,
+  "vendorSkillsConsulted": [
+    "nvidia-gpu-assist",
+    "amd-gpu-assist",
+    "tao-run-inference-service",
+    "tao-run-on-docker",
+    "tao-setup-nvidia-gpu-host",
+    "rocm-setup",
+    "hip-rocm",
+    "dynamo-troubleshoot",
+    "tilegym-cutile-python",
+    "rag-blueprint"
+  ],
+  "vendorSkillsMissing": ["nvidia-skill-finder"],
+  "opencodeAgents": [
+    "architect",
+    "builder",
+    "implementor",
+    "reviewer",
+    "inspector",
+    "engineer-standards"
+  ],
+  "codexSkills": ["review-agent"],
+  "bans": [
+    "gpuPrintSoT",
+    "registryAuthoritativeReclassify",
+    "falsePassSsimStub"
+  ],
+  "related": [
+    "vendor-gpu-integration-2026-07",
+    "sx-router-vNext-2026-08",
+    "sx-router-vNext-2027",
+    "gpu-determinism-2026-09",
+    "pr84-announcement"
+  ]
+}

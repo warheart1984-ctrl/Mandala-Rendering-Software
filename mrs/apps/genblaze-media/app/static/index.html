@@ -177,6 +177,61 @@
       color: var(--ink);
       font: inherit;
     }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      background: rgba(0, 0, 0, 0.25);
+    }
+    .badge.ok { border-color: var(--accent); color: var(--ink); }
+    .badge.warn { border-color: var(--warn); }
+    .cap-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem 1rem;
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 640px) {
+      .cap-grid { grid-template-columns: 1fr; }
+    }
+    .cap-grid dt { color: var(--muted); margin: 0; }
+    .cap-grid dd { margin: 0 0 0.35rem; }
+    .market-list {
+      list-style: none;
+      padding: 0;
+      margin: 0.75rem 0 0;
+    }
+    .market-list li {
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.92rem;
+    }
+    .market-list button.linkish {
+      background: transparent;
+      border: 0;
+      color: var(--accent);
+      padding: 0;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .quick-steps {
+      margin: 0.75rem 0 0;
+      padding-left: 1.2rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .quick-steps strong { color: var(--ink); }
   </style>
 </head>
 <body>
@@ -202,6 +257,99 @@
         Documentation only — this service does <strong>not</strong> implement CROS.
       </span>
     </p>
+
+    <section class="path" id="byok-quickstart" aria-labelledby="byok-quickstart-heading">
+      <h2 id="byok-quickstart-heading">BYOK Quickstart</h2>
+      <p class="tips" role="note">
+        Local-first. Keys stay in <code>sessionStorage</code>. Scope: <strong>stills + assist</strong>.
+        Hosted BYOK stays off unless an operator sets <code>GENBLAZE_ALLOW_BYOK=1</code>.
+        Charter: <a href="/docs/genblaze/security/byok-security-charter.md">byok-security-charter</a>
+        (docs path in repo — not served unless mounted).
+      </p>
+      <ol class="quick-steps">
+        <li><strong>Paste</strong> your NIM key below (never committed).</li>
+        <li><strong>Pick</strong> a model id from the marketplace list or type one.</li>
+        <li><strong>Save to session</strong> — tab lifetime only.</li>
+        <li><strong>Generate</strong> a still; video/polish paths reject BYOK headers.</li>
+      </ol>
+    </section>
+
+    <section class="path" id="byok-settings" aria-labelledby="byok-heading">
+      <h2 id="byok-heading">Settings · Local BYOK</h2>
+      <p class="tips" role="note">
+        <strong>Session-only key.</strong> Stored in <code>sessionStorage</code> for this tab.
+        Never written to disk by Genblaze. Hosted Render rejects BYOK unless
+        <code>GENBLAZE_ALLOW_BYOK=1</code>. Scope: stills + assist (not video/polish).
+        Keys are never sent to Digital Printer evidence.
+      </p>
+      <p id="byok-xss-warn" class="tips" role="alert" hidden style="border-left-color:var(--warn)">
+        <strong>Hosted XSS warning.</strong> This deployment is not loopback-only.
+        A browser XSS could read session keys. Prefer local Genblaze, or accept the risk
+        only with <code>GENBLAZE_ALLOW_BYOK=1</code> and a trusted origin.
+      </p>
+      <label for="byok-key">API Key (local-only)</label>
+      <input id="byok-key" type="password" autocomplete="off"
+        placeholder="nvapi-… (session only)" />
+      <label for="byok-model" style="margin-top:0.75rem">Model ID</label>
+      <input id="byok-model" type="text" list="byok-model-catalog"
+        placeholder="black-forest-labs/flux.1-schnell" />
+      <datalist id="byok-model-catalog">
+        <option value="black-forest-labs/flux.1-schnell"></option>
+        <option value="black-forest-labs/flux.1-dev"></option>
+        <option value="black-forest-labs/flux.1-pro"></option>
+        <option value="meta/llama-3.2-11b-vision-instruct"></option>
+      </datalist>
+      <div class="row">
+        <button type="button" id="byok-save">Save to session</button>
+        <button type="button" class="secondary" id="byok-clear">Clear session key</button>
+      </div>
+      <p id="byok-diag" class="tips" style="margin-top:1rem" role="status">BYOK: loading…</p>
+    </section>
+
+    <section class="path" id="model-marketplace" aria-labelledby="market-heading">
+      <h2 id="market-heading">Model Marketplace</h2>
+      <p class="tips" role="note">
+        <strong>Catalog disclosure only.</strong> Availability depends on your NIM key and
+        upstream quotas — this list is not a live inventory API.
+      </p>
+      <ul class="market-list" id="model-market-list">
+        <li>
+          <button type="button" class="linkish" data-model="black-forest-labs/flux.1-schnell">FLUX.1 schnell</button>
+          — fast stills (common default)
+        </li>
+        <li>
+          <button type="button" class="linkish" data-model="black-forest-labs/flux.1-dev">FLUX.1 dev</button>
+          — higher quality / slower
+        </li>
+        <li>
+          <button type="button" class="linkish" data-model="black-forest-labs/flux.1-pro">FLUX.1 pro</button>
+          — paid tier when your key allows
+        </li>
+        <li>
+          <button type="button" class="linkish" data-model="meta/llama-3.2-11b-vision-instruct">Llama 3.2 vision</button>
+          — assist / vision paths when wired
+        </li>
+      </ul>
+    </section>
+
+    <section class="path" id="compliance-badge" aria-labelledby="badge-heading">
+      <h2 id="badge-heading">Compliance Badge</h2>
+      <p class="tips" role="note">
+        Honest seals from <code>/health</code> + session state — not a third-party certification.
+      </p>
+      <div class="badge-row" id="compliance-badges" aria-live="polite">
+        <span class="badge">Loading…</span>
+      </div>
+    </section>
+
+    <section class="path" id="capability-registry" aria-labelledby="cap-heading">
+      <h2 id="cap-heading">Capability Registry Browser</h2>
+      <p class="tips" role="note">
+        Live disclosure from <code>GET /health</code>.
+        <code>available: false</code> means not ready on this deploy — do not treat as “implemented live.”
+      </p>
+      <dl class="cap-grid" id="cap-registry"></dl>
+    </section>
 
     <section class="path" id="stills">
       <h2>Stills · NIM FLUX or RT4D</h2>
@@ -462,8 +610,194 @@
     let latestStill = null; // { run_id, preview_url, provider }
     const isRt4dBackend = () => health && health.image_backend === "rt4d";
 
+    const BYOK_KEY = "genblaze_api_key";
+    const BYOK_MODEL = "genblaze_model_override";
+
+    function byokHeaders(extra) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, extra || {});
+      const key = sessionStorage.getItem(BYOK_KEY);
+      const model = sessionStorage.getItem(BYOK_MODEL);
+      if (key) {
+        headers["X-NVIDIA-API-Key"] = key;
+        headers["Authorization"] = "Bearer " + key;
+      }
+      if (model) headers["X-Genblaze-Model"] = model;
+      return headers;
+    }
+
+    function refreshByokDiag() {
+      const el = document.getElementById("byok-diag");
+      if (!el) return;
+      const keyPresent = !!sessionStorage.getItem(BYOK_KEY);
+      const model = sessionStorage.getItem(BYOK_MODEL) || "None";
+      const server = health && health.byok ? health.byok : null;
+      const permitted = server ? server.permitted_for_this_request : "?";
+      const flag = server ? (server.allow_byok_flag ? "Enabled" : "Disabled (local-only default)") : "?";
+      const xss = document.getElementById("byok-xss-warn");
+      if (xss) {
+        const localHost =
+          location.hostname === "127.0.0.1" || location.hostname === "localhost";
+        xss.hidden = localHost && !(server && server.hosted_render_detected);
+      }
+      el.replaceChildren();
+      const title = document.createElement("strong");
+      title.textContent = "BYOK diagnostics";
+      el.appendChild(title);
+      el.appendChild(document.createElement("br"));
+      const lines = [
+        "Key present: " + (keyPresent ? "Yes (session)" : "No"),
+        "Model override: " + model,
+        "Scope: stills + assist",
+        "Hosted BYOK flag: " + flag,
+        "Permitted for this host: " + String(permitted),
+      ];
+      lines.forEach(function (line) {
+        el.appendChild(document.createTextNode(line));
+        el.appendChild(document.createElement("br"));
+      });
+      const note = document.createElement("span");
+      note.style.fontSize = "0.9em";
+      note.textContent =
+        "Keys are never logged, never persisted server-side, never sent to Digital Printer.";
+      el.appendChild(note);
+      refreshComplianceBadges();
+      refreshCapabilityRegistry();
+    }
+
+    function refreshComplianceBadges() {
+      const row = document.getElementById("compliance-badges");
+      if (!row) return;
+      const server = health && health.byok ? health.byok : null;
+      const keyPresent = !!sessionStorage.getItem(BYOK_KEY);
+      const badges = [];
+      badges.push({
+        ok: server && server.printSoT === false,
+        text: "printSoT: false",
+      });
+      badges.push({
+        ok: !!(server && Array.isArray(server.scope) && server.scope.indexOf("stills") >= 0),
+        text: "BYOK scope: stills+assist",
+      });
+      badges.push({
+        ok: !!(server && server.permitted_for_this_request),
+        text: server && server.permitted_for_this_request ? "BYOK permitted here" : "BYOK not permitted",
+        warn: !(server && server.permitted_for_this_request),
+      });
+      badges.push({
+        ok: keyPresent,
+        text: keyPresent ? "session key present" : "no session key",
+        warn: !keyPresent,
+      });
+      badges.push({
+        ok: true,
+        text: "disclosure ≠ certification",
+        warn: true,
+      });
+      row.replaceChildren();
+      badges.forEach(function (b) {
+        const span = document.createElement("span");
+        span.className = b.warn ? "badge warn" : b.ok ? "badge ok" : "badge";
+        span.textContent = b.text;
+        row.appendChild(span);
+      });
+    }
+
+    function refreshCapabilityRegistry() {
+      const dl = document.getElementById("cap-registry");
+      if (!dl) return;
+      dl.replaceChildren();
+      if (!health) {
+        const dt = document.createElement("dt");
+        dt.textContent = "status";
+        const dd = document.createElement("dd");
+        dd.textContent = "waiting for /health";
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+        return;
+      }
+      function avail(obj) {
+        if (obj == null) return "n/a";
+        if (typeof obj === "boolean") return obj ? "true" : "false";
+        if (typeof obj === "object" && "available" in obj) {
+          return obj.available ? "available" : "unavailable";
+        }
+        return String(obj);
+      }
+      const entries = [
+        ["image_backend", health.image_backend],
+        ["byok.permitted", health.byok && health.byok.permitted_for_this_request],
+        ["rt4d", avail(health.rt4d)],
+        ["scene_spec", avail(health.scene_spec)],
+        ["image_to_scene", avail(health.image_to_scene)],
+        ["polish", avail(health.polish)],
+        ["engine3d_still", avail(health.engine3d_still)],
+        ["proton_raster", avail(health.proton_raster)],
+        ["printer", avail(health.printer)],
+        ["face_creation_assist", avail(health.face_creation_assist)],
+        ["prompt_scene", avail(health.prompt_scene)],
+        ["video_enabled", health.video_enabled],
+      ];
+      entries.forEach(function (pair) {
+        const dt = document.createElement("dt");
+        dt.textContent = String(pair[0]);
+        const dd = document.createElement("dd");
+        dd.textContent = String(pair[1]);
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      });
+    }
+
+    function warnByokModelIfNeeded(model) {
+      const catalog = Array.from(
+        document.querySelectorAll("#byok-model-catalog option"),
+      ).map(function (o) { return o.value; });
+      if (!model || catalog.indexOf(model) >= 0) return;
+      setStatus(
+        statusEl,
+        "Model id not in disclosed catalog (soft warn): " + model,
+        "warn",
+      );
+    }
+
+    document.getElementById("model-market-list")?.addEventListener("click", (ev) => {
+      const btn = ev.target && ev.target.closest ? ev.target.closest("[data-model]") : null;
+      if (!btn) return;
+      const model = btn.getAttribute("data-model");
+      const input = document.getElementById("byok-model");
+      if (input) input.value = model;
+      sessionStorage.setItem(BYOK_MODEL, model);
+      refreshByokDiag();
+    });
+
+    document.getElementById("byok-save")?.addEventListener("click", () => {
+      const key = document.getElementById("byok-key")?.value?.trim() || "";
+      const model = document.getElementById("byok-model")?.value?.trim() || "";
+      if (key) sessionStorage.setItem(BYOK_KEY, key);
+      else sessionStorage.removeItem(BYOK_KEY);
+      if (model) sessionStorage.setItem(BYOK_MODEL, model);
+      else sessionStorage.removeItem(BYOK_MODEL);
+      if (document.getElementById("byok-key")) document.getElementById("byok-key").value = "";
+      warnByokModelIfNeeded(model);
+      refreshByokDiag();
+      setStatus(statusEl, "BYOK session updated (key not shown).", "");
+    });
+    document.getElementById("byok-clear")?.addEventListener("click", () => {
+      sessionStorage.removeItem(BYOK_KEY);
+      sessionStorage.removeItem(BYOK_MODEL);
+      if (document.getElementById("byok-model")) document.getElementById("byok-model").value = "";
+      refreshByokDiag();
+      setStatus(statusEl, "BYOK session cleared.", "");
+    });
+    (function loadByokForm() {
+      const model = sessionStorage.getItem(BYOK_MODEL);
+      if (model && document.getElementById("byok-model")) {
+        document.getElementById("byok-model").value = model;
+      }
+      refreshByokDiag();
+    })();
+
     function nvidiaVisionReady() {
-      return !!(health && health.nvidia_configured);
+      return !!(health && (health.nvidia_configured || sessionStorage.getItem(BYOK_KEY)));
     }
 
     function updateRt4dNvidiaControls() {
@@ -659,15 +993,18 @@
       if (dualPreviews) dualPreviews.hidden = true;
       try {
         const thenScene = document.getElementById("then-scene")?.checked === true;
+        const modelOverride = sessionStorage.getItem(BYOK_MODEL);
+        const genBody = {
+          prompt,
+          embed: true,
+          then_scene: thenScene,
+          quality: stillQuality,
+        };
+        if (modelOverride) genBody.model = modelOverride;
         const res = await fetch("/api/generate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt,
-            embed: true,
-            then_scene: thenScene,
-            quality: stillQuality,
-          }),
+          headers: byokHeaders(),
+          body: JSON.stringify(genBody),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -774,7 +1111,7 @@
         }
         const res = await fetch("/api/image-to-scene", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: byokHeaders(),
           body: JSON.stringify(body),
         });
         const data = await res.json().catch(() => ({}));
@@ -938,7 +1275,7 @@
         try {
           const res = await fetch("/api/rt4d-to-nvidia", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: byokHeaders(),
             body: JSON.stringify({
               run_id: latestStill.run_id,
               render: true,
@@ -1150,13 +1487,15 @@
     fetch("/health").then(r => r.json()).then(h => {
       health = h;
       updateRt4dNvidiaControls();
+      refreshByokDiag();
       const cosmosSection = document.getElementById("nim-cosmos");
       const videoOn = h.video_enabled === true;
       if (cosmosSection) {
         cosmosSection.hidden = !videoOn;
       }
-      if (!h.nvidia_configured && !h.dry_run && h.image_backend !== "rt4d") {
-        setStatus(statusEl, h.nvidia_help || "NVIDIA_API_KEY not configured — generate will return 503 until set.", "warn");
+      const sessionKey = !!sessionStorage.getItem(BYOK_KEY);
+      if (!h.nvidia_configured && !sessionKey && !h.dry_run && h.image_backend !== "rt4d") {
+        setStatus(statusEl, h.nvidia_help || "NVIDIA_API_KEY not configured — set server env or use Settings · Local BYOK.", "warn");
       } else if (h.image_backend === "rt4d" && h.rt4d && !h.rt4d.available) {
         setStatus(
           statusEl,

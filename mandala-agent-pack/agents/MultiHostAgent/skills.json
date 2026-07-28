@@ -1,0 +1,9 @@
+{
+  "agent": "MultiHostAgent",
+  "domain": "Browser, Unity, Unreal hosts, adapters, routing, safety",
+  "skills": [
+    "validateBrowserHost", "validateUnityHost", "validateUnrealHost", "validateHostAdapters",
+    "validateHostRouting", "validateHostDeterminismBoundaries", "validateHostSafety"
+  ],
+  "status": "declared"
+}

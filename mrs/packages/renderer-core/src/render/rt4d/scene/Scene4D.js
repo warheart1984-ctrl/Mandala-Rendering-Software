@@ -6,6 +6,7 @@ import { SkinnedMeshIntersector } from "../intersection/SkinnedMeshIntersector.j
 import { wrapPrimitiveIntersector } from "../geometry/PrimitiveIntersectors.js";
 import { environmentToEmission, normalizeRt4dLight } from "../lighting/Rt4dLightAdapter.js";
 import { vec4, dot, normalize, sub, length } from "../math/vec4.js";
+import { TriangleMesh4D } from "../geometry/TriangleMesh4D.js";
 
 export class Scene4D {
   constructor() {
@@ -28,6 +29,25 @@ export class Scene4D {
     }
     wrapPrimitiveIntersector(prim, materialId);
     this.primitives.push(prim);
+    return this;
+  }
+
+  addTriangleMesh(mesh, materialId) {
+    if (mesh.kind !== "triangle-mesh") {
+      mesh = new TriangleMesh4D(mesh);
+    }
+    mesh.materialId = materialId;
+    const intersector = new SkinnedMeshIntersector(mesh);
+    mesh.intersect = (ray) => intersector.intersect(ray);
+    wrapPrimitiveIntersector(mesh, materialId);
+    this.primitives.push(mesh);
+    if (mesh.materialSlots) {
+      for (const slotId of new Set(Object.values(mesh.materialSlots))) {
+        if (!this.materials.get(slotId)) {
+          this.materials.createMaterial(slotId, "lambertian", { albedo: [0.8, 0.8, 0.8, 1] });
+        }
+      }
+    }
     return this;
   }
 

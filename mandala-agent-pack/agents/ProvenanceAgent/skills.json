@@ -1,0 +1,9 @@
+{
+  "agent": "ProvenanceAgent",
+  "domain": "provenance record, lineage, hashing, schema",
+  "skills": [
+    "validateProvenanceRecord", "validateProvenanceLineage", "validateProvenanceHashing",
+    "validateProvenanceSchema", "generateProvenanceTests"
+  ],
+  "status": "declared"
+}

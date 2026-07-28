@@ -19,7 +19,15 @@ function importFromRoot(relativePath) {
 
 // ── stub fetch so CKL.loadDefault works in Node ───────────────────
 async function stubFetch(url) {
-  const filePath = resolve(root, url);
+  const href = (typeof url === "string" ? url : String(url)).trim();
+  let filePath;
+  try {
+    // Normalize: URL() constructor handles platform-specific quirks
+    filePath = fileURLToPath(new URL(href));
+  } catch {
+    // Fallback: treat as relative path
+    filePath = resolve(root, href.replace(/^file:\/*/i, ""));
+  }
   const text = await readFile(filePath, "utf-8");
   return { ok: true, json: async () => JSON.parse(text) };
 }

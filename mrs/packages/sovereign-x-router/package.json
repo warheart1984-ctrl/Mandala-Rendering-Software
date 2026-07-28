@@ -1,0 +1,32 @@
+{
+  "name": "@mrs/sovereign-x-router",
+  "version": "0.3.0",
+  "description": "Sovereign X vendor capability registry + GPU assist (re-exports sovereign-x/ SoT; print = cpu.rt4d.print)",
+  "type": "module",
+  "private": true,
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./registry": "./src/registry.js",
+    "./dispatch": "./src/dispatch.js",
+    "./GpuDispatchContract": "./src/GpuDispatchContract.js",
+    "./GpuAssistModule": "./src/GpuAssistModule.js",
+    "./lookdev": "./src/lookdev/SovereignLookDevEngine.js",
+    "./modules/gpuAssistModule": "./src/modules/gpuAssistModule.js",
+    "./modules/gpuDispatchContract": "./src/modules/gpuDispatchContract.js",
+    "./modules/lookDevEngine": "./src/modules/lookDevEngine.js",
+    "./integrator": "../../../../sovereign-x/router/modules/gpu/integrator/deterministicGpuIntegrator.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:parity": "node --test ../../../sovereign-x/tests/gpuParitySuite.test.js",
+    "test:promotion": "node --test ../../../sovereign-x/tests/gpuIntegratorPromotion.test.js",
+    "test:cli": "node --test ../../../sovereign-x/tests/sxCapabilitiesCli.test.js",
+    "test:sot-all": "node --test ../../../sovereign-x/tests/*.test.js",
+    "sx:capabilities": "node ../../../sovereign-x/cli/sx-capabilities.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

@@ -16,17 +16,19 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import process from "node:process";
 
-import { mintCir } from "../../../adapters/proton-raster-bridge/mintCir.js";
+import {
+  resolveMintCirPath,
+  resolveProtonIndexPath,
+  scriptDir,
+  toFileUrl,
+} from "./lib/resolveDualLayout.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = scriptDir(import.meta.url);
 const PKG_ROOT = join(__dirname, "..");
 const ENGINE3D_ROOT = join(PKG_ROOT, "..", "engine3d-core");
-const PROTON_INDEX = pathToFileURL(
-  join(__dirname, "../src/render/rt4d/proton/index.js"),
-).href;
 
 const USAGE = `render-proton-splat.mjs — CECP six-mod proton pipeline (STATUS: enforced)
 
@@ -120,8 +122,8 @@ async function loadEngine3d(moduleRel) {
 
 /**
  * @param {Record<string, string|boolean>} args
- * @param {Awaited<ReturnType<typeof import>>} proton
- * @param {import("../../../adapters/proton-raster-bridge/mintCir.js").CirOverlay|object} cir
+ * @param {object} proton
+ * @param {{ id: string, actor?: string, purpose?: string, timestamp?: string, status?: string }} cir
  * @param {number} width
  * @param {number} height
  */
@@ -311,7 +313,8 @@ async function runWorldDemo(args, proton, cir, width, height) {
  * @param {Record<string, string|boolean>} args
  */
 async function run(args) {
-  const proton = await import(PROTON_INDEX);
+  const proton = await import(toFileUrl(resolveProtonIndexPath(__dirname)));
+  const { mintCir } = await import(toFileUrl(resolveMintCirPath(__dirname)));
   const {
     runProtonPipeline,
     demoSceneSpec,

@@ -1,0 +1,122 @@
+# Mandala Agent CI (pack template)
+
+# Status: **partial** probes. Canonical copy for operators; live workflow is
+# `.github/workflows/mandala-agent-ci.yml` (keep paths aligned).
+
+name: Mandala Agent CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  constitutional-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Constitutional linter (partial heuristics)
+        run: node mandala-agent-pack/lint/run-lint.js
+
+  drift-radar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Generate drift radar report
+        run: node mandala-agent-pack/drift-radar/generate-report.js > drift-radar.json
+      - name: Upload drift-radar.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-radar
+          path: drift-radar.json
+
+  auto-fix-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Auto-fix dry-run only (never --apply in CI)
+        run: node mandala-agent-pack/auto-fix/auto-fix.js
+
+  governance-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Governance unit tests
+        run: npm run test:governance
+
+  conformance-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Conformance profile tests
+        run: npm run test:conformance
+
+  runtime-provenance-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Provenance + Replay unit tests
+        run: npm run test:runtime-provenance
+
+  engine3d-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install + build TypeScript + test
+        working-directory: mrs/packages/engine3d-core
+        run: |
+          npm ci || npm install
+          npm run build
+          npm run test:engine3d
+
+  release-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Version alignment
+        run: npm run release:check
+
+  genblaze-byok-pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Genblaze test deps (minimal)
+        working-directory: mrs/apps/genblaze-media
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pytest fastapi httpx starlette pydantic python-dotenv || true
+      - name: BYOK + constitutional compliance tests
+        working-directory: mrs/apps/genblaze-media
+        run: |
+          python -m pytest tests/test_byok.py tests/test_constitutional_compliance.py -q
+        continue-on-error: false

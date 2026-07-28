@@ -74,6 +74,7 @@ export function buildUvSphereMesh(
 ): RasterMesh {
   const positions: number[] = [];
   const normals: number[] = [];
+  const uvs: number[] = [];
   const indices: number[] = [];
   for (let y = 0; y <= rings; y++) {
     const v = y / rings;
@@ -88,6 +89,7 @@ export function buildUvSphereMesh(
       const nz = Math.sin(theta) * sr;
       positions.push(nx * radius, ny * radius, nz * radius);
       normals.push(nx, ny, nz);
+      uvs.push(u, v);
     }
   }
   const stride = segments + 1;
@@ -105,6 +107,7 @@ export function buildUvSphereMesh(
     indices: new Uint32Array(indices),
     modelMatrix,
     baseColor,
+    uvs: new Float32Array(uvs),
   };
 }
 

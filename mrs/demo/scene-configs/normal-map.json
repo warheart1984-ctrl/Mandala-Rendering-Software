@@ -1,0 +1,21 @@
+{
+  "sceneId": "normal-map",
+  "description": "Normal map — TBN perturbation stress test",
+  "glbPath": "mrs/demo/normal-map-test.glb",
+  "width": 512,
+  "height": 512,
+  "spp": 64,
+  "seed": 1003,
+  "camera": {
+    "orbitAngle": 0.5,
+    "orbitRadius": 3.5,
+    "elevation": 1.0,
+    "focalDistance": 2.5
+  },
+  "thresholds": {
+    "maxPixelDelta": 0.01,
+    "mse": 0.0001,
+    "ssim": 0.99
+  },
+  "validates": "tangent/bitangent interpolation, TBN normal map path, shading vs geometric normal"
+}

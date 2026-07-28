@@ -1,0 +1,12 @@
+{
+  "agent": "GenblazeAgent",
+  "domain": "BYOK, UI validation, Genblaze pipeline, assist-only",
+  "skills": [
+    "validateBYOKSessionStorage", "validateHeaderInjection", "validateModelOverride",
+    "validateHostedBYOKFlag", "validateKeyNeverLogged", "validateKeyNeverPersisted",
+    "validateKeyNeverPrinter", "validateSettingsPanel", "validateDiagnosticsPanel",
+    "validateModelMarketplace", "validateFaceCreationUI", "validateSceneSpecVisualizer",
+    "validateGenblazePipeline", "validateAssistOnlyDomain", "validateDeterminismBoundaries"
+  ],
+  "status": "declared"
+}

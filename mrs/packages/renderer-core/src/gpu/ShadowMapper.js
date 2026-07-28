@@ -71,8 +71,9 @@ export class ShadowMapper {
         return output;
       }
       
+      // Depth-only pass: write frag_depth (no color targets).
       @fragment
-      fn fs_main(@builtin(position) fragCoord: vec4<f32>) -> f32 {
+      fn fs_main(@builtin(position) fragCoord: vec4<f32>) -> @builtin(frag_depth) f32 {
         // Raymarch to find depth
         let dimensions = vec2<f32>(uniforms.projMatrix[0][0], uniforms.projMatrix[1][1]);
         var uv = (fragCoord.xy - dimensions * 0.5) / dimensions.y;
@@ -89,7 +90,8 @@ export class ShadowMapper {
           t += max(abs(d) * 0.8, 0.001);
         }
         
-        return t;
+        // Normalize to [0,1] depth range for depth32float attachment.
+        return clamp(t / 100.0, 0.0, 1.0);
       }
       
       fn sdfScene(p: vec3<f32>) -> f32 {
@@ -129,6 +131,15 @@ export class ShadowMapper {
     this.shadowBindGroup = this.device.createBindGroup({
       layout: bindGroupLayout,
       entries: [{ binding: 0, resource: { buffer: this.shadowUniformBuffer } }]
+    });
+
+    // Consumer BGL (sampling shadow map) — distinct from depth-pass layout (binding 0 only).
+    this.consumerBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'comparison' } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'depth' } },
+      ],
     });
   }
   
@@ -185,14 +196,34 @@ export class ShadowMapper {
   }
   
   getShadowBindGroup(index = 0) {
+    void index;
     return this.device.createBindGroup({
-      layout: this.shadowBindGroupLayout,
+      layout: this.consumerBindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.shadowUniformBuffer } },
         { binding: 1, resource: this.shadowSampler },
-        { binding: 2, resource: this.shadowMap.createView() }
-      ]
+        { binding: 2, resource: this.shadowMap.createView() },
+      ],
     });
+  }
+
+  getConsumerBindGroupLayout() {
+    return this.consumerBindGroupLayout;
+  }
+
+  /**
+   * Testable alias for depth-pass pipeline creation.
+   */
+  _createShadowPipeline() {
+    return this.createShadowPipeline();
+  }
+
+  /**
+   * Testable: begin → set pipeline/bindgroup → draw → end on mock encoder.
+   * @param {{ beginRenderPass: Function }} commandEncoder
+   */
+  _runShadowPass(commandEncoder) {
+    this.renderShadowPass(commandEncoder);
   }
 }
 

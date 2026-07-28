@@ -14,7 +14,8 @@ src/
   render/      canvas-renderer, wireframe, solid
   pipeline/    scene, movie-pipeline (Node + optional FFmpeg)
   cli.js       4d-render CLI
-  index.js     browser-safe exports (no node-canvas)
+  index.js     package root (mixed historical surface; prefer @mrs/renderer-core/node for Node-only APIs)
+  node.js      Node-oriented exports (GPUPreviewClient, LiveLink, shared-memory helpers)
 ```
 
 ## Showcase demo (Canvas)

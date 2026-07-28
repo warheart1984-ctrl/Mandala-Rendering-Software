@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "MrsPrinterMcpCapabilities",
+  "status": "skeleton",
+  "note": "Thin capability descriptors for MCP/Custom GPT Actions. Not a full MCP server process.",
+  "basePath": "/printer",
+  "capabilities": [
+    {
+      "name": "printer.print_surface",
+      "http": { "method": "POST", "path": "/printer/print" },
+      "statusTag": "partial"
+    },
+    {
+      "name": "printer.validate_scene",
+      "http": { "method": "POST", "path": "/printer/validate" },
+      "statusTag": "enforced"
+    },
+    {
+      "name": "printer.get_evidence",
+      "http": { "method": "POST", "path": "/printer/provenance" },
+      "statusTag": "partial"
+    },
+    {
+      "name": "printer.get_lineage",
+      "http": { "method": "POST", "path": "/printer/provenance" },
+      "statusTag": "partial",
+      "note": "Lineage returned alongside provenanceFrames / evidence."
+    }
+  ],
+  "trail": "docs/governance/cecp/trails/printer-mode-renderer-2026-07/"
+}

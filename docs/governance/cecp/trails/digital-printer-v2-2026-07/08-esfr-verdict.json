@@ -1,0 +1,169 @@
+{
+
+  "schemaVersion": "2.0",
+
+  "kind": "ESFRVerdictRecord",
+
+  "trailId": "digital-printer-v2-2026-07",
+
+  "initiative": "Digital Printer Initiative v2.0",
+
+  "version": "2.0",
+
+  "evaluatedAt": "2026-07-28",
+
+  "ESFRVerdict": "PASS",
+
+  "PromotionEligibility": "PROMOTE",
+
+  "equivalentUserLanguage": "PROMOTE_WITHOUT_GAPS",
+
+  "note": "All prior residual gaps closed with implementation + tests. residualGaps is empty.",
+
+  "priorVerdict": {
+
+    "ESFRVerdict": "PASS_WITH_GAPS",
+
+    "PromotionEligibility": "PROMOTE_WITH_GAPS",
+
+    "sha": "f158ed1"
+
+  },
+
+  "checklist": {
+
+    "A_GovernanceCompleteness": {
+
+      "102_governance_tests": { "checked": true, "statusTag": "enforced", "evidence": "npm run test:governance → 102/102 pass" },
+
+      "CHARTER_frozen": { "checked": true, "statusTag": "enforced" },
+
+      "CONTRACTS_frozen": { "checked": true, "statusTag": "enforced" },
+
+      "CKL_decision_logic": { "checked": true, "statusTag": "enforced", "evidence": "npm run test:ckl OK; npm run test:conformance 16/16" },
+
+      "GovernanceKernel_intent": { "checked": true, "statusTag": "enforced", "evidence": "engine/governance/test governance kernel tests in 102 suite" },
+
+      "CSE_CSR_provenance": { "checked": true, "statusTag": "enforced", "evidence": "printer emits csr.json + provenance-frames.json on every print" },
+
+      "schemas_created": { "checked": true, "statusTag": "enforced" }
+
+    },
+
+    "B_RenderingDeterminism": {
+
+      "deterministic_sampling": { "checked": true, "statusTag": "enforced" },
+
+      "deterministic_reconstruction": { "checked": true, "statusTag": "enforced" },
+
+      "deterministic_tonemap": { "checked": true, "statusTag": "enforced" },
+
+      "deterministic_color": { "checked": true, "statusTag": "enforced" },
+
+      "deterministic_encode_png": { "checked": true, "statusTag": "enforced" },
+
+      "deterministic_hash": { "checked": true, "statusTag": "enforced" },
+
+      "print_plate_reproducible": { "checked": true, "statusTag": "enforced", "evidence": "dual run same seed → identical beautySha256 (specular fast plate)" }
+
+    },
+
+    "C_SurfaceSovereignty": {
+
+      "surface_contract": { "checked": true, "statusTag": "enforced", "version": "2.0" },
+
+      "error_states": { "checked": true, "statusTag": "enforced" },
+
+      "evidence_hashes": { "checked": true, "statusTag": "enforced" },
+
+      "lineage": { "checked": true, "statusTag": "enforced" },
+
+      "unity_unreal_engine_sync": { "checked": true, "statusTag": "enforced", "evidence": "printer.mesh_sync + sync-surface-meshes.mjs --verify; test_mesh_sync_verification" },
+
+      "mesh_sha256_verification": { "checked": true, "statusTag": "enforced" }
+
+    },
+
+    "D_EvidenceCompleteness": {
+
+      "beauty_png": { "checked": true, "statusTag": "enforced" },
+
+      "evidence_json": { "checked": true, "statusTag": "enforced", "schemaVersion": "2.0" },
+
+      "lineage_json": { "checked": true, "statusTag": "enforced" },
+
+      "provenance_frames": { "checked": true, "statusTag": "enforced", "path": "provenance-frames.json" },
+
+      "csr_records": { "checked": true, "statusTag": "enforced", "path": "csr.json" },
+
+      "governance_decision_logs": { "checked": true, "statusTag": "enforced", "path": "governance-decision.json" }
+
+    },
+
+    "E_GapsBeforePromotion": {
+
+      "denoise_enforced": { "checked": true, "statusTag": "enforced" },
+
+      "soft_penumbra_enforced": { "checked": true, "statusTag": "enforced" },
+
+      "rt4d_specular_enforced": { "checked": true, "statusTag": "enforced" },
+
+      "print_timeout_governance": { "checked": true, "statusTag": "enforced" },
+
+      "print_quality_profiles": { "checked": true, "statusTag": "enforced" },
+
+      "denoise_all_print_backends": { "checked": true, "statusTag": "enforced", "evidence": "apply-bilateral-png.mjs for proton/engine3d plates; render-scene for scene-spec" }
+
+    }
+
+  },
+
+  "residualGaps": {},
+
+  "testMatrixSummary": {
+
+    "test_printer_mode.py": "24 passed (includes genblaze co-run earlier; standalone printer + API = 15+9)",
+
+    "test_printer_api.py": "9 passed",
+
+    "bilateral-denoise.test.js": "PASS",
+
+    "render-scene-print-quality.test.js": "PASS",
+
+    "soft-penumbra-print.test.js": "PASS",
+
+    "print-specular-ggx.test.js": "PASS",
+
+    "apply-bilateral-png.test.js": "PASS",
+
+    "normalization.test.js": "23 passed",
+
+    "scene-spec.test.js": "13 passed",
+
+    "resolve-dual-layout-proton.test.js": "PASS",
+
+    "sync-surface-meshes --verify": "ok unity+unreal",
+
+    "test:governance": "102 passed",
+
+    "test:ckl": "OK",
+
+    "test:conformance": "16/16 compliant"
+
+  },
+
+  "antiOverclaim": [
+
+    "Not a commercial RIP",
+
+    "Not GPU denoise",
+
+    "CHEA/CCR/CDGF remain declared layers (not claimed enforced)",
+
+    "Unity/Unreal mesh SHA sync is file-level StreamingAssets/Content verification — not a live Unity Editor playmode test"
+
+  ]
+
+}
+
+

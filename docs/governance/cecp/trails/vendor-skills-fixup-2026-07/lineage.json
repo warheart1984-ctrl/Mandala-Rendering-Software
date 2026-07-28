@@ -1,0 +1,38 @@
+{
+  "trailId": "vendor-skills-fixup-2026-07",
+  "feature": "Vendor skills → Genblaze NIM ops + GPU host/ROCm honesty scaffolding",
+  "started": "2026-07-28",
+  "branch": "feat/engine3d-genblaze-cinematic-plugin",
+  "pr": 83,
+  "overallStatus": "partial",
+  "mode": ["Pipeline-Conductor", "Anchor", "Runtime-Sage"],
+  "actorMode": "Anchor",
+  "stages": {
+    "01-architect": "complete",
+    "02-builder": "complete",
+    "03-implementor": "complete",
+    "04-reviewer": "PASS_WITH_GAPS",
+    "05-inspector": "PASS_WITH_GAPS",
+    "06-esfr": "PASS_WITH_GAPS"
+  },
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "skills": {
+    "used": [
+      "dynamo-troubleshoot (pattern)",
+      "tao-setup-nvidia-gpu-host (check-only)",
+      "tao-run-inference-service (readiness pattern)",
+      "rocm-setup (detect scaffold)",
+      "rocm-doctor (honesty)",
+      "local-ai-use (env docs / lemonade)",
+      "nvidia-skill-finder (routing)"
+    ],
+    "skipped": [
+      "rag-blueprint (not RAG repo)",
+      "tilegym-cutile-python (N/A no CUDA kernel candidate)",
+      "hip-rocm (no HIPIFY / kernels)",
+      "magpie-kernel-evaluator (no kernels)",
+      "tao --install (no user auth for host package install)"
+    ]
+  }
+}

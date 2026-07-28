@@ -1,0 +1,134 @@
+{
+  "mandalaAgents": [
+    {
+      "name": "ConstitutionalGovernanceAgent",
+      "skills": [
+        "detectCharterVersionDrift", "validateOrganStatuses", "enforceOrganStateCorrectness",
+        "syncCharterWithDocs", "validateConstitutionalInvariants", "detectMissingOrganDefinitions",
+        "validateGovernanceKernelState", "detectCKLPrecedentDrift", "validateCKLFilters",
+        "validateCKLLoadDefaultPath", "validateCKLModifierLogic", "validateCKLTruthinessRules",
+        "validateCKLRecentDenialsLogic", "validateCKLDecisionTypes", "validateCSEStateTransitions",
+        "validateCSEIntentParsing", "validateCSEEvidenceRouting", "validateCSEDeterminismRequired",
+        "validateCSEErrorPropagation", "validateDefaultPolicies", "detectMissingPolicyBindings",
+        "validatePolicySchemas", "validatePolicyEnforcementPaths", "generateGovernanceTests",
+        "generateCKLTests", "generateCSETests", "generatePolicyTests",
+        "generateConstitutionalRoutingTests", "detectCharterImplementationDrift",
+        "detectCKLTestDrift", "detectPolicyRuntimeDrift", "detectCSERouterDrift"
+      ]
+    },
+    {
+      "name": "GPUWebGPUAgent",
+      "skills": [
+        "validateGPUTextureUsage", "validateGPUBufferUsage", "validateStoreOpLoadOp",
+        "validateRenderPipelineConfig", "validateComputePipelineConfig", "validateShaderModuleCreation",
+        "validateBindGroupLayouts", "validateSamplerUsage", "validateSharedGPUImageBinaryParsing",
+        "validateSharedFramePreviewParsing", "validateGPURenderPipelineLifecycle",
+        "validateGPUMeshRendererSupport", "validateEnvironmentMapperUsage", "validateShadowMapperPipeline",
+        "validatePostProcessorUniformLayout", "validateComputeMeshSamplerShaderGen",
+        "validateGPUPreviewClientFallback", "generateMockWebGPUDevice", "generateGPUPipelineTests",
+        "generateShaderTests", "generateComputeTests", "generatePreviewTests",
+        "detectUnsafeGPUUsage", "detectIncorrectBufferMapping", "detectIncorrectTextureCreation",
+        "detectIncorrectPipelineStoreOp"
+      ]
+    },
+    {
+      "name": "RendererCoreAgent",
+      "skills": [
+        "validateModuleBoundaries", "validateESMImports", "validateDynamicImports",
+        "validatePathToFileURLUsage", "validateTimelineSerializer", "validateReplayService",
+        "validateProvenanceRecorder", "validateConformanceChecker", "validateNVENCEncoder",
+        "validateGPUVideoEncoder", "validateSurfaceSyncScript", "validateRendererWebBuildStep",
+        "validateSchemas", "validatePackageFilesField"
+      ]
+    },
+    {
+      "name": "SecurityHardeningAgent",
+      "skills": [
+        "detectShellInjection", "detectXSS", "detectUnsafeEval", "detectUnsafeDynamicImport",
+        "detectUnsafeFSBrowserUsage", "detectUnsafeLedgerCalls", "validateSecurityMD",
+        "validateBrowserSafety", "validateAsyncLedgerCalls", "validateGPUVideoEncoderCatch",
+        "validateNVENCEncoderDynamicImport", "validateEnvVarUsage", "validateErrorPropagation",
+        "validateFallbackLogic", "removeStrayConsoleLogs", "removeDebugPrints"
+      ]
+    },
+    {
+      "name": "ConformanceAgent",
+      "skills": [
+        "validateConformanceSchemas", "validateConformanceRules", "validateConformanceTestCoverage",
+        "validateConformanceErrors", "detectConformanceDrift", "generateConformanceTests",
+        "validateConformanceCheckerLogic"
+      ]
+    },
+    {
+      "name": "ReplayAgent",
+      "skills": [
+        "validateReplayRecord", "validateReplayPlayback", "validateReplayDeterminism",
+        "validateReplayErrorPropagation", "generateReplayTests", "validateReplayLineage"
+      ]
+    },
+    {
+      "name": "ProvenanceAgent",
+      "skills": [
+        "validateProvenanceRecord", "validateProvenanceLineage", "validateProvenanceHashing",
+        "validateProvenanceSchema", "generateProvenanceTests"
+      ]
+    },
+    {
+      "name": "GenblazeAgent",
+      "skills": [
+        "validateBYOKSessionStorage", "validateHeaderInjection", "validateModelOverride",
+        "validateHostedBYOKFlag", "validateKeyNeverLogged", "validateKeyNeverPersisted",
+        "validateKeyNeverPrinter", "validateSettingsPanel", "validateDiagnosticsPanel",
+        "validateModelMarketplace", "validateFaceCreationUI", "validateSceneSpecVisualizer",
+        "validateGenblazePipeline", "validateAssistOnlyDomain", "validateDeterminismBoundaries"
+      ]
+    },
+    {
+      "name": "MultiHostAgent",
+      "skills": [
+        "validateBrowserHost", "validateUnityHost", "validateUnrealHost", "validateHostAdapters",
+        "validateHostRouting", "validateHostDeterminismBoundaries", "validateHostSafety"
+      ]
+    },
+    {
+      "name": "DocumentationAgent",
+      "skills": [
+        "generateCharters", "generateWhitepapers", "generateOperatorManuals",
+        "generateGovernanceDocs", "generateGPUConstitution", "generateBYOKCharter",
+        "generatePipelineDiagrams", "generateLineageDocs", "generateConformanceDocs",
+        "generateReplayDocs"
+      ]
+    },
+    {
+      "name": "CIAgent",
+      "skills": [
+        "validateCIPipeline", "validateTestRunner", "validateCoverage", "validateBuildSteps",
+        "validateLinting", "validateFormatting", "validatePackageFields"
+      ]
+    },
+    {
+      "name": "CodeQualityAgent",
+      "skills": [
+        "validateNaming", "validateStructure", "validateModuleBoundaries", "validateComments",
+        "validateReadability", "validateMaintainability", "validateDeadCode", "validateUnusedImports"
+      ]
+    },
+    {
+      "name": "TestGenerationAgent",
+      "skills": [
+        "generateNodeTestSuites", "generateMockDevices", "generateMockEncoders",
+        "generateMockPipelines", "generateGovernanceTests", "generateGPUTests",
+        "generateConformanceTests", "generateReplayTests", "generateProvenanceTests",
+        "generateBYOKTests", "generateSceneSpecTests", "generateCharacterSpecTests"
+      ]
+    },
+    {
+      "name": "ConstitutionalComplianceAgent",
+      "skills": [
+        "validateDeterminismBoundaries", "validateAssistOnlyGPU", "validateSovereignCPUPrint",
+        "validateEvidenceChainPurity", "validateConstitutionalRouting", "validateConstitutionalInvariants",
+        "validateComplianceTestSuite", "generateComplianceTests"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "engine": "mrs-renderer-core/rt4d",
+  "renderer_version": "1.3.0",
+  "kind": "deterministic-procedural-4d-render",
+  "note": "Procedural scene selection + seeded RT4D path trace. NOT text-to-image / not diffusion. Archetypes (including tesseract-lattice) are abstract 4D primitive compositions, not photoreal or semantic synthesis.",
+  "prompt": "cyan glass chrome tesseract lattice with glowing core, studio rim lighting",
+  "prompt_hash": 133437196,
+  "seed": 42,
+  "scene": "tesseract-lattice",
+  "palette": "neon",
+  "material_type": "ggx",
+  "object_count": 103,
+  "composition": {
+    "tesseract_vertices": 16,
+    "tesseract_edges": 32,
+    "beam_capsules": 32,
+    "beam_spheres": 0,
+    "spoke_capsules": 6,
+    "spoke_spheres": 0,
+    "ring_tori": 2,
+    "ring_capsules": 48,
+    "ring_nodes": 0,
+    "emissive_cores": 1,
+    "ring_material": "beam",
+    "ring_material_note": "dielectric glass capsule-ring tubes",
+    "beam_material": "dielectric-glass",
+    "material_stack": "glass_tube_beam+chrome_joint+core_glow",
+    "geometry_note": "edge beams + mandala rings are OrientedCapsule tubes (rings via chord approx; not bead spheres)",
+    "postprocess": "bloom+vignette+dark-studio-env"
+  },
+  "camera": {
+    "position": {
+      "x": -6.27846318499904,
+      "y": 1.1976387940160929,
+      "z": -1.241329945909512,
+      "w": 0
+    },
+    "look_at": {
+      "x": 0,
+      "y": 0.55,
+      "z": 0,
+      "w": 0
+    },
+    "fov_x": 52,
+    "fov_y": 52,
+    "fov_w": 8
+  },
+  "width": 1024,
+  "height": 1024,
+  "samples": 16,
+  "max_depth": 5,
+  "bytes": 610364,
+  "sha256": "aca5ff3bdad6939cdeb249628779730614ca1694983b7d99450a8be937c68b4f",
+  "mean_luminance": 95.751,
+  "mean_luminance_center": 150.532,
+  "dark_pixel_fraction": 0.3265,
+  "invariant": {
+    "id": "PI-GEO-LENGTH",
+    "status": "tested",
+    "ok": true
+  },
+  "output": "data/stills/lattice-hero.png"
+}

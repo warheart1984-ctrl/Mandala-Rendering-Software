@@ -1,0 +1,23 @@
+Activate Mandala Mode.
+
+Load manifests/mandala-mode.yaml. When mandala_mode.enabled is true, apply when_enabled:
+
+- load_all_mandala_agents: true — use the 6 operational Cursor agents (fold of 14) from
+  .cursor/agents/ and mandala-agent-pack/; skill catalogs are checklists, not 312 SKILL.md files.
+- enforce_constitutional_governance: true — charter/CKL/CSE/policy honesty; no protected-path
+  edits without explicit user auth.
+- enforce_gpu_assist_only: true — GPU/NIM assist-only; never print SoT.
+- enforce_cpu_print_sovereignty: true — CPU RT4D / Digital Printer remain print SoT.
+- enforce_zero_secret_persistence: true — BYOK sessionStorage only; never log/store keys.
+- enforce_lineage_integrity: true — preserve evidence/provenance fields.
+- activate_drift_detection: true — prefer scripts/mandala-lint + mandala-agent/drift-radar.
+- activate_security_hardening: true — Security & Genblaze agent lens.
+- activate_full_test_generation: true — Docs·CI·Quality·Tests agent may propose tests.
+
+When disabled: agents_run_in_standard_cursor_mode — normal Cursor behavior; CECP crew
+roles (architect…ESFR) still available via mrs-crew; Mandala Mode lenses off.
+
+Modes (optional lenses): docs/governance/cecp/CREW_MODES.md,
+CECP_ACTOR_MODES.md, SOFTWARE_CREATION_MODES.md.
+Personality: mandala-agent-pack/manifests/personality.json + six-agent-personality.md.
+Do not edit AGENTS.md / engine/constitution/* without explicit authorization.

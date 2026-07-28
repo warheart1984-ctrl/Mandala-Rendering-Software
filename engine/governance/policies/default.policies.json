@@ -29,7 +29,7 @@
     "condition": "actor_has_contract",
     "rule": "deny_if_false",
     "severity": "critical",
-    "message": "No authority without contract."
+    "message": "No authority without contract (actor must have a registered contract)."
   },
   {
     "id": "policy-play-timeline-requires-world",

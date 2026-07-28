@@ -1,0 +1,10 @@
+{
+  "quality": "print_fast",
+  "width": 48,
+  "height": 48,
+  "samples": 2,
+  "seed": 7,
+  "denoise": true,
+  "softPenumbra": true,
+  "maxDepth": 3
+}

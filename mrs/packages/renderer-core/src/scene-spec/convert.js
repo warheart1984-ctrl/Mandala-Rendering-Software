@@ -213,12 +213,19 @@ export function convertSceneSpecification(spec) {
       : hashIdToSeed(spec.id);
 
   const materials = Array.isArray(spec.materials)
-    ? spec.materials.map((m) => ({
-        id: m.id,
-        color: m.color,
-        opacity: m.opacity,
-        wireframe: m.wireframe,
-      }))
+    ? spec.materials.map((m) => {
+        const brdfRaw = (m.brdf ?? m.type ?? "lambertian").toString().toLowerCase();
+        const brdf = brdfRaw === "ggx" ? "ggx" : "lambertian";
+        return {
+          id: m.id,
+          color: m.color,
+          opacity: m.opacity,
+          wireframe: m.wireframe,
+          brdf,
+          roughness: m.roughness,
+          f0: m.f0,
+        };
+      })
     : [];
 
   // PLP WorldDocument: map hypersphere/hyperplane → empty + userData (mesh path
@@ -273,7 +280,13 @@ export function convertSceneSpecification(spec) {
     const geom = e.geometry ?? { kind: "empty" };
     const mat = e.materialId ? matById.get(e.materialId) : materials[0];
     const albedo = hexToAlbedo(mat?.color) ?? defaultAlbedo;
-    const materialType = mat?.wireframe ? "lambertian" : "lambertian";
+    const materialType = mat?.brdf === "ggx" ? "ggx" : "lambertian";
+    const roughness =
+      typeof mat?.roughness === "number" && Number.isFinite(mat.roughness)
+        ? mat.roughness
+        : 0.2;
+    const f0 =
+      typeof mat?.f0 === "number" && Number.isFinite(mat.f0) ? mat.f0 : 0.04;
 
     if (geom.kind === "hypersphere") {
       const center = geom.center
@@ -291,6 +304,8 @@ export function convertSceneSpecification(spec) {
         radius: geom.radius ?? 0.5,
         albedo,
         materialType,
+        roughness,
+        f0,
         materialId: e.materialId ?? mat?.id ?? "surf",
         entityId: e.id,
       });
@@ -300,6 +315,9 @@ export function convertSceneSpecification(spec) {
         normal: geom.normal ?? [0, 1, 0, 0],
         offset: geom.offset ?? -1.4,
         albedo: hexToAlbedo(mat?.color ?? "#525666"),
+        materialType,
+        roughness,
+        f0,
         materialId: e.materialId ?? "ground",
         entityId: e.id,
       });
@@ -312,6 +330,8 @@ export function convertSceneSpecification(spec) {
           radius: sp.radius,
           albedo,
           materialType,
+          roughness,
+          f0,
           materialId: e.materialId ?? mat?.id ?? "surf",
           entityId: e.id,
         });

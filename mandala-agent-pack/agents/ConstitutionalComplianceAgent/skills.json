@@ -1,0 +1,10 @@
+{
+  "agent": "ConstitutionalComplianceAgent",
+  "domain": "determinism boundaries, assist-only GPU, CPU print, evidence chains, invariants",
+  "skills": [
+    "validateDeterminismBoundaries", "validateAssistOnlyGPU", "validateSovereignCPUPrint",
+    "validateEvidenceChainPurity", "validateConstitutionalRouting", "validateConstitutionalInvariants",
+    "validateComplianceTestSuite", "generateComplianceTests"
+  ],
+  "status": "declared"
+}

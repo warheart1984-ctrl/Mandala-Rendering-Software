@@ -1,0 +1,17 @@
+mandala_mode:
+  enabled: true
+  description: "Activates the full Mandala constitutional rendering agent suite."
+
+  when_enabled:
+    - load_all_mandala_agents: true
+    - enforce_constitutional_governance: true
+    - enforce_gpu_assist_only: true
+    - enforce_cpu_print_sovereignty: true
+    - enforce_zero_secret_persistence: true
+    - enforce_lineage_integrity: true
+    - activate_drift_detection: true
+    - activate_security_hardening: true
+    - activate_full_test_generation: true
+
+  when_disabled:
+    - agents_run_in_standard_cursor_mode: true

@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { Timeline } from "./Timeline.js";
 
 export class TimelineSerializer {
@@ -11,12 +12,10 @@ export class TimelineSerializer {
   }
 
   static saveToFile(timeline, filePath) {
-    const fs = require("fs");
     fs.writeFileSync(filePath, this.serialize(timeline), "utf-8");
   }
 
   static loadFromFile(filePath, targetResolver) {
-    const fs = require("fs");
     const json = fs.readFileSync(filePath, "utf-8");
     return this.deserialize(json, targetResolver);
   }

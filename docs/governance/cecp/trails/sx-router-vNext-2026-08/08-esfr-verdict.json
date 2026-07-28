@@ -1,0 +1,50 @@
+{
+  "trailId": "sx-router-vNext-2026-08",
+  "namespace": "cecp.trail.sx-router-vNext-2026-08",
+  "feature": "Sovereign X Router vNext roadmap + deterministic assist prototype",
+  "author": "Jon Halstead",
+  "domain": "Sovereign X Router",
+  "date": "2026-07-28",
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "status": "PROMOTE_WITH_GAPS",
+  "phasePromotion": {
+    "1": "PROMOTE_WITH_GAPS",
+    "2": "DRAFT_DECLARED",
+    "3": "DRAFT_DECLARED",
+    "4": "DRAFT_DECLARED"
+  },
+  "inspectorVerdict": "PASS_WITH_GAPS",
+  "modesApplied": {
+    "01": ["sage", "Strategist", "Pipeline-Conductor"],
+    "02": ["Constructor", "Blueprint"],
+    "03": ["Compiler", "Integrator"],
+    "04": ["Scholar", "Boundary-Guardian", "Conformance"],
+    "05": ["Sentinel", "Testwright", "Librarian"],
+    "06": ["Anchor"]
+  },
+  "guarantees": [
+    "Phase 1 remains linked to vendor-gpu PROMOTE_WITH_GAPS",
+    "gpu.integrator.deterministic is assist-only / never print SoT",
+    "SSIM cases stay skipped until real plates exist",
+    "Phases 2–4 tagged Draft/declared only"
+  ],
+  "gaps": [
+    "No live GPU invoke",
+    "No GPU print backend",
+    "No enforced CPU↔GPU print parity",
+    "Determinism Steps 1–5 still Draft",
+    "Optional package re-export of integrator"
+  ],
+  "antiOverclaim": [
+    "Does not claim live CUDA/HIP",
+    "Does not claim Phases 2–4 Done",
+    "Does not claim GPU Digital Printer SoT"
+  ],
+  "relatedTrails": [
+    "vendor-gpu-integration-2026-07",
+    "gpu-determinism-2026-09",
+    "sovereign-x-gpu-assist-2026-07"
+  ],
+  "pr": 83
+}

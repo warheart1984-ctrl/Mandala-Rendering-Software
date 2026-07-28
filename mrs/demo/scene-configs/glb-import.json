@@ -1,0 +1,21 @@
+{
+  "sceneId": "glb-import",
+  "description": "GLB import — textures, materials, geometry",
+  "glbPath": "mrs/demo/glb-import-scene.glb",
+  "width": 512,
+  "height": 512,
+  "spp": 64,
+  "seed": 1004,
+  "camera": {
+    "orbitAngle": 0.3,
+    "orbitRadius": 4.0,
+    "elevation": 0.9,
+    "focalDistance": 3.0
+  },
+  "thresholds": {
+    "maxPixelDelta": 0.01,
+    "mse": 0.0001,
+    "ssim": 0.99
+  },
+  "validates": "GLB parser, texture decode, material binding, mesh topology"
+}

@@ -258,7 +258,7 @@ export class GPUMeshRenderer {
     const ca = textureView
       ? { view: textureView, clearValue: { r:0.055, g:0.071, b:0.086, a:1 }, loadOp: "clear", storeOp: "store" }
       : { view: this.texture.createView(), resolveTarget: this.resolveTexture?.createView(),
-          clearValue: { r:0.055, g:0.071, b:0.086, a:1 }, loadOp: "clear", storeOp: this.sampleCount > 1 ? "multisample" : "store" };
+          clearValue: { r:0.055, g:0.071, b:0.086, a:1 }, loadOp: "clear", storeOp: "store" };
 
     const pass = enc.beginRenderPass({
       colorAttachments: [ca],

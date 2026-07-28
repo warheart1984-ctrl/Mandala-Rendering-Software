@@ -55,3 +55,16 @@ folded into print stages. Denoise remains partial/declared; draft CI stays fast.
 ## Anti-overclaim
 
 Not a commercial RIP; not Unreal/V-Ray; not GPU denoise enforced.
+
+---
+
+## Addendum 2026-07-28 — Initiative-level HOLD
+
+Digital Printer Initiative constitutional proof (`00`–`09`, Deployment Charter,
+`/printer` API) re-evaluated promotion at **initiative** scope:
+
+- **ESFRVerdict:** `HOLD` (`08-esfr-verdict.json`)
+- **PromotionEligibility:** `HOLD` (user-language **HOLD_WITH_GAPS**)
+- Prior adapter-core `PASS_WITH_GAPS` / `PROMOTE_WITH_GAPS` remains valid for
+  the printer package alone; it does **not** authorize `PROMOTE_WITHOUT_GAPS`
+  while checklist section E gaps remain.

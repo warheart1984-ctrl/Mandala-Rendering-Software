@@ -1,0 +1,67 @@
+{
+  "trailId": "p0-ci-unblock-2026-07",
+  "namespace": "cecp.trail.p0-ci-unblock-2026-07",
+  "started": "2026-07-28",
+  "overallStatus": "enforced",
+  "inspectorVerdict": "PASS_WITH_GAPS",
+  "esfrVerdict": "PASS_WITH_GAPS",
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "p0s": {
+    "stubFetch_fileURL": "fixed",
+    "bloomCombine_BGL": "fixed",
+    "package_types_vendor_ignore": "fixed",
+    "gpuPreviewClient_dirname": "fixed"
+  },
+  "verification": {
+    "conformance": "16/16",
+    "packageTypes": "exit 0",
+    "gpuCoreTests": "64/64",
+    "governance": "163/163",
+    "mandalaLint": "0 errors",
+    "driftRadar": "exit 0 partial",
+    "securityAudit": "exit 0 xss skipped"
+  },
+  "modes": {
+    "architect": ["Navigator", "Debugger", "Warrior"],
+    "builder": ["Constructor", "Blueprint"],
+    "implementor": ["Debugger", "Integrator", "Testwright"],
+    "reviewer": ["Scholar", "Boundary-Guardian", "Conformance"],
+    "inspector": ["Sentinel", "Testwright", "Librarian"],
+    "esfr": ["Anchor", "Forge"]
+  },
+  "fullSuiteConsulted": true,
+  "fullSuiteDeepRun": false,
+  "corpusAgents": [
+    "ConstitutionalGovernanceAgent",
+    "GPUWebGPUAgent",
+    "RendererCoreAgent",
+    "SecurityHardeningAgent",
+    "ConformanceAgent",
+    "ReplayAgent",
+    "ProvenanceAgent",
+    "GenblazeAgent",
+    "MultiHostAgent",
+    "DocumentationAgent",
+    "CIAgent",
+    "CodeQualityAgent",
+    "TestGenerationAgent",
+    "ConstitutionalComplianceAgent"
+  ],
+  "vendorSkillsConsulted": [
+    "nvidia-gpu-assist",
+    "amd-gpu-assist",
+    "rocm-setup",
+    "hip-rocm"
+  ],
+  "bans": [
+    "gpuPrintSoT",
+    "charterEditsWithoutAuth",
+    "vendorPackageMutation"
+  ],
+  "residualGaps": [
+    "PostProcessor non-combine pipelines: unfilterable-float + filtering sampler",
+    "No live WebGPU bloomCombine device validation",
+    "mandala-lint / drift-radar fidelity partial"
+  ],
+  "committed": false
+}

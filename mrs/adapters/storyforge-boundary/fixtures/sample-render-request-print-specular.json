@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0",
+  "requestId": "rr-cecp-print-specular-ggx",
+  "intentId": "intent-cecp-print-specular",
+  "worldId": "world-print-specular",
+  "timelineId": "timeline-print-specular",
+  "timeSeconds": 0,
+  "parameters": {
+    "purpose": "digital-printer-v2-specular",
+    "stage": "RenderRequest→scene-spec→RT4D"
+  },
+  "provenance": {
+    "source": "fixture-print-specular"
+  },
+  "payload": {
+    "route": "scene-spec",
+    "render": {
+      "width": 64,
+      "height": 64,
+      "samples": 4,
+      "maxDepth": 4,
+      "seed": 7,
+      "quality": "cinematic"
+    },
+    "sceneSpecification": {
+      "schemaVersion": "1.0",
+      "kind": "SceneSpecification",
+      "id": "cecp-print-specular-sphere",
+      "name": "GGX specular print fixture",
+      "materials": [
+        {
+          "id": "chrome",
+          "color": "#c8d0d8",
+          "opacity": 1,
+          "brdf": "ggx",
+          "roughness": 0.12,
+          "f0": 0.92
+        },
+        {
+          "id": "ground",
+          "color": "#22262e",
+          "opacity": 1,
+          "brdf": "lambertian"
+        }
+      ],
+      "entities": [
+        {
+          "id": "ball",
+          "materialId": "chrome",
+          "geometry": {
+            "kind": "hypersphere",
+            "center": [0, 0.35, 0, 0],
+            "radius": 0.55
+          }
+        }
+      ],
+      "camera": {
+        "position4d": [2.8, 1.2, 2.4, 0],
+        "target4d": [0, 0.3, 0, 0],
+        "fovX": 48,
+        "fovY": 48,
+        "fovZ": 42,
+        "fovW": 26
+      },
+      "lights": [
+        {
+          "id": "key",
+          "center": [2.5, 3.5, -1.5, 0.4],
+          "radius": 0.2,
+          "emission": [12, 11.5, 10.5]
+        }
+      ],
+      "output": {
+        "width": 64,
+        "height": 64,
+        "samples": 4,
+        "maxDepth": 4,
+        "seed": 7,
+        "exposure": 1.4
+      }
+    }
+  }
+}

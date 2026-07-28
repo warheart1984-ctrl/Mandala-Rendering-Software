@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "SovereignXGpuSkillsRegistry",
+  "status": "declared",
+  "note": "Maps assist-only GPU capability classes to agent skills. Drive-G-1: stubs ≠ live GPU. cpu.rt4d.print is authoritative print SoT (not a GPU skill). gpu.integrator.deterministic is declared/prototype assist only.",
+  "trail": "docs/governance/cecp/trails/vendor-gpu-integration-2026-07/",
+  "relatedTrails": [
+    "docs/governance/cecp/trails/sx-router-vNext-2026-08/",
+    "docs/governance/cecp/trails/gpu-determinism-2026-09/",
+    "docs/governance/cecp/trails/gpu-determinism-phase1-2026-08/",
+    "docs/governance/cecp/trails/sx-router-vNext-2027/",
+    "docs/governance/cecp/trails/post-phase1-gap-sweep-2026-07/"
+  ],
+  "authoritativePrint": "cpu.rt4d.print",
+  "skills": {
+    "gpu.gen.nvidia.nim_flux": "~/.agents/skills/nvidia-gpu-assist",
+    "gpu.inference.nvidia.tao": "~/.agents/skills/nvidia-gpu-assist",
+    "gpu.compute.nvidia.cuda": "~/.agents/skills/nvidia-gpu-assist",
+    "gpu.inference.amd.rocm": "~/.agents/skills/amd-gpu-assist",
+    "gpu.compute.amd.hip": "~/.agents/skills/amd-gpu-assist",
+    "gpu.integrator.deterministic": "sovereign-x/router/modules/gpu/integrator/deterministicGpuIntegrator.js"
+  },
+  "capabilityMeta": {
+    "gpu.gen.nvidia.nim_flux": {
+      "vendor": "nvidia",
+      "capabilityClass": "gen",
+      "authority": "assist",
+      "intentHints": ["lookdev"]
+    },
+    "gpu.inference.nvidia.tao": {
+      "vendor": "nvidia",
+      "capabilityClass": "inference",
+      "authority": "assist",
+      "intentHints": ["vision_to_scenespec", "embeddings"]
+    },
+    "gpu.compute.nvidia.cuda": {
+      "vendor": "nvidia",
+      "capabilityClass": "compute",
+      "authority": "assist",
+      "intentHints": ["gpu_denoise", "parity"]
+    },
+    "gpu.inference.amd.rocm": {
+      "vendor": "amd",
+      "capabilityClass": "inference",
+      "authority": "assist",
+      "intentHints": ["lookdev", "embeddings"]
+    },
+    "gpu.compute.amd.hip": {
+      "vendor": "amd",
+      "capabilityClass": "compute",
+      "authority": "assist",
+      "intentHints": ["gpu_denoise", "parity"]
+    },
+    "gpu.integrator.deterministic": {
+      "vendor": "neutral",
+      "capabilityClass": "compute",
+      "authority": "assist",
+      "status": "declared",
+      "prototype": true,
+      "intentHints": ["deterministic_assist", "parity_harness"],
+      "seedContract": {
+        "prng": "mulberry32",
+        "sampling": "stratified",
+        "status": "declared"
+      },
+      "bans": ["printSoT", "digitalPrinterEvidence"]
+    },
+    "cpu.rt4d.print": {
+      "vendor": "cpu",
+      "capabilityClass": "print",
+      "authority": "authoritative",
+      "skill": null
+    }
+  }
+}

@@ -30,5 +30,11 @@
   "orphansBefore": 13,
   "worktreesAfter": 4,
   "archived": 14,
-  "gaps": ["pr80-resolve-locked-empty-dir", "feat-ahead-21-unpushed"]
+  "gaps": ["pr80-resolve-locked-empty-dir", "feat-ahead-22-unpushed"],
+  "followup07": {
+    "genblazeBuild": "PASS",
+    "composeVerdict": "Dockerfile for Genblaze; compose builds Dockerfile.4drs",
+    "rescueBranchPushed": true,
+    "cecpFeatPushed": false
+  }
 }

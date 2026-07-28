@@ -40,8 +40,29 @@ import {
   accumulateAdaptive,
   encodeBeautyRgb,
 } from "./lib/sceneQuality.mjs";
+import { bilateralFilter } from "../src/render/rt4d/denoiser/BilateralDenoiser.js";
 
-export const RENDER_SCENE_VERSION = "1.1.0";
+export const RENDER_SCENE_VERSION = "1.2.0";
+
+/** Soft-penumbra floor when qualityOpts.softPenumbra is true (deterministic). */
+const SOFT_PENUMBRA_MIN_RADIUS = 0.75;
+
+function resolveSurfaceMaterial(prim) {
+  const mid = prim.materialId || "surf";
+  const [ar, ag, ab] = prim.albedo;
+  const mtype = prim.materialType === "ggx" ? "ggx" : "lambertian";
+  const params = { albedo: vec4(ar, ag, ab, 1) };
+  if (mtype === "ggx") {
+    params.roughness =
+      typeof prim.roughness === "number" && Number.isFinite(prim.roughness)
+        ? Math.max(0.01, prim.roughness)
+        : 0.2;
+    const f0s =
+      typeof prim.f0 === "number" && Number.isFinite(prim.f0) ? prim.f0 : 0.04;
+    params.f0 = vec4(f0s, f0s, f0s, 1);
+  }
+  return { mid, mtype, params };
+}
 
 function mulberry32(seed) {
   let a = seed >>> 0;
@@ -150,14 +171,21 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
 
   const scene = new Scene4D();
   const matIds = new Set();
+  const softPenumbra = qualityOpts.softPenumbra === true;
+  const penumbraLightSamples = Math.max(
+    1,
+    Math.min(
+      8,
+      Number.isFinite(qualityOpts.penumbraLightSamples)
+        ? Math.floor(qualityOpts.penumbraLightSamples)
+        : 4,
+    ),
+  );
 
   for (const prim of rt4d.primitives) {
-    const mid = prim.materialId || "surf";
+    const { mid, mtype, params } = resolveSurfaceMaterial(prim);
     if (!matIds.has(mid)) {
-      const [ar, ag, ab] = prim.albedo;
-      scene.materials.createMaterial(mid, "lambertian", {
-        albedo: vec4(ar, ag, ab, 1),
-      });
+      scene.materials.createMaterial(mid, mtype, params);
       matIds.add(mid);
     }
     scene.addPrimitive(
@@ -170,12 +198,9 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
   }
 
   for (const pl of rt4d.planes) {
-    const mid = pl.materialId || "ground";
+    const { mid, mtype, params } = resolveSurfaceMaterial(pl);
     if (!matIds.has(mid)) {
-      const [ar, ag, ab] = pl.albedo;
-      scene.materials.createMaterial(mid, "lambertian", {
-        albedo: vec4(ar, ag, ab, 1),
-      });
+      scene.materials.createMaterial(mid, mtype, params);
       matIds.add(mid);
     }
     scene.addPrimitive(
@@ -194,8 +219,14 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
       emission: vec4(em[0], em[1], em[2], 0),
       albedo: vec4(1, 1, 1, 1),
     });
+    const lightRadius = softPenumbra
+      ? Math.max(Number(L.radius) || 0, SOFT_PENUMBRA_MIN_RADIUS)
+      : Number(L.radius) || 0;
     scene.addLight(
-      new Hypersphere(vec4(L.center[0], L.center[1], L.center[2], L.center[3]), L.radius),
+      new Hypersphere(
+        vec4(L.center[0], L.center[1], L.center[2], L.center[3]),
+        lightRadius,
+      ),
       mid,
     );
   }
@@ -303,7 +334,23 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
   }
   const meanSamplesUsed = samplesUsedSum / (width * height);
 
-  const png = encodePNG(width, height, rgba);
+  const useDenoise = qualityOpts.denoise === true;
+  let denoiseHash = null;
+  let beautyRgba = rgba;
+  if (useDenoise) {
+    const filtered = bilateralFilter(rgba, width, height, {
+      radius: 2,
+      sigmaSpatial: 3.0,
+      sigmaColor: 25.0,
+      iterations: 1,
+    });
+    beautyRgba = filtered.denoised;
+    denoiseHash = filtered.filterHash;
+    // Copy denoised pixels back so any later AOV/debug paths see the print plate.
+    rgba.set(beautyRgba);
+  }
+
+  const png = encodePNG(width, height, beautyRgba);
   const sha256 = createHash("sha256").update(png).digest("hex");
 
   const provenance = {
@@ -323,6 +370,11 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
     exposure,
     tonemap: tonemapMode,
     adaptiveSampling: useAdaptive,
+    denoise: useDenoise,
+    denoiseFilterHash: denoiseHash,
+    softPenumbra,
+    penumbraLightSamples,
+    softPenumbraMinRadius: softPenumbra ? SOFT_PENUMBRA_MIN_RADIUS : null,
     meanSamplesUsed: Number(meanSamplesUsed.toFixed(3)),
     earlyStopPixels: earlyStopCount,
     fireflyMax,
@@ -339,7 +391,7 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
     note: "SceneSpecification-driven RT4D still. NOT text-to-image / not diffusion.",
   };
 
-  return { png, provenance, worldDocument, rt4d };
+  return { png, provenance, worldDocument, rt4d, rgba: beautyRgba };
 }
 
 const VALUE_OPTIONS = new Set([
