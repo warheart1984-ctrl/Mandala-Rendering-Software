@@ -1,0 +1,34 @@
+{
+  "trailId": "git-worktree-recovery-2026-07",
+  "feature": "git-worktree-recovery",
+  "started": "2026-07-27",
+  "overallStatus": "partial",
+  "modes": ["Navigator", "Debugger", "Code-Historian", "Boundary-Guardian", "Librarian"],
+  "stages": {
+    "01": "declared",
+    "02": "declared",
+    "03": "partial",
+    "04": "PASS_WITH_GAPS",
+    "05": "PASS_WITH_GAPS",
+    "06": "PASS_WITH_GAPS"
+  },
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "operatorHomes": {
+    "cecp": {
+      "path": "G:/Mandala Rendering Software",
+      "branch": "feat/engine3d-genblaze-cinematic-plugin",
+      "tip": "fe01183"
+    },
+    "docker": {
+      "path": "G:/mrs-wt",
+      "branch": "rescue/main-docker-wt",
+      "tip": "e95a419"
+    }
+  },
+  "cecpCommitsReachable": ["046d187", "244b32f", "7483b19"],
+  "worktreesBefore": 7,
+  "orphansBefore": 13,
+  "worktreesAfter": 4,
+  "archived": 14,
+  "gaps": ["pr80-resolve-locked-empty-dir", "feat-ahead-21-unpushed"]
+}

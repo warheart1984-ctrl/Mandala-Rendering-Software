@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "PrintSurfaceContract",
+  "id": "mrs-digital-print-surface-contract",
+  "status": "enforced",
+  "governingInvariant": "Rendering = deterministic printing of declared surfaces. No hallucination.",
+  "owner": "mrs/adapters/storyforge-boundary",
+  "sfBoundary": {
+    "storyPromptSpec": "declared-sf-owned-not-in-mrs",
+    "renderRequestIntake": "enforced"
+  },
+  "requiredSurfaces": {
+    "scene-spec": {
+      "intake": ["RenderRequest", "payload.sceneSpecification", "payload.render"],
+      "aovs": ["beauty"],
+      "optionalAovs": ["depth", "normal"],
+      "printStages": [
+        "sampling",
+        "reconstruction",
+        "tonemap",
+        "color",
+        "encode",
+        "hash_provenance"
+      ]
+    },
+    "proton-raster": {
+      "intake": ["RenderRequest", "payload.render"],
+      "aovs": ["beauty"],
+      "optionalAovs": ["depth", "normal"]
+    },
+    "engine3d-world": {
+      "intake": ["RenderRequest", "payload.engine3dWorldDocument", "payload.render"],
+      "aovs": ["beauty"],
+      "optionalAovs": ["depth", "normal"]
+    }
+  },
+  "errorStates": [
+    "OK",
+    "SURFACE_MISSING",
+    "SURFACE_INVALID",
+    "AOV_MISMATCH",
+    "SCENESPEC_GAP",
+    "ENGINE3D_BOUNDARY_FAIL",
+    "GENBLAZE_SMOKE_FAIL"
+  ],
+  "printRequestDefaults": {
+    "width": 512,
+    "height": 512,
+    "samples": 24,
+    "variance_threshold": 0.0008,
+    "color_space": "srgb",
+    "tone_mapper": "aces-lite",
+    "denoise": false,
+    "seed": 42,
+    "format": "png"
+  },
+  "qualityTags": {
+    "adaptiveSampling": "enforced-when-opt-in",
+    "stratifiedAA": "enforced",
+    "tonemapAces": "enforced-when-opt-in",
+    "denoise": "partial-or-declared",
+    "draftCi": "fast-defaults-unchanged"
+  },
+  "trail": "docs/governance/cecp/trails/printer-mode-renderer-2026-07/"
+}

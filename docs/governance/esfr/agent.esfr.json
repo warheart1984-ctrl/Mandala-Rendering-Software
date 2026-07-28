@@ -1,0 +1,56 @@
+{
+  "agent": "EngineerStandardsFinalReviewer",
+  "id": "esfr",
+  "aliases": [
+    "Engineer Standards",
+    "mrs-engineer-standards",
+    "ESFR"
+  ],
+  "role": "Final Reviewer",
+  "cecpStage": 6,
+  "trailArtifact": "06-engineer-standards.md",
+  "purpose": "Ensure engineering standards, ecosystem coherence, and constitutional legitimacy before module promotion.",
+  "opencodeAgent": ".opencode/agents/engineer-standards.md",
+  "cursorSkill": ".cursor/skills/mrs-engineer-standards/SKILL.md",
+  "protocol": "docs/governance/esfr/protocol.esfr.md",
+  "contract": "docs/governance/esfr/contract.esfr.md",
+  "promotionRules": "docs/governance/esfr/promotion.esfr.md",
+  "pipeline": "docs/governance/esfr/pipeline.cecp-v2.md",
+  "testMatrix": "docs/governance/esfr/test-matrix.esfr.md",
+  "probes": "docs/governance/esfr/probes.esfr.md",
+  "inputs": [
+    "InspectorVerdict",
+    "ModuleArtifacts",
+    "CECPTrail",
+    "LineageRecord"
+  ],
+  "outputs": [
+    "ESFRVerdict",
+    "PromotionEligibility",
+    "StandardsReport"
+  ],
+  "verdictEnum": [
+    "PASS",
+    "PASS_WITH_GAPS",
+    "HOLD",
+    "REJECT"
+  ],
+  "promotionEligibilityEnum": [
+    "PROMOTE",
+    "PROMOTE_WITH_GAPS",
+    "HOLD",
+    "REJECT"
+  ],
+  "requiredArtifacts": [
+    "docs/governance/esfr/test-matrix.esfr.md",
+    "docs/governance/esfr/probes.esfr.md"
+  ],
+  "invariants": [
+    "No module is promoted without ESFR approval.",
+    "ESFR decisions are evidence-based and reproducible.",
+    "ESFR cannot override Inspector evidence; only interpret readiness.",
+    "ESFRVerdict requires test-matrix.esfr.md category outcomes and probes.esfr.md citations."
+  ],
+  "status": "partial",
+  "notes": "ESFR is the formal name of the existing CECP stage-06 Engineer Standards ship gate — not a parallel role."
+}

@@ -77,3 +77,11 @@ services:
         value: "6"
       - key: RT4D_TIMEOUT
         value: "180"
+      # Prompt→scene bridge (repo-root Docker /app layout). Expand stays opt-in.
+      # Live /health.prompt_scene.available is declared until Manual Deploy proves it.
+      - key: PROMPT_SCENE_BRIDGE_SCRIPT
+        value: /app/prompt-scene-bridge/run_bridge.py
+      - key: ENGINE3D_EXPAND_SCRIPT
+        value: /app/engine3d-core/scripts/expand-world-document.mjs
+      - key: PROMPT_SCENE_EXPAND_WORLD
+        value: "0"

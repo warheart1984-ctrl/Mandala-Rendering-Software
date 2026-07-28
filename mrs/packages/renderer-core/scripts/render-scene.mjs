@@ -34,8 +34,14 @@ import {
 } from "../src/scene-spec/index.js";
 
 import { encodePNG } from "./render-still.mjs";
+import {
+  stratifiedJitter2d,
+  clampFirefly,
+  accumulateAdaptive,
+  encodeBeautyRgb,
+} from "./lib/sceneQuality.mjs";
 
-export const RENDER_SCENE_VERSION = "1.0.0";
+export const RENDER_SCENE_VERSION = "1.1.0";
 
 function mulberry32(seed) {
   let a = seed >>> 0;
@@ -46,13 +52,6 @@ function mulberry32(seed) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-function toByte(c, exposure) {
-  let v = c * exposure;
-  v = v / (1 + v);
-  v = Math.pow(Math.max(0, v), 1 / 2.2);
-  return Math.min(255, Math.max(0, Math.round(v * 255)));
 }
 
 function backgroundColor(dir, albedo) {
@@ -123,6 +122,31 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
     sampled.spec,
   );
   const { width, height, samples, maxDepth, exposure } = rt4d.output;
+  const qualityOpts = rt4d.output?.qualityOpts ?? {};
+  // Adaptive + ACES are opt-in via qualityOpts (cinematic sets them). Draft/CI unchanged.
+  const useAdaptive = qualityOpts.adaptiveSampling === true;
+  const tonemapMode =
+    qualityOpts.tonemap === "reinhard" ||
+    qualityOpts.tonemap === "aces-lite" ||
+    qualityOpts.tonemap === "none"
+      ? qualityOpts.tonemap
+      : "reinhard";
+  const fireflyMax =
+    typeof qualityOpts.fireflyMax === "number" && qualityOpts.fireflyMax > 0
+      ? qualityOpts.fireflyMax
+      : 20;
+  const minSamplesAdaptive = Math.min(
+    samples,
+    Math.max(
+      4,
+      Math.floor(
+        samples *
+          (typeof qualityOpts.minSampleFraction === "number"
+            ? qualityOpts.minSampleFraction
+            : 0.5),
+      ),
+    ),
+  );
 
   const scene = new Scene4D();
   const matIds = new Set();
@@ -210,28 +234,60 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
   const xLo = Math.floor(width * 0.25);
   const xHi = Math.floor(width * 0.75);
 
+  let samplesUsedSum = 0;
+  let earlyStopCount = 0;
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let r = 0;
-      let g = 0;
-      let b = 0;
-      for (let s = 0; s < samples; s++) {
-        const u1 = rng();
-        const u2 = rng();
+      const sampleFn = (s) => {
+        const [u1, u2] = stratifiedJitter2d(s, samples, rng);
         // Central 4D slice — see render-still.mjs for why u3/u4 stay fixed.
         const ray = camera.generateRay(x, y, u1, u2, 0.5, 0.5);
         const hit = scene.intersect(ray);
-        const L = hit
+        const raw = hit
           ? tracer.trace(ray, scene)
           : backgroundColor(ray.direction, albedo);
-        r += L.x;
-        g += L.y;
-        b += L.z;
+        return clampFirefly(raw, fireflyMax);
+      };
+
+      let r;
+      let g;
+      let b;
+      let used = samples;
+      if (useAdaptive) {
+        const acc = accumulateAdaptive({
+          minSamples: minSamplesAdaptive,
+          maxSamples: samples,
+          varianceThreshold: qualityOpts.varianceThreshold ?? 0.0025,
+          sampleFn,
+        });
+        r = acc.r;
+        g = acc.g;
+        b = acc.b;
+        used = acc.samplesUsed;
+        if (acc.earlyStop) earlyStopCount += 1;
+      } else {
+        let sr = 0;
+        let sg = 0;
+        let sb = 0;
+        for (let s = 0; s < samples; s++) {
+          const L = sampleFn(s);
+          sr += L.x;
+          sg += L.y;
+          sb += L.z;
+        }
+        const inv = 1 / samples;
+        r = sr * inv;
+        g = sg * inv;
+        b = sb * inv;
       }
-      const inv = 1 / samples;
-      const R = toByte(r * inv, exposure);
-      const G = toByte(g * inv, exposure);
-      const B = toByte(b * inv, exposure);
+      samplesUsedSum += used;
+
+      const [R, G, B] = encodeBeautyRgb(r, g, b, {
+        exposure,
+        tonemap: tonemapMode,
+        gamma: 2.2,
+      });
       const idx = (y * width + x) * 4;
       rgba[idx] = R;
       rgba[idx + 1] = G;
@@ -245,6 +301,7 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
       }
     }
   }
+  const meanSamplesUsed = samplesUsedSum / (width * height);
 
   const png = encodePNG(width, height, rgba);
   const sha256 = createHash("sha256").update(png).digest("hex");
@@ -263,6 +320,12 @@ export function renderSceneFromSpec(spec, frameSel = {}) {
     height,
     samples,
     maxDepth,
+    exposure,
+    tonemap: tonemapMode,
+    adaptiveSampling: useAdaptive,
+    meanSamplesUsed: Number(meanSamplesUsed.toFixed(3)),
+    earlyStopPixels: earlyStopCount,
+    fireflyMax,
     objectCount: rt4d.primitives.length,
     lightCount: rt4d.lights.length,
     mean_luminance: Number((lumSum / (width * height)).toFixed(3)),

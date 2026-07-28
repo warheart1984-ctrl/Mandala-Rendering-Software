@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "1.0",
+  "requestId": "rr-cecp-scene-cinematic",
+  "intentId": "intent-cecp-cinematic-quality-scene",
+  "worldId": "world-mythar-ascension-cinematic",
+  "timelineId": "timeline-cecp-cinematic-quality",
+  "timeSeconds": 0,
+  "parameters": {
+    "purpose": "cinematic-render-quality",
+    "cinematicPrompt": "Cyan neon tesseract reveal — key high, soft fill rim, clean shaded lattice",
+    "stage": "RenderRequest→scene-spec→RT4D",
+    "qualityLadder": "cinematic"
+  },
+  "provenance": {
+    "promptSpecHash": "sha256:cecpcinematicprompt0000000000002",
+    "renderIntentHash": "sha256:cecpcinematicintent0000000000002",
+    "source": "fixture-sf-output"
+  },
+  "payload": {
+    "route": "scene-spec",
+    "render": {
+      "width": 512,
+      "height": 512,
+      "samples": 24,
+      "maxDepth": 6,
+      "seed": 42,
+      "quality": "cinematic"
+    },
+    "sceneSpecification": {
+      "schemaVersion": "1.0",
+      "kind": "SceneSpecification",
+      "id": "cecp-cinematic-tesseract",
+      "name": "Cinematic cyan tesseract",
+      "materials": [
+        {
+          "id": "neon",
+          "color": "#1ad4ff",
+          "opacity": 1
+        },
+        {
+          "id": "ground",
+          "color": "#14181e",
+          "opacity": 1
+        }
+      ],
+      "entities": [
+        {
+          "id": "tess",
+          "materialId": "neon",
+          "geometry": {
+            "kind": "surface",
+            "surfaceId": "tesseract"
+          }
+        }
+      ],
+      "camera": {
+        "position4d": [4.05, 1.55, 0.35, 0.08],
+        "target4d": [0, 0.15, 0, 0],
+        "fovX": 48,
+        "fovY": 48,
+        "fovZ": 42,
+        "fovW": 26
+      },
+      "lights": [
+        {
+          "id": "key",
+          "center": [3.2, 4.2, -2.4, 0.9],
+          "radius": 1.55,
+          "emission": [9.5, 9.2, 8.6]
+        },
+        {
+          "id": "fill",
+          "center": [-2.8, 2.2, 2.4, -0.5],
+          "radius": 1.85,
+          "emission": [5.5, 6.2, 7.0]
+        },
+        {
+          "id": "rim",
+          "center": [-1.0, 0.6, -3.2, 0.2],
+          "radius": 1.25,
+          "emission": [3.0, 3.8, 4.5]
+        }
+      ],
+      "output": {
+        "width": 512,
+        "height": 512,
+        "samples": 24,
+        "maxDepth": 6,
+        "exposure": 1.65,
+        "seed": 42,
+        "qualityOpts": {
+          "adaptiveSampling": true,
+          "tonemap": "aces-lite",
+          "fireflyMax": 14,
+          "varianceThreshold": 0.0008,
+          "minSampleFraction": 0.55
+        }
+      }
+    }
+  }
+}

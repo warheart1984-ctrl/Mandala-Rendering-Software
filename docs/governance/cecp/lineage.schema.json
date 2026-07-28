@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandala-rendering.local/governance/cecp/lineage.schema.json",
+  "title": "CECP Omega lineage record",
+  "description": "Lean machine-readable handoff for a CECP trail. Status: declared shape; not CI-validated unless a consumer is added. Optional cognitiveProfile / cognitiveSwitches record Cognitive Ecology Ω∞ Profile assignment (docs/governance/cecp/COGNITIVE_ECOLOGY.md) — partial docs/skills, not runtime-enforced. New trails should include engineer_standards / esfr (stage 06); historical 01–05 trails remain valid without it. ESFR package: docs/governance/esfr/.",
+  "type": "object",
+  "required": ["trailId", "protocol", "stages"],
+  "additionalProperties": false,
+  "properties": {
+    "trailId": { "type": "string", "minLength": 1 },
+    "feature": { "type": "string" },
+    "protocol": {
+      "type": "string",
+      "const": "docs/governance/CECP_OMEGA_PROTOCOL.md"
+    },
+    "overallStatus": {
+      "type": "string",
+      "enum": ["enforced", "partial", "declared", "skeleton"]
+    },
+    "lineage": {
+      "type": "string",
+      "description": "Human lineage label",
+      "default": "Architecture → Build → Implementation → Review → Inspection → ESFR"
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/stage" }
+    },
+    "cognitiveProfile": {
+      "type": "string",
+      "description": "Optional primary Cognitive Ecology Profile (docs/governance/cecp/COGNITIVE_ECOLOGY.md). Trail field alias: cognitive-profile. Status: partial docs/skills — not runtime-enforced."
+    },
+    "cognitiveSwitches": {
+      "type": "array",
+      "description": "Optional logged Profile switches; each entry needs an evidence cite. Trail field alias: cognitive-switches. Adaptive switching is a declared pattern until measured.",
+      "items": { "$ref": "#/$defs/cognitiveSwitch" }
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": [
+            "accepted_with_gaps",
+            "accepted",
+            "rejected",
+            "deferred"
+          ]
+        },
+        "inspectorVerdict": {
+          "type": "string",
+          "enum": ["PASS", "PASS_WITH_GAPS", "FAIL"]
+        },
+        "esfrVerdict": {
+          "type": "string",
+          "enum": ["PASS", "PASS_WITH_GAPS", "HOLD", "REJECT", "N/A"]
+        },
+        "engineerStandardsVerdict": {
+          "type": "string",
+          "description": "Alias of esfrVerdict for older consumers",
+          "enum": [
+            "PASS",
+            "PASS_WITH_GAPS",
+            "PASS_WITH_NOTES",
+            "HOLD",
+            "REJECT",
+            "FAIL",
+            "N/A"
+          ]
+        },
+        "promotionEligible": {
+          "type": "string",
+          "enum": ["PROMOTE", "PROMOTE_WITH_GAPS", "HOLD", "REJECT", "N/A"]
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "cognitiveSwitch": {
+      "type": "object",
+      "required": ["from", "to", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": ["string", "null"],
+          "description": "Prior Profile name, or null at first assignment"
+        },
+        "to": {
+          "type": "string",
+          "description": "New Profile name from COGNITIVE_ECOLOGY.md"
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Explicit evidence cite (path, test, probe, or stage artifact) — required for every switch"
+        },
+        "stage": {
+          "type": "string",
+          "description": "Optional CECP stage when the switch occurred"
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "required": ["stage", "artifact"],
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "type": "string",
+          "enum": [
+            "architect",
+            "builder",
+            "implementor",
+            "reviewer",
+            "inspector",
+            "engineer_standards",
+            "esfr",
+            "acceptance"
+          ]
+        },
+        "predecessor": {
+          "type": ["string", "null"],
+          "description": "Prior stage name or null for architect"
+        },
+        "artifact": {
+          "type": "string",
+          "description": "Relative path under the trail directory"
+        },
+        "intent": { "type": "string" },
+        "evidence": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "cognitiveProfile": {
+          "type": "string",
+          "description": "Optional Profile for this stage (cognitive-profile)"
+        },
+        "mode": {
+          "type": "string",
+          "description": "Optional CREW_MODES.md lens name (e.g. sage)"
+        },
+        "actorMode": {
+          "type": "string",
+          "description": "Optional Wave 3 CECP Actor Mode (docs/governance/cecp/CECP_ACTOR_MODES.md), e.g. navigator, librarian. Distinct from cognitiveProfile."
+        },
+        "softwareCreationMode": {
+          "type": "string",
+          "description": "Optional Wave 4 Software-Creation Mode (docs/governance/cecp/SOFTWARE_CREATION_MODES.md), e.g. pipeline-conductor, boundary-guardian. Distinct from cognitiveProfile and actorMode."
+        },
+        "lens": {
+          "type": "string",
+          "description": "Optional mode/lens alias recorded on trail (crew, Actor, or Software-Creation Mode)"
+        },
+        "statusTags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["enforced", "partial", "declared", "skeleton"]
+          }
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "PASS_WITH_GAPS",
+            "PASS_WITH_NOTES",
+            "HOLD",
+            "REJECT",
+            "FAIL",
+            "N/A"
+          ]
+        },
+        "handoff": { "type": "string" }
+      }
+    }
+  }
+}

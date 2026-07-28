@@ -146,16 +146,34 @@ export class PathTracer4D {
     const rigLights = scene.getRt4dLights?.() ?? [];
     const directLights = rigLights.filter((light) => light.type !== "environment");
     if (directLights.length > 0) {
-      const light = directLights[Math.floor(this.rng() * directLights.length)];
+      // Power-weighted selection among analytic lights (STATUS: enforced).
+      const weights = directLights.map((light) => {
+        const intensity = Number(light.intensity) || 1;
+        const c = light.color || [1, 1, 1];
+        const lum =
+          0.2126 * (c[0] ?? 1) + 0.7152 * (c[1] ?? 1) + 0.0722 * (c[2] ?? 1);
+        return Math.max(1e-6, intensity * Math.max(1e-6, lum));
+      });
+      const { index, pdfSelect } = this._pickWeighted(weights);
+      const light = directLights[index];
       const sample = sampleRt4dLight(light, hit);
       if (!sample) return null;
-      return { ...sample, pdf: sample.pdf / directLights.length };
+      return { ...sample, pdf: sample.pdf * pdfSelect };
     }
 
     const lights = scene.getLights();
     if (lights.length === 0) return null;
 
-    const light = lights[Math.floor(this.rng() * lights.length)];
+    // Power × area weights — brighter / larger lights get more NEE samples.
+    const weights = lights.map((light) => {
+      const mat = scene.getMaterial(light.materialId);
+      const em = mat?.emission ?? vec4(0, 0, 0, 0);
+      const power = Math.max(1e-6, length(em));
+      const R = light.radius > 0 ? light.radius : 1e-3;
+      return power * hypersphereArea(R);
+    });
+    const { index, pdfSelect } = this._pickWeighted(weights);
+    const light = lights[index];
     const R = light.radius;
     if (!(R > 0)) return null;
 
@@ -181,13 +199,35 @@ export class PathTracer4D {
     const pdfArea = 1 / (area + 1e-12);
     // 4D: dA → dω Jacobian uses r³ (S³ area scales as r³).
     const pdfSolid = (pdfArea * dist * dist * dist) / (cosLight + 1e-9);
-    const pdf = pdfSolid / lights.length;
+    const pdf = pdfSolid * pdfSelect;
 
     const mat = scene.getMaterial(light.materialId);
     // Raw emission — cos_light lives in the estimator via pdf_ω, not here.
     const emission = mat?.emission ?? vec4(0, 0, 0, 0);
 
     return { wo, pdf, emission, dist };
+  }
+
+  /**
+   * Discrete power-weighted pick. Returns selection pdf.
+   * @param {number[]} weights
+   * @returns {{ index: number, pdfSelect: number }}
+   */
+  _pickWeighted(weights) {
+    let sum = 0;
+    for (const w of weights) sum += w;
+    if (!(sum > 0)) {
+      return { index: 0, pdfSelect: 1 / Math.max(1, weights.length) };
+    }
+    let r = this.rng() * sum;
+    for (let i = 0; i < weights.length; i++) {
+      r -= weights[i];
+      if (r <= 0) {
+        return { index: i, pdfSelect: weights[i] / sum };
+      }
+    }
+    const last = weights.length - 1;
+    return { index: last, pdfSelect: weights[last] / sum };
   }
 
   /**
@@ -239,7 +279,22 @@ export class PathTracer4D {
 
     const area = hypersphereArea(light.radius);
     const pdfArea = 1 / (area + 1e-12);
-    return ((pdfArea * dist * dist * dist) / (cosLight + 1e-9)) / lights.length;
+    const pdfSolid = (pdfArea * dist * dist * dist) / (cosLight + 1e-9);
+
+    // Match _sampleLight power×area selection probability.
+    let sumW = 0;
+    let wHit = 0;
+    for (const L of lights) {
+      const mat = scene.getMaterial(L.materialId);
+      const em = mat?.emission ?? vec4(0, 0, 0, 0);
+      const power = Math.max(1e-6, length(em));
+      const R = L.radius > 0 ? L.radius : 1e-3;
+      const w = power * hypersphereArea(R);
+      sumW += w;
+      if (L === light) wHit = w;
+    }
+    const pdfSelect = sumW > 0 ? wHit / sumW : 1 / lights.length;
+    return pdfSolid * pdfSelect;
   }
 
   _misWeight(pdfA, pdfB) {

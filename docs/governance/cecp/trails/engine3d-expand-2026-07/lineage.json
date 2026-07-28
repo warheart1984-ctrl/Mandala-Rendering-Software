@@ -1,0 +1,55 @@
+{
+  "trailId": "engine3d-expand-2026-07",
+  "feature": "Engine3D WorldDocument expand (generator stub → full world via Node OOP)",
+  "protocol": "docs/governance/CECP_OMEGA_PROTOCOL.md",
+  "predecessorTrail": "prompt-scene-adapter-2026-07",
+  "overallStatus": "enforced",
+  "lineage": "Architecture → Build → Implementation → Review → Inspection → Acceptance",
+  "stages": [
+    {
+      "stage": "architect",
+      "artifact": "01-architect-adr.md",
+      "verdict": "N/A",
+      "statusTags": { "expandPath": "declared" }
+    },
+    {
+      "stage": "builder",
+      "artifact": "02-builder-scaffold-manifest.md",
+      "verdict": "N/A",
+      "statusTags": { "scaffold": "skeleton" }
+    },
+    {
+      "stage": "implementor",
+      "artifact": "03-implementor-notes.md",
+      "verdict": "N/A",
+      "statusTags": {
+        "expandWorldRequest": "enforced",
+        "unexpandedStub": "partial"
+      },
+      "evidence": [
+        "test_mrs_map.py 17 passed",
+        "test_prompt_to_scene.py 9 passed"
+      ]
+    },
+    {
+      "stage": "reviewer",
+      "artifact": "04-reviewer-conformance.md",
+      "verdict": "PASS_WITH_NOTES",
+      "statusTags": { "boundary": "enforced" }
+    },
+    {
+      "stage": "inspector",
+      "artifact": "05-inspector-acceptance.md",
+      "verdict": "PASS",
+      "statusTags": {
+        "expandPath": "enforced",
+        "unexpandedStub": "partial"
+      }
+    }
+  ],
+  "acceptance": {
+    "decision": "accepted",
+    "inspectorVerdict": "PASS",
+    "notes": "Opt-in expand via engine3d-core Node closes identity-expand gap. Stub-without-expand remains partial by design."
+  }
+}

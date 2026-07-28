@@ -10,9 +10,9 @@
 
 export const ENGINE3D_BRIDGE_SCENE_SCHEMA = "engine3d-bridge-scene/1.1" as const;
 
-export type BridgePrimitiveKind = "hypersphere" | "point_sample" | "triangle";
+export type BridgePrimitiveKind = "hypersphere" | "point_sample" | "triangle" | "oriented_capsule";
 
-export type BridgePrimitiveSource = "body" | "mesh_vertex" | "lattice_node" | "mesh_triangle";
+export type BridgePrimitiveSource = "body" | "mesh_vertex" | "lattice_node" | "mesh_triangle" | "world_document";
 
 /** 4D center: xyz from Engine3D, w from seed/frame jitter or lattice channel. */
 export type Vec4Tuple = readonly [number, number, number, number];
@@ -31,6 +31,11 @@ export interface BridgePrimitive {
     normals?: Float32Array;
     indices: Uint16Array | Uint32Array;
   };
+  capsule?: {
+    a: Vec4Tuple;
+    b: Vec4Tuple;
+  };
+  provenance?: Readonly<Record<string, unknown>>;
 }
 
 /**

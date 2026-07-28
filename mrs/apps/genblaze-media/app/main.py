@@ -45,9 +45,25 @@ from app.engine3d_still_provider import (
     generate_engine3d_still,
     resolve_engine3d_cli_path,
 )
+from app.proton_raster_provider import (
+    PROTON_RASTER_KIND,
+    ProtonRasterError,
+    generate_proton_raster,
+    proton_raster_availability,
+)
+from app.render_request_provider import (
+    render_request_availability,
+    run_render_request,
+)
 from app.face_polish_defaults import (
     resolve_face_polish_prompt,
     resolve_face_polish_strength,
+)
+from app.lattice_polish_defaults import (
+    LATTICE_POLISH_DEFAULT_PROMPT,
+    looks_like_lattice_prompt,
+    resolve_lattice_polish_prompt,
+    resolve_lattice_polish_strength,
 )
 from app.image_ingest import (
     analyze_image_bytes,
@@ -81,6 +97,11 @@ from app.nvidia_http import (
 )
 from app.pipeline import GenerationQualityError, generate_image, probe_b2
 from app.pipeline_video import generate_video
+from app.prompt_scene_provider import (
+    PromptSceneBridgeError,
+    prompt_scene_availability,
+    prompt_to_scene,
+)
 from app.rt4d_provider import (
     RT4D_PROVIDER_ID,
     generate_image_rt4d,
@@ -423,6 +444,24 @@ class PolishStillRequest(BaseModel):
     quality: str | None = Field(default=None, description="Reserved quality hint")
 
 
+class PromptToSceneRequest(BaseModel):
+    """Natural-language prompt → SceneSpecification + Engine3D world stub."""
+
+    prompt: str = Field(..., min_length=1, max_length=2000)
+    render: bool = Field(
+        default=False,
+        description="When true, RT4D-render sceneSpecification after the bridge",
+    )
+    quality: str = Field(
+        default=DRAFT_QUALITY,
+        description="Render quality when render=true: draft/fast (default) or final/high.",
+    )
+    width: int = Field(default=256, ge=16, le=1024)
+    height: int = Field(default=192, ge=16, le=1024)
+    samples: int = Field(default=4, ge=1, le=64)
+    max_depth: int = Field(default=4, ge=1, le=12)
+
+
 class Engine3dStillRequest(BaseModel):
     """Engine3D structure still (+ optional RT4D composite + polish)."""
 
@@ -454,6 +493,43 @@ class Engine3dStillRequest(BaseModel):
         default=None,
         max_length=64,
         description="Optional prior RT4D/generate run_id used as background plate",
+    )
+    path_trace: bool = Field(
+        default=False,
+        description=(
+            "When true, PathTracer4D consumes WorldDocumentRt4d (capsules) from "
+            "world_path instead of soft-raster. Requires world_path."
+        ),
+    )
+    samples: int | None = Field(
+        default=None,
+        ge=1,
+        le=64,
+        description="Path-trace samples/pixel (path_trace only; default draft samples)",
+    )
+    max_depth: int | None = Field(
+        default=None,
+        ge=1,
+        le=12,
+        description="Path-trace max bounce depth (path_trace only)",
+    )
+
+
+class ProtonRasterRequest(BaseModel):
+    """Proton six-mod soft-splat still (default-off provider)."""
+
+    width: int = Field(default=256, ge=8, le=1024)
+    height: int = Field(default=256, ge=8, le=1024)
+    mode: str = Field(
+        default="demo",
+        description="demo | star-demo | lattice-demo | scene-spec",
+    )
+    aov_depth: bool = Field(default=True)
+    aov_normal: bool = Field(default=True)
+    seed: str | None = Field(default=None, max_length=64)
+    scene_spec: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional SceneSpecification when mode=scene-spec",
     )
 
 
@@ -611,10 +687,28 @@ def health() -> dict:
             "(beauty + optional depth/normal). Optional RT4D background composite "
             "and polish. Faces/skin require polish — not RT4D sphere-bridge."
         ),
+        "proton_raster": proton_raster_availability(settings),
+        "proton_raster_note": (
+            "POST /api/proton-raster runs six-mod proton soft-splat when "
+            "PROTON_RASTER_ENABLED=1 (default off). Sibling to Engine3D "
+            "triangle soft-raster."
+        ),
+        "render_request": render_request_availability(settings),
+        "render_request_note": (
+            "POST /api/render-request accepts RenderRequest JSON (MRS crossing). "
+            "Opt-in: RENDER_REQUEST_API_ENABLED=1. Upstream Story→PromptSpec "
+            "remains outside this host."
+        ),
         "engine3d_sequence": engine3d_sequence_availability(settings),
         "engine3d_sequence_note": (
             "POST /api/engine3d-sequence renders a short Engine3D soft-raster "
             "orbit sequence (structure). NOT 8K farm; NOT per-frame polish."
+        ),
+        "prompt_scene": prompt_scene_availability(settings),
+        "prompt_scene_note": (
+            "POST /api/prompt-to-scene: prompt → SceneSpecification + Engine3D "
+            "world stub via out-of-process bridge. Optional render=true uses "
+            "SceneSpecification → RT4D. Infinity narrative lane is out-of-process only."
         ),
         "chatgpt_plugin": plugin_availability(settings),
         "flux_then_scene": settings.flux_then_scene,
@@ -754,10 +848,17 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
         and public.get("run_id")
     ):
         try:
+            polish_prompt = body.polish_prompt or body.prompt
+            if not (body.polish_prompt or "").strip() and looks_like_lattice_prompt(
+                body.prompt
+            ):
+                polish_prompt = resolve_lattice_polish_prompt(
+                    body.polish_prompt, lattice=True
+                ) or LATTICE_POLISH_DEFAULT_PROMPT
             pol_res = _polish_pipeline(
                 settings,
                 run_id=str(public["run_id"]),
-                prompt=body.polish_prompt or body.prompt,
+                prompt=polish_prompt,
                 strength=body.polish_strength,
             )
             public["polish"] = pol_res
@@ -1197,6 +1298,35 @@ def api_polish_still(body: PolishStillRequest) -> dict:
     return payload
 
 
+@app.post("/api/prompt-to-scene")
+def api_prompt_to_scene(body: PromptToSceneRequest) -> dict:
+    """Prompt → SceneSpecification + Engine3D world stub (out-of-process bridge).
+
+    Optional render=true path-traces the SceneSpecification via RT4D.
+    Infinity narrative packages stay out-of-process (not imported under app/).
+    """
+    settings = get_settings()
+    try:
+        return prompt_to_scene(
+            settings,
+            body.prompt,
+            render=body.render,
+            quality=body.quality,
+            width=body.width,
+            height=body.height,
+            samples=body.samples,
+            max_depth=body.max_depth,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except GenerationQualityError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except PromptSceneBridgeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
 @app.post("/api/engine3d-still")
 def api_engine3d_still(body: Engine3dStillRequest) -> dict:
     """Engine3D structure still → optional RT4D composite → optional polish.
@@ -1236,6 +1366,9 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
             aov_normal=body.aov_normal,
             world_path=world_path,
             human_glb=human_glb,
+            path_trace=bool(body.path_trace),
+            samples=body.samples,
+            max_depth=body.max_depth,
         )
     except Engine3dStillPathError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -1246,12 +1379,18 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
 
     structure_entry = structure.to_dict()
     structure_entry["modality"] = "image"
-    structure_entry["kind"] = ENGINE3D_STILL_KIND
-    structure_entry["structure_source"] = "engine3d_raster"
+    structure_entry["kind"] = (
+        "worlddocument-rt4d-path-trace" if body.path_trace else ENGINE3D_STILL_KIND
+    )
+    structure_entry["structure_source"] = (
+        "path_trace" if body.path_trace else "engine3d_raster"
+    )
     prov = structure_entry.get("provenance")
     if isinstance(prov, dict):
         structure_entry["face_rig"] = bool(prov.get("face_rig"))
         structure_entry["face_asset"] = prov.get("face_asset") or "none"
+        if prov.get("structure_source"):
+            structure_entry["structure_source"] = prov.get("structure_source")
         sr = prov.get("structure_record")
         if isinstance(sr, dict):
             structure_entry["face_rig"] = bool(
@@ -1267,8 +1406,13 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
     payload: dict[str, Any] = {
         "structure": structure_public,
         "note": (
-            "Engine3D soft-raster structure still. NOT photoreal skin; "
-            "NOT RT4D sphere-bridge. Optional composite/polish are separate."
+            "WorldDocumentRt4d → PathTracer4D. Oriented capsules + lattice materials. "
+            "NOT soft-raster faces; NOT diffusion."
+            if body.path_trace
+            else (
+                "Engine3D soft-raster structure still. NOT photoreal skin; "
+                "NOT RT4D sphere-bridge. Optional composite/polish are separate."
+            )
         ),
     }
 
@@ -1357,6 +1501,19 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
             face_rig=face_rig,
             default_strength=settings.polish_default_strength,
         )
+        # Non-face Engine3D stills default to glass/chrome lattice polish (not portrait).
+        if not face_rig:
+            lattice = looks_like_lattice_prompt(body.prompt) or not (body.prompt or "").strip()
+            lattice_prompt = resolve_lattice_polish_prompt(body.prompt, lattice=lattice)
+            if lattice_prompt:
+                polish_prompt = lattice_prompt
+            elif not (body.prompt or "").strip():
+                polish_prompt = LATTICE_POLISH_DEFAULT_PROMPT
+            polish_strength = resolve_lattice_polish_strength(
+                body.polish_strength,
+                lattice=lattice,
+                default_strength=settings.polish_default_strength,
+            )
         try:
             polish_payload = _polish_pipeline(
                 settings,
@@ -1374,12 +1531,97 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
                     "diffusion does not geometrically lock silhouette."
                 ),
             }
+            if not face_rig:
+                payload["lattice_polish"] = {
+                    "lattice": looks_like_lattice_prompt(body.prompt)
+                    or not (body.prompt or "").strip(),
+                    "prompt_used": polish_prompt,
+                    "strength_used": polish_strength,
+                    "note": (
+                        "Glass/chrome lattice polish defaults refine materials/lighting; "
+                        "sphere-chain structure is preserved, not replaced with true cylinders."
+                    ),
+                }
         except HTTPException:
             raise
         except Exception as exc:  # noqa: BLE001
             payload["polish_error"] = str(exc)
 
     return payload
+
+
+@app.post("/api/render-request")
+def api_render_request(body: dict[str, Any]) -> dict:
+    """MRS crossing: RenderRequest JSON → RenderResult (optional PNG).
+
+    Opt-in via RENDER_REQUEST_API_ENABLED=1. Does not implement upstream
+    Story→PromptSpec stages (those remain outside this host).
+    """
+    settings = get_settings()
+    avail = render_request_availability(settings)
+    if not avail.get("enabled"):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "RenderRequest API disabled. Set RENDER_REQUEST_API_ENABLED=1 "
+                "and ensure the boundary run_pipeline.py is discoverable."
+            ),
+        )
+    try:
+        return run_render_request(body, settings, execute=True)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/api/proton-raster")
+def api_proton_raster(body: ProtonRasterRequest) -> dict:
+    """Proton six-mod soft-splat still (beauty + optional AOVs).
+
+    Default-off: requires PROTON_RASTER_ENABLED=1. Sibling path to Engine3D
+    triangle soft-raster — not photoreal diffusion.
+    """
+    settings = get_settings()
+    if not settings.proton_raster_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Proton raster is disabled. Set PROTON_RASTER_ENABLED=1 "
+                "and ensure Node + render-proton-splat.mjs are available."
+            ),
+        )
+    mode = (body.mode or "demo").strip().lower()
+    if mode not in {"demo", "star-demo", "lattice-demo", "scene-spec"}:
+        raise HTTPException(
+            status_code=400,
+            detail="mode must be demo|star-demo|lattice-demo|scene-spec",
+        )
+    if mode == "scene-spec" and body.scene_spec is None:
+        raise HTTPException(
+            status_code=400,
+            detail="scene_spec required when mode=scene-spec",
+        )
+    try:
+        result = generate_proton_raster(
+            settings,
+            width=body.width,
+            height=body.height,
+            mode=mode,
+            aov_depth=body.aov_depth,
+            aov_normal=body.aov_normal,
+            seed=body.seed,
+            scene_spec=body.scene_spec,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProtonRasterError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    entry = result.to_dict()
+    entry["modality"] = "image"
+    entry["kind"] = PROTON_RASTER_KIND
+    return entry
 
 
 @app.post("/api/engine3d-sequence")

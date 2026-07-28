@@ -1,0 +1,53 @@
+{
+  "trailId": "proton-raster-2026-07",
+  "referenceIndex": 2,
+  "referenceLabel": "CECP Ω∞ reference implementation #2",
+  "feature": "cecp-proton-raster-six-mods",
+  "protocol": "docs/governance/CECP_OMEGA_PROTOCOL.md",
+  "layerStack": "docs/governance/CONSTITUTIONAL_LAYER_STACK.md",
+  "package": "mrs/packages/renderer-core/src/render/rt4d/proton/",
+  "contract": "mrs/adapters/proton-raster-bridge/CONTRACT.md",
+  "landmarkCommit": "8fa2bc3",
+  "predecessorTrail": "prompt-scene-adapter-2026-07",
+  "stages": [
+    { "stage": "architect", "artifact": "01-architect-adr.md", "predecessor": null },
+    { "stage": "builder", "artifact": "02-builder-scaffold-manifest.md", "predecessor": "architect" },
+    { "stage": "implementor", "artifact": "03-implementor-notes.md", "predecessor": "builder" },
+    { "stage": "reviewer", "artifact": "04-reviewer-conformance.md", "predecessor": "implementor" },
+    {
+      "stage": "inspector",
+      "artifact": "05-inspector-acceptance.md",
+      "predecessor": "reviewer",
+      "verdict": "PASS_WITH_GAPS"
+    },
+    {
+      "stage": "esfr",
+      "artifact": "06-engineer-standards.md",
+      "predecessor": "inspector",
+      "verdict": "PASS_WITH_GAPS",
+      "handoff": "PROMOTE_WITH_GAPS — gaps listed in 06 and lineage.esfr.json (partial backfill)"
+    }
+  ],
+  "acceptance": {
+    "decision": "accepted_with_gaps",
+    "inspectorVerdict": "PASS_WITH_GAPS",
+    "esfrVerdict": "PASS_WITH_GAPS",
+    "promotionEligible": "PROMOTE_WITH_GAPS",
+    "notes": "ESFR backfill cites Inspector gaps; esfrRunStatus partial in docs/governance/esfr/lineage.esfr.json"
+  },
+  "statusTags": {
+    "cecpReference": "partial",
+    "sceneToProtonField": "enforced",
+    "projectProtonField": "enforced",
+    "rasterizeProtons": "enforced",
+    "depthField": "enforced",
+    "normalField": "enforced",
+    "lighting4d": "enforced",
+    "rasterToImage": "enforced",
+    "genblazeHost": "partial",
+    "roadmapMods": "declared",
+    "CHEA": "declared",
+    "CCR": "declared",
+    "CDGF": "declared"
+  }
+}
