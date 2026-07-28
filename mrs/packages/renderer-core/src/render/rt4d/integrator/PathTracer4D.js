@@ -22,6 +22,66 @@ export class PathTracer4D {
     this.rrThreshold = options.rrThreshold ?? 3;
     this.samplesPerPixel = options.samplesPerPixel ?? 64;
     this.rng = options.rng ?? (() => Math.random());
+    /**
+     * Optional ProjCC observation bind.
+     * Math/print SoT remains Projector4D + CPU RT4D rasterize — never aperture.
+     * @type {null|{
+     *   status: string,
+     *   state: object,
+     *   kernel: object,
+     *   aperture: object,
+     *   bindSite: string,
+     *   printSoT: false,
+     *   authority: "observation",
+     * }}
+     */
+    this.observationProjection = options.observationProjection ?? null;
+  }
+
+  /**
+   * Bind a ProjCC observation bundle (ProjectionKernel + aperture).
+   * Does not replace Projector4D print SoT or route aperture into print.
+   *
+   * @param {object|null} bundle
+   * @returns {this}
+   */
+  bindObservationProjection(bundle) {
+    if (bundle == null) {
+      this.observationProjection = null;
+      return this;
+    }
+    this.observationProjection = Object.freeze({
+      status: bundle.status ?? "partial",
+      state: bundle.state,
+      kernel: bundle.kernel,
+      aperture: bundle.aperture,
+      observationModeId: bundle.observationModeId ?? null,
+      projectionPolicyId: bundle.projectionPolicyId ?? null,
+      bindSite: "PathTracer4D.observationProjection",
+      printSoT: false,
+      authority: "observation",
+      note:
+        "Governed observation aperture — assist/preview only; CPU RT4D print remains SoT.",
+    });
+    return this;
+  }
+
+  /**
+   * Project a world point through the bound observation kernel when present.
+   * Falls back to null when unbound — callers must use Projector4D for print.
+   *
+   * @param {{x:number,y:number,z:number,w:number}} point
+   * @returns {null|{p3:object,screen:object,wFactor:number,printSoT:false,authority:"observation"}}
+   */
+  projectObservationPoint(point) {
+    const bind = this.observationProjection;
+    if (!bind?.kernel?.project) return null;
+    const result = bind.kernel.project(point);
+    return {
+      ...result,
+      printSoT: false,
+      authority: "observation",
+    };
   }
 
   /**
