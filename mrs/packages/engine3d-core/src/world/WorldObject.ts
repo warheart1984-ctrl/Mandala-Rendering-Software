@@ -17,12 +17,12 @@ export type MaterialType =
   | "sovereign-glyph"
   | "energy-lattice";
 
-export type TextureRole = "color" | "roughness" | "normal" | "emissive" | "metallic";
+export type TextureRole = "color" | "roughness" | "normal" | "emissive" | "metallic" | "ao";
 export type TextureFormat = "rgba8" | "rgb8" | "linear-r8" | "linear-rg8" | "normal-rgb8" | "hdr-rgba16f";
 export type TextureColorSpace = "srgb" | "linear";
 export type LightType = "directional" | "point" | "spot" | "area" | "environment";
 export type CameraType = "perspective" | "orthographic" | "portrait" | "wide" | "macro";
-export type EnvironmentPreset = "studio" | "void" | "mandala" | "cosmic" | "city";
+export type EnvironmentPreset = "studio" | "void" | "mandala" | "cosmic" | "city" | "star";
 export type GovernedAssetKind = "rig" | "mesh" | "texture" | "material" | "world" | "environment";
 
 export type Vec3Tuple = readonly [number, number, number];
@@ -145,6 +145,9 @@ export interface GovernedAssetManifest {
     readonly createdAt?: string;
     readonly modifiedAt?: string;
     readonly source?: string;
+    readonly algorithmId?: string;
+    readonly integrityHash?: string;
+    readonly catalogVersion?: string;
   };
   readonly tags?: readonly string[];
 }

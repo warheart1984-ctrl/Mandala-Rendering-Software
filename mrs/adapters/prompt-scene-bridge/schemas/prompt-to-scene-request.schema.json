@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/prompt-scene-bridge/schemas/prompt-to-scene-request.schema.json",
+  "title": "PromptToSceneRequest",
+  "description": "Request shape for Genblaze POST /api/prompt-to-scene. Status: partial — matches Pydantic model; not fully validated in CI schema suite.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["prompt"],
+  "properties": {
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "Natural-language scene prompt"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 16,
+      "maximum": 1024,
+      "default": 256
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 16,
+      "maximum": 1024,
+      "default": 192
+    },
+    "samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64,
+      "default": 4
+    },
+    "max_depth": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 12,
+      "default": 4,
+      "description": "API field (snake_case); CLI uses --max-depth"
+    },
+    "render": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, Genblaze RT4D-renders sceneSpecification after bridge"
+    },
+    "quality": {
+      "type": "string",
+      "default": "draft",
+      "description": "Render quality when render=true (draft/fast or final/high)"
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "trailId": "prompt-scene-docker-2026-07",
+  "feature": "Bundle prompt-scene-bridge into Genblaze repo-root Docker /app layout",
+  "protocol": "docs/governance/CECP_OMEGA_PROTOCOL.md",
+  "predecessorTrail": "engine3d-expand-2026-07",
+  "overallStatus": "pass_with_gaps",
+  "lineage": "Architecture → Build → Implementation → Review → Inspection → Acceptance",
+  "inspectedAt": "2026-07-27",
+  "inspectedHead": "bbc1aa4060d3e88036194170854328b1e79d05ff",
+  "inspectedBranch": "tmp/cecp-docker-rebase",
+  "gapFixCommit": "bbc1aa4060d3e88036194170854328b1e79d05ff",
+  "priorInspectorFail": "90cf2f760e8c27646acc3ad902655ac2e5a72f61",
+  "remoteNote": "origin/feat/engine3d-genblaze-cinematic-plugin ls-remote empty (appears deleted); local tracking tip 6d1a569 was rebase base; no push",
+  "stages": [
+    {
+      "stage": "architect",
+      "artifact": "01-architect-adr.md",
+      "verdict": "N/A",
+      "statusTags": { "dockerBundle": "declared" }
+    },
+    {
+      "stage": "builder",
+      "artifact": "02-builder-scaffold-manifest.md",
+      "verdict": "N/A",
+      "statusTags": { "scaffold": "skeleton" }
+    },
+    {
+      "stage": "implementor",
+      "artifact": "03-implementor-notes.md",
+      "verdict": "N/A",
+      "statusTags": {
+        "dualLayoutDefaults": "enforced",
+        "dockerCopyEnvSmoke": "partial",
+        "liveRenderHealth": "declared"
+      },
+      "evidence": [
+        "Dual-layout + Dockerfile COPY/ENV/smoke wiring",
+        "Gap fix bbc1aa4 restored lattice_polish_defaults for Genblaze import"
+      ]
+    },
+    {
+      "stage": "reviewer",
+      "artifact": "04-reviewer-conformance.md",
+      "verdict": "PASS_WITH_NOTES",
+      "statusTags": { "boundary": "enforced", "claimHonesty": "ok" }
+    },
+    {
+      "stage": "inspector",
+      "artifact": "05-inspector-acceptance.md",
+      "verdict": "PASS_WITH_GAPS",
+      "statusTags": {
+        "dualLayoutDefaults": "enforced",
+        "dockerCopyEnvSmoke": "partial",
+        "genblazeImportGraph": "enforced",
+        "imageBuildHealth": "unverified",
+        "liveRenderHealth": "declared",
+        "storyForgeBan": "enforced"
+      },
+      "evidence": [
+        "pytest test_mrs_map.py → 16 passed, 3 skipped",
+        "pytest test_prompt_to_scene.py → 10 passed",
+        "pytest ban nodeids + test_lattice_polish_defaults.py → 6 passed",
+        "docker info → daemon unavailable (dockerDesktopLinuxEngine pipe missing)",
+        "Dockerfile static COPY L85-87 + ENV L48-50 + RUN smokes L131-140"
+      ]
+    }
+  ],
+  "acceptance": {
+    "decision": "accepted_with_gaps",
+    "inspectorVerdict": "PASS_WITH_GAPS",
+    "notes": "Unit/ban green after lattice gap fix. Gaps: Docker daemon down (no image build/health); live Render remains declared."
+  }
+}

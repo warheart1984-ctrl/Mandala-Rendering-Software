@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/proton-raster-bridge/schemas/proton-raster-request.schema.json",
+  "title": "ProtonRasterRequest",
+  "description": "Request shape for proton soft-splat pipeline. Status: declared — not enforced in CI yet.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "cir": {
+      "type": "object",
+      "description": "Thin IntentRecord overlay: id, actor, timestamp, purpose",
+      "properties": {
+        "id": { "type": "string" },
+        "actor": { "type": "string" },
+        "timestamp": { "type": ["string", "number"] },
+        "purpose": { "type": "string" }
+      },
+      "required": ["id"]
+    },
+    "sceneSpecification": {
+      "type": "object",
+      "description": "Optional MRS SceneSpecification"
+    },
+    "worldDocumentRt4d": {
+      "type": "object",
+      "description": "Optional WorldDocumentRt4d consume input"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 8,
+      "maximum": 2048,
+      "default": 256
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 8,
+      "maximum": 2048,
+      "default": 256
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "output": {
+      "type": "string",
+      "description": "Optional PNG output path"
+    }
+  }
+}

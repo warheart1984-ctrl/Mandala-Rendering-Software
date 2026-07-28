@@ -365,6 +365,7 @@ export function convertSceneSpecification(spec) {
     maxDepth: spec.output?.maxDepth ?? 5,
     exposure: spec.output?.exposure ?? 1.35,
     seed,
+    qualityOpts: spec.output?.qualityOpts ?? null,
   };
 
   const rt4d = {

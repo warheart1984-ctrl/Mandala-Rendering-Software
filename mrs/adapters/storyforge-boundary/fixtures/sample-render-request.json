@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "requestId": "rr-fixture-001",
+  "intentId": "intent-fixture-001",
+  "worldId": "world-fixture-mythar",
+  "timelineId": "timeline-fixture-001",
+  "timeSeconds": 0,
+  "parameters": {
+    "purpose": "storyforge-boundary-fixture"
+  },
+  "provenance": {
+    "promptSpecHash": "sha256:deadbeefcafebabe0000000000000001",
+    "renderIntentHash": "sha256:feedface000000000000000000000002",
+    "source": "fixture"
+  },
+  "payload": {
+    "route": "scene-spec",
+    "render": {
+      "width": 64,
+      "height": 48,
+      "samples": 2,
+      "maxDepth": 3,
+      "seed": 42,
+      "quality": "draft"
+    },
+    "sceneSpecification": {
+      "version": "1.0",
+      "entities": [
+        {
+          "id": "primary",
+          "geometry": { "surfaceId": "tesseract" }
+        }
+      ]
+    }
+  }
+}

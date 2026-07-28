@@ -1,0 +1,36 @@
+{
+  "trailId": "proton-hq-2026-07",
+  "feature": "proton-hq-quality-judge",
+  "protocol": "docs/governance/CECP_OMEGA_PROTOCOL.md",
+  "started": "2026-07-27",
+  "overallStatus": "partial",
+  "inspectorVerdict": "PASS_WITH_GAPS",
+  "esfrVerdict": "PASS_WITH_GAPS",
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "gaps": [
+    "visual-density-vs-architect-aspiration",
+    "bloom-declared",
+    "depth-cue-declared",
+    "ci-proton-hq-suite-partial",
+    "armCount-hard-cap-16",
+    "no-gpu"
+  ],
+  "stages": {
+    "01-architect": "complete",
+    "02-builder": "complete",
+    "03-implementor": "complete",
+    "04-reviewer": "PASS_WITH_NOTES",
+    "05-inspector": "PASS_WITH_GAPS",
+    "06-engineer-standards": "PASS_WITH_GAPS"
+  },
+  "scaffold": {
+    "command": "node mrs/packages/renderer-core/scripts/judge-wow-hq.mjs --quality high --out-dir mrs/packages/renderer-core/output/judge-wow-hq",
+    "presetIds": ["default", "high"],
+    "outDir": "mrs/packages/renderer-core/output/judge-wow-hq",
+    "beautyAbsolute": "G:\\Mandala Rendering Software\\mrs\\packages\\renderer-core\\output\\judge-wow-hq\\beauty.png"
+  },
+  "evidence": [
+    "docs/governance/cecp/trails/proton-hq-2026-07/05-inspector-acceptance.md",
+    "docs/governance/cecp/trails/proton-hq-2026-07/06-engineer-standards.md"
+  ]
+}

@@ -10,6 +10,7 @@ Thin **FastAPI** service: user prompt → **Genblaze** (`genblaze-nvidia` + `gen
 | Image → SceneSpecification | **Prepared** — `POST /api/image-to-scene` interprets a still (NIM vision or heuristic) into SceneSpecification, then MRS path-traces a full frame. **Not** geometric reconstruction / photogrammetry |
 | Engine3D structure → polish | **Prepared** — `POST /api/engine3d-still` soft-rasters Engine3D triangles (beauty + depth/normal), optional RT4D background composite, optional fal FLUX img2img polish. Faces/skin = polish, not RT4D sphere-bridge |
 | Engine3D short cinematic sequence | **Prepared** — `POST /api/engine3d-sequence` soft-rasters a short orbit clip (structure AOVs). NOT 8K farm; NOT per-frame polish. See `docs/4d-engine/engine3d/ENGINE3D_CINEMATIC_FOUNDATION_v1.0.md` |
+| Prompt → SceneSpecification | **Prepared** — `POST /api/prompt-to-scene` shells out to prompt-scene-bridge for SceneSpecification + Engine3D world stub. Repo-root Docker **Prepared**/bundling **partial**: COPY → `/app/prompt-scene-bridge/` + `PROMPT_SCENE_BRIDGE_SCRIPT` / `ENGINE3D_EXPAND_SCRIPT` / `PROMPT_SCENE_EXPAND_WORLD=0` until Manual Deploy proves `/health.prompt_scene.available: true`. Optional `render=true` uses SceneSpecification → RT4D (**partial** when Node/script missing; do **not** claim live Render enforced). Infinity narrative lane is **out-of-process only** (banned under `app/*.py`). World geometry arrays remain a stub until expand (`PROMPT_SCENE_EXPAND_WORLD=1` opt-in) |
 | ChatGPT / Custom GPT plugin | **Prepared** — `/.well-known/ai-plugin.json` + scoped `/plugin/openapi.json` for Engine3D stills. Classic Plugins storefront is **sunset**; use **Custom GPT Actions**. Optional `CHATGPT_PLUGIN_KEY` bearer |
 | RT4D → NVIDIA vision | **Prepared** — `POST /api/rt4d-to-nvidia` sends a prior `run_id` PNG to NIM vision (`require_nvidia`). When the prior still's RT4D archetype is known (e.g. `tesseract-lattice`), the path biases `surfaceId` toward lattice/tesseract and expands `tesseract`/`lattice-grid` with beams+rings (not bare vertex/orbital blobs). **Not** img2img; fails clearly when key missing or NIM 5xx/504 |
 | Operator deploy | **Prepared** — Dockerfile + `render.yaml` (Render free web) |
@@ -217,6 +218,13 @@ Copy secrets into the **repo-root** `.env` (preferred) or `mrs/apps/genblaze-med
 | `ENGINE3D_STILL_ENABLED` | default **on** — set `0` to disable `/api/engine3d-still` |
 | `ENGINE3D_STILL_SCRIPT_PATH` | optional; default `…/engine3d-core/scripts/render-engine3d-still.mjs` |
 | `ENGINE3D_STILL_TIMEOUT` | optional; default `120` seconds |
+| `PROMPT_SCENE_BRIDGE_ENABLED` | default **on** — set `0` to disable `/api/prompt-to-scene` |
+| `PROMPT_SCENE_BRIDGE_SCRIPT` | optional; default monorepo `…/prompt-scene-bridge/run_bridge.py`, then Docker `/app/prompt-scene-bridge/run_bridge.py` |
+| `PROMPT_SCENE_BRIDGE_PYTHON` | optional interpreter for the bridge subprocess |
+| `PROMPT_SCENE_BRIDGE_TIMEOUT` | optional; default `90` seconds (clamped 10–300) |
+| `PROMPT_SCENE_EXPAND_WORLD` | default **off** (`0`) — set `1` to expand Engine3D generator stubs via Node (opt-in; image ENV pins `0`) |
+| `ENGINE3D_EXPAND_SCRIPT` | optional; default monorepo expand CLI, then Docker `/app/engine3d-core/scripts/expand-world-document.mjs` |
+| `INFINITY_STORY_SRC` / `PROMPT_SCENE_INFINITY_SRC` | optional Infinity lane source on bridge worker `PYTHONPATH` (never imported under `app/`) |
 | `SCENE_SPEC_SCRIPT_PATH` | optional; default resolves `<repo>/mrs/packages/renderer-core/scripts/render-scene.mjs`, then the Docker layout `/app/renderer-core/scripts/render-scene.mjs` |
 | `VALIDATE_SCENE_SPEC_SCRIPT_PATH` | optional; default resolves `<repo>/mrs/packages/renderer-core/scripts/validate-scene-spec.mjs`, then the Docker layout `/app/renderer-core/scripts/validate-scene-spec.mjs` |
 | `SCENE_SPEC_SCRIPT_PATH` | optional; default `…/render-scene.mjs` |
@@ -517,6 +525,7 @@ With **valid** B2 keys (no NVIDIA): `/health` reports `b2_configured` without li
 | GET | `/plugin/openapi.json` | Scoped OpenAPI for Engine3D still Actions (full app schema remains `/openapi.json`) |
 | POST | `/api/engine3d-still` | Engine3D soft-raster structure (beauty+AOVs); optional `rt4d_background_run_id` composite; optional `polish`; **not** RT4D sphere-bridge for faces |
 | POST | `/api/engine3d-sequence` | Short Engine3D soft-raster orbit sequence (structure); first-frame preview; **not** 8K farm / per-frame polish |
+| POST | `/api/prompt-to-scene` | Prompt → SceneSpecification + Engine3D world stub via out-of-process bridge; optional `render=true` RT4D still; **503** disabled/missing script, **502** bridge failure |
 | POST | `/api/render-scene` | SceneSpecification JSON → RT4D still (`quality` default **draft**; pass `final` for RT4D_* profile) |
 | GET | `/api/assets` | Local recent index (capped); optional `?modality=image\|video` |
 | GET | `/media/stills` · `/media/nvidia` · `/media/nim-cosmos` | 302 into SPA hash anchors |

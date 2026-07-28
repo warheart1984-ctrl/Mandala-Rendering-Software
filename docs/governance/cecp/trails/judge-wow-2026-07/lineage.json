@@ -1,0 +1,20 @@
+{
+  "trailId": "judge-wow-2026-07",
+  "feature": "judge-wow-package",
+  "protocol": "docs/governance/CECP_OMEGA_PROTOCOL.md",
+  "started": "2026-07-27",
+  "overallStatus": "enforced",
+  "gaps": ["textureSampler-declared", "genblaze-live-partial", "prompt-string-oneshot-declared", "bake-polish-partial"],
+  "stages": {
+    "01-architect": "complete",
+    "02-builder": "complete",
+    "03-implementor": "complete",
+    "04-reviewer": "PASS_WITH_NOTES",
+    "05-inspector": "PASS_WITH_GAPS",
+    "06-engineer-standards": "PASS_WITH_NOTES"
+  },
+  "demo": {
+    "command": "node mrs/packages/renderer-core/scripts/judge-wow-proton-triptych.mjs --width 256 --out-dir mrs/packages/renderer-core/output/judge-wow-triptych-256",
+    "protonCount": 50
+  }
+}

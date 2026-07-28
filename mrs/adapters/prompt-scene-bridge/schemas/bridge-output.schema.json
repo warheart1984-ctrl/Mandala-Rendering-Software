@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/prompt-scene-bridge/schemas/bridge-output.schema.json",
+  "title": "PromptSceneBridgeOutput",
+  "description": "Worker stdout JSON from run_bridge.py. Status: partial — fields match live payload; world document geometry arrays remain stub.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["ok"],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "true on success; false when error/trace present"
+    },
+    "prompt": {
+      "type": "string"
+    },
+    "sceneSpecification": {
+      "type": "object",
+      "description": "MRS SceneSpecification 1.0 from mrs_map",
+      "required": ["schemaVersion", "kind", "materials", "entities", "camera", "output"],
+      "properties": {
+        "schemaVersion": { "const": "1.0" },
+        "kind": { "const": "SceneSpecification" },
+        "materials": { "type": "array" },
+        "entities": { "type": "array", "minItems": 1 },
+        "camera": { "type": "object" },
+        "output": { "type": "object" }
+      }
+    },
+    "engine3dWorldDocument": {
+      "type": "object",
+      "description": "Engine3DWorldDocument generator stub — objects/materials/lights/cameras are empty arrays (partial)",
+      "properties": {
+        "schemaVersion": { "type": "string" },
+        "generator": { "type": "object" },
+        "objects": { "type": "array" },
+        "materials": { "type": "array" },
+        "lights": { "type": "array" },
+        "cameras": { "type": "array" }
+      }
+    },
+    "infinityScene": {
+      "type": "object",
+      "description": "Lane or fallback narrative scene fields (worker-local)"
+    },
+    "laneMeta": {
+      "description": "Optional lane provider metadata"
+    },
+    "error": {
+      "type": "string",
+      "description": "Present when ok is false"
+    },
+    "trace": {
+      "type": "string",
+      "description": "Optional traceback snippet when ok is false"
+    }
+  }
+}

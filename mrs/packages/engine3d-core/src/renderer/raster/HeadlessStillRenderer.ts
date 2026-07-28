@@ -14,6 +14,9 @@ import { deflateSync } from "node:zlib";
 import { writeFileSync } from "node:fs";
 import { transformPoint, transformVector, normalize3 } from "../../human/mat4.js";
 import type { Mat4Tuple } from "../../human/HumanRigTypes.js";
+import { shadeRasterFragment } from "./RasterMaterial.js";
+// TextureSampler deferred: binder + uvs path is low-risk only when atlas maps
+// are bound; STATUS: declared gap — materials shade without texture lookup.
 
 export type Vec3 = readonly [number, number, number];
 
@@ -38,6 +41,10 @@ export interface RasterMesh {
   /** Column-major 4x4 model matrix. */
   modelMatrix: Mat4Tuple;
   baseColor: Vec3;
+  /** Optional material for shadeRasterFragment (STATUS: enforced when present). */
+  material?: import("./RasterMaterial.js").RasterMaterial;
+  /** Optional UV0; texture sampling deferred (STATUS: declared / gap). */
+  uvs?: Float32Array;
 }
 
 export interface RasterStillRequest {
@@ -274,11 +281,33 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
         const y = mvp[1]! * px + mvp[5]! * py + mvp[9]! * pz + mvp[13]!;
         const z = mvp[2]! * px + mvp[6]! * py + mvp[10]! * pz + mvp[14]!;
         const cw = mvp[3]! * px + mvp[7]! * py + mvp[11]! * pz + mvp[15]!;
-        void wx;
-        void wy;
-        void wz;
         const ndl = Math.max(0, -(nx * light[0] + ny * light[1] + nz * light[2]));
-        const shade = 0.2 + 0.8 * ndl;
+        let r: number;
+        let g: number;
+        let b: number;
+        if (mesh.material) {
+          // View approx: toward camera from vertex (eye - worldPos), use light as fallback via shadeRasterFragment
+          const viewDir: Vec3 = normalize3(
+            camera.eye[0] - wx,
+            camera.eye[1] - wy,
+            camera.eye[2] - wz,
+          );
+          const rgb = shadeRasterFragment(
+            mesh.material,
+            [nx, ny, nz],
+            light,
+            viewDir,
+          );
+          r = rgb[0];
+          g = rgb[1];
+          b = rgb[2];
+        } else {
+          // Legacy Lambert: baseColor * (0.2 + 0.8 * ndl)
+          const shade = 0.2 + 0.8 * ndl;
+          r = mesh.baseColor[0] * shade;
+          g = mesh.baseColor[1] * shade;
+          b = mesh.baseColor[2] * shade;
+        }
         verts.push({
           x,
           y,
@@ -287,9 +316,9 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
           nx,
           ny,
           nz,
-          r: mesh.baseColor[0] * shade,
-          g: mesh.baseColor[1] * shade,
-          b: mesh.baseColor[2] * shade,
+          r,
+          g,
+          b,
         });
       }
 

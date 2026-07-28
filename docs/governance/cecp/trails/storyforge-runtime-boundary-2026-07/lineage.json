@@ -1,0 +1,51 @@
+{
+  "trailId": "storyforge-runtime-boundary-2026-07",
+  "feature": "StoryForge Runtime Spec v1.0 MRS crossing freeze (RenderRequest→RenderResult)",
+  "started": "2026-07-27",
+  "overallStatus": "partial",
+  "mode": "sage",
+  "lenses": [
+    "sage",
+    "trickster",
+    "warrior",
+    "monk",
+    "researcher",
+    "journalist",
+    "poet",
+    "physicist",
+    "theorist",
+    "bard",
+    "oracle",
+    "cartographer",
+    "artisan",
+    "sentinel",
+    "scholar",
+    "inventor",
+    "diplomat",
+    "hermit",
+    "historian",
+    "visionary"
+  ],
+  "stages": {
+    "01": "architect-adr.md",
+    "02": "builder-scaffold-manifest.md",
+    "03": "implementor-notes.md",
+    "04": "reviewer-conformance.md",
+    "05": "inspector-acceptance.md",
+    "06": "engineer-standards.md"
+  },
+  "inspectorVerdict": "PASS_WITH_GAPS",
+  "esfrVerdict": "PASS_WITH_GAPS",
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "sot": "mrs/adapters/storyforge-boundary/",
+  "contracts": [
+    "mrs/adapters/storyforge-boundary/BOUNDARY.md",
+    "mrs/adapters/storyforge-boundary/schemas/RenderRequest.schema.json",
+    "mrs/adapters/storyforge-boundary/schemas/RenderResult.schema.json",
+    "docs/contracts/storyforge-runtime/README.md"
+  ],
+  "testsCited": {
+    "command": "G:/.runtime/python-3.13.14/python.exe -m pytest mrs/adapters/storyforge-boundary/test_boundary.py -q",
+    "result": "14 passed"
+  }
+}

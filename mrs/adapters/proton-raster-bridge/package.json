@@ -1,0 +1,10 @@
+{
+  "name": "@mrs/proton-raster-bridge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Prompt→CIR→protons→CPU soft splat adapter (STATUS: enforced MVP)",
+  "exports": {
+    "./mintCir.js": "./mintCir.js"
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "status": "partial",
+  "statusNote": "Seed ledger for ESFR reviews. ProtonRasterPipeline row is an evidence-aligned backfill from Inspector PASS_WITH_GAPS (2026-07-27) with matrix/probes cited in trail 06; esfrRunStatus remains partial (not a fresh live re-probe at package land).",
+  "lineage": {
+    "role": "ESFR",
+    "version": "1.0.0",
+    "reference": "CECP Ω∞",
+    "protocol": "docs/governance/esfr/protocol.esfr.md",
+    "contract": "docs/governance/esfr/contract.esfr.md",
+    "promotionRules": "docs/governance/esfr/promotion.esfr.md",
+    "pipeline": "docs/governance/esfr/pipeline.cecp-v2.md",
+    "testMatrix": "docs/governance/esfr/test-matrix.esfr.md",
+    "probes": "docs/governance/esfr/probes.esfr.md",
+    "agent": "docs/governance/esfr/agent.esfr.json",
+    "records": [
+      {
+        "module": "ProtonRasterPipeline",
+        "trailId": "proton-raster-2026-07",
+        "trail": "docs/governance/cecp/trails/proton-raster-2026-07/",
+        "inspectorVerdict": "PASS_WITH_GAPS",
+        "verdict": "PASS_WITH_GAPS",
+        "promotionEligibility": "PROMOTE_WITH_GAPS",
+        "esfrRunStatus": "partial",
+        "gaps": [
+          "Genblaze HTTP",
+          "MaterialMap4D",
+          "SpatialLayout4D",
+          "ProtonDynamics",
+          "GPU Splat"
+        ],
+        "evidence": [
+          "docs/governance/cecp/trails/proton-raster-2026-07/05-inspector-acceptance.md",
+          "docs/governance/cecp/trails/proton-raster-2026-07/06-engineer-standards.md"
+        ],
+        "timestamp": "2026-07-27T00:00:00Z"
+      },
+      {
+        "module": "ProtonHqQuality",
+        "trailId": "proton-hq-2026-07",
+        "trail": "docs/governance/cecp/trails/proton-hq-2026-07/",
+        "inspectorVerdict": "PASS_WITH_GAPS",
+        "verdict": "PASS_WITH_GAPS",
+        "promotionEligibility": "PROMOTE_WITH_GAPS",
+        "esfrRunStatus": "complete",
+        "gaps": [
+          "visual-density-vs-architect-aspiration",
+          "bloom-declared",
+          "ci-proton-hq-suite-partial",
+          "armCount-hard-cap-16",
+          "no-gpu"
+        ],
+        "evidence": [
+          "docs/governance/cecp/trails/proton-hq-2026-07/05-inspector-acceptance.md",
+          "docs/governance/cecp/trails/proton-hq-2026-07/06-engineer-standards.md"
+        ],
+        "timestamp": "2026-07-27T00:00:00Z"
+      }
+    ],
+    "invariants": [
+      "Lineage must reflect evidence.",
+      "Lineage must be immutable.",
+      "Lineage must be replayable."
+    ]
+  }
+}

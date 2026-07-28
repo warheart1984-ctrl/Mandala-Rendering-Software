@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/storyforge-boundary/schemas/RenderRequest.schema.json",
+  "title": "StoryForgeRuntimeRenderRequest",
+  "description": "MRS intake for StoryForge Runtime Spec v1.0 crossing. Status: partial — validated by adapter unit tests; not claimed as full SF→MRS end-to-end enforcement. Distinct from CROS RenderIntent artifacts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "requestId", "intentId", "worldId", "payload"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "intentId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Required for MRS no-execution-without-intent culture"
+    },
+    "worldId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "timelineId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "timeSeconds": {
+      "type": "number"
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Opaque execution parameters for provenance.frame-fields"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "promptSpecHash": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "description": "Opaque hash — MRS must not fetch or mutate PromptSpec"
+        },
+        "renderIntentHash": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "description": "Opaque hash — MRS must not mutate RenderIntent"
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 64
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route", "render"],
+      "properties": {
+        "route": {
+          "type": "string",
+          "enum": ["scene-spec", "engine3d-world", "proton-raster", "rt4d"]
+        },
+        "render": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 8, "maximum": 4096 },
+            "height": { "type": "integer", "minimum": 8, "maximum": 4096 },
+            "samples": { "type": "integer", "minimum": 1, "maximum": 256, "default": 4 },
+            "maxDepth": { "type": "integer", "minimum": 1, "maximum": 32, "default": 4 },
+            "seed": { "type": "integer" },
+            "quality": {
+              "type": "string",
+              "enum": ["draft", "final", "high", "cinematic"],
+              "default": "draft",
+              "description": "draft=smoke dims; final|high=HQ; cinematic=opt-in denser RT4D samples / larger stills (not CI default)"
+            }
+          }
+        },
+        "sceneSpecification": {
+          "type": "object",
+          "description": "Optional MRS SceneSpecification when route=scene-spec"
+        },
+        "engine3dWorldDocument": {
+          "type": "object",
+          "description": "Optional Engine3D world document"
+        },
+        "worldDocumentRt4d": {
+          "type": "object",
+          "description": "Optional RT4D world document"
+        }
+      }
+    }
+  }
+}

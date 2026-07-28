@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/storyforge-boundary/schemas/RenderResult.schema.json",
+  "title": "StoryForgeRuntimeRenderResult",
+  "description": "MRS output for StoryForge Runtime Spec v1.0 crossing. Status: partial. Distinct from CROS RenderResult artifacts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "requestId", "status", "provenance", "routeUsed"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "error", "refused"]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intentId", "worldId"],
+      "properties": {
+        "intentId": { "type": "string" },
+        "worldId": { "type": "string" },
+        "timelineId": { "type": "string" },
+        "timeSeconds": { "type": "number" },
+        "parameters": { "type": "object" }
+      }
+    },
+    "routeUsed": {
+      "type": "string",
+      "enum": ["scene-spec", "engine3d-world", "proton-raster", "rt4d", "none"]
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "sha256"],
+        "properties": {
+          "role": { "type": "string" },
+          "uri": { "type": "string" },
+          "sha256": { "type": "string" },
+          "mediaType": { "type": "string" }
+        }
+      }
+    },
+    "mapping": {
+      "type": "object",
+      "description": "Honest notes of what mapped — may be skeleton"
+    },
+    "sceneSpecification": {
+      "type": "object"
+    },
+    "engine3dWorldDocument": {
+      "type": "object"
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}

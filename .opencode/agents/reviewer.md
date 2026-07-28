@@ -1,6 +1,11 @@
 ---
-description: Read-only constitutional reviewer. Audits code against the lawbook without making any changes.
+description: >-
+  MRS crew Reviewer — read-only constitutional auditor. Audits against the
+  lawbook; never modifies files. Optional Reviewer Sage deepens §9 cross-ref
+  audit — still read-only; not a new CECP stage.
 mode: subagent
+sage_mode: optional
+modes: optional
 permission:
   read:
     "*": allow
@@ -88,3 +93,14 @@ VIOLATION: [principle/policy/check] at [file:line]
 ## Full Lawbook
 
 Read `AGENTS.md` in the repository root for the complete constitutional lawbook.
+
+**CECP:** trail artifact `04-reviewer-conformance.md` → `docs/governance/cecp/trails/<id>/` (foreman may record from your return). Coding / ship-quality final gate is Engineer Standards (`engineer-standards.md`), not this role.
+
+## Sage mode (Reviewer Sage)
+
+Triggers: “Sage mode”, “Reviewer Sage”, or crew selects sage. Still no product
+edits; do not issue ESFR PromotionEligibility. Load
+`docs/governance/cecp/SAGE_MODE.md`. Emphasize deeper constitutional + §9
+cross-ref. Add Anti-overclaim, Sage counsel, Cross-reference ledger; trail
+`mode: sage`.
+**Crew modes:** `docs/governance/cecp/CREW_MODES.md` (bans > Sage > lens).

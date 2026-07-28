@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "requestId": "rr-smoke-001",
+  "intentId": "intent-smoke-pipeline-v1",
+  "worldId": "world-smoke-mythar",
+  "timelineId": "timeline-smoke-001",
+  "timeSeconds": 0,
+  "parameters": {
+    "purpose": "storyforge-mrs-pipeline-v1-smoke"
+  },
+  "provenance": {
+    "promptSpecHash": "sha256:deadbeefcafebabe00000000000000sm",
+    "renderIntentHash": "sha256:feedface00000000000000000000smok",
+    "source": "smoke"
+  },
+  "payload": {
+    "route": "scene-spec",
+    "render": {
+      "width": 64,
+      "height": 48,
+      "samples": 1,
+      "maxDepth": 2,
+      "seed": 42,
+      "quality": "draft"
+    },
+    "sceneSpecification": {
+      "schemaVersion": "1.0",
+      "kind": "SceneSpecification",
+      "id": "smoke-tesseract",
+      "name": "Smoke cyan tesseract",
+      "materials": [
+        {
+          "id": "neon",
+          "color": "#1accff",
+          "opacity": 1
+        }
+      ],
+      "entities": [
+        {
+          "id": "tess",
+          "materialId": "neon",
+          "geometry": {
+            "kind": "surface",
+            "surfaceId": "tesseract"
+          }
+        }
+      ],
+      "camera": {
+        "position4d": [4.3, 1.4, 0.2, 0.1],
+        "target4d": [0, 0.1, 0, 0],
+        "fovX": 52,
+        "fovY": 52,
+        "fovZ": 45,
+        "fovW": 28
+      },
+      "lights": [
+        {
+          "id": "key",
+          "center": [2.4, 3.3, -1.6, 0.7],
+          "radius": 0.95,
+          "emission": [17, 16, 14.5]
+        }
+      ],
+      "output": {
+        "width": 64,
+        "height": 48,
+        "samples": 1,
+        "maxDepth": 2,
+        "seed": 42
+      }
+    }
+  }
+}

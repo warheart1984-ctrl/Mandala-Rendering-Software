@@ -1,0 +1,45 @@
+{
+  "trailId": "storyforge-4d-full-run-2026-07",
+  "feature": "StoryForge→4D full run (RenderRequest→pixels + HQ proton demo)",
+  "started": "2026-07-28",
+  "protocol": "CECP_OMEGA_PROTOCOL.md",
+  "follows": "storyforge-mrs-pipeline-v1-2026-07",
+  "cognitive": {
+    "profiles": ["Systems Architect", "Scientist", "Guardian"],
+    "softwareCreationModes": [
+      "Pipeline-Conductor",
+      "Boundary-Guardian",
+      "Testwright",
+      "Render-Physicist",
+      "Artisan",
+      "Forge",
+      "Constructor"
+    ]
+  },
+  "stages": {
+    "architect": { "file": "01-architect-adr.md" },
+    "builder": { "file": "02-builder-scaffold-manifest.md" },
+    "implementor": { "file": "03-implementor-notes.md" },
+    "reviewer": { "file": "04-reviewer-conformance.md", "verdict": "PASS" },
+    "inspector": { "file": "05-inspector-acceptance.md", "verdict": "PASS" },
+    "engineer_standards": { "file": "06-engineer-standards.md", "verdict": "PASS" }
+  },
+  "sot": "mrs/adapters/storyforge-boundary/",
+  "demo": {
+    "command": "python mrs/adapters/storyforge-boundary/demo_full_run.py --out-dir output/cecp-full-run --genblaze-smoke",
+    "wrapper": "node scripts/demo-storyforge-to-4d.mjs",
+    "outDir": "output/cecp-full-run"
+  },
+  "tests": {
+    "command": "G:/.runtime/python-3.13.14/python.exe -m pytest mrs/adapters/storyforge-boundary/test_boundary.py mrs/adapters/storyforge-boundary/test_pipeline.py -q",
+    "result": "21 passed"
+  },
+  "esfr": {
+    "verdict": "PASS",
+    "promotionEligibility": "PROMOTE"
+  },
+  "statusTags": {
+    "mrsRenderRequestToPixels": "enforced",
+    "storyforgeUpstream": "declared"
+  }
+}

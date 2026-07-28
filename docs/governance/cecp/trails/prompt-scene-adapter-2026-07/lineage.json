@@ -1,0 +1,94 @@
+{
+  "trailId": "prompt-scene-adapter-2026-07",
+  "feature": "Prompt → Scene bridge (MRS adapter) + Genblaze HTTP provider",
+  "protocol": "docs/governance/CECP_OMEGA_PROTOCOL.md",
+  "overallStatus": "partial",
+  "lineage": "Architecture → Build → Implementation → Review → Inspection → Acceptance",
+  "stages": [
+    {
+      "stage": "architect",
+      "predecessor": null,
+      "artifact": "01-architect-adr.md",
+      "intent": "Governed out-of-process prompt→SceneSpecification + Engine3D generator stub",
+      "evidence": [
+        "mrs/adapters/prompt-scene-bridge/CONTRACT.md"
+      ],
+      "statusTags": {
+        "processIsolation": "enforced",
+        "worldExpand": "skeleton"
+      },
+      "verdict": "N/A",
+      "handoff": "Builder scaffolds adapter + Genblaze provider shells"
+    },
+    {
+      "stage": "builder",
+      "predecessor": "architect",
+      "artifact": "02-builder-scaffold-manifest.md",
+      "intent": "Layout, schemas, stubs, test modules",
+      "evidence": [
+        "mrs/adapters/prompt-scene-bridge/",
+        "mrs/apps/genblaze-media/app/prompt_scene_provider.py"
+      ],
+      "statusTags": {
+        "scaffold": "partial"
+      },
+      "verdict": "N/A",
+      "handoff": "Implementor fills mapper, provider, tests"
+    },
+    {
+      "stage": "implementor",
+      "predecessor": "builder",
+      "artifact": "03-implementor-notes.md",
+      "intent": "Production mapping + Genblaze HTTP path",
+      "evidence": [
+        "mrs/adapters/prompt-scene-bridge/test_mrs_map.py",
+        "mrs/apps/genblaze-media/tests/test_prompt_to_scene.py"
+      ],
+      "statusTags": {
+        "sceneMapping": "enforced",
+        "genblazeHttp": "enforced",
+        "engine3dWorldArrays": "partial",
+        "expandWorldRequest": "skeleton"
+      },
+      "verdict": "N/A",
+      "handoff": "Reviewer audits boundary and claim honesty"
+    },
+    {
+      "stage": "reviewer",
+      "predecessor": "implementor",
+      "artifact": "04-reviewer-conformance.md",
+      "intent": "Constitutional / Drive-G-1 review",
+      "evidence": [
+        "AGENTS.md P1-P5",
+        "test_ban_note_app_must_not_import_narrative_lane"
+      ],
+      "statusTags": {
+        "boundary": "enforced"
+      },
+      "verdict": "N/A",
+      "handoff": "Inspector independent verification"
+    },
+    {
+      "stage": "inspector",
+      "predecessor": "reviewer",
+      "artifact": "05-inspector-acceptance.md",
+      "intent": "Claim-vs-evidence + acceptance",
+      "evidence": [
+        "CONTRACT.md",
+        "test_mrs_map.py",
+        "test_prompt_to_scene.py",
+        "mrs_map.expand_world_request identity"
+      ],
+      "statusTags": {
+        "integrationPoint": "partial"
+      },
+      "verdict": "PASS_WITH_GAPS",
+      "handoff": "Acceptance recorded; gaps for future Implementor"
+    }
+  ],
+  "acceptance": {
+    "decision": "accepted_with_gaps",
+    "inspectorVerdict": "PASS_WITH_GAPS",
+    "notes": "Governed integration point. Engine3D empty generator stub; expand_world_request skeleton. Reviewer Boundary OK."
+  }
+}
