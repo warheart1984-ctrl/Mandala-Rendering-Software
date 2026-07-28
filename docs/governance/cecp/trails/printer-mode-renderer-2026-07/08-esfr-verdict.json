@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ESFRVerdictRecord",
+  "trailId": "printer-mode-renderer-2026-07",
+  "initiative": "Digital Printer Initiative",
+  "evaluatedAt": "2026-07-28",
+  "ESFRVerdict": "HOLD",
+  "PromotionEligibility": "HOLD",
+  "equivalentUserLanguage": "HOLD_WITH_GAPS",
+  "note": "Official ESFR enum has no HOLD_WITH_GAPS; HOLD + explicit gap list is the equivalent. Do NOT claim PROMOTE / PROMOTE_WITHOUT_GAPS while section E remains open or A–D items are unverified.",
+  "checklist": {
+    "A_GovernanceCompleteness": {
+      "102_governance_tests": { "checked": false, "statusTag": "declared", "reason": "Not re-run in this pass; do not inherit unchecked [x] from paste." },
+      "CHARTER_frozen": { "checked": true, "statusTag": "enforced", "reason": "No charter.js / CHARTER.md edits this trail." },
+      "CONTRACTS_frozen": { "checked": true, "statusTag": "enforced", "reason": "engine/constitution/contracts.js not modified." },
+      "CKL_decision_logic": { "checked": false, "statusTag": "declared", "reason": "Not re-validated end-to-end this pass." },
+      "GovernanceKernel_intent": { "checked": false, "statusTag": "declared", "reason": "Documentary mapping only (03-governance-kernel-eval.md)." },
+      "CSE_CSR_provenance": { "checked": false, "statusTag": "declared", "reason": "CSR trail file is skeletal (04-csr-records.json)." },
+      "schemas_created": { "checked": true, "statusTag": "partial", "reason": "CSR/ProvenanceFrame/GovernanceDecision schemas exist under schemas/; printer CSR emission not enforced." }
+    },
+    "B_RenderingDeterminism": {
+      "deterministic_sampling": { "checked": true, "statusTag": "enforced", "reason": "stratified AA + mulberry32 path in render-scene." },
+      "deterministic_reconstruction": { "checked": true, "statusTag": "partial", "reason": "BilateralDenoiser applied when denoise=true (opt-in enforced); off-by-default remains declared." },
+      "deterministic_tonemap": { "checked": true, "statusTag": "enforced", "reason": "aces-lite opt-in via qualityOpts." },
+      "deterministic_color": { "checked": true, "statusTag": "enforced", "reason": "sRGB gamma encode path." },
+      "deterministic_encode_png": { "checked": true, "statusTag": "enforced" },
+      "deterministic_hash": { "checked": true, "statusTag": "enforced" },
+      "print_plate_reproducible": { "checked": true, "statusTag": "partial", "reason": "Demo plate present; byte-identical across machines assumed under same Node/seed — not multi-host CI-proven this pass." }
+    },
+    "C_SurfaceSovereignty": {
+      "surface_contract": { "checked": true, "statusTag": "enforced" },
+      "error_states": { "checked": true, "statusTag": "enforced" },
+      "evidence_hashes": { "checked": true, "statusTag": "enforced" },
+      "lineage": { "checked": true, "statusTag": "enforced", "reason": "Demo + dry-run evidence lineage." },
+      "unity_unreal_engine_sync": { "checked": false, "statusTag": "declared", "reason": "Host skeletons exist; mesh sync not verified this pass." },
+      "mesh_sha256_verification": { "checked": false, "statusTag": "declared", "reason": "Not enforced on printer HTTP path this pass." }
+    },
+    "D_EvidenceCompleteness": {
+      "beauty_png": { "checked": true, "statusTag": "enforced", "path": "06-print-plate.png" },
+      "evidence_json": { "checked": true, "statusTag": "enforced", "path": "output/cecp-digital-print/evidence.json" },
+      "lineage_json": { "checked": true, "statusTag": "enforced" },
+      "provenance_frames": { "checked": true, "statusTag": "partial", "path": "05-provenance-frames.json" },
+      "csr_records": { "checked": true, "statusTag": "declared", "path": "04-csr-records.json" },
+      "governance_decision_logs": { "checked": false, "statusTag": "skeleton", "reason": "No live GovernanceDecision log bundle for printer HTTP." }
+    },
+    "E_GapsBeforePromotion": {
+      "denoise_enforced": { "checked": false, "statusTag": "partial", "note": "Opt-in denoise via BilateralDenoiser is enforced when denoise=true; default-off and not yet universal across all backends." },
+      "soft_penumbra_enforced": { "checked": false, "statusTag": "declared" },
+      "rt4d_specular_enforced": { "checked": false, "statusTag": "partial", "note": "GGX4D exists in RT4D material system; print defaults do not require specular plate tests." },
+      "print_timeout_governance": { "checked": true, "statusTag": "enforced", "note": "MRS_PRINT_TIMEOUT_SECONDS on surface contract + printer_provider." },
+      "print_quality_profiles": { "checked": true, "statusTag": "partial", "note": "print_fast/hq enforced; cinematic/reference partial." }
+    }
+  },
+  "priorCrewEsfr": {
+    "file": "06-engineer-standards.md",
+    "ESFRVerdict": "PASS_WITH_GAPS",
+    "PromotionEligibility": "PROMOTE_WITH_GAPS",
+    "scope": "printer-mode adapter core only — superseded for initiative-level promotion by this HOLD"
+  },
+  "antiOverclaim": [
+    "Not a commercial RIP",
+    "Not PROMOTE_WITHOUT_GAPS",
+    "Not full MCP server — capability stubs only",
+    "Unity/Unreal sync not verified"
+  ]
+}

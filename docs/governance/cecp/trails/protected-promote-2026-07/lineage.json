@@ -1,0 +1,17 @@
+{
+  "trailId": "protected-promote-2026-07",
+  "started": "2026-07-28",
+  "parentTrail": "e2e-close-gaps-2026-07",
+  "authorization": "User authorized protected-path edits for zero-gap honesty PROMOTE",
+  "PromotionEligibility": "PROMOTE",
+  "ESFRVerdict": "PASS",
+  "stages": [
+    { "id": "01", "role": "Architect", "artifact": "01-architect-adr.md", "status": "complete" },
+    { "id": "02", "role": "Builder", "artifact": "02-builder-scaffold-manifest.md", "status": "complete" },
+    { "id": "03", "role": "Implementor", "artifact": "03-implementor-notes.md", "status": "complete" },
+    { "id": "04", "role": "Reviewer", "artifact": "04-reviewer-conformance.md", "status": "complete" },
+    { "id": "05", "role": "Inspector", "artifact": "05-inspector-acceptance.md", "status": "complete", "verdict": "PASS" },
+    { "id": "06", "role": "ESFR", "artifact": "06-engineer-standards.md", "status": "complete", "verdict": "PASS", "promotionEligibility": "PROMOTE" }
+  ],
+  "committed": false
+}

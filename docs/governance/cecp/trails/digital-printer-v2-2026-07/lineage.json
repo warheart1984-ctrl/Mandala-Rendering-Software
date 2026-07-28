@@ -1,0 +1,30 @@
+{
+  "trailId": "digital-printer-v2-2026-07",
+  "parentTrail": "printer-mode-renderer-2026-07",
+  "createdAt": "2026-07-28",
+  "updatedAt": "2026-07-28",
+  "version": "2.0",
+  "branch": "feat/engine3d-genblaze-cinematic-plugin",
+  "pr": 83,
+  "esfrVerdict": "PASS",
+  "promotionEligibility": "PROMOTE",
+  "equivalentUserLanguage": "PROMOTE_WITHOUT_GAPS",
+  "residualGaps": [],
+  "sectionE": {
+    "denoise": "enforced",
+    "softPenumbra": "enforced",
+    "rt4dSpecular": "enforced",
+    "qualityProfiles": "enforced",
+    "meshShaSync": "enforced",
+    "csrGovernance": "enforced",
+    "denoiseAllBackends": "enforced"
+  },
+  "priorSha": "f158ed1",
+  "softwareCreationMode": [
+    "Pipeline-Conductor",
+    "Boundary-Guardian",
+    "Constructor",
+    "Testwright",
+    "Anchor"
+  ]
+}

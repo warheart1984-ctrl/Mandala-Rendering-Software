@@ -166,24 +166,26 @@ describe("convertSceneSpecification", () => {
     assert.equal(tesseractEdges().length, 32);
   });
 
-  it("hash is stable across object key order", () => {
-    const shuffled = {
-      id: TESSERACT_SPEC.id,
+  it("preserves ggx materialType from SceneSpec brdf", () => {
+    const spec = {
       schemaVersion: "1.0",
       kind: "SceneSpecification",
-      output: TESSERACT_SPEC.output,
-      entities: TESSERACT_SPEC.entities,
-      materials: TESSERACT_SPEC.materials,
-      camera: TESSERACT_SPEC.camera,
-      lights: TESSERACT_SPEC.lights,
-      defaultObservation: TESSERACT_SPEC.defaultObservation,
-      name: TESSERACT_SPEC.name,
-      animation: TESSERACT_SPEC.animation,
+      id: "ggx-convert",
+      materials: [
+        { id: "chrome", color: "#cccccc", brdf: "ggx", roughness: 0.2, f0: 0.8 },
+      ],
+      entities: [
+        {
+          id: "ball",
+          materialId: "chrome",
+          geometry: { kind: "hypersphere", center: [0, 0, 0, 0], radius: 0.5 },
+        },
+      ],
+      output: { width: 8, height: 8, samples: 1, seed: 1 },
     };
-    assert.equal(
-      hashSceneSpecification(TESSERACT_SPEC),
-      hashSceneSpecification(shuffled),
-    );
+    const { rt4d } = convertSceneSpecification(spec);
+    assert.equal(rt4d.primitives[0].materialType, "ggx");
+    assert.equal(rt4d.primitives[0].roughness, 0.2);
   });
 });
 

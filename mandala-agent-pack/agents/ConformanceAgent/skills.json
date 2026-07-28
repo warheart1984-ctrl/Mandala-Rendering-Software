@@ -1,0 +1,10 @@
+{
+  "agent": "ConformanceAgent",
+  "domain": "conformance schemas, rules, test coverage, drift detection",
+  "skills": [
+    "validateConformanceSchemas", "validateConformanceRules", "validateConformanceTestCoverage",
+    "validateConformanceErrors", "detectConformanceDrift", "generateConformanceTests",
+    "validateConformanceCheckerLogic"
+  ],
+  "status": "declared"
+}

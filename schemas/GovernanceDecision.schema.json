@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4dce.local/schemas/GovernanceDecision.schema.json",
+  "title": "GovernanceDecision",
+  "type": "object",
+  "required": ["ok", "verdict", "reason"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "verdict": {
+      "type": "string",
+      "enum": ["allow", "deny"]
+    },
+    "reason": { "type": "string" },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "requirements": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "attachProvenance": { "type": "boolean" },
+    "paramAdjust": { "type": "object" },
+    "decisionId": { "type": "string" },
+    "charterId": { "type": "string" },
+    "intentId": { "type": "string" },
+    "worldId": { "type": "string" },
+    "policiesApplied": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "precedentCount": { "type": "integer" }
+  },
+  "additionalProperties": true
+}

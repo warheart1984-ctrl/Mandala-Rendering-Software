@@ -55,10 +55,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PROTON_PIPELINE_SCRIPT=/app/proton-raster-bridge/run_proton_pipeline.mjs \
     PROTON_SPLAT_SCRIPT=/app/renderer-core/scripts/render-proton-splat.mjs \
     MRS_RENDER_OUTPUT_DIR=/app/data/output \
-    MRS_RENDER_TIMEOUT_SECONDS=120
+    MRS_RENDER_TIMEOUT_SECONDS=120 \
+    MRS_PRINT_TIMEOUT_SECONDS=900 \
+    PRINTER_API_ENABLED=1 \
+    PRINTER_PIPELINE_SCRIPT=/app/storyforge-boundary/run_print.py
 # PROMPT_SCENE_EXPAND_WORLD=0: expand remains opt-in (set 1 or pass --expand at runtime).
 # MRS_RENDER_REQUEST_EXECUTE=0: RenderRequest deep execute opt-in (CLI --execute or set 1).
 # RENDER_REQUEST_API_ENABLED=0: Genblaze POST /api/render-request opt-in.
+# PRINTER_API_ENABLED=1: Digital Printer /printer HTTP live execute opt-in (deploy default).
 
 # genblaze-core 0.3.7 declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
 COPY mrs/apps/genblaze-media/requirements-docker.txt .
@@ -104,12 +108,18 @@ COPY mrs/adapters/storyforge-boundary/paths.py ./storyforge-boundary/
 COPY mrs/adapters/storyforge-boundary/run_pipeline.py ./storyforge-boundary/
 COPY mrs/adapters/storyforge-boundary/smoke_pipeline.py ./storyforge-boundary/
 COPY mrs/adapters/storyforge-boundary/demo_full_run.py ./storyforge-boundary/
+COPY mrs/adapters/storyforge-boundary/run_print.py ./storyforge-boundary/
+COPY mrs/adapters/storyforge-boundary/demo_digital_print.py ./storyforge-boundary/
+COPY mrs/adapters/storyforge-boundary/printer ./storyforge-boundary/printer/
+COPY mrs/adapters/storyforge-boundary/governance ./storyforge-boundary/governance/
+COPY mrs/adapters/storyforge-boundary/CONTRACT_DIGITAL_PRINT.md ./storyforge-boundary/
 COPY mrs/adapters/storyforge-boundary/schemas ./storyforge-boundary/schemas
 COPY mrs/adapters/storyforge-boundary/fixtures ./storyforge-boundary/fixtures
 
 # Proton raster pipeline (Node) for RenderRequest route=proton-raster.
 COPY mrs/adapters/proton-raster-bridge/run_proton_pipeline.mjs ./proton-raster-bridge/
 COPY mrs/adapters/proton-raster-bridge/mintCir.js ./proton-raster-bridge/
+COPY mrs/adapters/proton-raster-bridge/resolveDualLayout.mjs ./proton-raster-bridge/
 COPY mrs/adapters/proton-raster-bridge/package.json ./proton-raster-bridge/
 
 # Face fixture GLBs (synthetic; not production anatomy).
@@ -126,6 +136,18 @@ RUN node --version \
       --prompt "docker build smoke" --seed 1 \
       --width 64 --height 64 --samples 1 --output /tmp/smoke.png > /dev/null \
  && rm -f /tmp/smoke.png
+
+# Proton dual-layout smoke: flattened /app must resolve mintCir + proton index
+# (not monorepo mrs/adapters|packages relatives). Default-off at runtime; build-only.
+RUN node /app/proton-raster-bridge/run_proton_pipeline.mjs --demo \
+      --width 32 --height 32 --output /tmp/proton-pipeline-smoke.png > /tmp/proton-pipeline-smoke.json \
+ && node /app/renderer-core/scripts/render-proton-splat.mjs --demo \
+      --width 32 --height 32 --output /tmp/proton-splat-smoke.png > /dev/null \
+ && test -f /tmp/proton-pipeline-smoke.png \
+ && test -f /tmp/proton-splat-smoke.png \
+ && rm -f /tmp/proton-pipeline-smoke.png /tmp/proton-pipeline-smoke.json \
+      /tmp/proton-pipeline-smoke.evidence.json \
+      /tmp/proton-splat-smoke.png /tmp/proton-splat-smoke.evidence.json
 
 # Scene-spec smoke: a tiny render-scene run exercises render-scene.mjs, its
 # scene-spec import graph, capability validation, and the shared PNG encoder —
@@ -173,6 +195,13 @@ RUN mkdir -p /app/data/output \
       --execute --out-dir /tmp/sf-out --result /tmp/sf-result.json \
  && python -c "import json; from pathlib import Path; d=json.load(open('/tmp/sf-result.json')); assert d.get('status')=='ok', d; arts=d.get('artifacts') or []; assert any(a.get('role')=='beauty-png' for a in arts), d" \
  && rm -rf /tmp/sf-out /tmp/sf-result.json
+
+# Digital print dry-run smoke (sovereignty + evidence; no heavy spp).
+RUN python /app/storyforge-boundary/run_print.py \
+      -r /app/storyforge-boundary/fixtures/sample-render-request-cinematic-scene.json \
+      --out-dir /tmp/print-smoke --dry-run \
+ && python -c "import json; from pathlib import Path; e=json.loads(Path('/tmp/print-smoke/evidence.json').read_text()); assert e.get('printState')=='OK', e" \
+ && rm -rf /tmp/print-smoke
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh

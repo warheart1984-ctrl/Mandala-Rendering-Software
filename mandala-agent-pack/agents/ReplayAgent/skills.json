@@ -1,0 +1,9 @@
+{
+  "agent": "ReplayAgent",
+  "domain": "replay record, playback, determinism, lineage",
+  "skills": [
+    "validateReplayRecord", "validateReplayPlayback", "validateReplayDeterminism",
+    "validateReplayErrorPropagation", "generateReplayTests", "validateReplayLineage"
+  ],
+  "status": "declared"
+}

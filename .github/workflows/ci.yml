@@ -14,3 +14,105 @@ jobs:
         with:
           node-version: "22"
       - run: npm test
+
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run governance tests
+        run: npm run test:governance
+
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run conformance tests
+        run: npm run test:conformance
+
+  runtime-provenance-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Provenance + Replay unit tests
+        run: npm run test:runtime-provenance
+
+  surface-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check surface mesh sync
+        run: npm run sync:surfaces -- --dry-run
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Package type consistency
+        run: node scripts/check-package-types.mjs
+
+  engine3d:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install engine3d dependencies
+        run: npm ci || npm install
+        working-directory: mrs/packages/engine3d-core
+      - name: Build TypeScript then run engine3d tests
+        # package script: npm run build && node --test dist/test/...
+        run: npm run test:engine3d
+        working-directory: mrs/packages/engine3d-core
+
+  release-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Version alignment (release.json ↔ packages ↔ charter)
+        run: npm run release:check
+
+  mandala-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # 4d-renderer/ is a re-export shim (no junction required for package imports).
+      # Optional symlink only if a heuristic tool walks deep 4d-renderer/src paths.
+      - name: Setup optional 4d-renderer/src symlink
+        run: ln -sfn "$PWD/mrs/packages/renderer-core/src" "$PWD/4d-renderer/src"
+      - name: Constitutional lint
+        run: node mandala-agent-pack/lint/run-lint.js
+      - name: Generate drift radar
+        run: node mandala-agent-pack/drift-radar/generate-report.js
+      - name: GPU mock + constitution (skip-ok live separately)
+        run: npm run test:gpu
+      - name: MultiHost constitutional routing
+        run: npm run test:multihost
+      - name: Live WebGPU (skip-ok without adapter)
+        run: npm run test:gpu-live
+      - name: Upload drift radar
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-radar
+          path: drift-radar.json

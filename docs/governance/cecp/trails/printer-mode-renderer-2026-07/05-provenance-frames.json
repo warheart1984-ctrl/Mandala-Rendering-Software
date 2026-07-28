@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ProvenanceFrameBundle",
+  "statusTag": "partial",
+  "note": "Frames synthesized from live demo evidence + render-scene provenance. Not a full ProvenanceRecorder play/stop session.",
+  "sourcePaths": [
+    "output/cecp-digital-print/evidence.json",
+    "output/cecp-digital-print/rr-cecp-scene-cinematic-scene-spec.provenance.json"
+  ],
+  "frames": [
+    {
+      "intentId": "intent-cecp-cinematic-quality-scene",
+      "timelineId": "timeline-cecp-cinematic-quality",
+      "worldId": "world-mythar-ascension-cinematic",
+      "timeSeconds": 0.0,
+      "parameters": {
+        "seed": 42,
+        "width": 512,
+        "height": 512,
+        "samples": 24,
+        "tonemap": "aces-lite",
+        "adaptiveSampling": true,
+        "sha256": "89bffae71adac869c4b2a17016eb236593e22afcc1ebb595e9d27c93b7f9fb23",
+        "specHash": "0f47f50845a835487baabcb7947f23a727d2da2199a94979819f82073cb66d0e",
+        "printStages": {
+          "sampling": "enforced",
+          "reconstruction": "declared",
+          "tonemap": "enforced",
+          "color": "enforced",
+          "encode": "enforced",
+          "hash_provenance": "enforced"
+        }
+      }
+    }
+  ]
+}

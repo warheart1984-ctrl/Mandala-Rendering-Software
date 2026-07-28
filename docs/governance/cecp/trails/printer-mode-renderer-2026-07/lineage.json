@@ -2,17 +2,44 @@
   "trailId": "printer-mode-renderer-2026-07",
   "feature": "digital-printer-renderer",
   "lineage": [
+    "00-intent",
+    "01-authority",
     "01-architect-adr",
     "02-builder-scaffold-manifest",
+    "02-evidence",
     "03-implementor-notes",
+    "03-governance-kernel-eval",
     "04-reviewer-conformance",
+    "04-csr-records",
     "05-inspector-acceptance",
-    "06-engineer-standards"
+    "05-provenance-frames",
+    "06-engineer-standards",
+    "06-print-plate",
+    "07-lineage",
+    "08-esfr-verdict",
+    "09-promotion-request"
   ],
   "overallStatus": "partial",
-  "esfrVerdict": "PASS_WITH_GAPS",
-  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "esfrVerdict": "HOLD",
+  "promotionEligibility": "HOLD",
+  "equivalentUserLanguage": "HOLD_WITH_GAPS",
+  "priorAdapterEsfr": {
+    "esfrVerdict": "PASS_WITH_GAPS",
+    "promotionEligibility": "PROMOTE_WITH_GAPS",
+    "scope": "printer-mode adapter core"
+  },
   "relatedTrails": ["cinematic-render-quality-2026-07"],
-  "cognitive-profile": ["Scientist", "Creator", "Optimizer"],
-  "modes": ["Artisan", "Artisan-Logic", "Render-Physicist", "Protocol", "Constructor", "Testwright"]
+  "cognitive-profile": ["Scientist", "Creator", "Optimizer", "Guardian"],
+  "modes": ["Artisan", "Artisan-Logic", "Render-Physicist", "Protocol", "Constructor", "Testwright", "Anchor"],
+  "api": {
+    "base": "/printer",
+    "statusTag": "partial"
+  },
+  "v2Tasks": {
+    "denoise": "partial",
+    "softPenumbra": "declared",
+    "rt4dSpecular": "partial",
+    "printTimeout": "enforced",
+    "qualityProfiles": "partial"
+  }
 }

@@ -223,8 +223,32 @@ export class PostProcessor {
         return vec4<f32>(sceneColor.rgb + bloomColor.rgb * strength, 1.0);
       }
     `;
-    
-    return this.createRenderPipeline(shaderCode, 'rgba16float');
+
+    // Dedicated BGL: bindings 0–3 match shader + createBindGroup(bloomCombine).
+    // sampleType 'float' pairs with filtering sampler (textureSample in WGSL).
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
+      ],
+    });
+
+    const shaderModule = this.device.createShaderModule({ code: shaderCode });
+    return this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vs_main',
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fs_main',
+        targets: [{ format: 'rgba16float' }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
   }
   
   async createToneMappingPipeline() {
@@ -377,9 +401,10 @@ export class PostProcessor {
   async createRenderPipeline(shaderCode, format) {
     const shaderModule = this.device.createShaderModule({ code: shaderCode });
     
+    // sampleType 'float' pairs with filtering sampler (textureSample in WGSL).
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
         { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
         { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } }
       ]
@@ -578,6 +603,23 @@ export class PostProcessor {
     
     // Recreate textures with new size
     // (In production, you'd want to handle this more gracefully)
+  }
+
+  /**
+   * Testable alias — bloomCombine dedicated BGL (bindings 0–3).
+   * @returns {Promise<GPURenderPipeline>}
+   */
+  _createBloomCombinePipeline() {
+    return this.createBloomCombinePipeline();
+  }
+
+  /**
+   * Testable alias for shared 3-binding post pipelines.
+   * @param {string} shaderCode
+   * @param {string} format
+   */
+  _createRenderPipeline(shaderCode, format) {
+    return this.createRenderPipeline(shaderCode, format);
   }
 }
 

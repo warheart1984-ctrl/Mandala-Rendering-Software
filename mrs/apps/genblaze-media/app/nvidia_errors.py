@@ -129,21 +129,108 @@ def nvidia_nim_status_from_warmup(
     liveness = str(warmup.get("liveness") or "unknown")
     if liveness == "live":
         note = "warmup rejected the invalid payload as expected; gateway reachable"
+        next_step = "generate may proceed; keep Render warm with cron GET /health"
     elif liveness == "unavailable":
         note = (
             "warmup got gateway 504; generate likely fails until NVIDIA "
             "recovers, and poll tuning alone may not help"
         )
+        next_step = (
+            "verify key on build.nvidia.com; set GENBLAZE_NVCF_POLL_SECONDS=300; "
+            "optional GENBLAZE_EMPTY_504_RETRY=1 (double-bill risk)"
+        )
     elif liveness == "dead":
         note = "warmup got 404; verify the model slug and key catalog access"
+        next_step = "confirm GENBLAZE_IMAGE_MODEL slug and catalog access for this key"
     else:
         note = str(warmup.get("note") or "warmup was inconclusive")
+        next_step = "inspect warmup.error / http_status; retry generate once manually"
     return {
         "status": liveness,
         "http_status": warmup.get("http_status"),
         "model": warmup.get("model"),
         "note": note,
+        "next_step": next_step,
     }
+
+
+def resolve_nvidia_help(
+    *,
+    nvidia_configured: bool,
+    missing_key_help: str,
+    warmup: dict[str, Any] | None = None,
+) -> str | None:
+    """Operator help for /health — missing key OR warmup-proved NIM unavailability.
+
+    Drive-G-1: a configured key does not mean NIM is reachable. When startup
+    warmup already saw gateway 504, surface the unavailable hint even though
+    ``nvidia_configured`` is true.
+    """
+    if not nvidia_configured:
+        return missing_key_help
+    if warmup_suggests_nim_unavailable(warmup):
+        return EMPTY_504_NIM_UNAVAILABLE_HINT
+    return None
+
+
+def nim_ops_checklist(
+    *,
+    nvidia_configured: bool,
+    warmup: dict[str, Any] | None = None,
+    empty_504_retry: bool = False,
+    nvcf_poll_seconds: int | None = None,
+) -> list[dict[str, Any]]:
+    """Ordered Genblaze NIM debug layers (dynamo-troubleshoot pattern, in-repo).
+
+    Not a Dynamo/K8s deployment — layering only. /health must stay cheap:
+    this list is derived from already-known state (no extra NVIDIA calls).
+    """
+    status = nvidia_nim_status_from_warmup(warmup)
+    liveness = str(status.get("status") or "unknown")
+    poll = nvcf_poll_seconds
+    return [
+        {
+            "layer": 1,
+            "id": "api_key",
+            "ok": bool(nvidia_configured),
+            "note": "NVIDIA_API_KEY present" if nvidia_configured else "missing key",
+        },
+        {
+            "layer": 2,
+            "id": "warmup_probe",
+            "ok": liveness == "live",
+            "status": liveness,
+            "note": status.get("note"),
+        },
+        {
+            "layer": 3,
+            "id": "nvcf_poll",
+            "ok": poll is None or int(poll) >= 180,
+            "nvcf_poll_seconds": poll,
+            "note": (
+                "raise GENBLAZE_NVCF_POLL_SECONDS toward 300 if cold 504 persists"
+                if poll is not None and int(poll) < 300
+                else "poll window at or near NVIDIA max (300) or unset"
+            ),
+        },
+        {
+            "layer": 4,
+            "id": "empty_504_retry",
+            "ok": True,  # policy disclosure — opt-in is intentional, not a failure
+            "enabled": bool(empty_504_retry),
+            "note": (
+                "opt-in delayed retry enabled (may double-bill)"
+                if empty_504_retry
+                else "default off — prefer wait + manual retry"
+            ),
+        },
+        {
+            "layer": 5,
+            "id": "render_warm",
+            "ok": True,
+            "note": "keep Render awake with cron GET /health to avoid sleep+NIM cold stack",
+        },
+    ]
 
 
 def warmup_result_dict(result: Any) -> dict[str, Any]:

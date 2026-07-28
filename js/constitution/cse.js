@@ -8,17 +8,7 @@
 
 import { CHARTER } from "./charter.js";
 import { resolveAuthority } from "./contracts.js";
-
-let seq = 0;
-
-function id(prefix) {
-  seq += 1;
-  return `${prefix}-${Date.now().toString(36)}-${seq.toString(36)}`;
-}
-
-function nowIso() {
-  return new Date().toISOString();
-}
+import { makeId, nowIso } from "../../engine/runtime/types.js";
 
 export class ConstitutionalStateEngine {
   constructor(options = {}) {
@@ -33,7 +23,7 @@ export class ConstitutionalStateEngine {
       throw new Error("Intent requires kind and goal");
     }
     const intent = {
-      id: id("intent"),
+      id: makeId("intent"),
       kind,
       goal,
       constraints,
@@ -137,7 +127,7 @@ export class ConstitutionalStateEngine {
     }
 
     const csr = {
-      id: id("csr"),
+      id: makeId("csr"),
       intentId: intent.id,
       action,
       contractId: auth.contractId,
@@ -187,7 +177,7 @@ export class ConstitutionalStateEngine {
 
   _append(entry) {
     const row = {
-      id: id("log"),
+      id: makeId("log"),
       at: nowIso(),
       ...entry,
     };

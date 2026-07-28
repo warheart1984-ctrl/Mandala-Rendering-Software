@@ -178,10 +178,15 @@ export class RT4DGPURenderer {
     const height = options.height ?? this.height;
     const pixelCount = width * height;
     const workgroups = Math.ceil(pixelCount / WORKGROUP_SIZE);
+    // Drive-G-1 / print parity: never inject wall-clock into FrameParams.seed.
+    // Layout matches shaders.js FrameParams: sampleIndex, maxDepth, width, height, seed.
+    const seed = (options.seed ?? 0x4d5253) >>> 0;
 
     const frameParams = new Float32Array(8);
-    frameParams[3] = width;
-    frameParams[4] = height;
+    frameParams[1] = maxDepth;
+    frameParams[2] = width;
+    frameParams[3] = height;
+    frameParams[4] = seed;
 
     // Clear accum buffer
     this.device.queue.writeBuffer(this._accumBuffer, 0, new Float32Array(pixelCount * 4));
@@ -190,7 +195,6 @@ export class RT4DGPURenderer {
 
     for (let s = 0; s < samples; s++) {
       frameParams[0] = s;
-      frameParams[4] = Date.now() & 0xffff;
       this.device.queue.writeBuffer(this._frameParamsBuffer, 0, frameParams);
 
       const encoder = this.device.createCommandEncoder();

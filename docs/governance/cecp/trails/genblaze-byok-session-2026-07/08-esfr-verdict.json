@@ -1,0 +1,12 @@
+{
+  "trailId": "genblaze-byok-session-2026-07",
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "config": "1A-session-only-stills-assist-local-default",
+  "tests": { "test_byok.py": "7 passed" },
+  "residualGaps": [
+    "static-spa-not-react-components",
+    "paid-model-access-depends-on-user-key",
+    "xss-sessionStorage-on-untrusted-hosts"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "trailId": "gpu-multihost-enforced-2026-07",
+  "started": "2026-07-28",
+  "stages": [
+    "01-architect-adr",
+    "02-builder-scaffold-manifest",
+    "03-implementor-notes",
+    "04-reviewer-conformance",
+    "05-inspector-acceptance",
+    "06-engineer-standards"
+  ],
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE",
+  "relatedTrails": [
+    "protected-promote-2026-07",
+    "vendor-gpu-integration-2026-07",
+    "sovereign-x-gpu-assist-2026-07"
+  ]
+}

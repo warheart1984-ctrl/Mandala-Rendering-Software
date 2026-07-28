@@ -3,23 +3,23 @@
  * run_proton_pipeline.mjs — Prompt→CIR→protons→soft splat pipeline.
  *
  * STATUS: **enforced** (demo hyperspheres; scene-spec optional)
- * Imports renderer-core proton module; writes PNG + evidence JSON.
+ * Imports renderer-core proton module via dual-layout resolution
+ * (monorepo `mrs/packages/...` or Docker `/app/renderer-core`).
  */
 
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import process from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { mintCir } from "./mintCir.js";
+import {
+  resolveEncodePngPath,
+  resolveProtonIndexPath,
+  scriptDir,
+  toFileUrl,
+} from "./resolveDualLayout.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROTON_INDEX = pathToFileURL(
-  join(__dirname, "../../packages/renderer-core/src/render/rt4d/proton/index.js"),
-).href;
-const ENCODE_PNG = pathToFileURL(
-  join(__dirname, "../../packages/renderer-core/scripts/render-still.mjs"),
-).href;
+const __dirname = scriptDir(import.meta.url);
 
 const USAGE = `run_proton_pipeline.mjs — proton raster pipeline (STATUS: enforced)
 
@@ -32,6 +32,9 @@ Usage:
 Pipeline:
   mintCir → fromHyperspheres|fromSceneSpec
          → ProtonRegistry → projectFootprint → softSplatAccumulate → PNG + evidence
+
+Layout: monorepo mrs/packages/renderer-core or Docker /app/renderer-core
+  ENV overrides: PROTON_INDEX_MODULE, RT4D_SCRIPT_PATH / PROTON_ENCODE_PNG_SCRIPT
 `;
 
 /**
@@ -57,8 +60,10 @@ function parseArgs(argv) {
  * @param {Record<string, string|boolean>} args
  */
 async function run(args) {
-  const proton = await import(PROTON_INDEX);
-  const { encodePNG } = await import(ENCODE_PNG);
+  const protonIndex = toFileUrl(resolveProtonIndexPath(__dirname));
+  const encodePngUrl = toFileUrl(resolveEncodePngPath(__dirname));
+  const proton = await import(protonIndex);
+  const { encodePNG } = await import(encodePngUrl);
   const {
     ProtonRegistry,
     fromHyperspheres,
@@ -84,7 +89,7 @@ async function run(args) {
     actor: "mrs.proton-raster",
   });
 
-  /** @type {import("../../packages/renderer-core/src/render/rt4d/proton/types.js").Proton4D[]} */
+  /** @type {Array<Record<string, unknown>>} */
   let protons;
   if (typeof args["scene-spec"] === "string") {
     const spec = JSON.parse(readFileSync(resolve(String(args["scene-spec"])), "utf8"));
@@ -151,6 +156,10 @@ async function run(args) {
         evidencePath,
         evidence,
         protonCount: listed.length,
+        layout: {
+          protonIndex,
+          encodePng: encodePngUrl,
+        },
       },
       null,
       2,

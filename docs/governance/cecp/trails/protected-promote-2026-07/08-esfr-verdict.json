@@ -1,0 +1,20 @@
+{
+  "trailId": "protected-promote-2026-07",
+  "ESFRVerdict": "PASS",
+  "PromotionEligibility": "PROMOTE",
+  "equivalentUserLanguage": "PROMOTE_WITHOUT_GAPS",
+  "date": "2026-07-28",
+  "authorization": "Operator explicit protected-path edit authorization for Drive-G-1 honesty PROMOTE",
+  "parentTrail": "e2e-close-gaps-2026-07",
+  "residualHonestyGaps": {},
+  "nonGaps": {
+    "liveWebGPUHardware": "partial",
+    "unityUnrealHosts": "skeleton"
+  },
+  "evidence": {
+    "test:governance": "166 pass / 0 fail",
+    "test:conformance": "16/16",
+    "gpu-core": "68 pass",
+    "constitutionalLinter": "0 issues"
+  }
+}

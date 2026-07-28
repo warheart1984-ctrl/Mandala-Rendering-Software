@@ -15,7 +15,7 @@
 | --- | --- | --- |
 | No execution without intent | **enforced** | CSE + CKL `policy-no-execution-without-intent` |
 | No state change without evidence | **enforced** | CSE `validateEvidence` + CKL mutation policy |
-| No authority without contract | **enforced** | `js/constitution/contracts.js` + CKL actor check |
+| No authority without contract | **enforced** | `engine/constitution/contracts.js` + CKL `actor_has_contract` (registered contract; `resolveAuthority` when action set) + CSE execute allow-list |
 | No render without provenance | **partial** | exports + CSR; frame ProvenanceRecorder during timeline play |
 | play_timeline requires world | **enforced** | CKL `policy-play-timeline-requires-world` (JS) |
 | Ascension dual evidence | **enforced** (browser) | CKL `policy-ascension-evidence` require[] |
@@ -28,7 +28,7 @@
 | --- | --- | --- |
 | Governance Kernel (GK) | **enforced** (browser) | `engine/governance/GovernanceKernel.js` (re-exported by `js/engine/governance/`) |
 | Constitutional State Engine (CSE) | **enforced** | `js/constitution/cse.js` |
-| Intent Specification Language (ISL) v2.0 | **enforced** (JS parser) | `engine/scripting/IslParser.js` + `IslInterpreter.js`; C# mirror **partial** |
+| Intent Specification Language (ISL) v2.0 | **partial** (JS parser + interpreter; not a full runtime gate) | `engine/scripting/IslParser.js` + `IslInterpreter.js`; C# mirror **skeleton** |
 | Evidence Layer (EL) | **partial** | `js/engine/services/evidence.js` |
 | Constitutional Knowledge Layer (CKL) | **enforced** (browser policies) | `engine/governance/ConstitutionalKnowledgeLayer.js` + `policies/default.policies.json` |
 | Temporal Replay Timeline (TRT) | **partial** | `js/engine/services/replay.js` + timeline player |
@@ -55,9 +55,13 @@
 | CSSV ledger ingest API | **enforced** | POST `/ingest` on CSSV server |
 | CSSV session export (browser) | **partial** | Download button + optional server sync |
 | Unity / Unreal conformance adapters | **partial** | 16 probes implemented; static probe coverage in `npm test`; Editor/PIE execution not CI-verified |
-| Unity / Unreal CSSV ingest | **partial** | Frames on tick + transitions on CKL allow; in-memory ledger + optional sync (Unity) |
-| Unity / Unreal movie pipeline | **partial** | PNG sequence + optional Unity Recorder MP4 (Editor) + Unreal MRQ ProRes (`MakeMovieMRQ`); Play Mode/PIE/MRQ not CI-verified |
-| Unreal project scaffold | **partial** | `unreal/GovernedUnrealProject/` + plugin junction; compile blocked without Windows 10 SDK |
+| MultiHost constitutional routing (JS) | **enforced** | `engine/runtime/hosts/HostConstitutionalRouter.js` + Browser/Unity/Unreal bridges; `npm run test:multihost` |
+| Unity / Unreal product host integration | **skeleton** | Thin C#/C++ stubs document JS SoT; Play Mode / PIE / MRQ not CI-verified |
+| GPU constitutional gates + mock pipelines | **enforced** | `npm run test:gpu` (print deny, assist-only, evidence purity, bloomCombine/Shadow/Env BGL mocks) |
+| Live WebGPU hardware CI | **partial** | `npm run test:gpu-live` skip-ok without adapter; no default GPU runner |
+| Unity / Unreal CSSV ingest | **skeleton** | Frames on tick + transitions on CKL allow; in-memory ledger + optional sync (Unity); not CI-native |
+| Unity / Unreal movie pipeline | **skeleton** | PNG sequence + optional Unity Recorder MP4 (Editor) + Unreal MRQ ProRes (`MakeMovieMRQ`); Play Mode/PIE/MRQ not CI-verified |
+| Unreal project scaffold | **skeleton** | `unreal/GovernedUnrealProject/` + plugin junction; compile blocked without Windows 10 SDK |
 | SovereignX namespace (Unity) | **skeleton** | Shared `engine/` migrated; Unity copies pending |
 
 ## V. Runtime services
@@ -79,9 +83,9 @@
 | Runtime orchestration | **partial** |
 | Rendering (canvas 4D) | **enforced** math + draw via package `4d-renderer` |
 | Scene graph | **partial** — world JSON entities |
-| Scripting / ISL v2.0 | **enforced** JS; C#/Unity **skeleton** |
+| Scripting / ISL v2.0 | **partial** JS parser/interpreter; C#/Unity **skeleton** |
 | Asset registry | **partial** — world asset list |
-| Cinematic 4D renderer | **enforced** browser; Unity/Unreal **partial** (wireframe + solid mesh; editor Play/PIE tests present, native batch optional) |
+| Cinematic 4D renderer | **enforced** browser; Unity/Unreal host path **skeleton** (mesh wireframe/solid adapters exist; Editor/PIE not CI-verified) |
 | Editor constitution | **skeleton** (Unity EditorWindow only) |
 | Cinematic timeline | **partial** — JSON timeline drives params in browser; Unity TimelineExecutor **skeleton** |
 
@@ -130,7 +134,7 @@
 
 | Port | Status |
 | --- | --- |
-| Browser (repo root) | **runs** — Opening + Mythar Ascension via ISL → CKL/GK → TimelinePlayer |
+| Browser (repo root) | **partial** — Opening + Mythar Ascension via ISL → CKL/GK → TimelinePlayer (session path; not multi-world) |
 | Unity (`unity/GovernedUnityProject/`) | **skeleton** — DTOs, world loader, provenance, replay mirrors; Play Mode not CI-verified |
 | Unity FourDAdapter (`Assets/Engine/FourDAdapter/`) | **skeleton** — consumes Scene3D+lineage; does not compute 4D (see `docs/4d-engine/v1/`) |
 | Unreal (`unreal/GovernedEnginePlugin/`) | **skeleton** — Option B timeline scheduler + binding resolver + provenance tick; Sequencer optional |

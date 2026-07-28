@@ -85,3 +85,10 @@ services:
         value: /app/engine3d-core/scripts/expand-world-document.mjs
       - key: PROMPT_SCENE_EXPAND_WORLD
         value: "0"
+      # Digital Printer HTTP (/printer/*). Health: GET /printer/health
+      - key: PRINTER_API_ENABLED
+        value: "1"
+      - key: PRINTER_PIPELINE_SCRIPT
+        value: /app/storyforge-boundary/run_print.py
+      - key: MRS_PRINT_TIMEOUT_SECONDS
+        value: "900"

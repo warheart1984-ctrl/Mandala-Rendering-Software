@@ -1,0 +1,11 @@
+{
+  "agent": "TestGenerationAgent",
+  "domain": "node:test suites, mock devices/pipelines, governance/GPU/conformance tests",
+  "skills": [
+    "generateNodeTestSuites", "generateMockDevices", "generateMockEncoders",
+    "generateMockPipelines", "generateGovernanceTests", "generateGPUTests",
+    "generateConformanceTests", "generateReplayTests", "generateProvenanceTests",
+    "generateBYOKTests", "generateSceneSpecTests", "generateCharacterSpecTests"
+  ],
+  "status": "declared"
+}

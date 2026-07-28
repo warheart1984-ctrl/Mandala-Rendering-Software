@@ -1,0 +1,9 @@
+{
+  "agent": "CodeQualityAgent",
+  "domain": "naming, structure, boundaries, comments, readability, maintainability",
+  "skills": [
+    "validateNaming", "validateStructure", "validateModuleBoundaries", "validateComments",
+    "validateReadability", "validateMaintainability", "validateDeadCode", "validateUnusedImports"
+  ],
+  "status": "declared"
+}

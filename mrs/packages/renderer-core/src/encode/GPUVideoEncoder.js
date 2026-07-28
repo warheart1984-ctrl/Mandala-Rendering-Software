@@ -54,18 +54,20 @@ export class GPUVideoEncoder {
       this.bitrate
     );
 
-    this._cleanupTmp(tmpDir);
+    await this._cleanupTmp(tmpDir);
     return result;
   }
 
-  _cleanupTmp(dir) {
+  async _cleanupTmp(dir) {
     try {
-      const fs = require("node:fs");
-      const path = require("node:path");
+      const fs = await import("node:fs");
+      const path = await import("node:path");
       const entries = fs.readdirSync(dir);
       for (const e of entries) fs.unlinkSync(path.join(dir, e));
       fs.rmdirSync(dir);
-    } catch {}
+    } catch (err) {
+      console.debug("tmp cleanup failed:", err.message);
+    }
   }
 
   clear() {

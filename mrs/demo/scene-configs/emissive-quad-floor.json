@@ -1,0 +1,21 @@
+{
+  "sceneId": "emissive-quad-floor",
+  "description": "Emissive quad over diffuse floor — pure triangle NEE baseline",
+  "glbPath": "mrs/demo/emissive-quad.glb",
+  "width": 512,
+  "height": 512,
+  "spp": 64,
+  "seed": 1234,
+  "camera": {
+    "orbitAngle": 0.5,
+    "orbitRadius": 4.0,
+    "elevation": 0.8,
+    "focalDistance": 3.0
+  },
+  "thresholds": {
+    "maxPixelDelta": 0.01,
+    "mse": 0.0001,
+    "ssim": 0.99
+  },
+  "validates": "emissive triangle NEE, area→solid-angle PDF, diffuse transport"
+}

@@ -1,0 +1,41 @@
+{
+  "trailId": "printer-gpu-quality-speed-2026-07",
+  "feature": "digital-printer-gpu-quality-speed",
+  "started": "2026-07-28",
+  "parentTrail": "digital-printer-v2-2026-07",
+  "pr": 83,
+  "branch": "feat/engine3d-genblaze-cinematic-plugin",
+  "overallStatus": "partial",
+  "designApproved": "2026-07-28",
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "equivalentUserLanguage": "PROMOTE_WITH_GAPS",
+  "spec": "docs/superpowers/specs/2026-07-28-digital-printer-gpu-quality-speed-design.md",
+  "plan": "docs/superpowers/plans/2026-07-28-digital-printer-gpu-quality-speed.md",
+  "freshTests": {
+    "test_printer_mode.py": "21 passed",
+    "quality-per-sample.test.js": "PASS",
+    "cpu-gpu-comparison.test.js": "22 pass / 0 fail"
+  },
+  "tools": {
+    "superpowers": true,
+    "mrsCrew": true,
+    "amdCursorMcp": false,
+    "nvidiaCursorMcp": false,
+    "nvidiaSkillFinder": true,
+    "nvidiaSkillsInstalled": [
+      "rag-blueprint",
+      "tilegym-cutile-python",
+      "dynamo-troubleshoot",
+      "tao-setup-nvidia-gpu-host",
+      "tao-run-inference-service"
+    ],
+    "amdCursorPlugin": true,
+    "amdSkillsInstalled": ["rocm-setup", "hip-rocm"],
+    "inRepoNvidiaGenblaze": true,
+    "amdRocmHipInRepo": false,
+    "skillsInstallNote": "docs/superpowers/specs/2026-07-28-vendor-skills-install-note.md"
+  },
+  "softwareCreationMode": ["Pipeline-Conductor", "Boundary-Guardian", "Optimizer"],
+  "actorMode": ["Anchor"]
+}

@@ -1,0 +1,12 @@
+{
+  "agent": "RendererCoreAgent",
+  "domain": "module boundaries, ESM hygiene, timeline, replay, provenance, encode",
+  "skills": [
+    "validateModuleBoundaries", "validateESMImports", "validateDynamicImports",
+    "validatePathToFileURLUsage", "validateTimelineSerializer", "validateReplayService",
+    "validateProvenanceRecorder", "validateConformanceChecker", "validateNVENCEncoder",
+    "validateGPUVideoEncoder", "validateSurfaceSyncScript", "validateRendererWebBuildStep",
+    "validateSchemas", "validatePackageFilesField"
+  ],
+  "status": "declared"
+}

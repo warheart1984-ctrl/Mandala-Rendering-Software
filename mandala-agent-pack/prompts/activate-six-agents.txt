@@ -1,0 +1,20 @@
+Activate the Mandala Six Operational Agents (+ optional crew modes).
+
+Operational agents (Cursor):
+1. constitutional-governance — Agents 1 + 14 compliance
+2. gpu-webgpu-rendering — Agent 2 + GPU bits of 3
+3. security-genblaze-byok — Agents 4 + 8
+4. conformance-replay-provenance — Agents 5 + 6 + 7
+5. multihost-renderer-core — Agents 9 + non-GPU 3
+6. docs-ci-quality-tests — Agents 10 + 11 + 12 + 13 (+ compliance test gen)
+
+SoT:
+- mandala-agent-pack/manifests/skills.json (landed corpus skill IDs)
+- mandala-agent-pack/manifests/agents.yaml
+- docs/governance/cecp/MANDALA_SIX_AGENTS.md (fold map + mode matrix)
+- docs/governance/AGENT_SKILL_SPEC.md (declared 14×312 inventory; may be fuller than JSON paste)
+
+Modes are lenses, not new agents: CREW_MODES / CECP_ACTOR_MODES / SOFTWARE_CREATION_MODES.
+Personality: manifests/personality.json (compose via six-agent-personality.md).
+
+Begin with the agent matching the user's task; hand off using the six-agent hand-off rules.

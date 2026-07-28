@@ -1,38 +1,38 @@
 {
   "source": "4d-renderer",
-  "resolution": 24,
+  "resolution": 32,
   "surfaces": [
     {
       "id": "clifford-torus",
       "name": "Clifford Torus",
       "file": "clifford-torus.mesh.json",
-      "vertices": 625,
-      "edges": 1200,
-      "faces": 1152
+      "vertices": 1089,
+      "edges": 2112,
+      "faces": 2048
     },
     {
       "id": "hopf-surface",
       "name": "Hopf Surface",
       "file": "hopf-surface.mesh.json",
-      "vertices": 625,
-      "edges": 1200,
-      "faces": 1152
+      "vertices": 1089,
+      "edges": 2112,
+      "faces": 2048
     },
     {
       "id": "torus-3d",
       "name": "3D Torus in 4D",
       "file": "torus-3d.mesh.json",
-      "vertices": 625,
-      "edges": 1200,
-      "faces": 1152
+      "vertices": 1089,
+      "edges": 2112,
+      "faces": 2048
     },
     {
       "id": "trefoil-4d",
       "name": "4D Trefoil Knot",
       "file": "trefoil-4d.mesh.json",
-      "vertices": 625,
-      "edges": 1200,
-      "faces": 1152
+      "vertices": 1089,
+      "edges": 2112,
+      "faces": 2048
     },
     {
       "id": "tesseract",

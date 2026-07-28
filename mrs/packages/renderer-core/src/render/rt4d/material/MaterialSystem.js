@@ -34,6 +34,9 @@ export class MaterialSystem {
         bsdf = new Lambertian4D(params.albedo ?? vec4(1, 1, 1, 1));
         emission = params.emission ?? vec4(10, 10, 10, 10);
         break;
+      case "dielectric":
+        emission = params.emission ?? vec4(0, 0, 0, 0);
+        break;
       case "volume":
         phase = params.asymmetry != null ? new HenyeyGreenstein4D(params.asymmetry) : new Isotropic4D();
         emission = params.emit ?? vec4(0, 0, 0, 0);
@@ -52,6 +55,7 @@ export class MaterialSystem {
       sigmaS: params.sigmaS ?? 0,
       isVolume: type === "volume",
       isLight: type === "light",
+      isTransmissive: type === "dielectric",
       params,
     };
 

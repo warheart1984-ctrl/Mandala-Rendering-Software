@@ -31,12 +31,12 @@ function renderTable(rows) {
         : r.type === "transition"
           ? `allowed=${r.decision?.allowed}`
           : r.artifactType ?? "";
-    tr.innerHTML = `
-      <td>${r.type}</td>
-      <td>${r.timestamp ?? ""}</td>
-      <td>${timeline}</td>
-      <td>${r.host ?? ""}</td>
-      <td>${detail}</td>`;
+    const cells = [r.type, r.timestamp ?? "", timeline, r.host ?? "", detail];
+    for (const text of cells) {
+      const td = document.createElement("td");
+      td.textContent = String(text);
+      tr.appendChild(td);
+    }
     tbody.appendChild(tr);
   }
 }

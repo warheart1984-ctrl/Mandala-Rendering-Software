@@ -3,6 +3,7 @@
  * Status: enforced for policy evaluation; precedents grow from decisions.
  */
 
+import { CONTRACTS, resolveAuthority } from "../constitution/contracts.js";
 import { nowIso } from "../runtime/types.js";
 
 export class ConstitutionalKnowledgeLayer {
@@ -15,7 +16,11 @@ export class ConstitutionalKnowledgeLayer {
   }
 
   static async loadDefault(fetchImpl = fetch) {
-    const res = await fetchImpl("engine/governance/policies/default.policies.json");
+    const base = typeof import.meta?.url === "string"
+      ? new URL(".", import.meta.url).href
+      : "file:///" + process.cwd().replace(/\\/g, "/") + "/";
+    const url = new URL("policies/default.policies.json", base).href;
+    const res = await fetchImpl(url);
     if (!res.ok) throw new Error("Failed to load CKL policies");
     const policies = await res.json();
     return new ConstitutionalKnowledgeLayer(policies);
@@ -107,9 +112,26 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
       }
     }
     if (policy.condition === "actor_has_contract") {
-      // Authority is checked separately via contracts; CKL flags missing actor.
+      // Actor must map to a registered contract. When intent.action (or
+      // authorizedAction) is set, also enforce the contract allow-list via
+      // resolveAuthority. Full CSE execute() still resolves action separately.
       if (!intent.actor) {
         violations.push(policy.id);
+      } else {
+        const action = intent.action ?? intent.authorizedAction ?? null;
+        if (action) {
+          const auth = resolveAuthority(intent.actor, action);
+          if (!auth.ok) {
+            violations.push(policy.id);
+          }
+        } else {
+          const hasContract = Object.values(CONTRACTS).some(
+            (c) => c.actor === intent.actor && c.status === "enforced",
+          );
+          if (!hasContract) {
+            violations.push(policy.id);
+          }
+        }
       }
     }
     if (policy.condition === "play_timeline_requires_world") {
@@ -241,7 +263,7 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
   }
 
   // Drift from precedents: if recent denials for same type, slow cinematic
-  const recentDenials = precedents.filter((p) => p.decision === false).length;
+  const recentDenials = precedents.filter((p) => p.decision === false || p.decision === "deny").length;
   if (recentDenials >= 2 && intent.params) {
     paramAdjust = {
       ...(paramAdjust || {}),
@@ -319,8 +341,5 @@ function evalModifier(modifier, env) {
   if (Object.prototype.hasOwnProperty.call(env, raw)) {
     return Number(env[raw] ?? 0);
   }
-  console.warn(
-    `[CKL] Unparseable modifier "${raw}" — expected "param * number"; returning 0`,
-  );
-  return 0;
+  return Number(env.self ?? 1);
 }

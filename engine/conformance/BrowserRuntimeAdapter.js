@@ -15,6 +15,12 @@ import {
   resolveDecision,
 } from "../governance/ConstitutionalKnowledgeLayer.js";
 import { TimelinePlayer } from "../../js/engine/cinematic/TimelinePlayer.js";
+import {
+  getActorIdentity as browserActorIdentity,
+  getCapabilities as browserCapabilities,
+  route as browserRoute,
+  HostAction,
+} from "../runtime/hosts/BrowserHostBridge.js";
 
 // ── helpers ────────────────────────────────────────────────────────
 
@@ -23,7 +29,7 @@ function makeIntent(overrides = {}) {
     id: "test-intent",
     type: "play_timeline",
     kind: "play_timeline",
-    actor: "runtime.browser",
+    actor: "4dce.renderer",
     world: "world-test",
     timeline: "test-timeline",
     evidence: ["ev-001"],
@@ -72,6 +78,12 @@ export async function createBrowserAdapter(fetchImpl) {
   const policySet = ckl.GetPoliciesForWorld("world-test");
 
   return {
+    // ── MultiHost constitutional surface (not conformance probe ids) ──
+    getActorIdentity: (overrides) => browserActorIdentity(overrides),
+    getCapabilities: () => browserCapabilities(),
+    route: (action, payload = {}) => browserRoute(action, payload),
+    HostAction,
+
     // ── provenance ──────────────────────────────────────────────
 
     "provenance.recorder-exists": async () => {

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "DigitalPrinterLineage",
+  "trailId": "printer-mode-renderer-2026-07",
+  "statusTag": "partial",
+  "demoLineage": {
+    "kind": "mrs-digital-print-lineage",
+    "schemaVersion": "1.0",
+    "printState": "OK",
+    "printRequestSha256": "9fb0e623271db329fda7e34195ef77a49658e7deff6e1c2e001c474bbd72bf31",
+    "renderRequestSha256": "4a9f54930602e0bd292a7ad7ba395de4b1c4bc4b1b2d97362733ee1c9707ad86",
+    "beautySha256": "89bffae71adac869c4b2a17016eb236593e22afcc1ebb595e9d27c93b7f9fb23",
+    "stages": [
+      "sampling",
+      "reconstruction",
+      "tonemap",
+      "color",
+      "encode",
+      "hash_provenance"
+    ],
+    "stageTags": {
+      "sampling": "enforced",
+      "reconstruction": "declared",
+      "tonemap": "enforced",
+      "color": "enforced",
+      "encode": "enforced",
+      "hash_provenance": "enforced"
+    },
+    "generatedAt": "2026-07-28T05:19:42.847121+00:00"
+  },
+  "crewLineageFile": "lineage.json",
+  "beautySha256": "89bffae71adac869c4b2a17016eb236593e22afcc1ebb595e9d27c93b7f9fb23",
+  "updatedAt": "2026-07-28T09:33:44.896160+00:00"
+}

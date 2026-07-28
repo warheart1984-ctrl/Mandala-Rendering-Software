@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ConstitutionalStateRecordBundle",
+  "statusTag": "declared",
+  "note": "Skeletal CSR derived from live digital print evidence. Full CSE CSR emission not claimed enforced for printer HTTP path.",
+  "sourceEvidencePath": "output/cecp-digital-print/evidence.json",
+  "records": [
+    {
+      "id": "csr-digital-print-demo-2026-07-28",
+      "intentId": "intent-cecp-cinematic-quality-scene",
+      "action": "digital_print",
+      "contractId": "mrs-digital-print-surface-contract",
+      "charterId": "4DCE-v1.0",
+      "evidence": {
+        "beautySha256": "89bffae71adac869c4b2a17016eb236593e22afcc1ebb595e9d27c93b7f9fb23",
+        "printRequestSha256": "9fb0e623271db329fda7e34195ef77a49658e7deff6e1c2e001c474bbd72bf31",
+        "renderRequestSha256": "4a9f54930602e0bd292a7ad7ba395de4b1c4bc4b1b2d97362733ee1c9707ad86",
+        "trail": "printer-mode-renderer-2026-07"
+      },
+      "result": {
+        "printState": "OK",
+        "status": "ok"
+      },
+      "createdAt": "2026-07-28T05:19:42.847121+00:00"
+    }
+  ]
+}

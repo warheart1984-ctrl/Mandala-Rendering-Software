@@ -1,0 +1,6 @@
+{
+  "trailId": "top5-ci-hygiene-2026-07",
+  "parent": ["p0-ci-unblock-2026-07", "e2e-close-gaps-2026-07"],
+  "stages": ["01", "02", "03", "04", "05", "06"],
+  "started": "2026-07-28"
+}

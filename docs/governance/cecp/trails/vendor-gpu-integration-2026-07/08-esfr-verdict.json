@@ -1,0 +1,50 @@
+{
+  "trailId": "vendor-gpu-integration-2026-07",
+  "namespace": "cecp.trail.vendor-gpu-integration-2026-07",
+  "feature": "Sovereign X Router — vendor GPU assist integration",
+  "author": "Jon Halstead",
+  "domain": "Sovereign X Router (Compute / Capability Layer)",
+  "date": "2026-07-28",
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "status": "PROMOTE_WITH_GAPS",
+  "inspectorVerdict": "PASS_WITH_GAPS",
+  "guarantees": [
+    "GPU assist-only until parity proven",
+    "cpu.rt4d.print sole print SoT",
+    "determinismRequired → cpu.rt4d.print",
+    "vendor neutrality at protocol level"
+  ],
+  "gaps": [
+    "No GPU print backend",
+    "No GPU determinism receipts for print",
+    "No ROCm/HIP kernels in RT4D",
+    "No WebGPU/Dawn printer path",
+    "Parity suite skeleton (SSIM/MSE skipped)",
+    "Live skill invoke not wired from Node router"
+  ],
+  "antiOverclaim": [
+    "Does not claim live GPU",
+    "Does not claim GPU Digital Printer enforcement",
+    "Does not claim enforced CPU↔GPU print parity"
+  ],
+  "artifacts": [
+    "docs/sx-router/specs/gpu-capability-map.md",
+    "docs/sx-router/specs/gpu-assist-module.md",
+    "docs/sx-router/specs/gpu-dispatch-contract.md",
+    "docs/sx-router/specs/gpu-integration-charter.md",
+    "docs/sx-router/specs/gpu-lookdev-engine.md",
+    "sovereign-x/router/modules/gpu/gpuAssistModule.js",
+    "sovereign-x/router/modules/gpu/assist/lookDevEngine.js",
+    "sovereign-x/router/contracts/gpuDispatchContract.js",
+    "sovereign-x/router/registry/gpuSkillsRegistry.json",
+    "sovereign-x/README.md",
+    "sovereign-x/cli/sx-capabilities.js",
+    "sovereign-x/tests/gpuParitySuite.test.js"
+  ],
+  "relatedTrails": [
+    "sovereign-x-vendor-router-2026-07",
+    "sovereign-x-gpu-assist-2026-07"
+  ],
+  "pr": 83
+}

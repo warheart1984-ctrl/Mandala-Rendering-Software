@@ -1,0 +1,29 @@
+{
+  "trailId": "gpu-multihost-enforced-2026-07",
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE",
+  "equivalentUserLanguage": "CONSTITUTIONAL_FULL_PASS_PROMOTE",
+  "date": "2026-07-28",
+  "authorization": "Operator explicit protected-path edits for GPU/MultiHost PROMOTE path",
+  "residualHonestyGaps": {},
+  "nonGaps": {
+    "liveWebGPUHardware": "partial",
+    "unityUnrealProductHosts": "skeleton",
+    "vendorGpuSkills": "assist-only"
+  },
+  "enforcedClaims": {
+    "gpuConstitutionalGates": true,
+    "mockPipelineBGL": true,
+    "multihostJsRouting": true,
+    "browserHostConstitutionalSurface": true
+  },
+  "evidence": {
+    "test:gpu": "81 pass / 0 fail (gpu-core + gpu-constitution)",
+    "test:gpu-live": "1 skipped (no adapter) / 0 fail",
+    "test:multihost": "12 pass / 0 fail",
+    "test:governance": "166 pass / 0 fail",
+    "test:conformance": "16/16",
+    "test:runtime-provenance": "29 pass / 0 fail (includes BrowserRuntimeAdapter.host)",
+    "constitutionalLinter": "OK"
+  }
+}

@@ -53,6 +53,7 @@ credentials.json
 .idea/
 .vs/
 *.swp
+.cursor/
 
 # Upstream reference clone (pip packages remain the runtime dependency)
 vendor/
@@ -70,6 +71,11 @@ mrs/packages/renderer-core/_debug_*.png
 mrs/packages/renderer-web/_webgpu-smoke/_out/
 *.wip-full
 *.receipt-wip
+
+# Temporary build artifacts
+.tmp_*
+.worktrees/
+renders/
 
 # Operator-provided production face GLBs (keep README / .gitkeep tracked)
 operator-assets/**/*.glb

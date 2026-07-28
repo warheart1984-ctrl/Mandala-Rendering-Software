@@ -15,8 +15,8 @@
 
 | Role | Path | Branch / tip |
 |------|------|----------------|
-| **CECP / feature work** | `G:/Mandala Rendering Software` | `feat/engine3d-genblaze-cinematic-plugin` @ `fe01183` (includes CECP `046d187`+) |
-| **Docker / Gordon main** | `G:/mrs-wt` | `rescue/main-docker-wt` → `origin/main` @ `e95a419` |
+| **CECP / feature work** | `G:/Mandala Rendering Software` | `feat/engine3d-genblaze-cinematic-plugin` @ `c8bd350` (ahead 22; includes CECP `046d187`+) |
+| **Docker / Gordon main** | `G:/mrs-wt` | `rescue/main-docker-wt` → `origin/rescue/main-docker-wt` @ `e95a419` (**pushed**) |
 
 ## Stage index
 
@@ -29,6 +29,7 @@
 | 04 | `04-reviewer-conformance.md` | Reviewer + Boundary-Guardian |
 | 05 | `05-inspector-acceptance.md` | Inspector + Librarian |
 | 06 | `06-engineer-standards.md` | ESFR ship gate |
+| 07 | `07-post-recovery-followup.md` | Docker cwd / Genblaze build / pr80 lock / push status |
 
 ## Counts (evidence)
 

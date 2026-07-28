@@ -1,5 +1,7 @@
 /**
- * Package entry — browser-safe exports (no node-canvas / FFmpeg).
+ * Package entry — mixed browser + Node surface (historical).
+ * Modules that require node:fs / child_process / native preview are also
+ * exported from `@mrs/renderer-core/node` — prefer that path for Node hosts.
  * CLI movie pipeline stays in src/cli.js + src/pipeline/movie-pipeline.js.
  */
 export { vec4, add, sub, scale, dot, length, normalize, lerp } from "./math/vec4.js";

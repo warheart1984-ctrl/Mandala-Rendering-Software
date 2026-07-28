@@ -32,13 +32,17 @@ export class HyperBox {
     const maxs = [this.max.x, this.max.y, this.max.z, this.max.w];
 
     for (let i = 0; i < 4; i++) {
-      const invD = 1 / (Math.abs(dirs[i]) > 1e-12 ? dirs[i] : 1e-12);
+      if (Math.abs(dirs[i]) < 1e-12) {
+        if (origins[i] < mins[i] || origins[i] > maxs[i]) return false;
+        continue;
+      }
+      const invD = 1 / dirs[i];
       let t0 = (mins[i] - origins[i]) * invD;
       let t1 = (maxs[i] - origins[i]) * invD;
       if (invD < 0) [t0, t1] = [t1, t0];
       tMin = Math.max(tMin, t0);
       tMax = Math.min(tMax, t1);
-      if (tMax <= tMin) return false;
+      if (tMax < tMin) return false;
     }
     return tMax > 0 && tMax > ray.tMin;
   }

@@ -1,0 +1,9 @@
+{
+  "trailId": "top5-ci-hygiene-2026-07",
+  "esfrVerdict": "PASS_WITH_GAPS",
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "conformance": "16/16",
+  "engine3d": { "pass": 68, "fail": 0, "skipped": 3 },
+  "releaseCheck": "PASS",
+  "committed": false
+}

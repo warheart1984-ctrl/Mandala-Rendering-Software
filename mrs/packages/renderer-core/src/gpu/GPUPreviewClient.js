@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { EventEmitter } from "node:events";
 import {
   SharedConfigBlock,
@@ -15,6 +16,72 @@ import {
   SHARED_GPU_IMAGE_VERSION,
   gpuErrorToString,
 } from "./SharedGPUImage.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** Soft constitutional helpers — assist preview only; never print SoT. */
+const PREVIEW_DENY = "GPU_PREVIEW_CONSTITUTIONAL_DENY";
+
+/**
+ * Preview client constitutional route (local soft gate).
+ * Does not replace HostConstitutionalRouter; keeps spawn logic untouched.
+ * @param {string} action
+ * @param {object} [payload]
+ */
+export function routePreviewAction(action, payload = {}) {
+  const act = String(action || "");
+  if (act === "gpu.print" || act === "print.gpu" || payload.asPrintSoT === true) {
+    return {
+      ok: false,
+      denied: true,
+      assistOnly: true,
+      nonAuthoritative: true,
+      code: PREVIEW_DENY,
+      message: "GPU preview must not act as Digital Printer SoT — use cpu.rt4d.print",
+    };
+  }
+  if (act === "setDeterminismRequired" && (payload.asPrintAuthority === true || payload.gpu === true)) {
+    return {
+      ok: false,
+      denied: true,
+      assistOnly: true,
+      nonAuthoritative: true,
+      code: PREVIEW_DENY,
+      message: "setDeterminismRequired is not print authority for GPU preview",
+    };
+  }
+  if (act === "injectEvidence") {
+    const ev = payload.evidence ?? payload;
+    if (ev && (ev.apiKey != null || ev.api_key != null)) {
+      return {
+        ok: false,
+        denied: true,
+        assistOnly: true,
+        nonAuthoritative: true,
+        code: PREVIEW_DENY,
+        message: "injectEvidence denied — apiKey must not enter evidence",
+      };
+    }
+  }
+  if (act === "renderAssist" || act === "preview.present") {
+    return {
+      ok: true,
+      denied: false,
+      assistOnly: true,
+      nonAuthoritative: true,
+      code: null,
+      message: "preview assist allowed",
+    };
+  }
+  return {
+    ok: false,
+    denied: true,
+    assistOnly: true,
+    nonAuthoritative: true,
+    code: PREVIEW_DENY,
+    message: `Unknown preview action '${act}'`,
+  };
+}
 
 export const PreviewState = Object.freeze({
   DISCONNECTED: "disconnected",
@@ -50,6 +117,8 @@ export class GPUPreviewClient extends EventEmitter {
     this._watchInterval = null;
     this._loadAttempted = false;
     this._nativeApi = null;
+    /** @type {Error|null} last swallowed I/O or connection error */
+    this.lastError = null;
   }
 
   findPreviewExe() {
@@ -59,7 +128,11 @@ export class GPUPreviewClient extends EventEmitter {
       path.join(__dirname, "..", "..", "native-preview", "build", "bin", "4d-preview.exe"),
     ];
     for (const c of candidates) {
-      try { if (fs.existsSync(c)) return c; } catch {}
+      try {
+        if (fs.existsSync(c)) return c;
+      } catch (err) {
+        this.lastError = err instanceof Error ? err : new Error(String(err));
+      }
     }
     return candidates[0];
   }
@@ -154,6 +227,7 @@ export class GPUPreviewClient extends EventEmitter {
         }
       } catch (err) {
         lastError = err;
+        this.lastError = err instanceof Error ? err : new Error(String(err));
       }
       await sleep(100);
     }
@@ -175,7 +249,8 @@ export class GPUPreviewClient extends EventEmitter {
     try {
       const data = fs.readFileSync(configPath);
       return SharedConfigBlock.read(data);
-    } catch {
+    } catch (err) {
+      this.lastError = err instanceof Error ? err : new Error(String(err));
       return null;
     }
   }
@@ -265,7 +340,10 @@ export class GPUPreviewClient extends EventEmitter {
           block.frameCount, block.flags);
         fs.writeFileSync(configPath, buf);
       }
-    } catch {}
+    } catch (err) {
+      this.lastError = err instanceof Error ? err : new Error(String(err));
+      this.emit("resize-error", this.lastError);
+    }
 
     this.emit("resize", { width, height });
   }
@@ -306,7 +384,19 @@ export class GPUPreviewClient extends EventEmitter {
       restartCount: this.restartCount,
       pid: this.process?.pid ?? null,
       previewExe: this.previewExePath,
+      lastError: this.lastError?.message ?? null,
+      dirnameResolved: Boolean(__dirname),
+      moduleDir: __dirname,
     };
+  }
+
+  /**
+   * Constitutional route for preview client (assist-only).
+   * @param {string} action
+   * @param {object} [payload]
+   */
+  route(action, payload = {}) {
+    return routePreviewAction(action, payload);
   }
 
   toJSON() {
@@ -321,3 +411,5 @@ function sleep(ms) {
 export function createGPUPreviewClient(options = {}) {
   return new GPUPreviewClient(options);
 }
+
+export { PREVIEW_DENY };

@@ -1,0 +1,11 @@
+{
+  "agent": "DocumentationAgent",
+  "domain": "charters, whitepapers, manuals, governance docs, diagrams",
+  "skills": [
+    "generateCharters", "generateWhitepapers", "generateOperatorManuals",
+    "generateGovernanceDocs", "generateGPUConstitution", "generateBYOKCharter",
+    "generatePipelineDiagrams", "generateLineageDocs", "generateConformanceDocs",
+    "generateReplayDocs"
+  ],
+  "status": "declared"
+}

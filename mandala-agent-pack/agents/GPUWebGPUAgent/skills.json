@@ -1,0 +1,17 @@
+{
+  "agent": "GPUWebGPUAgent",
+  "domain": "WebGPU usage, pipelines, shaders, GPU modules, tests, safety",
+  "skills": [
+    "validateGPUTextureUsage", "validateGPUBufferUsage", "validateStoreOpLoadOp",
+    "validateRenderPipelineConfig", "validateComputePipelineConfig", "validateShaderModuleCreation",
+    "validateBindGroupLayouts", "validateSamplerUsage", "validateSharedGPUImageBinaryParsing",
+    "validateSharedFramePreviewParsing", "validateGPURenderPipelineLifecycle",
+    "validateGPUMeshRendererSupport", "validateEnvironmentMapperUsage", "validateShadowMapperPipeline",
+    "validatePostProcessorUniformLayout", "validateComputeMeshSamplerShaderGen",
+    "validateGPUPreviewClientFallback", "generateMockWebGPUDevice", "generateGPUPipelineTests",
+    "generateShaderTests", "generateComputeTests", "generatePreviewTests",
+    "detectUnsafeGPUUsage", "detectIncorrectBufferMapping", "detectIncorrectTextureCreation",
+    "detectIncorrectPipelineStoreOp"
+  ],
+  "status": "declared"
+}

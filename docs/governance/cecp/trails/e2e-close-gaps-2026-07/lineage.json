@@ -1,0 +1,22 @@
+{
+  "trailId": "e2e-close-gaps-2026-07",
+  "started": "2026-07-28",
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "conformance": "16/16",
+  "tests": {
+    "gpu-core": "68/68",
+    "runtime-provenance": "28/28",
+    "governance": "163/163",
+    "byok-pytest": "14/14",
+    "mandala-lint": "OK",
+    "package-types": "35 OK"
+  },
+  "irreducibleResiduals": [
+    "protected-paths-needs-auth",
+    "live-webgpu-adapter-hardware",
+    "unity-unreal-skeleton"
+  ],
+  "vendorSkills": ["nvidia-gpu-assist", "amd-gpu-assist"],
+  "printSoT": false
+}

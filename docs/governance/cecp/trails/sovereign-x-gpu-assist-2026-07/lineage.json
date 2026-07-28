@@ -1,0 +1,47 @@
+{
+  "trailId": "sovereign-x-gpu-assist-2026-07",
+  "feature": "Sovereign X GPU assist — capability map A–E, GpuAssistModule, GpuDispatchContract, LookDev skeleton",
+  "started": "2026-07-28",
+  "branch": "feat/engine3d-genblaze-cinematic-plugin",
+  "pr": 83,
+  "overallStatus": "partial",
+  "priorTrail": "sovereign-x-vendor-router-2026-07",
+  "mode": ["Boundary-Guardian", "Anchor", "Runtime-Sage"],
+  "actorMode": "Anchor",
+  "softwareCreationMode": ["Protocol", "Boundary-Guardian", "Constructor"],
+  "cognitive-profile": "Guardian",
+  "siblingTrails": [
+    "sovereign-x-vendor-router-2026-07",
+    "vendor-skills-fixup-2026-07",
+    "printer-gpu-quality-speed-2026-07"
+  ],
+  "registryPath": "mrs/packages/sovereign-x-router/data/vendor-capability-registry.json",
+  "package": "@mrs/sovereign-x-router",
+  "packageVersion": "0.2.0",
+  "charter": "docs/governance/GPU_ASSISTED_COMPUTE_INTEGRATION_CHARTER.md",
+  "lookDevPlan": "docs/superpowers/specs/2026-07-28-sovereign-lookdev-engine-plan.md",
+  "stages": {
+    "01-architect": "complete",
+    "02-builder": "complete",
+    "03-implementor": "complete",
+    "04-reviewer": "PASS_WITH_GAPS",
+    "05-inspector": "PASS_WITH_GAPS",
+    "06-esfr": "PASS_WITH_GAPS"
+  },
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "testEvidence": {
+    "command": "npm test --prefix mrs/packages/sovereign-x-router",
+    "pass": 25,
+    "fail": 0
+  },
+  "hardBans": [
+    "assist→/printer/*",
+    "assist→evidence SoT",
+    "gpu.print.beauty",
+    "gpu.print.deterministic_plates",
+    "gpu.rt4d.sot",
+    "gpu.denoise.evidence",
+    "gpu.integrator.print"
+  ]
+}

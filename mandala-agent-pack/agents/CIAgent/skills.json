@@ -1,0 +1,9 @@
+{
+  "agent": "CIAgent",
+  "domain": "CI pipeline, test runner, coverage, build, lint, format",
+  "skills": [
+    "validateCIPipeline", "validateTestRunner", "validateCoverage", "validateBuildSteps",
+    "validateLinting", "validateFormatting", "validatePackageFields"
+  ],
+  "status": "declared"
+}

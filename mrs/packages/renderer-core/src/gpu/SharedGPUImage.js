@@ -80,7 +80,7 @@ export class SharedConfigBlock {
   }
 
   static read(buffer) {
-    const view = new DataView(buffer);
+    const view = new DataView(buffer instanceof ArrayBuffer ? buffer : buffer.buffer);
     const magic = view.getUint32(0, true);
     if (magic !== SHARED_GPU_IMAGE_MAGIC) return null;
     return {

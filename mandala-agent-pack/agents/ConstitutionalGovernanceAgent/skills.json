@@ -1,0 +1,18 @@
+{
+  "agent": "ConstitutionalGovernanceAgent",
+  "domain": "charter, CKL, CSE, policies, governance tests, drift detection",
+  "skills": [
+    "detectCharterVersionDrift", "validateOrganStatuses", "enforceOrganStateCorrectness",
+    "syncCharterWithDocs", "validateConstitutionalInvariants", "detectMissingOrganDefinitions",
+    "validateGovernanceKernelState", "detectCKLPrecedentDrift", "validateCKLFilters",
+    "validateCKLLoadDefaultPath", "validateCKLModifierLogic", "validateCKLTruthinessRules",
+    "validateCKLRecentDenialsLogic", "validateCKLDecisionTypes", "validateCSEStateTransitions",
+    "validateCSEIntentParsing", "validateCSEEvidenceRouting", "validateCSEDeterminismRequired",
+    "validateCSEErrorPropagation", "validateDefaultPolicies", "detectMissingPolicyBindings",
+    "validatePolicySchemas", "validatePolicyEnforcementPaths", "generateGovernanceTests",
+    "generateCKLTests", "generateCSETests", "generatePolicyTests",
+    "generateConstitutionalRoutingTests", "detectCharterImplementationDrift",
+    "detectCKLTestDrift", "detectPolicyRuntimeDrift", "detectCSERouterDrift"
+  ],
+  "status": "declared"
+}

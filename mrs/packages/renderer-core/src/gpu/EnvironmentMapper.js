@@ -37,19 +37,29 @@ export class EnvironmentMapper {
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     });
     
-    // Create prefiltered environment texture for roughness
+    // Create prefiltered environment texture for roughness (5 mip levels).
+    // WebGPU size is [width, height, depthOrArrayLayers]; mips via mipLevelCount.
+    this.prefilterMipCount = 5;
     this.prefilterTexture = this.device.createTexture({
-      size: [128, 128, 6, 5], // 5 roughness levels
+      size: [128, 128, 6],
+      mipLevelCount: this.prefilterMipCount,
       dimension: '2d-array',
       format: this.format,
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUBufferUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     });
-    
+
+    // Uniforms for reflection shader (binding 5) — strength / metallic.
+    this.envParamsBuffer = this.device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    this._writeEnvParams();
+
     // Create BRDF lookup texture
     this.brdfTexture = this.device.createTexture({
       size: [512, 256],
       format: 'rg16float',
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUBufferUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     });
     
     // Create sampler
@@ -251,18 +261,29 @@ export class EnvironmentMapper {
     // Load HDR environment texture from image data
     // This would typically use a texture loader like ktx-parse or similar
     // For now, we'll use the procedural environment
-    console.log('Environment texture loading not yet implemented, using procedural');
   }
   
+  _writeEnvParams() {
+    if (!this.envParamsBuffer || !this.device?.queue) return;
+    const data = new Float32Array([
+      this.reflectionStrength,
+      this.metallic,
+      this.roughness,
+      0,
+    ]);
+    this.device.queue.writeBuffer(this.envParamsBuffer, 0, data);
+  }
+
   getBindGroupLayout() {
     return this.device.createBindGroupLayout({
       entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: 'cube' } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: 'cube' } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
         { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
-        { binding: 4, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } }
-      ]
+        { binding: 4, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
+        { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
+      ],
     });
   }
   
@@ -272,10 +293,11 @@ export class EnvironmentMapper {
       entries: [
         { binding: 0, resource: this.environmentTexture.createView({ dimension: 'cube' }) },
         { binding: 1, resource: this.irradianceTexture.createView({ dimension: 'cube' }) },
-        { binding: 2, resource: this.prefilterTexture.createView({ dimension: 'cube-array' }) },
+        { binding: 2, resource: this.prefilterTexture.createView({ dimension: '2d-array' }) },
         { binding: 3, resource: this.brdfTexture.createView() },
-        { binding: 4, resource: this.sampler }
-      ]
+        { binding: 4, resource: this.sampler },
+        { binding: 5, resource: { buffer: this.envParamsBuffer } },
+      ],
     });
   }
   
@@ -289,16 +311,17 @@ export class EnvironmentMapper {
     if (settings.metallic !== undefined) {
       this.metallic = settings.metallic;
     }
+    this._writeEnvParams();
   }
   
   getReflectionShaderCode() {
     return `
       @group(0) @binding(0) var environmentTexture: texture_cube<f32>;
       @group(0) @binding(1) var irradianceTexture: texture_cube<f32>;
-      @group(0) @binding(2) var prefilterTexture: texture_cube_array<f32>;
+      @group(0) @binding(2) var prefilterTexture: texture_2d_array<f32>;
       @group(0) @binding(3) var brdfTexture: texture_2d<f32>;
       @group(0) @binding(4) var envSampler: sampler;
-      @group(0) @binding(5) var<uniform> envParams: array<f32>;
+      @group(0) @binding(5) var<uniform> envParams: array<f32, 4>;
       
       fn sampleEnvironment(normal: vec3<f32>, roughness: f32) -> vec3<f32> {
         let reflectionStrength = envParams[0];
@@ -307,9 +330,10 @@ export class EnvironmentMapper {
         // Sample irradiance for diffuse
         let irradiance = textureSample(irradianceTexture, envSampler, normal).rgb;
         
-        // Sample prefiltered environment for specular
-        let roughnessLevel = u32(roughness * 4.0);
-        let prefiltered = textureSampleLevel(prefilterTexture, envSampler, normal, roughnessLevel, roughnessLevel).rgb;
+        // Sample prefiltered environment for specular (mip ≈ roughness * (mipCount-1))
+        let roughnessLevel = roughness * 4.0;
+        let layer = 0;
+        let prefiltered = textureSampleLevel(prefilterTexture, envSampler, normal.xy * 0.5 + 0.5, layer, roughnessLevel).rgb;
         
         // Sample BRDF LUT
         let NdotV = max(normal.z, 0.0);
@@ -322,6 +346,29 @@ export class EnvironmentMapper {
         return mix(diffuse, specular, metallic) * reflectionStrength;
       }
     `;
+  }
+
+  /**
+   * Testable: cube + sampler + BGL resource snapshot (no live GPU required).
+   */
+  _createEnvResources() {
+    return {
+      environmentTexture: this.environmentTexture,
+      irradianceTexture: this.irradianceTexture,
+      prefilterTexture: this.prefilterTexture,
+      brdfTexture: this.brdfTexture,
+      sampler: this.sampler,
+      envParamsBuffer: this.envParamsBuffer,
+      prefilterMipCount: this.prefilterMipCount,
+      bindGroupLayout: this.getBindGroupLayout(),
+    };
+  }
+
+  /**
+   * Testable: create bind group against current env resources.
+   */
+  _createEnvBindGroup() {
+    return this.createBindGroup(this.getBindGroupLayout());
   }
 }
 

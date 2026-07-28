@@ -89,6 +89,7 @@ export class SkinnedMeshIntersector {
     this.vertices = primitive.localVertices ?? primitive.vertices ?? [];
     this.indices = primitive.localIndices ?? primitive.indices ?? [];
     this.normals = primitive.localNormals ?? primitive.normals ?? null;
+    this.colors = primitive.colors ?? null;
     this.tangents = primitive.tangents ?? null;
     this.uvs = primitive.uvs ?? null;
     this.localToWorld = primitive.instanceMatrix ?? null;
@@ -168,7 +169,17 @@ export class SkinnedMeshIntersector {
     const tangent = this.tangents
       ? normalize(interpolate(readVec(this.tangents, i0, 4), readVec(this.tangents, i1, 4), readVec(this.tangents, i2, 4), u, v))
       : normalize(e1);
+    const normal = normalize(interpolate(n0, n1, n2, u, v));
+    const bitangent = this.tangents
+      ? normalize(cross4D(geometricNormal, tangent))
+      : normalize(cross4D(geometricNormal, e1));
     const materialId = this.materialSlots?.[tri.triangleIndex] ?? this.defaultMaterialId;
+    const color0 = readAttr(this.colors, i0, null, 3);
+    const color1 = readAttr(this.colors, i1, null, 3);
+    const color2 = readAttr(this.colors, i2, null, 3);
+    const vertexColor = color0 && color1 && color2
+      ? (() => { const c = interpolate(color0, color1, color2, u, v); return [c.x, c.y, c.z]; })()
+      : null;
 
     return {
       t,
@@ -178,9 +189,11 @@ export class SkinnedMeshIntersector {
         ray.origin.z + ray.direction.z * t,
         ray.origin.w + ray.direction.w * t,
       ),
-      normal: normalize(interpolate(n0, n1, n2, u, v)),
+      normal,
       geometricNormal,
       tangent,
+      bitangent,
+      vertexColor,
       uv: this._interpolateUv(i0, i1, i2, u, v),
       barycentric: [1 - u - v, u, v],
       triangleIndex: tri.triangleIndex,

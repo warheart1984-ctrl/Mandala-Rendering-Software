@@ -1,0 +1,47 @@
+{
+  "name": "MRS RT4D Sovereign Renderer",
+  "version": "1.0.0",
+  "rendererCoreVersion": "1.0.0",
+  "engine3dCoreVersion": "1.0.0",
+  "dateReleased": "2026-07-26",
+  "license": "MIT",
+  "tests": {
+    "total": 83,
+    "glbImporter": 34,
+    "renderStill": 28,
+    "triangleMesh": 15,
+    "textureDecoder": 3,
+    "renderAnimation": 3
+  },
+  "features": {
+    "glbPipeline": true,
+    "triangleMesh4D": true,
+    "scene4D": true,
+    "bvh4D": true,
+    "pathTracer4D": true,
+    "emissiveTriangleNEE": true,
+    "normalMapTBN": true,
+    "renderAnimation": true,
+    "evidenceChain": true,
+    "glbTextureDecode": true,
+    "gpuEmissiveBuffer": true,
+    "vertexColors": true,
+    "tangentBitangent": true,
+    "sceneGraph": true,
+    "multiBuffer": true
+  },
+  "dependencies": {
+    "canvas": "3.2.3",
+    "commander": "13.1.0",
+    "ws": "8.21.1"
+  },
+  "provenance": {
+    "buildHash": "",
+    "commit": "",
+    "timestamp": ""
+  },
+  "cli": {
+    "still": "node mrs/packages/renderer-core/scripts/render-still.mjs",
+    "animation": "node mrs/packages/renderer-core/scripts/render-animation.mjs"
+  }
+}

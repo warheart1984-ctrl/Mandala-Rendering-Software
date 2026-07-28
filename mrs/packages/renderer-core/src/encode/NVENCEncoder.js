@@ -10,12 +10,30 @@ export class NVENCEncoder extends GPUVideoEncoder {
 
   static async isSupported() {
     try {
-      const { execSync } = require("node:child_process");
-      const out = execSync("ffmpeg -encoders 2>&1 | findstr nvenc", { encoding: "utf-8", timeout: 5000 });
-      return out.length > 0;
+      const { execFileSync } = await import("node:child_process");
+      const out = execFileSync("ffmpeg", ["-encoders"], { encoding: "utf-8", timeout: 5000 });
+      return out.includes("nvenc");
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Run ffmpeg safely via spawn (no shell interpolation).
+   */
+  static _runFfmpeg(encoderPath, args) {
+    return new Promise((resolve, reject) => {
+      import("node:child_process").then(({ spawn }) => {
+        const child = spawn(encoderPath, args, { stdio: "pipe", timeout: 3600000 });
+        let stderr = "";
+        child.stderr.on("data", (d) => (stderr += d));
+        child.on("close", (code) => {
+          if (code === 0) resolve();
+          else reject(new Error(`ffmpeg exited with code ${code}: ${stderr.slice(0, 500)}`));
+        });
+        child.on("error", reject);
+      });
+    });
   }
 
   async _encodeInternal(outputPath, onProgress) {
@@ -28,7 +46,6 @@ export class NVENCEncoder extends GPUVideoEncoder {
     const fs = await import("node:fs");
     const path = await import("node:path");
     const os = await import("node:os");
-    const { execSync } = await import("node:child_process");
 
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "nvenc-"));
     const framePrefix = "nvenc-frame";
@@ -40,15 +57,28 @@ export class NVENCEncoder extends GPUVideoEncoder {
     }
 
     const encoder = this.codec === "h264" ? "h264_nvenc" : "hevc_nvenc";
-    const ffmpegCmd = `${this._encoderPath} -y -f rawvideo -pix_fmt bgra -s ${this.width ?? 1920}x${this.height ?? 1080} -r ${this.fps} -i "${path.join(tmpDir, `${framePrefix}-%06d.raw`)}" -c:v ${encoder} -b:v ${this.bitrate} -preset ${this.preset} -gpu ${this.gpuIndex} "${path.resolve(outputPath)}"`;
+    const inputPattern = path.join(tmpDir, `${framePrefix}-%06d.raw`);
+    const args = [
+      "-y",
+      "-f", "rawvideo",
+      "-pix_fmt", "bgra",
+      "-s", `${this.width ?? 1920}x${this.height ?? 1080}`,
+      "-r", String(this.fps),
+      "-i", inputPattern,
+      "-c:v", encoder,
+      "-b:v", String(this.bitrate),
+      "-preset", String(this.preset),
+      "-gpu", String(this.gpuIndex),
+      path.resolve(outputPath),
+    ];
 
     try {
-      execSync(ffmpegCmd, { stdio: "pipe", timeout: 3600000 });
+      await NVENCEncoder._runFfmpeg(this._encoderPath, args);
     } catch (e) {
       throw new Error(`NVENC encoding failed: ${e.message}`);
     }
 
-    this._cleanupTmp(tmpDir);
+    await this._cleanupTmp(tmpDir);
     return { outputPath: path.resolve(outputPath), frameCount: this._frames.length };
   }
 }

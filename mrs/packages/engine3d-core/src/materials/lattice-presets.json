@@ -1,0 +1,34 @@
+{
+  "status": "prepared",
+  "note": "PBR intent for glass/chrome/core. RT4D maps beams to emissive sphere-chains; Engine3D soft-raster binds UniversalMaterial fields only.",
+  "materials": [
+    {
+      "name": "glass_tube",
+      "type": "pbr",
+      "baseColor": [0.15, 0.45, 1.0],
+      "metallic": 0.0,
+      "roughness": 0.03,
+      "transmission": 1.0,
+      "ior": 1.52,
+      "emission": [0.3, 0.7, 1.0],
+      "emissionStrength": 1.5,
+      "clearcoat": 0.3,
+      "clearcoatRoughness": 0.03
+    },
+    {
+      "name": "chrome_joint",
+      "type": "pbr",
+      "baseColor": [0.05, 0.05, 0.05],
+      "metallic": 1.0,
+      "roughness": 0.08,
+      "clearcoat": 0.2,
+      "clearcoatRoughness": 0.03
+    },
+    {
+      "name": "core_glow",
+      "type": "emissive",
+      "emission": [1.0, 1.0, 1.0],
+      "emissionStrength": 15.0
+    }
+  ]
+}

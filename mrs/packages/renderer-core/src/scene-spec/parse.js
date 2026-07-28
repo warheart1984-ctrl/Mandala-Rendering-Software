@@ -128,6 +128,34 @@ function validateMaterial(value, path, errors) {
   if (obj.wireframe !== undefined) {
     expectBoolean(obj.wireframe, joinPath(path, "wireframe"), errors);
   }
+  if (obj.brdf !== undefined) {
+    expectEnumMember(
+      String(obj.brdf).toLowerCase(),
+      joinPath(path, "brdf"),
+      ["lambertian", "ggx"],
+      errors,
+    );
+  }
+  if (obj.type !== undefined && obj.brdf === undefined) {
+    expectEnumMember(
+      String(obj.type).toLowerCase(),
+      joinPath(path, "type"),
+      ["lambertian", "ggx"],
+      errors,
+    );
+  }
+  if (obj.roughness !== undefined) {
+    expectFiniteNumber(obj.roughness, joinPath(path, "roughness"), errors, {
+      min: 0.01,
+      max: 1,
+    });
+  }
+  if (obj.f0 !== undefined) {
+    expectFiniteNumber(obj.f0, joinPath(path, "f0"), errors, {
+      min: 0,
+      max: 1,
+    });
+  }
 }
 
 function validateEntity(value, path, errors) {

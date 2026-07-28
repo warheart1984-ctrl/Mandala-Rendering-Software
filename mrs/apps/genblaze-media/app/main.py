@@ -24,6 +24,16 @@ from app.chatgpt_plugin import (
     resolve_public_base,
 )
 from app.config import APP_DIR, NVIDIA_SETUP_HELP, SEEDANCE_SETUP_HELP, get_settings
+from app.byok import (
+    BYOK_SCOPE_ASSIST,
+    BYOK_SCOPE_STILLS,
+    BYOK_SCOPE_VIDEO,
+    ByokForbiddenError,
+    ByokScopeError,
+    byok_health_view,
+    byok_headers_present,
+    resolve_settings_for_request,
+)
 from app.composite_still import (
     CompositeError,
     composite_provenance,
@@ -55,9 +65,20 @@ from app.render_request_provider import (
     render_request_availability,
     run_render_request,
 )
+from app.printer_provider import (
+    printer_availability,
+    run_printer_print,
+    run_printer_provenance,
+    run_printer_validate,
+)
 from app.face_polish_defaults import (
     resolve_face_polish_prompt,
     resolve_face_polish_strength,
+)
+from app.face_creation_assist_provider import (
+    FaceCreationAssistError,
+    face_creation_assist_availability,
+    run_face_creation_assist,
 )
 from app.lattice_polish_defaults import (
     LATTICE_POLISH_DEFAULT_PROMPT,
@@ -89,7 +110,12 @@ from app.image_to_scene import (
     resolve_image_bytes,
 )
 from app.index_store import AssetIndex
-from app.nvidia_errors import format_generation_failure, nvidia_nim_status_from_warmup
+from app.nvidia_errors import (
+    format_generation_failure,
+    nim_ops_checklist,
+    nvidia_nim_status_from_warmup,
+    resolve_nvidia_help,
+)
 from app.nvidia_http import (
     NvidiaGenaiTimeouts,
     NvidiaVideoTimeouts,
@@ -106,6 +132,11 @@ from app.rt4d_provider import (
     RT4D_PROVIDER_ID,
     generate_image_rt4d,
     rt4d_availability,
+)
+from app.lemonade_provider import (
+    LEMONADE_PROVIDER_ID,
+    generate_image_lemonade,
+    lemonade_availability,
 )
 from app.rt4d_to_nvidia import (
     NvidiaUnavailableError,
@@ -341,6 +372,14 @@ class GenerateRequest(BaseModel):
             "Abstract/lattice scenes: 0.35-0.55 recommended."
         ),
     )
+    model: str | None = Field(
+        default=None,
+        max_length=200,
+        description=(
+            "Optional NIM / GenAI model id override (BYOK). "
+            "Honored for stills only; ignored for video."
+        ),
+    )
 
 
 class SearchRequest(BaseModel):
@@ -362,6 +401,26 @@ class ImageAnalyzeRequest(BaseModel):
     id: str | None = Field(default=None, max_length=64)
     image_base64: str | None = Field(default=None, min_length=8)
     filename: str | None = Field(default=None, max_length=200)
+
+
+class FaceCreationAssistRequest(BaseModel):
+    """Opt-in Face Creation Assist → Sovereign X Node CLI (assistOnly)."""
+
+    prompt: str | None = Field(default=None, max_length=2000)
+    image_path: str | None = Field(
+        default=None,
+        max_length=1024,
+        description="Optional reference still path for lookdev-from-image",
+    )
+    dry_run: bool = Field(
+        default=True,
+        description="Default true — force FLUX stub (no live NIM). Set false for live assist.",
+    )
+    model: str | None = Field(
+        default=None,
+        max_length=200,
+        description="Optional BYOK model override (stills+assist only).",
+    )
 
 
 class ImageToSceneRequest(BaseModel):
@@ -570,7 +629,7 @@ class RenderClipRequest(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict:
+def health(request: Request) -> dict:
     settings = get_settings()
     b2_probe: dict | None = None
     b2_error: str | None = None
@@ -589,6 +648,7 @@ def health() -> dict:
     return {
         "status": "ok",
         "service": "mrs-genblaze-media",
+        "byok": byok_health_view(settings, request),
         "nvidia_configured": settings.nvidia_configured,
         "seedance_configured": settings.seedance_configured,
         "b2_configured": settings.b2_configured,
@@ -615,7 +675,11 @@ def health() -> dict:
         "b2_probe_skipped": b2_probe_skipped,
         "b2_probe": b2_probe,
         "b2_error": b2_error,
-        "nvidia_help": None if settings.nvidia_configured else NVIDIA_SETUP_HELP,
+        "nvidia_help": resolve_nvidia_help(
+            nvidia_configured=settings.nvidia_configured,
+            missing_key_help=NVIDIA_SETUP_HELP,
+            warmup=_nvidia_warmup_state,
+        ),
         "seedance_help": (
             None
             if settings.video_backend != "seedance" or settings.seedance_configured
@@ -641,15 +705,32 @@ def health() -> dict:
         "nvidia_warmup": _nvidia_warmup_state or {"ran": False},
         # Derived from startup evidence; /health does not invoke NVIDIA again.
         "nvidia_nim_status": nvidia_nim_status_from_warmup(_nvidia_warmup_state),
+        # Ordered debug layers (dynamo-troubleshoot pattern) — no extra NIM calls.
+        "nim_ops_checklist": nim_ops_checklist(
+            nvidia_configured=settings.nvidia_configured,
+            warmup=_nvidia_warmup_state,
+            empty_504_retry=settings.empty_504_retry,
+            nvcf_poll_seconds=nvidia_timeouts.nvcf_poll_seconds,
+        ),
         # Ingest routes ship in app code; a 404 on Render means that deploy
         # predates the ingest commit — redeploy this service to pick them up.
         "image_ingest_routes": True,
         # Drive-G-1 capability disclosure: NVIDIA FLUX + optional RT4D renderer.
         # Seedance/fal remains video-only (no fal image fallback).
         "image_backend": settings.image_backend,
-        "image_backends": ["nvidia-genai", RT4D_PROVIDER_ID],
+        "image_backends": [
+            "nvidia-genai",
+            RT4D_PROVIDER_ID,
+            LEMONADE_PROVIDER_ID,
+        ],
         "image_fallback_to_rt4d": settings.image_fallback_to_rt4d,
         "rt4d": rt4d_availability(settings),
+        "lemonade": lemonade_availability(settings),
+        "lemonade_note": (
+            "Set GENBLAZE_IMAGE_BACKEND=lemonade to generate concept stills via "
+            "local Lemonade Server (default SD-Turbo on localhost:13305). "
+            "No NVIDIA API key required. First run may pull the model."
+        ),
         "rt4d_note": (
             "Deterministic procedural 4D path-traced stills via renderer-core. "
             "NOT text-to-image / not diffusion. Prompt selects a scene archetype; "
@@ -699,10 +780,22 @@ def health() -> dict:
             "Opt-in: RENDER_REQUEST_API_ENABLED=1. Upstream Story→PromptSpec "
             "remains outside this host."
         ),
+        "printer": printer_availability(settings),
+        "printer_note": (
+            "POST /printer/print | /printer/validate | /printer/provenance ; "
+            "GET /printer/health. Opt-in execute: PRINTER_API_ENABLED=1. "
+            "Timeout: MRS_PRINT_TIMEOUT_SECONDS."
+        ),
         "engine3d_sequence": engine3d_sequence_availability(settings),
         "engine3d_sequence_note": (
             "POST /api/engine3d-sequence renders a short Engine3D soft-raster "
             "orbit sequence (structure). NOT 8K farm; NOT per-frame polish."
+        ),
+        "face_creation_assist": face_creation_assist_availability(settings),
+        "face_creation_assist_note": (
+            "POST /api/face-creation-assist (opt-in FACE_CREATION_ASSIST_ENABLED=1) "
+            "shells to sovereign-x sx-face-creation CLI. assistOnly draft CharacterSpec; "
+            "never Digital Printer SoT."
         ),
         "prompt_scene": prompt_scene_availability(settings),
         "prompt_scene_note": (
@@ -730,6 +823,7 @@ def _dispatch_image(settings: Any, prompt: str, quality: str | None = None):
     """Select the image backend and, when enabled, fall back to RT4D.
 
     - ``GENBLAZE_IMAGE_BACKEND=rt4d`` → deterministic RT4D render (no API).
+    - ``GENBLAZE_IMAGE_BACKEND=lemonade`` → local Lemonade diffusion (AMD).
     - default NVIDIA; if it fails and ``GENBLAZE_IMAGE_FALLBACK_TO_RT4D=1`` and
       the RT4D CLI/node are available, render deterministically instead of
       surfacing the NVIDIA failure (blank still, empty 504, etc.).
@@ -738,6 +832,8 @@ def _dispatch_image(settings: Any, prompt: str, quality: str | None = None):
     """
     if settings.rt4d_selected:
         return generate_image_rt4d(settings, prompt, quality=quality)
+    if getattr(settings, "lemonade_selected", False):
+        return generate_image_lemonade(settings, prompt)
     try:
         return generate_image(settings, prompt)
     except ValueError:
@@ -756,9 +852,34 @@ def _dispatch_image(settings: Any, prompt: str, quality: str | None = None):
         raise
 
 
-def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
+def _run_generate_common(
+    body: GenerateRequest,
+    *,
+    video: bool,
+    request: Request | None = None,
+) -> dict:
     """Shared generate path: image or video → embed → index → response-local preview."""
-    settings = get_settings()
+    base_settings = get_settings()
+    byok_meta: dict[str, Any] = {}
+    if request is not None:
+        try:
+            if video and byok_headers_present(request):
+                raise ByokScopeError(
+                    "BYOK scope is stills + assist only. "
+                    "Video generate does not accept per-request keys."
+                )
+            settings, byok_meta = resolve_settings_for_request(
+                base_settings,
+                request,
+                body_model=getattr(body, "model", None),
+                scope=BYOK_SCOPE_VIDEO if video else BYOK_SCOPE_STILLS,
+            )
+        except ByokForbiddenError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except ByokScopeError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    else:
+        settings = base_settings
     # Uvicorn writes its access-log line only after the response is sent, and this
     # path can block for the full NVIDIA pipeline budget (see
     # settings.nvidia_pipeline_seconds). Without this the operator log shows only
@@ -767,9 +888,10 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
     kind = "video" if video else "image"
     started = time.monotonic()
     logger.info(
-        "generate start · modality=%s backend=%s prompt_chars=%d",
+        "generate start · modality=%s backend=%s byok=%s prompt_chars=%d",
         kind,
         "nvidia-video" if video else settings.image_backend,
+        bool(byok_meta.get("byok_used")),
         len(body.prompt or ""),
     )
     try:
@@ -856,7 +978,8 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
                     body.polish_prompt, lattice=True
                 ) or LATTICE_POLISH_DEFAULT_PROMPT
             pol_res = _polish_pipeline(
-                settings,
+                # Polish is out of BYOK scope — never proxy per-request keys into polish.
+                base_settings,
                 run_id=str(public["run_id"]),
                 prompt=polish_prompt,
                 strength=body.polish_strength,
@@ -872,11 +995,29 @@ def _run_generate_common(body: GenerateRequest, *, video: bool) -> dict:
             public["polish_error"] = str(exc)
 
     logger.info(
-        "generate done · modality=%s run=%s elapsed_s=%.1f",
+        "generate done · modality=%s run=%s byok=%s elapsed_s=%.1f",
         kind,
         public.get("run_id") or "—",
+        bool(byok_meta.get("byok_used")),
         time.monotonic() - started,
     )
+    if byok_meta:
+        # Never include raw keys — meta is boolean provenance only.
+        public["byok"] = {
+            k: v
+            for k, v in byok_meta.items()
+            if k
+            in {
+                "byok_used",
+                "byok_key_present",
+                "byok_model_override",
+                "byok_source",
+                "byok_scope",
+                "byok_permitted",
+                "assistOnly",
+                "printSoT",
+            }
+        }
     return public
 
 
@@ -1121,17 +1262,17 @@ def _polish_pipeline(
 
 
 @app.post("/api/generate")
-def api_generate(body: GenerateRequest) -> dict:
-    return _run_generate_common(body, video=False)
+def api_generate(body: GenerateRequest, request: Request) -> dict:
+    return _run_generate_common(body, video=False, request=request)
 
 
 @app.post("/api/generate-video")
-def api_generate_video(body: GenerateRequest) -> dict:
-    return _run_generate_common(body, video=True)
+def api_generate_video(body: GenerateRequest, request: Request) -> dict:
+    return _run_generate_common(body, video=True, request=request)
 
 
 @app.post("/api/image-to-scene")
-def api_image_to_scene(body: ImageToSceneRequest) -> dict:
+def api_image_to_scene(body: ImageToSceneRequest, request: Request) -> dict:
     """Image bytes → SceneSpecification → optional MRS path-traced full frame.
 
     Honest scope: scene interpretation + path-traced full frame — NOT reconstruction.
@@ -1146,8 +1287,18 @@ def api_image_to_scene(body: ImageToSceneRequest) -> dict:
             status_code=400,
             detail="require_nvidia and force_heuristic are mutually exclusive",
         )
-    settings = get_settings()
-    return _image_to_scene_pipeline(
+    base = get_settings()
+    try:
+        settings, byok_meta = resolve_settings_for_request(
+            base,
+            request,
+            scope=BYOK_SCOPE_ASSIST,
+        )
+    except ByokForbiddenError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ByokScopeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    payload = _image_to_scene_pipeline(
         settings,
         image_base64=body.image_base64,
         ingest_id=body.id,
@@ -1158,17 +1309,35 @@ def api_image_to_scene(body: ImageToSceneRequest) -> dict:
         require_nvidia=body.require_nvidia,
         quality=body.quality,
     )
+    if byok_meta.get("byok_used"):
+        payload["byok"] = {
+            "byok_used": True,
+            "byok_source": byok_meta.get("byok_source"),
+            "assistOnly": True,
+            "printSoT": False,
+        }
+    return payload
 
 
 @app.post("/api/rt4d-to-nvidia")
-def api_rt4d_to_nvidia(body: Rt4dToNvidiaRequest) -> dict:
+def api_rt4d_to_nvidia(body: Rt4dToNvidiaRequest, request: Request) -> dict:
     """RT4D / generate still (run_id) → NVIDIA NIM vision → optional MRS re-render.
 
     Uses the existing NIM vision image→scene path (not img2img). Requires
     NVIDIA_API_KEY; on missing key or NIM 5xx/504 returns a clear NVIDIA-unavailable
     error and does not replace the source still.
     """
-    settings = get_settings()
+    base = get_settings()
+    try:
+        settings, byok_meta = resolve_settings_for_request(
+            base,
+            request,
+            scope=BYOK_SCOPE_ASSIST,
+        )
+    except ByokForbiddenError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ByokScopeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     try:
         req = build_rt4d_to_nvidia_request(
             run_id=body.run_id,
@@ -1181,7 +1350,7 @@ def api_rt4d_to_nvidia(body: Rt4dToNvidiaRequest) -> dict:
     if not is_run_id(req["run_id"]):
         raise HTTPException(status_code=400, detail="invalid run_id")
 
-    return _image_to_scene_pipeline(
+    payload = _image_to_scene_pipeline(
         settings,
         run_id=req["run_id"],
         render=req["render"],
@@ -1190,6 +1359,14 @@ def api_rt4d_to_nvidia(body: Rt4dToNvidiaRequest) -> dict:
         quality=req["quality"],
         provenance_kind="rt4d-to-nvidia-mrs-full-frame",
     )
+    if byok_meta.get("byok_used"):
+        payload["byok"] = {
+            "byok_used": True,
+            "byok_source": byok_meta.get("byok_source"),
+            "assistOnly": True,
+            "printSoT": False,
+        }
+    return payload
 
 
 def _validate_spec_shape(spec: dict[str, Any]) -> list[dict[str, str]] | None:
@@ -1211,7 +1388,7 @@ def _validate_spec_shape(spec: dict[str, Any]) -> list[dict[str, str]] | None:
 
 
 @app.post("/api/polish-still")
-def api_polish_still(body: PolishStillRequest) -> dict:
+def api_polish_still(body: PolishStillRequest, request: Request) -> dict:
     """Prior generate/RT4D still (run_id) → diffusion img2img polish.
 
     Structure pass = MRS RT4D; polish = diffusion edit. The source still is
@@ -1220,7 +1397,18 @@ def api_polish_still(body: PolishStillRequest) -> dict:
     Requires GENBLAZE_POLISH_ENABLED=1 and one of:
     - FAL_KEY (for fal.ai FLUX image-to-image)
     - NVIDIA_API_KEY (if NIM supports img2img on your key — not guaranteed)
+
+    BYOK headers are rejected (400) — polish is out of BYOK scope.
     """
+    if byok_headers_present(request):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "BYOK scope is stills + assist only. "
+                "Polish does not accept per-request keys/models."
+            ),
+        )
+
     settings = get_settings()
 
     if not settings.polish_enabled:
@@ -1325,6 +1513,54 @@ def api_prompt_to_scene(body: PromptToSceneRequest) -> dict:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.post("/api/face-creation-assist")
+def api_face_creation_assist(body: FaceCreationAssistRequest, request: Request) -> dict:
+    """Opt-in Face Creation Assist (Sovereign X CLI shell).
+
+    assistOnly draft CharacterSpec / lookdev — never Digital Printer SoT.
+    Requires FACE_CREATION_ASSIST_ENABLED=1.
+    """
+    base = get_settings()
+    try:
+        settings, byok_meta = resolve_settings_for_request(
+            base,
+            request,
+            body_model=body.model,
+            scope=BYOK_SCOPE_ASSIST,
+        )
+    except ByokForbiddenError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ByokScopeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    avail = face_creation_assist_availability(settings)
+    if not avail.get("enabled"):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Face Creation Assist disabled. "
+                "Set FACE_CREATION_ASSIST_ENABLED=1 to opt in "
+                "(assistOnly; not print SoT)."
+            ),
+        )
+    try:
+        payload = run_face_creation_assist(
+            settings,
+            prompt=body.prompt,
+            image_path=body.image_path,
+            dry_run=body.dry_run,
+        )
+    except FaceCreationAssistError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if byok_meta.get("byok_used"):
+        payload["byok"] = {
+            "byok_used": True,
+            "byok_source": byok_meta.get("byok_source"),
+            "assistOnly": True,
+            "printSoT": False,
+        }
+    return payload
 
 
 @app.post("/api/engine3d-still")
@@ -1569,6 +1805,78 @@ def api_render_request(body: dict[str, Any]) -> dict:
         )
     try:
         return run_render_request(body, settings, execute=True)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+
+
+
+@app.get("/printer/health")
+def printer_health() -> dict:
+    """Deterministic Digital Printer health (no execute)."""
+    settings = get_settings()
+    avail = printer_availability(settings)
+    return {
+        "status": "ok" if avail.get("pipeline_found") else "degraded",
+        "kind": "mrs-digital-printer",
+        "deterministic": True,
+        **avail,
+    }
+
+
+@app.post("/printer/print")
+def printer_print(body: dict[str, Any], dry_run: bool = Query(False)) -> dict:
+    """Run the deterministic print pipeline (opt-in execute).
+
+    Body: RenderRequest **or** ``{ scene, surfaces?, samples?, quality? }``.
+    Set ``PRINTER_API_ENABLED=1`` for live Node prints. ``?dry_run=true`` forces
+    sovereignty + evidence only.
+    """
+    settings = get_settings()
+    avail = printer_availability(settings)
+    if not avail.get("enabled") and not dry_run:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Printer API disabled. Set PRINTER_API_ENABLED=1 "
+                "or pass dry_run=true for sovereignty-only."
+            ),
+        )
+    try:
+        return run_printer_print(body, settings, execute=not dry_run)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/printer/validate")
+def printer_validate(body: dict[str, Any]) -> dict:
+    """Validate surface contract + SceneSpec / RenderRequest for print."""
+    settings = get_settings()
+    try:
+        return run_printer_validate(body, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/printer/provenance")
+def printer_provenance(body: dict[str, Any]) -> dict:
+    """Return provenance frames for a print (dry-run evidence or caller echo)."""
+    settings = get_settings()
+    try:
+        return run_printer_provenance(body, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001

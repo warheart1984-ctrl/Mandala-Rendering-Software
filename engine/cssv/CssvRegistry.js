@@ -68,7 +68,7 @@ export class CssvRegistry {
     };
     this._stateId = record.to;
     this.transitions.push(record);
-    if (this.persist) appendNdjson(this.paths.transitions, record);
+    if (this.persist) appendNdjson(this.paths.transitions, record).catch(() => {});
     return record;
   }
 
@@ -84,7 +84,7 @@ export class CssvRegistry {
       frameIndex: this._frameIndex++,
     };
     this.frames.push(record);
-    if (this.persist) appendNdjson(this.paths.frames, record);
+    if (this.persist) appendNdjson(this.paths.frames, record).catch(() => {});
     return record;
   }
 
@@ -146,12 +146,12 @@ export class CssvRegistry {
     }
   }
 
-  _persistArtifact(record) {
-    const existing = loadArtifacts(this.paths.artifacts);
+  async _persistArtifact(record) {
+    const existing = await loadArtifacts(this.paths.artifacts);
     const idx = existing.findIndex((a) => a.id === record.id);
     if (idx >= 0) existing[idx] = record;
     else existing.push(record);
-    saveArtifacts(this.paths.artifacts, existing);
+    await saveArtifacts(this.paths.artifacts, existing);
   }
 }
 

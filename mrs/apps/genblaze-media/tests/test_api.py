@@ -786,9 +786,92 @@ def test_health_includes_empty_504_policy(client):
     assert body["empty_504_retry_delay_seconds"] >= 5
     assert "nvidia_warmup" in body
     assert "nvidia_nim_status" in body
+    assert "nim_ops_checklist" in body
+    assert isinstance(body["nim_ops_checklist"], list)
+    assert body["nim_ops_checklist"][0]["id"] == "api_key"
     assert body["fal_image_fallback"] is False
     assert body["prefer_async"] is False
     assert body["image_ingest_routes"] is True
+
+
+def test_resolve_nvidia_help_and_checklist():
+    from app.nvidia_errors import (
+        EMPTY_504_NIM_UNAVAILABLE_HINT,
+        nim_ops_checklist,
+        resolve_nvidia_help,
+    )
+
+    assert resolve_nvidia_help(
+        nvidia_configured=False,
+        missing_key_help="missing-key",
+        warmup=None,
+    ) == "missing-key"
+    assert (
+        resolve_nvidia_help(
+            nvidia_configured=True,
+            missing_key_help="missing-key",
+            warmup={"ran": True, "http_status": 504, "liveness": "unavailable"},
+        )
+        == EMPTY_504_NIM_UNAVAILABLE_HINT
+    )
+    assert (
+        resolve_nvidia_help(
+            nvidia_configured=True,
+            missing_key_help="missing-key",
+            warmup={"ran": True, "liveness": "live"},
+        )
+        is None
+    )
+    layers = nim_ops_checklist(
+        nvidia_configured=True,
+        warmup={"ran": True, "liveness": "live"},
+        empty_504_retry=False,
+        nvcf_poll_seconds=180,
+    )
+    assert [x["id"] for x in layers] == [
+        "api_key",
+        "warmup_probe",
+        "nvcf_poll",
+        "empty_504_retry",
+        "render_warm",
+    ]
+    assert layers[1]["ok"] is True
+    assert layers[3]["enabled"] is False
+
+
+def test_health_surfaces_nim_unavailable_help(monkeypatch, tmp_path):
+    """When warmup proved 504, /health.nvidia_help must not be null just because key exists."""
+    import app.main as main_mod
+    from app.index_store import AssetIndex
+
+    monkeypatch.setattr(
+        main_mod,
+        "get_settings",
+        lambda: _offline_settings(
+            nvidia_api_key="nvapi-test",
+            b2_key_id="id",
+            b2_app_key="key",
+            b2_bucket="bucket",
+            dry_run=False,
+        ),
+    )
+    main_mod._nvidia_warmup_state = {
+        "ran": True,
+        "http_status": 504,
+        "liveness": "unavailable",
+        "model": "black-forest-labs/flux.1-schnell",
+    }
+    main_mod._index = AssetIndex(tmp_path / "health-nim-unavail.json")
+    c = TestClient(app)
+    r = c.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["nvidia_configured"] is True
+    assert body["nvidia_help"] is not None
+    assert "treat NIM as unavailable" in body["nvidia_help"]
+    assert body["nvidia_nim_status"]["status"] == "unavailable"
+    assert "next_step" in body["nvidia_nim_status"]
+    assert body["nim_ops_checklist"][1]["ok"] is False
 
 
 def test_sanitize_strips_meta_commentary():
