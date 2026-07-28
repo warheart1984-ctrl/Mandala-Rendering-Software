@@ -1,0 +1,29 @@
+{
+  "trailId": "pcc-projection-2026-07",
+  "ESFRVerdict": "PASS_WITH_GAPS",
+  "PromotionEligibility": "PROMOTE_WITH_GAPS",
+  "overallStatus": "partial",
+  "testsPassed": 33,
+  "testsFailed": 0,
+  "enforced": [
+    "ProjectionKernel / continuous P / fidelity / continuity / strength",
+    "Observation presets including intentional_orbit + soft_caustic",
+    "ApertureFrame3D printSoT:false / authority:observation"
+  ],
+  "partial": [
+    "PathTracer4D.observationProjection bind (wired; not full ray rewrite)",
+    "Hyper-Caustic north-star tolerance sweeps (not PNG gallery FULL_PASS)",
+    "Package projection governance filter"
+  ],
+  "declared": [
+    "Charter default.policies.json / runtime CKL ProjCC gate"
+  ],
+  "gaps": [
+    "Full continuous primary-ray rewrite through every bounce",
+    "Pixel-hash gallery FULL_PASS vs frozen PNG",
+    "Charter CKL / default.policies.json ProjCC row",
+    "Runtime enforced observation engine (not claimed)"
+  ],
+  "sotBanner": "Governed observation aperture — assist/preview only; CPU RT4D print remains SoT. Projector4D is math/print SoT. Aperture ≠ print.",
+  "date": "2026-07-28"
+}

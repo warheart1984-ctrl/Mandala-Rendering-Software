@@ -64,6 +64,47 @@ export {
 
 export { Projector4D, AOVCollector } from "./output/projector.js";
 
+export {
+  createProjectionState,
+  toProjectorOptions,
+  ProjectionKernel,
+  evaluateContinuousP,
+  projectPointContinuous,
+  projectPointContinuousSafe,
+  effectiveW,
+  wProjFactor,
+  applyViewOrientation,
+  d4WithKappa,
+  classic4Dto3D,
+  PCC_INVARIANTS,
+  pccFidelityZeroHolds,
+  pccContinuityHolds,
+  pccDifferentiabilityHolds,
+  pccExtremeGracefulHolds,
+  listPccInvariants,
+  OBSERVATION_MODE_PRESETS,
+  resolveObservationPreset,
+  listObservationPresets,
+  createApertureFrame3D,
+  apertureSampleDirection,
+  APERTURE_SOT_BANNER,
+  HYPER_CAUSTIC_VERIFIER_STATUS,
+  verifyHyperCausticLensFactory,
+  verifyHyperCausticLensNorthStar,
+  verifyHyperCausticLensProjectionHook,
+  verifyHyperCausticLensEnergySweep,
+  verifyHyperCausticLensCausticSweep,
+  verifyHyperCausticLensTemporalSweep,
+  runHyperCausticLensVerifierSuite,
+  PATH_TRACER_PROJECTION_HOOK_STATUS,
+  createPathTracerProjectionHooks,
+  bindPathTracerProjection,
+  describePathTracerProjectionIntegration,
+  evaluateProjectionGovernance,
+  PROJECTION_GOVERNANCE_STATUS,
+  PROJECTION_KERNEL_SOT_BANNER,
+} from "./projection/index.js";
+
 export { Scene4D } from "./scene/Scene4D.js";
 export { createHyperCausticLens } from "./scene/TestHyperCausticLens.js";
 

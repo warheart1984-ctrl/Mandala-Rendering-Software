@@ -1,0 +1,38 @@
+{
+  "trailId": "pcc-projection-2026-07",
+  "feature": "Projection Continuity Contract (ProjCC) / Intentional 4D Projection",
+  "started": "2026-07-28",
+  "overallStatus": "partial",
+  "inspectorVerdict": "PASS_WITH_GAPS",
+  "esfrVerdict": "PASS_WITH_GAPS",
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "package": "mrs/packages/renderer-core/src/render/rt4d/projection/",
+  "contract": "docs/4d-engine/projection/PROJECTION_CONTINUITY_CONTRACT.md",
+  "sot": "mrs/packages/renderer-core/src/render/rt4d/output/projector.js",
+  "apertureNePrint": true,
+  "tests": {
+    "command": "pnpm --filter @mrs/renderer-core run test:projection",
+    "passed": 33,
+    "failed": 0
+  },
+  "capabilityTags": {
+    "kernelPresetsAperture": "enforced",
+    "pathTracerBind": "partial",
+    "lensNorthStar": "partial",
+    "projectionGovernance": "partial",
+    "charterCklRuntime": "declared"
+  },
+  "modes": {
+    "crew": ["Sage", "Physicist", "Cartographer", "Sentinel", "Researcher"],
+    "actor": ["Navigator", "Librarian", "Anchor"],
+    "softwareCreation": ["Architect-Kernel", "Blueprint", "Constructor", "Testwright", "Boundary-Guardian", "Conformance", "Runtime-Sage"]
+  },
+  "stages": [
+    "01-architect-adr.md",
+    "02-builder-scaffold-manifest.md",
+    "03-implementor-notes.md",
+    "04-reviewer-conformance.md",
+    "05-inspector-acceptance.md",
+    "06-engineer-standards.md"
+  ]
+}
