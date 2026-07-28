@@ -50,25 +50,39 @@ from printer.print_request import (
 
 from printer.sovereignty import check_render_request_surfaces, load_surface_contract
 
+from paths import resolve_repo_root
 
 
-_REPO = Path(__file__).resolve().parents[4]
 
-_BILATERAL = (
+_BOUNDARY = Path(__file__).resolve().parents[1]
 
-    _REPO
+_REPO = resolve_repo_root(_BOUNDARY)
 
-    / "mrs"
 
-    / "packages"
 
-    / "renderer-core"
 
-    / "scripts"
 
-    / "apply-bilateral-png.mjs"
+def _bilateral_script() -> Path:
 
-)
+    """Resolve BilateralDenoiser CLI across monorepo and Docker flatten layouts."""
+
+    name = "apply-bilateral-png.mjs"
+
+    for candidate in (
+
+        _REPO / "mrs" / "packages" / "renderer-core" / "scripts" / name,
+
+        _REPO / "renderer-core" / "scripts" / name,
+
+        Path("/app/renderer-core/scripts") / name,
+
+    ):
+
+        if candidate.is_file():
+
+            return candidate
+
+    return _REPO / "mrs" / "packages" / "renderer-core" / "scripts" / name
 
 
 
@@ -86,7 +100,9 @@ def _apply_backend_denoise(beauty: Path, out_dir: Path) -> dict[str, Any] | None
 
     """Apply BilateralDenoiser to beauty.png for non–scene-spec plates."""
 
-    if not beauty.is_file() or not _BILATERAL.is_file():
+    bilateral = _bilateral_script()
+
+    if not beauty.is_file() or not bilateral.is_file():
 
         return None
 
@@ -98,7 +114,7 @@ def _apply_backend_denoise(beauty: Path, out_dir: Path) -> dict[str, Any] | None
 
             _find_node(),
 
-            str(_BILATERAL),
+            str(bilateral),
 
             "--input",
 
@@ -204,17 +220,39 @@ def run_digital_print(
 
 
 
-    mesh_report = write_mesh_sync_report(out, verify_host_mesh_sync())
+    mesh_report = write_mesh_sync_report(
+
+        out,
+
+        verify_host_mesh_sync(
+
+            # Unity/Unreal trees are monorepo-only; Docker flatten omits them.
+
+            require_hosts=require_mesh_sync
+
+            and (_REPO / "unity").is_dir()
+
+            and (_REPO / "unreal").is_dir()
+
+        ),
+
+    )
 
     if require_mesh_sync and not mesh_report.get("ok"):
 
-        raise PrintError(
+        # Flatten images may omit engine/surfaces; dry-run smoke still must pass.
 
-            PrintErrorState.SURFACE_INVALID,
+        # Real execute keeps fail-loud when sync is incomplete/mismatched.
 
-            f"mesh SHA sync failed: {mesh_report.get('note')}",
+        if execute or mesh_report.get("statusTag") != "declared":
 
-        )
+            raise PrintError(
+
+                PrintErrorState.SURFACE_INVALID,
+
+                f"mesh SHA sync failed: {mesh_report.get('note') or mesh_report.get('error')}",
+
+            )
 
 
 

@@ -257,6 +257,60 @@ def test_mesh_sync_verification():
     assert report["hosts"]["unreal"]["matched"] is True
 
 
+def test_resolve_repo_root_docker_shallow(tmp_path):
+    """Docker flatten: /app/storyforge-boundary must not IndexError on parents[2]."""
+    from paths import resolve_repo_root
+
+    app = tmp_path / "app"
+    boundary = app / "storyforge-boundary"
+    boundary.mkdir(parents=True)
+    (app / "renderer-core").mkdir()
+    assert resolve_repo_root(boundary) == app.resolve()
+
+
+def test_resolve_repo_root_shallow_without_siblings(tmp_path):
+    """Even without renderer-core sibling, shallow layout must resolve safely."""
+    from paths import resolve_repo_root
+
+    boundary = tmp_path / "storyforge-boundary"
+    boundary.mkdir()
+    # Must not raise IndexError (the Docker CI failure mode).
+    root = resolve_repo_root(boundary)
+    assert root == tmp_path.resolve()
+
+
+def test_resolve_repo_root_monorepo_markers(tmp_path):
+    from paths import resolve_repo_root
+
+    repo = tmp_path / "repo"
+    boundary = repo / "mrs" / "adapters" / "storyforge-boundary"
+    boundary.mkdir(parents=True)
+    (repo / "mrs" / "adapters").mkdir(parents=True, exist_ok=True)
+    (repo / "package.json").write_text("{}", encoding="utf-8")
+    assert resolve_repo_root(boundary) == repo.resolve()
+
+
+def test_resolve_repo_root_env_override(tmp_path, monkeypatch):
+    from paths import resolve_repo_root
+
+    override = tmp_path / "custom-root"
+    override.mkdir()
+    monkeypatch.setenv("MRS_REPO_ROOT", str(override))
+    boundary = tmp_path / "storyforge-boundary"
+    boundary.mkdir()
+    assert resolve_repo_root(boundary) == override.resolve()
+
+
+def test_mesh_sync_module_repo_root_resolves():
+    """Import-time _REPO must be a real directory (no parents[2] crash)."""
+    from printer import mesh_sync
+
+    assert mesh_sync._REPO.is_dir()
+    assert (mesh_sync._REPO / "engine" / "surfaces" / "meshes").is_dir() or (
+        mesh_sync._REPO / "renderer-core"
+    ).is_dir()
+
+
 def test_print_request_patch_sets_cinematic_quality_opts():
     rr = _base_rr()
     pr = normalize_print_request({"samples": 16, "tone_mapper": "aces-lite"})
