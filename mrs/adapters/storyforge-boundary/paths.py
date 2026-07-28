@@ -17,16 +17,61 @@ from pathlib import Path
 _ADAPTER_DIR = Path(__file__).resolve().parent
 
 
+def resolve_repo_root(start: Path | None = None) -> Path:
+    """Locate monorepo root or Docker ``/app`` from a boundary/adapter path.
+
+    Layouts:
+      * Monorepo: ``<repo>/mrs/adapters/storyforge-boundary`` → ``<repo>``
+      * Docker flatten: ``/app/storyforge-boundary`` → ``/app`` (parents[2]
+        does not exist on Linux — never index fixed depth blindly)
+
+    Override: ``MRS_REPO_ROOT`` when set to an existing directory.
+    """
+    env = (os.environ.get("MRS_REPO_ROOT") or "").strip()
+    if env:
+        env_path = Path(env).expanduser()
+        if env_path.is_dir():
+            return env_path.resolve()
+
+    boundary = (start or _ADAPTER_DIR).resolve()
+
+    # Walk upward for known monorepo / flatten markers (same idea as
+    # resolveDualLayout.mjs / genblaze resolve_repo_root).
+    for cand in (boundary, *boundary.parents):
+        if (cand / "mrs" / "adapters").is_dir() and (
+            (cand / "package.json").is_file() or (cand / "constitution").is_dir()
+        ):
+            return cand
+        if (cand / "constitution").is_dir() and (cand / "mrs").is_dir():
+            return cand
+        # Docker: /app has renderer-core + storyforge-boundary as siblings
+        if (cand / "renderer-core").is_dir() and (
+            (cand / "storyforge-boundary").is_dir() or cand == boundary.parent
+        ):
+            if cand.name != "storyforge-boundary":
+                return cand
+        if cand.name == "storyforge-boundary" and (
+            cand.parent / "renderer-core"
+        ).is_dir():
+            return cand.parent
+
+    # Legacy depth only when parents exist (Windows deep trees / monorepo).
+    try:
+        deep = boundary.parents[2]
+    except IndexError:
+        deep = None
+    if deep is not None and (deep / "mrs" / "adapters").is_dir():
+        return deep
+
+    # Shallow fallback: boundary parent (/app) or cwd-ish parent
+    if boundary.name == "storyforge-boundary":
+        return boundary.parent
+    return boundary.parent if boundary.parent != boundary else boundary
+
+
 def repo_root() -> Path:
     """Best-effort monorepo root; falls back to adapter parent (/app in Docker)."""
-    # mrs/adapters/storyforge-boundary → parents[2] = repo root
-    candidate = _ADAPTER_DIR.parents[2] if len(_ADAPTER_DIR.parents) > 2 else _ADAPTER_DIR.parent
-    if (candidate / "mrs" / "adapters").is_dir():
-        return candidate
-    # Docker flattened: /app/storyforge-boundary → /app
-    if (_ADAPTER_DIR.parent / "renderer-core").is_dir():
-        return _ADAPTER_DIR.parent
-    return candidate
+    return resolve_repo_root(_ADAPTER_DIR)
 
 
 def find_node(explicit: str | None = None) -> str | None:

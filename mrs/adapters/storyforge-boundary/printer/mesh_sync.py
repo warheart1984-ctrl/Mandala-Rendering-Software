@@ -9,11 +9,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 _BOUNDARY = Path(__file__).resolve().parents[1]
-_REPO = _BOUNDARY.parents[2]  # mrs/adapters/storyforge-boundary → repo root
+# Dual-layout: monorepo mrs/adapters/storyforge-boundary vs Docker /app/storyforge-boundary
+if str(_BOUNDARY) not in sys.path:
+    sys.path.insert(0, str(_BOUNDARY))
+from paths import resolve_repo_root  # noqa: E402
+
+_REPO = resolve_repo_root(_BOUNDARY)
 
 CANONICAL_DIR = _REPO / "engine" / "surfaces" / "meshes"
 HOST_DIRS = {
