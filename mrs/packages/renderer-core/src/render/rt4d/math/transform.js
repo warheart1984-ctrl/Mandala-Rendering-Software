@@ -5,7 +5,7 @@ export class Transform4D {
     this.m = identity4x4();
   }
 
-  static translate(tx, ty, tz, tw) {
+  static translate(tx, ty, tz, tw = 1) {
     const t = new Transform4D();
     t.m[12] = tx; t.m[13] = ty; t.m[14] = tz; t.m[15] = tw;
     return t;

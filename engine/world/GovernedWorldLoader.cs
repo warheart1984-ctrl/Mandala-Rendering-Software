@@ -96,7 +96,11 @@ namespace SovereignX.CIEMS.Engine.World
                     }
                 }
             }
-            catch { /* leave empty */ }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(
+                    $"[GovernedWorldLoader] ParseConfig failed; using empty map: {ex.Message}");
+            }
             return map;
         }
 

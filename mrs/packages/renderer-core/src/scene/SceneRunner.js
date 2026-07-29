@@ -428,4 +428,3 @@ function lerpRotation(a,b,t) {
   return r;
 }
 
-export { runScene, loadScene };
