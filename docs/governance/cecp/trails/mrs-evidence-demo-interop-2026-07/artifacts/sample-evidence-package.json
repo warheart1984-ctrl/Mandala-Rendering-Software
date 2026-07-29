@@ -1,0 +1,81 @@
+{
+  "kind": "mrs-evidence-package",
+  "version": 1,
+  "trailId": "mrs-evidence-demo-interop-2026-07",
+  "startedAt": "2026-07-29T12:21:57.273Z",
+  "completedAt": "2026-07-29T12:21:59.135Z",
+  "prompt": "a governed 4d tesseract under constitutional replay",
+  "phases": [
+    "prompt",
+    "scene",
+    "render",
+    "governance",
+    "provenance",
+    "replay"
+  ],
+  "promptScene": {
+    "laneMeta": {
+      "provider": "fallback",
+      "note": "import_failed:No module named 'story_forge'"
+    },
+    "sceneSpecificationId": "fallback_scene",
+    "mappedSurface": "tesseract",
+    "renderSurfaceOverride": null
+  },
+  "render": {
+    "printSoT": "cpu.rt4d",
+    "surface": "tesseract",
+    "frameDigest": "1af9cd9f145031b1cce30fd3796a57b64d66016af3932db03f582e9fb4e69b91",
+    "pngBytes": 3233
+  },
+  "governance": {
+    "charterId": "charter.4dce.v1",
+    "intentId": "intent-ms6210ih-1",
+    "decisionOk": true,
+    "policiesApplied": [
+      "policy-no-execution-without-intent",
+      "policy-no-state-change-without-evidence",
+      "policy-no-render-without-provenance",
+      "policy-no-authority-without-contract",
+      "policy-play-timeline-requires-world",
+      "policy-ascension-drift-throttle",
+      "policy-ascension-evidence"
+    ],
+    "csrId": "csr-ms6210ik-6",
+    "planId": "plan-intent-ms6210ih-1"
+  },
+  "provenance": {
+    "frameCount": 1,
+    "frameHashes": [
+      "42d8d946d32a77266a56ef0c7972baea44b32395d5e6668b594601548c1ea548"
+    ]
+  },
+  "replay": {
+    "kind": "replay-lineage-receipt",
+    "version": 1,
+    "frameCount": 1,
+    "frameHashes": [
+      "42d8d946d32a77266a56ef0c7972baea44b32395d5e6668b594601548c1ea548"
+    ],
+    "worldIds": [
+      "fallback-world"
+    ],
+    "timelineIds": [
+      "demo-timeline"
+    ],
+    "targetId": "demo-replay-target",
+    "intentId": "intent-ms6210ih-1",
+    "evidenceRefs": [
+      "ev-render-1af9cd9f1450"
+    ]
+  },
+  "conformance": {
+    "profile": "default.conformance-profile.json",
+    "note": "Full 16/16 via npm run test:conformance (browser adapter); this package embeds spot checks only.",
+    "spotChecks": {
+      "cklAttachProvenance": true,
+      "replayDeterministic": true
+    }
+  },
+  "sanitized": true
+}

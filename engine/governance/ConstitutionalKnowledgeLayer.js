@@ -15,10 +15,13 @@ export class ConstitutionalKnowledgeLayer {
     this.precedents = [];
   }
 
-  static async loadDefault(fetchImpl = fetch) {
-    const base = typeof import.meta?.url === "string"
-      ? new URL(".", import.meta.url).href
-      : "file:///" + process.cwd().replace(/\\/g, "/") + "/";
+  static async loadDefault(fetchImpl = fetch, options = {}) {
+    const baseRaw =
+      options.policiesBaseUrl ??
+      (typeof import.meta?.url === "string"
+        ? new URL(".", import.meta.url).href
+        : "file:///" + process.cwd().replace(/\\/g, "/") + "/");
+    const base = baseRaw.endsWith("/") ? baseRaw : new URL("./", baseRaw).href;
     const url = new URL("policies/default.policies.json", base).href;
     const res = await fetchImpl(url);
     if (!res.ok) throw new Error("Failed to load CKL policies");
@@ -248,6 +251,7 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
                 ? intent.params[policy.param]
                 : 1;
           const modified = evalModifier(policy.modifier, {
+            self: current,
             [policy.param]: current,
             speed: current,
           });
@@ -330,16 +334,32 @@ function evalTimelineCondition(condition, { timelineId, driftScore }) {
   return true;
 }
 
-/** Supports: speed * 0.5 */
+/** Supports: speed * 0.5 — unknown/unparseable modifiers leave `self` unchanged. */
 function evalModifier(modifier, env) {
   const raw = String(modifier ?? "").trim();
+  const self = Number(env.self);
+  const unchanged = Number.isFinite(self) ? self : NaN;
+
   const mul = raw.match(/^([\w.]+)\s*\*\s*([0-9.]+)$/);
   if (mul) {
-    const base = Number(env[mul[1]] ?? 0);
+    const key = mul[1];
+    if (!Object.prototype.hasOwnProperty.call(env, key)) {
+      if (Number.isFinite(unchanged)) return unchanged;
+      throw new Error(`evalModifier: unknown variable '${key}' in '${raw}'`);
+    }
+    const base = Number(env[key]);
+    if (!Number.isFinite(base)) {
+      if (Number.isFinite(unchanged)) return unchanged;
+      throw new Error(`evalModifier: non-numeric '${key}' in '${raw}'`);
+    }
     return base * Number(mul[2]);
   }
   if (Object.prototype.hasOwnProperty.call(env, raw)) {
-    return Number(env[raw] ?? 0);
+    const direct = Number(env[raw]);
+    if (Number.isFinite(direct)) return direct;
+    if (Number.isFinite(unchanged)) return unchanged;
+    throw new Error(`evalModifier: non-numeric env['${raw}']`);
   }
-  return Number(env.self ?? 1);
+  if (Number.isFinite(unchanged)) return unchanged;
+  throw new Error(`evalModifier: unparseable modifier '${raw}'`);
 }

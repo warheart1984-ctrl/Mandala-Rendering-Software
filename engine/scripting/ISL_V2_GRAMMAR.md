@@ -2,6 +2,7 @@
 
 > Drive-G-1: JS parser in `IslParser.js` is **enforced** for the subset used by demos.
 > C# `IslEngine` / C++ `FIslEngine` are **partial** mirrors of that subset.
+> SoT policy: `engine/scripting/ISL_SOT.md` · fixtures: `isl-canonical-fixtures.json`.
 
 ## Grammar (EBNF)
 

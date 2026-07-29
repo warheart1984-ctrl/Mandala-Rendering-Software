@@ -1,9 +1,14 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname, resolve } from "node:path";
 import {
   ConstitutionalKnowledgeLayer,
   resolveDecision,
 } from "../ConstitutionalKnowledgeLayer.js";
+
+const governanceDir = dirname(fileURLToPath(import.meta.url));
 
 const DEFAULT_POLICIES = [
   { id: "policy-no-execution-without-intent", condition: "intent != null", rule: "deny_if_false" },
@@ -112,6 +117,33 @@ describe("ConstitutionalKnowledgeLayer", () => {
       decision: { ok: false, verdict: "deny" },
     });
     assert.equal(row.decision, "deny");
+  });
+
+  it("loadDefault resolves policies via import.meta.url base (Node fetch stub)", async () => {
+    async function stubFetch(url) {
+      const href = String(url);
+      const filePath = fileURLToPath(new URL(href));
+      const text = await readFile(filePath, "utf-8");
+      return { ok: true, json: async () => JSON.parse(text) };
+    }
+    const ckl = await ConstitutionalKnowledgeLayer.loadDefault(stubFetch);
+    assert.ok(ckl.policies.length >= 5, "default.policies.json should load");
+  });
+
+  it("loadDefault accepts explicit policiesBaseUrl override", async () => {
+    async function stubFetch(url) {
+      const filePath = fileURLToPath(new URL(String(url)));
+      const text = await readFile(filePath, "utf-8");
+      return { ok: true, json: async () => JSON.parse(text) };
+    }
+    const cklModuleDir = resolve(governanceDir, "..");
+    const base = pathToFileURL(`${cklModuleDir}/`).href;
+    const ckl = await ConstitutionalKnowledgeLayer.loadDefault(stubFetch, {
+      policiesBaseUrl: base,
+    });
+    assert.ok(
+      ckl.policies.some((p) => p.id === "policy-no-execution-without-intent"),
+    );
   });
 });
 
@@ -301,6 +333,56 @@ describe("resolveDecision()", () => {
     assert.ok(result.paramAdjust, "paramAdjust should exist");
     assert.ok(result.paramAdjust.speed !== undefined, "paramAdjust.speed should exist");
     assert.equal(result.paramAdjust.speed, 0.5, "speed should be 1 * 0.5 = 0.5");
+  });
+
+  it("modify_param with unparseable modifier leaves param unchanged", () => {
+    const policies = [
+      ...DEFAULT_POLICIES,
+      {
+        id: "policy-bad-modifier",
+        condition: "intent.timeline == 'mythar_ascension' && drift_score > 0.7",
+        rule: "modify_param",
+        param: "speed",
+        modifier: "not-a-valid-expr",
+      },
+    ];
+    const result = resolveDecision(
+      {
+        type: "play_timeline",
+        actor: "4dce.renderer",
+        world: "w1",
+        timeline: "mythar_ascension",
+        params: { speed: 3 },
+      },
+      { id: "ev1", driftScore: 0.9 },
+      { policies },
+    );
+    assert.equal(result.paramAdjust.speed, 3);
+  });
+
+  it("modify_param with unknown multiplier variable leaves param unchanged", () => {
+    const policies = [
+      ...DEFAULT_POLICIES,
+      {
+        id: "policy-missing-var",
+        condition: "intent.timeline == 'mythar_ascension' && drift_score > 0.7",
+        rule: "modify_param",
+        param: "speed",
+        modifier: "missingKey * 0.5",
+      },
+    ];
+    const result = resolveDecision(
+      {
+        type: "play_timeline",
+        actor: "4dce.renderer",
+        world: "w1",
+        timeline: "mythar_ascension",
+        params: { speed: 4 },
+      },
+      { id: "ev1", driftScore: 0.9 },
+      { policies },
+    );
+    assert.equal(result.paramAdjust.speed, 4);
   });
 
   it("ascension drift throttle does not fire when drift <= 0.7", () => {

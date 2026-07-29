@@ -42,6 +42,7 @@
     "flux:smoke:py": "cd mrs/apps/genblaze-media && .venv/Scripts/python.exe scripts/flux_smoke.py",
     "operator:face-install": "node scripts/operator-face-install.mjs",
     "test:face": "npm run test:face --prefix mrs/packages/engine3d-core",
+    "demo:evidence-pipeline": "node scripts/demo-evidence-pipeline.mjs",
     "test:governance": "node --test engine/governance/test/*.test.js",
     "test:gpu": "node --test mrs/packages/renderer-core/test/gpu/gpu-core.test.js engine/constitution/test/gpu-constitution.test.js",
     "test:gpu-live": "node --test mrs/packages/renderer-core/test/gpu/gpu-live-*.test.js",

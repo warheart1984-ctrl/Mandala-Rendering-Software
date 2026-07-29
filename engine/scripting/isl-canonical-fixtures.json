@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "sourceOfTruth": "engine/scripting/IslParser.js + IslInterpreter.js",
+  "fixtures": [
+    {
+      "id": "opening_4d_reveal",
+      "module": "engine/scripting/scripts/opening_4d_reveal.isl.js",
+      "export": "ISL_OPENING_4D_REVEAL",
+      "expect": {
+        "type": "play_timeline",
+        "world": "world-mythar-plains",
+        "timeline": "opening_4d_reveal",
+        "at": "00:00:00.000",
+        "evidenceId": "ev-open-4d-001",
+        "source": "isl-v2"
+      }
+    },
+    {
+      "id": "mythar_ascension",
+      "module": "engine/scripting/scripts/mythar_ascension.isl.js",
+      "export": "ISL_MYTHAR_ASCENSION",
+      "expect": {
+        "type": "play_timeline",
+        "world": "world-mythar-plains",
+        "timeline": "mythar_ascension",
+        "at": "00:00:00.000",
+        "evidenceId": "ev-ascension-001",
+        "source": "isl-v2"
+      }
+    },
+    {
+      "id": "render_tesseract",
+      "module": "engine/scripting/scripts/opening_4d_reveal.isl.js",
+      "export": "ISL_RENDER_TESSERACT",
+      "expect": {
+        "type": "render_4d_tesseract",
+        "world": "world-mythar-plains",
+        "entity": "tesseract-hero",
+        "params": { "d4": 4, "d3": 4, "speed": 1.5 },
+        "source": "isl-v2"
+      }
+    }
+  ]
+}
