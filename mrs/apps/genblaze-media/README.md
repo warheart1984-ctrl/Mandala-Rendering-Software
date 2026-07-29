@@ -507,7 +507,7 @@ NVIDIA failures to that same deterministic renderer.
 | `GENBLAZE_NVIDIA_WARMUP_ON_STARTUP` | `1` | If warmup also returns 504, treat NIM as unavailable |
 | `B2_PROBE_ON_HEALTH` | `0` | Keep off so Render health checks do not ListObjects |
 
-Production image installs from `requirements-docker.txt`, then overlays `Pillow==12.3.0` with `pip install --no-deps` so the CVE pin is not blocked by `genblaze-core==0.3.7`’s declared `pillow<12` (modern pip cannot satisfy both in one resolve). Redeploy after merge for the pin to take effect on Render.
+Production image installs from `requirements-docker.txt`, then overlays `Pillow==12.3.0` with `pip install --no-deps` so the CVE pin is not blocked by `genblaze-core==0.3.8`’s declared `pillow<12` (modern pip cannot satisfy both in one resolve). The current split-package upgrade target is `genblaze-core==0.3.8`, `genblaze-s3==0.3.6`, and `genblaze-nvidia==0.3.3`; redeploy after merge for those pins to take effect on Render.
 
 Free tiers may cold-start; first generate can take longer than subsequent ones. An empty NVIDIA `504` with `{"_raw":""}` is an **upstream gateway** failure — credentials and B2 can still be fine. **Do not claim live Render generate is fixed until redeploy + a successful `POST /api/generate`.**
 

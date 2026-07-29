@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/infinity-director/schemas/idac-execution-plan.schema.json",
+  "title": "ExecutionPlan (IDAC optimizer output)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "kind",
+    "contract_version",
+    "contract",
+    "plan_id",
+    "created_at",
+    "intent_ref",
+    "domain",
+    "domain_plan",
+    "resource_plan",
+    "risk_plan",
+    "evidence_plan",
+    "enforcement"
+  ],
+  "properties": {
+    "kind": { "const": "ExecutionPlan" },
+    "contract_version": { "type": "string", "pattern": "^0\\.1\\.0$" },
+    "contract": { "const": "IDAC" },
+    "plan_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string" },
+    "intent_ref": { "type": "string" },
+    "domain": { "enum": ["render", "ai", "compile"] },
+    "domain_plan": { "type": "object" },
+    "resource_plan": { "type": "object" },
+    "risk_plan": { "type": "object" },
+    "evidence_plan": { "type": "object" },
+    "environment_spec": { "type": "object" },
+    "enforcement": { "enum": ["declared", "partial", "enforced"] },
+    "status": { "enum": ["declared", "partial", "skeleton"] },
+    "optimizer": {
+      "type": "object",
+      "properties": {
+        "actor": { "const": "idac-optimizer" },
+        "must_not_execute": { "const": true }
+      }
+    }
+  }
+}

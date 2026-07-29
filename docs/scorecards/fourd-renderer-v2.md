@@ -10,7 +10,7 @@
 | Field | Value |
 | --- | --- |
 | Project ID | `fourd-renderer-v2` |
-| Repository path | `G:\New folder` |
+| Repository path | `G:\Mandala Rendering Software` |
 | Review date | 2026-07-24 |
 | Reviewer | agent session (MRS v2 docs land) |
 

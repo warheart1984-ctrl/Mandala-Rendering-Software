@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Infinity Director</title>
+  <style>
+    :root {
+      --bg: #0f151a;
+      --panel: #162128;
+      --line: #29424d;
+      --ink: #eaf3f6;
+      --muted: #9fb6bf;
+      --accent: #78d6aa;
+      --warn: #f0c36b;
+      --err: #d06b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(120, 214, 170, 0.08), transparent 25%),
+        linear-gradient(180deg, #0c1115, var(--bg));
+      color: var(--ink);
+    }
+    main {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 2rem 1.2rem 3rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .hero, .panel {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(22, 33, 40, 0.9);
+      padding: 1.2rem;
+    }
+    .hero h1, h2 { margin: 0 0 0.45rem; }
+    .meta { color: var(--muted); line-height: 1.5; }
+    .banner {
+      margin-top: 0.75rem;
+      padding: 0.75rem 0.9rem;
+      border-radius: 14px;
+      border: 1px solid rgba(240, 195, 107, 0.35);
+      background: rgba(240, 195, 107, 0.08);
+      color: var(--warn);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.8rem;
+    }
+    .card {
+      padding: 0.85rem 0.95rem;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+    label, strong { display: block; margin-bottom: 0.35rem; }
+    textarea, input, select {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.22);
+      color: var(--ink);
+      padding: 0.8rem 0.9rem;
+      font: inherit;
+    }
+    textarea { min-height: 9rem; resize: vertical; }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.8rem;
+    }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 0.8rem 1.2rem;
+      background: var(--accent);
+      color: #082116;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.24);
+      padding: 0.9rem;
+      max-height: 32rem;
+      overflow: auto;
+    }
+    .preview {
+      margin-top: 0.8rem;
+      max-width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      display: none;
+    }
+    .toggle {
+      display: inline-flex;
+      gap: 0.4rem;
+      margin: 0.6rem 0 0.2rem;
+    }
+    .toggle button {
+      background: #2a4a55;
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .toggle button.active {
+      background: var(--accent);
+      color: #082116;
+    }
+    .badge {
+      display: none;
+      margin-top: 0.55rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      width: fit-content;
+    }
+    .badge.show { display: inline-block; }
+    .badge.fast {
+      background: rgba(120, 214, 170, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(120, 214, 170, 0.35);
+    }
+    .badge.beauty {
+      background: rgba(240, 195, 107, 0.12);
+      color: var(--warn);
+      border: 1px solid rgba(240, 195, 107, 0.35);
+    }
+    .badge.atcm {
+      background: rgba(130, 180, 220, 0.14);
+      color: #9ec9e8;
+      border: 1px solid rgba(130, 180, 220, 0.4);
+    }
+    .badge.idac-pass {
+      background: rgba(120, 214, 170, 0.18);
+      color: var(--accent);
+      border: 1px solid rgba(120, 214, 170, 0.45);
+    }
+    .badge.idac-fail {
+      background: rgba(208, 107, 107, 0.15);
+      color: var(--err);
+      border: 1px solid rgba(208, 107, 107, 0.4);
+    }
+    .status { min-height: 1.4rem; }
+    .status.warn { color: var(--warn); }
+    .status.err { color: var(--err); }
+    .status.ok { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>Infinity Memoryboard Director</h1>
+      <p class="meta">
+        Read-only Jarvis memoryboard context, local Ollama planner, and direct routing into
+        RT4D (4D), SceneSpecification, and Engine3D still-image lanes via Genblaze.
+      </p>
+      <div class="banner">
+        Still-image dispatch only. Observation / aperture projection is <strong>not</strong> a
+        beauty or Digital Printer path — CPU RT4D remains print SoT
+        (<code>cpu.rt4d.print</code>).         Genblaze must be up on
+        <code>DIRECTOR_GENBLAZE_BASE_URL</code> (default <code>:8787</code>); Director UI is typically
+        <code>:8791</code> when Genblaze occupies <code>:8787</code>.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Service Health</h2>
+      <div id="service-health" class="grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Lane Health (Genblaze)</h2>
+      <div id="lane-health" class="grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>ATCM / IDAC (governed)</h2>
+      <p class="meta">
+        Tile work model is <strong>estimate_not_measured</strong>; Genblaze dispatch remains
+        <strong>full-frame</strong> (no per-tile shade today). IDAC bundle appears when
+        <code>speed_profile=atcm</code> or explicit IDAC path.
+      </p>
+      <div style="margin-top:0.6rem">
+        <button type="button" id="atcm-plan" style="background:#2a4a55;color:var(--ink)">Run ATCM plan (256²)</button>
+        <label style="display:inline-flex;align-items:center;gap:0.35rem;margin-left:0.75rem;font-weight:400">
+          <input type="checkbox" id="idac-flag" /> Request IDAC bundle (<code>idac=true</code>)
+        </label>
+      </div>
+      <pre id="idac-panel" style="margin-top:0.8rem;max-height:14rem">No ATCM/IDAC run yet.</pre>
+      <div id="idac-verdict-badge" class="badge" aria-live="polite"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Direct Render</h2>
+      <div class="toggle" id="speed-toggle" aria-label="CPU speed profile">
+        <button type="button" data-speed="fast" class="active">Fast Mode</button>
+        <button type="button" data-speed="beauty">Beauty Mode (CPU)</button>
+        <button type="button" data-speed="atcm">ATCM</button>
+        <button type="button" data-speed="auto">Auto</button>
+      </div>
+      <div id="speed-badge" class="badge fast show">Fast Mode — Engine3D soft-raster @ 256², samples=1, draft (not print SoT)</div>
+      <div class="row" style="margin-top:0.8rem">
+        <div>
+          <label for="prompt">Prompt</label>
+          <textarea id="prompt">portrait mesh structure soft light</textarea>
+        </div>
+        <div>
+          <label for="lane">Lane (mode)</label>
+          <select id="lane">
+            <option value="auto">auto (profile-biased)</option>
+            <option value="engine3d_still">engine3d_still — fastest CPU soft-raster</option>
+            <option value="rt4d">rt4d — 4D draft still (slower on CPU)</option>
+            <option value="prompt_to_scene">prompt_to_scene — SceneSpec + render</option>
+            <option value="render_scene">render_scene — requires scene_spec JSON</option>
+          </select>
+          <div style="height:0.8rem"></div>
+          <label for="quality">Genblaze quality (ignored by Fast/Beauty — they force draft)</label>
+          <select id="quality">
+            <option value="draft">draft</option>
+            <option value="final">final (slower)</option>
+          </select>
+          <div style="height:0.8rem"></div>
+          <label for="memoryboard-id">Jarvis Memoryboard Id</label>
+          <input id="memoryboard-id" placeholder="optional board id / search query" />
+          <div style="height:0.8rem"></div>
+          <label for="session-id">Jarvis Session Id</label>
+          <input id="session-id" placeholder="optional session id" />
+          <div style="height:0.8rem"></div>
+          <label for="source-run-id">Reuse run id (optional background plate)</label>
+          <input id="source-run-id" placeholder="auto-filled from last preview run" />
+        </div>
+      </div>
+      <div style="margin-top:1rem">
+        <label for="scene-spec">Scene Spec JSON (render_scene only)</label>
+        <textarea id="scene-spec" placeholder='{"schemaVersion":"1.0","kind":"SceneSpecification","id":"...","entities":[]}'></textarea>
+      </div>
+      <div style="margin-top:1rem">
+        <button type="button" id="submit">Dispatch Through Director</button>
+        <button type="button" id="warmup" style="margin-left:0.5rem;background:#2a4a55;color:var(--ink)">Warmup (128²)</button>
+        <button type="button" id="refresh-health" style="margin-left:0.5rem;background:#2a4a55;color:var(--ink)">Refresh Health</button>
+      </div>
+      <p id="status" class="status meta"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Result</h2>
+      <img id="preview" class="preview" alt="Director preview" />
+      <pre id="result">Waiting for a director run...</pre>
+    </section>
+  </main>
+  <script>
+    const serviceHealth = document.getElementById("service-health");
+    const laneHealth = document.getElementById("lane-health");
+    const resultEl = document.getElementById("result");
+    const previewEl = document.getElementById("preview");
+    const statusEl = document.getElementById("status");
+    const promptEl = document.getElementById("prompt");
+    const laneEl = document.getElementById("lane");
+    const qualityEl = document.getElementById("quality");
+    const memoryboardEl = document.getElementById("memoryboard-id");
+    const sessionEl = document.getElementById("session-id");
+    const sourceRunEl = document.getElementById("source-run-id");
+    const sceneSpecEl = document.getElementById("scene-spec");
+    const submitBtn = document.getElementById("submit");
+    const refreshBtn = document.getElementById("refresh-health");
+    const warmupBtn = document.getElementById("warmup");
+    const speedToggle = document.getElementById("speed-toggle");
+    const speedBadge = document.getElementById("speed-badge");
+    const idacPanel = document.getElementById("idac-panel");
+    const idacVerdictBadge = document.getElementById("idac-verdict-badge");
+    const idacFlagEl = document.getElementById("idac-flag");
+    const atcmPlanBtn = document.getElementById("atcm-plan");
+    let speedProfile = "fast";
+    let lastRunId = "";
+
+    const SPEED_COPY = {
+      fast: "Fast Mode — Engine3D soft-raster @ 256², samples=1, draft (not print SoT)",
+      beauty: "Beauty Mode (CPU) — Engine3D soft-raster @ 512² + AOVs, draft (not Digital Printer SoT)",
+      atcm: "ATCM — tile complexity plan → suggests Fast/Beauty (estimate work model; not measured 2×; full-frame dispatch today)",
+      auto: "Auto — planner/heuristic picks lane; Genblaze draft defaults",
+    };
+
+    function setSpeed(next) {
+      speedProfile = next;
+      speedToggle.querySelectorAll("button").forEach((btn) => {
+        btn.classList.toggle("active", btn.getAttribute("data-speed") === next);
+      });
+      speedBadge.textContent = SPEED_COPY[next] || SPEED_COPY.fast;
+      const badgeClass = next === "beauty" ? "beauty" : next === "atcm" ? "atcm" : "fast";
+      speedBadge.className = "badge show " + badgeClass;
+    }
+
+    speedToggle.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-speed]");
+      if (!btn) return;
+      setSpeed(btn.getAttribute("data-speed"));
+    });
+
+    function setStatus(msg, kind) {
+      statusEl.textContent = msg || "";
+      statusEl.className = "status meta" + (kind ? " " + kind : "");
+    }
+
+    function appendCard(parent, title, lines) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+      card.appendChild(strong);
+      lines.forEach((line) => {
+        const div = document.createElement("div");
+        div.className = "meta";
+        div.textContent = line;
+        card.appendChild(div);
+      });
+      parent.appendChild(card);
+    }
+
+    function renderServiceHealth(body) {
+      serviceHealth.replaceChildren();
+      const planner = body.planner || {};
+      appendCard(serviceHealth, "Director", [
+        "status: " + String(body.status || "-"),
+        "planner_mode: " + String(body.planner_mode || "-"),
+        "print_sot: " + String(body.print_sot || "cpu.rt4d.print"),
+      ]);
+      appendCard(serviceHealth, "Planner", [
+        "mode: " + String(planner.mode || body.planner_mode || "-"),
+        "reachable: " + String(planner.reachable),
+        "model: " + String(planner.model || body.planner_model || "-"),
+        planner.detail ? String(planner.detail) : "ok",
+      ]);
+      const down = body.downstream || {};
+      appendCard(serviceHealth, "Genblaze", [
+        "reachable: " + String(!!down.reachable),
+        "base: " + String(down.base_url || body.genblaze_base_url || "-"),
+        "image_backend: " + String(down.image_backend || "-"),
+        "memoryboard_configured: " + String(!!body.memoryboard_configured),
+      ]);
+    }
+
+    function renderLaneHealth(data) {
+      laneHealth.replaceChildren();
+      const items = [
+        ["RT4D (4D)", data.rt4d],
+        ["Prompt→Scene", data.prompt_to_scene],
+        ["Render Scene", data.render_scene],
+        ["Engine3D Still (3D)", data.engine3d_still],
+      ];
+      items.forEach(([label, item]) => {
+        const safe = item || {};
+        appendCard(laneHealth, label, [
+          "available: " + String(!!safe.available),
+          "provider: " + String(safe.provider || "-"),
+          safe.detail ? String(safe.detail) : "no detail",
+        ]);
+      });
+    }
+
+    function resolvePreviewUrl(body) {
+      const result = body && body.result;
+      if (!result || typeof result !== "object") return null;
+      if (typeof result.preview_url === "string") return result.preview_url;
+      if (result.structure && typeof result.structure.preview_url === "string") {
+        return result.structure.preview_url;
+      }
+      if (typeof result.image_url === "string") return result.image_url;
+      return null;
+    }
+
+    async function loadHealth() {
+      const response = await fetch("/health");
+      const body = await response.json();
+      renderServiceHealth(body);
+      if (body.downstream) renderLaneHealth(body.downstream);
+      if (!body.downstream || !body.downstream.reachable) {
+        setStatus("Genblaze unreachable — start Genblaze on :8787 (see README).", "warn");
+      } else {
+        setStatus("Health refreshed.", "ok");
+      }
+    }
+
+    function extractRunId(body) {
+      const result = body && body.result;
+      if (!result || typeof result !== "object") return "";
+      if (typeof result.run_id === "string") return result.run_id;
+      if (result.structure && typeof result.structure.run_id === "string") return result.structure.run_id;
+      return "";
+    }
+
+    async function warmup() {
+      setStatus("Warming Genblaze with 128² Engine3D soft-raster...", "");
+      try {
+        const response = await fetch("/api/warmup", { method: "POST" });
+        const body = await response.json();
+        resultEl.textContent = JSON.stringify(body, null, 2);
+        const runId = extractRunId({ result: body.render });
+        if (runId) {
+          lastRunId = runId;
+          if (!sourceRunEl.value.trim()) sourceRunEl.value = runId;
+        }
+        setStatus(body.status === "ok" ? "Warmup complete." : ("Warmup " + body.status + ": " + (body.detail || "")), body.status === "ok" ? "ok" : "warn");
+      } catch (err) {
+        setStatus("Warmup failed.", "err");
+        resultEl.textContent = String(err);
+      }
+    }
+
+    function setIdacVerdictBadge(verdict) {
+      idacVerdictBadge.className = "badge";
+      if (!verdict) {
+        idacVerdictBadge.textContent = "";
+        return;
+      }
+      idacVerdictBadge.textContent = "IDAC validation: " + verdict;
+      idacVerdictBadge.classList.add("show", verdict === "pass" ? "idac-pass" : "idac-fail");
+    }
+
+    function summarizeIdac(body) {
+      if (!body || !body.idac) return null;
+      const v = body.idac.validation || {};
+      const ev = body.idac.evidence || {};
+      const trace = ev.execution_trace || {};
+      return {
+        idac_verdict: v.verdict,
+        learning: (body.idac.learning || {}).recorded,
+        run_id: trace.run_id,
+        render_plan_id: body.render_plan && body.render_plan.id,
+        atcm_work_model: body.atcm && body.atcm.work_model && body.atcm.work_model.label,
+      };
+    }
+
+    async function runAtcmPlan() {
+      setStatus("Running ATCM plan (estimate only)...", "");
+      try {
+        const response = await fetch("/api/atcm/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            width: 256,
+            height: 256,
+            prompt: promptEl.value || "empty sky wall flat structure",
+            include_tiles: false,
+          }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(JSON.stringify(body.detail || body));
+        idacPanel.textContent = JSON.stringify(
+          {
+            atcm: body.atcm && body.atcm.work_model,
+            suggested_speed_profile: body.atcm && body.atcm.suggested_speed_profile,
+            render_plan_id: body.render_plan && body.render_plan.id,
+          },
+          null,
+          2,
+        );
+        setStatus("ATCM plan ready (no dispatch).", "ok");
+      } catch (err) {
+        idacPanel.textContent = String(err);
+        setStatus("ATCM plan failed.", "err");
+      }
+    }
+
+    async function submit() {
+      const payload = {
+        prompt: promptEl.value,
+        quality: qualityEl.value,
+        mode: laneEl.value || "auto",
+        speed_profile: speedProfile,
+      };
+      if (idacFlagEl.checked) payload.idac = true;
+      const memoryboardId = memoryboardEl.value.trim();
+      const sessionId = sessionEl.value.trim();
+      const sourceRunId = sourceRunEl.value.trim() || lastRunId;
+      const sceneRaw = sceneSpecEl.value.trim();
+      if (memoryboardId || sessionId) {
+        payload.memory_context = {
+          memoryboard_id: memoryboardId || null,
+          session_id: sessionId || null,
+        };
+      }
+      if (sourceRunId) payload.source_run_id = sourceRunId;
+      if (sceneRaw) {
+        try {
+          payload.scene_spec = JSON.parse(sceneRaw);
+        } catch (err) {
+          setStatus("Scene Spec JSON is invalid.", "err");
+          resultEl.textContent = String(err);
+          return;
+        }
+      }
+      if (payload.mode === "render_scene" && !payload.scene_spec) {
+        setStatus("render_scene requires Scene Spec JSON.", "err");
+        return;
+      }
+      if (payload.mode === "render_scene") {
+        delete payload.prompt;
+      }
+      setStatus("Dispatching " + speedProfile + " profile...", "");
+      resultEl.textContent = "Running...";
+      previewEl.style.display = "none";
+      previewEl.removeAttribute("src");
+      try {
+        const response = await fetch("/api/direct", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+          throw new Error(typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || body));
+        }
+        resultEl.textContent = JSON.stringify(body, null, 2);
+        const idacSummary = summarizeIdac(body);
+        if (idacSummary) {
+          idacPanel.textContent = JSON.stringify(idacSummary, null, 2);
+          setIdacVerdictBadge(idacSummary.idac_verdict);
+        } else if (speedProfile === "atcm") {
+          idacPanel.textContent = "ATCM response missing idac bundle — restart Director from mrs/apps/infinity-director (see README).";
+          setIdacVerdictBadge(null);
+        } else {
+          setIdacVerdictBadge(null);
+        }
+        const runId = extractRunId(body);
+        if (runId) {
+          lastRunId = runId;
+          sourceRunEl.value = runId;
+        }
+        const previewPath = resolvePreviewUrl(body);
+        if (previewPath) {
+          const down = (await fetch("/health").then((r) => r.json()).catch(() => ({}))).downstream || {};
+          const base = String(down.base_url || "").replace(/\/$/, "");
+          previewEl.src = previewPath.startsWith("http")
+            ? previewPath
+            : (base + (previewPath.startsWith("/") ? previewPath : "/" + previewPath));
+          previewEl.style.display = "block";
+        }
+        const dims = body.speed_profile
+          ? (body.speed_profile.width + "x" + body.speed_profile.height)
+          : "";
+        const idacBit = idacSummary ? (" idac=" + idacSummary.idac_verdict) : "";
+        setStatus("lane=" + body.lane + " profile=" + speedProfile + idacBit + " " + dims, "ok");
+      } catch (err) {
+        resultEl.textContent = String(err);
+        setStatus("Director dispatch failed.", "err");
+      }
+    }
+
+    submitBtn.addEventListener("click", submit);
+    atcmPlanBtn.addEventListener("click", () => runAtcmPlan().catch(() => setStatus("ATCM plan failed.", "err")));
+    warmupBtn.addEventListener("click", () => warmup().catch(() => setStatus("Warmup failed.", "err")));
+    refreshBtn.addEventListener("click", () => loadHealth().catch(() => setStatus("Health probe failed.", "warn")));
+    loadHealth().catch(() => setStatus("Health probe failed.", "warn"));
+  </script>
+</body>
+</html>

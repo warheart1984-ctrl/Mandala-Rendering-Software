@@ -11,6 +11,7 @@ Drive-G-1:
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
 import os
@@ -19,7 +20,9 @@ import subprocess
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
+
+from PIL import Image
 
 from app.config import APP_DIR, REPO_ROOT, Settings
 from app.pipeline import (
@@ -37,6 +40,14 @@ logger = logging.getLogger(__name__)
 ENGINE3D_STILL_MODEL_ID = "mrs-engine3d-core/soft-raster"
 ENGINE3D_STILL_PROVIDER_ID = "engine3d-still"
 ENGINE3D_STILL_KIND = "engine3d-structure-still"
+WORLDDOCUMENT_RT4D_KIND = "worlddocument-rt4d-path-trace"
+
+
+class CropRegion(TypedDict):
+    x: int
+    y: int
+    w: int
+    h: int
 
 ENGINE3D_STILL_SETUP_HELP = (
     "Engine3D still needs Node.js and engine3d-core scripts/render-engine3d-still.mjs "
@@ -138,6 +149,33 @@ def resolve_engine3d_cli_path(
     if must_exist and not candidate.is_file():
         raise Engine3dStillPathError(f"{field} does not exist: {candidate}")
     return str(candidate)
+
+
+def worlddocument_rt4d_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
+    monorepo = (
+        repo_root
+        / "mrs"
+        / "packages"
+        / "renderer-core"
+        / "scripts"
+        / "render-worlddocument-rt4d.mjs"
+    )
+    return monorepo
+
+
+def crop_png_bytes(png: bytes, region: CropRegion) -> bytes:
+    """Crop RGB/RGBA PNG bytes to ``region`` (pixel coords, top-left origin)."""
+    x, y, w, h = region["x"], region["y"], region["w"], region["h"]
+    with Image.open(io.BytesIO(png)) as img:
+        full_w, full_h = img.size
+        if x + w > full_w or y + h > full_h:
+            raise Engine3dStillPathError(
+                f"crop_region {x},{y},{w},{h} exceeds image bounds {full_w}x{full_h}"
+            )
+        cropped = img.crop((x, y, x + w, y + h))
+        out = io.BytesIO()
+        cropped.save(out, format="PNG")
+        return out.getvalue()
 
 
 def engine3d_still_default_script_path(repo_root: Path = REPO_ROOT) -> Path:
@@ -282,6 +320,7 @@ def generate_engine3d_still(
     aov_normal: bool = True,
     world_path: str | None = None,
     human_glb: str | None = None,
+    crop_region: CropRegion | None = None,
 ) -> GenerateResult:
     """Render Engine3D structure still and persist via Genblaze paths."""
     if not getattr(settings, "engine3d_still_enabled", True):
@@ -289,6 +328,18 @@ def generate_engine3d_still(
             "Engine3D still is disabled (ENGINE3D_STILL_ENABLED=0). "
             "Set ENGINE3D_STILL_ENABLED=1 to enable."
         )
+
+    if crop_region:
+        cx, cy, cw, ch = (
+            crop_region["x"],
+            crop_region["y"],
+            crop_region["w"],
+            crop_region["h"],
+        )
+        if cx + cw > width or cy + ch > height:
+            raise Engine3dStillPathError(
+                "crop_region must fit within request width/height canvas"
+            )
 
     run_id = str(uuid.uuid4())
     created_at = _utc_now()
@@ -325,6 +376,11 @@ def generate_engine3d_still(
     if not png:
         raise Engine3dStillError("Engine3D still produced empty beauty.png")
 
+    if crop_region:
+        png = crop_png_bytes(png, crop_region)
+        width = crop_region["w"]
+        height = crop_region["h"]
+
     sha256 = hashlib.sha256(png).hexdigest()
     asset_key = f"{settings.storage_prefix}/engine3d-still/{run_id}/beauty.png"
     manifest_key = f"{settings.storage_prefix}/engine3d-still/{run_id}/manifest.json"
@@ -340,6 +396,7 @@ def generate_engine3d_still(
         "structure_record": provenance,
         "face_rig": bool(provenance.get("face_rig")),
         "face_asset": provenance.get("face_asset") or "none",
+        "crop_region": crop_region,
         "note": (
             "Engine3D soft-raster structure still. NOT photoreal skin; "
             "NOT RT4D sphere-bridge. Optional polish is a separate diffusion step."
@@ -387,6 +444,219 @@ def generate_engine3d_still(
         prompt=f"engine3d-still:{provenance.get('world_id') or 'demo'}",
         model=ENGINE3D_STILL_MODEL_ID,
         provider=ENGINE3D_STILL_PROVIDER_ID,
+        status="ok",
+        asset_key=asset_key,
+        manifest_key=manifest_key,
+        asset_sha256=sha256,
+        preview_url=preview,
+        created_at=created_at,
+        dry_run=False,
+        provenance=manifest,
+    )
+    _attach_local_preview(gen, png)
+    return gen
+
+
+def _run_worlddocument_rt4d_cli(
+    settings: Settings,
+    *,
+    out_dir: Path,
+    world_path: str,
+    width: int,
+    height: int,
+    samples: int,
+    max_depth: int,
+    run_id: str,
+) -> dict[str, Any]:
+    node = _find_node(settings.rt4d_node_path)
+    if node is None:
+        raise RuntimeError(ENGINE3D_STILL_SETUP_HELP)
+    script = Path(settings.resolved_worlddocument_rt4d_script)
+    if not script.is_file():
+        raise RuntimeError(
+            "WorldDocumentRt4d path-trace script missing. "
+            f"Expected {script}. Build engine3d-core and ensure renderer-core scripts exist."
+        )
+
+    beauty_out = out_dir / f"{run_id}-beauty.png"
+    argv = [
+        node,
+        str(script),
+        "--worlddocument-rt4d",
+        "--world",
+        world_path,
+        "--output",
+        str(beauty_out),
+        "--width",
+        str(width),
+        "--height",
+        str(height),
+        "--samples",
+        str(samples),
+        "--max-depth",
+        str(max_depth),
+        "--run-id",
+        run_id,
+    ]
+    timeout = float(getattr(settings, "engine3d_still_timeout_seconds", 120.0))
+    proc = subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        cwd=str(script.parent.parent),
+        env={**os.environ, "WORLDDOCUMENT_RT4D": "1"},
+        check=False,
+    )
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or "no output")[:800]
+        raise Engine3dStillError(
+            f"WorldDocumentRt4d path trace failed (exit {proc.returncode}): {err}"
+        )
+    provenance: dict[str, Any] = {}
+    for line in (proc.stdout or "").splitlines():
+        line = line.strip()
+        if line.startswith("{"):
+            try:
+                provenance = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+    if not provenance and beauty_out.is_file():
+        provenance = {
+            "beauty_path": str(beauty_out),
+            "structure_source": "path_trace",
+            "run_id": run_id,
+        }
+    if not provenance:
+        raise Engine3dStillError(
+            f"path trace produced no provenance JSON: {(proc.stdout or '')[:300]}"
+        )
+    return provenance
+
+
+def generate_worlddocument_rt4d_still(
+    settings: Settings,
+    *,
+    world_path: str,
+    width: int = 256,
+    height: int = 256,
+    samples: int = 4,
+    max_depth: int = 4,
+    crop_region: CropRegion | None = None,
+) -> GenerateResult:
+    """PathTracer4D consume of WorldDocumentRt4d — not Engine3D soft-raster."""
+    if not getattr(settings, "engine3d_still_enabled", True):
+        raise RuntimeError(
+            "Engine3D still path is disabled (ENGINE3D_STILL_ENABLED=0)."
+        )
+    safe_world = resolve_engine3d_cli_path(world_path, field="world_path", must_exist=True)
+    if not safe_world:
+        raise Engine3dStillPathError("world_path is required for path_trace")
+
+    if crop_region:
+        cx, cy, cw, ch = (
+            crop_region["x"],
+            crop_region["y"],
+            crop_region["w"],
+            crop_region["h"],
+        )
+        if cx + cw > width or cy + ch > height:
+            raise Engine3dStillPathError(
+                "crop_region must fit within request width/height canvas"
+            )
+
+    run_id = str(uuid.uuid4())
+    created_at = _utc_now()
+    tmp_root = Path(tempfile.gettempdir()) / "mrs-genblaze-engine3d"
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    work = Path(tempfile.mkdtemp(prefix="wd-rt4d-", dir=str(tmp_root)))
+    try:
+        provenance = _run_worlddocument_rt4d_cli(
+            settings,
+            out_dir=work,
+            world_path=safe_world,
+            width=width,
+            height=height,
+            samples=samples,
+            max_depth=max_depth,
+            run_id=run_id,
+        )
+        cli_run = provenance.get("run_id")
+        if isinstance(cli_run, str) and cli_run.strip():
+            run_id = cli_run.strip()
+        beauty_path = Path(str(provenance.get("beauty_path") or ""))
+        if not beauty_path.is_file():
+            candidates = list(work.rglob("*.png"))
+            if not candidates:
+                raise Engine3dStillError("path trace produced no PNG")
+            beauty_path = candidates[0]
+        png = beauty_path.read_bytes()
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+    if crop_region:
+        png = crop_png_bytes(png, crop_region)
+        width = crop_region["w"]
+        height = crop_region["h"]
+
+    sha256 = hashlib.sha256(png).hexdigest()
+    asset_key = f"{settings.storage_prefix}/worlddocument-rt4d/{run_id}/beauty.png"
+    manifest_key = f"{settings.storage_prefix}/worlddocument-rt4d/{run_id}/manifest.json"
+    manifest = {
+        "run_id": run_id,
+        "model": "mrs-renderer-core/worlddocument-rt4d",
+        "provider": "worlddocument-rt4d",
+        "kind": WORLDDOCUMENT_RT4D_KIND,
+        "created_at": created_at,
+        "asset_key": asset_key,
+        "asset_sha256": sha256,
+        "structure_source": "path_trace",
+        "structure_record": provenance,
+        "crop_region": crop_region,
+        "note": (
+            "WorldDocumentRt4d → PathTracer4D capsules. NOT soft-raster; NOT diffusion."
+        ),
+    }
+    put_preview(APP_DIR, run_id, png)
+
+    if not settings.b2_configured:
+        gen = GenerateResult(
+            run_id=run_id,
+            prompt=f"worlddocument-rt4d:{provenance.get('world_id') or 'world'}",
+            model=manifest["model"],
+            provider=manifest["provider"],
+            status="ok",
+            asset_key=asset_key,
+            manifest_key=manifest_key,
+            asset_sha256=sha256,
+            preview_url=None,
+            created_at=created_at,
+            dry_run=False,
+            detail="B2 not configured; path-trace still stayed local-only.",
+            provenance=manifest,
+        )
+        _attach_local_preview(gen, png)
+        return gen
+
+    backend = build_backend(settings)
+    try:
+        backend.put(asset_key, png, content_type="image/png")
+        backend.put(
+            manifest_key,
+            json.dumps(manifest, indent=2).encode("utf-8"),
+            content_type="application/json",
+        )
+        preview = _presign_preview(backend, settings, asset_key, None)
+    finally:
+        close = getattr(backend, "close", None)
+        if callable(close):
+            close()
+
+    gen = GenerateResult(
+        run_id=run_id,
+        prompt=f"worlddocument-rt4d:{provenance.get('world_id') or 'world'}",
+        model=manifest["model"],
+        provider=manifest["provider"],
         status="ok",
         asset_key=asset_key,
         manifest_key=manifest_key,

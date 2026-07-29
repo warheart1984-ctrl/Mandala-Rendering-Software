@@ -1,5 +1,12 @@
 # Render Blueprint — free web service for MRS Genblaze Media MVP
 # Docs: https://render.com/docs/blueprint-spec
+#
+# This file is the smaller app-local deploy path only:
+#   Root Directory: mrs/apps/genblaze-media
+#   Dockerfile Path: ./Dockerfile
+# It does not bundle renderer-core, prompt-scene bridge, or Engine3D, so
+# rt4d.available stays false here. For the full judge/demo path use the
+# repo-root render.yaml instead.
 services:
   - type: web
     name: mrs-genblaze-media

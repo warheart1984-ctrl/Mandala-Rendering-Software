@@ -1,0 +1,4 @@
+{"evidence_class": "Performance", "cycle": "5", "operation": "POST /api/atcm/plan", "wall_clock_seconds": 0.0092, "director_base": "http://127.0.0.1:8791", "note": "Single sample; not a benchmark suite; not speedup vs work-unit"}
+{"evidence_class": "Performance", "cycle": "5", "operation": "POST /api/direct speed_profile=atcm", "wall_clock_seconds": 5.8538, "director_base": "http://127.0.0.1:8791", "idac_verdict": "pass", "note": "Single sample; full-frame Genblaze dispatch included"}
+{"evidence_class": "Performance", "cycle": "5", "operation": "POST /api/atcm/plan", "wall_clock_seconds": 0.0302, "director_base": "http://127.0.0.1:8791", "note": "Single sample; not a benchmark suite; not speedup vs work-unit"}
+{"evidence_class": "Performance", "cycle": "5", "operation": "POST /api/direct speed_profile=atcm", "wall_clock_seconds": 3.6181, "director_base": "http://127.0.0.1:8791", "idac_verdict": "pass", "note": "Single sample; full-frame Genblaze dispatch included"}

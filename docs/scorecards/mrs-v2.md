@@ -10,7 +10,7 @@
 | Field | Value |
 | --- | --- |
 | Project ID | `mrs-v2` |
-| Repository path | `G:\New folder` |
+| Repository path | `G:\Mandala Rendering Software` |
 | Review date | 2026-07-24 |
 | Reviewer | agent session (MRS v2.0 freeze) |
 | Freeze | [`docs/4drs/api/mrs-v2.0-freeze.md`](../4drs/api/mrs-v2.0-freeze.md) — **contracts / exports frozen**; GPU factory not complete |

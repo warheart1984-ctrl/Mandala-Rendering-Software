@@ -45,7 +45,7 @@ import process from "node:process";
 import { Scene4D } from "../src/render/rt4d/scene/Scene4D.js";
 import { Camera4D } from "../src/render/rt4d/camera/Camera4D.js";
 import { PathTracer4D } from "../src/render/rt4d/integrator/PathTracer4D.js";
-import { Hypersphere, Hyperplane } from "../src/render/rt4d/geometry/hypersurface.js";
+import { Hypersphere, Hyperplane, OrientedCapsule } from "../src/render/rt4d/geometry/hypersurface.js";
 import { vec4 } from "../src/render/rt4d/math/vec4.js";
 import { lengthPreserved4, rotate2d } from "../src/render/rt4d/math/physicalInvariants.js";
 
@@ -244,6 +244,7 @@ const TESSERACT_CAMERA_RADIUS = 6.4;
  * threshold) gets the rough GGX "silver" material.
  */
 const RING_GGX_MIN_SAMPLES = 12;
+const BEAM_GLASS_MIN_SAMPLES = 8;
 
 /**
  * Concentric mandala ring specs for `tesseract-lattice`.
@@ -396,6 +397,30 @@ function buildScene(descriptor, seed, { samples = 24 } = {}) {
     ),
     albedo: vec4(ar, ag, ab, 1),
   });
+  // OrientedCapsule beam — same emissive surface for the draft path.
+  // The `beam_material` composition field drives the display name; the
+  // actual light material stays identical so the draft still renders.
+  scene.materials.createMaterial("emissive-tube", "light", {
+    emission: vec4(
+      Math.min(1.55, ar * 1.35 + 0.06),
+      Math.min(1.55, ag * 1.35 + 0.06),
+      Math.min(1.55, ab * 1.35 + 0.06),
+      0,
+    ),
+    albedo: vec4(ar, ag, ab, 1),
+  });
+  // Dielectric glass tube — registered so the materialId is resolvable
+  // at all sample counts. Emission is low (glass is transmissive, not a
+  // light source) so NEE drives the luminance of the lattice interior.
+  scene.materials.createMaterial("dielectric-glass", "light", {
+    emission: vec4(
+      Math.min(0.35, ar * 0.25 + 0.02),
+      Math.min(0.35, ag * 0.25 + 0.02),
+      Math.min(0.35, ab * 0.25 + 0.02),
+      0,
+    ),
+    albedo: vec4(ar, ag, ab, 1),
+  });
   // Soft emissive ring accent used at draft sample counts. Same light-as-surface
   // trick as the beams, but dimmer, so the concentric rings read without NEE
   // noise. Not metal — see RING_GGX_MIN_SAMPLES for when "silver" is used.
@@ -512,77 +537,97 @@ function buildScene(descriptor, seed, { samples = 24 } = {}) {
     }
     case "tesseract-lattice": {
       // Readable 8-cell: 16 projected vertices joined by all 32 canonical edges
-      // as emissive neon beam chains, a white energy core at the centre, and
-      // concentric mandala rings as accents. Still deterministic procedural
-      // primitives — no semantic synthesis.
+      // as OrientedCapsule tubes, vertex "chrome" joint spheres, a white energy
+      // core at the centre, and concentric mandala rings (capsule-based tori) as
+      // accents. Still deterministic procedural primitives — no semantic synthesis.
       const verts = tesseractProjectedVertices();
       const beamRadius = TESSERACT_BEAM_RADIUS;
 
-      const beamStep = beamRadius * TESSERACT_BEAM_STEP_SCALE;
-      let beamSpheres = 0;
+      // ── 32 beam edges (OrientedCapsule) ────────────────────────────────
+      const beamCapsules = TESSERACT_EDGES.length;
+      const beamMaterial =
+        descriptor.materialType === "ggx" && samples >= BEAM_GLASS_MIN_SAMPLES
+          ? "dielectric-glass"
+          : "emissive-tube";
       for (const [i, j] of TESSERACT_EDGES) {
-        for (const primitive of beamChain(verts[i], verts[j], beamRadius, beamStep)) {
-          accents.push({ primitive, materialId: "beam" });
-          beamSpheres += 1;
-        }
+        accents.push({
+          primitive: new OrientedCapsule(verts[i], verts[j], beamRadius),
+          materialId: beamMaterial,
+        });
       }
 
-      // Brighter emissive vertex joints. These were diffuse in the first pass and
-      // came back as dark knobs at every corner — the same failure mode as the
-      // reported render, because a 4-spp diffuse sphere ringed by non-occluding
-      // emissive beams gets almost no resolved direct light.
-      for (const v of verts) accents.push({ primitive: new Hypersphere(v, beamRadius * 1.35), materialId: "node" });
+      // Brighter emissive vertex joints. Read as chrome lattice knobs.
+      for (const v of verts) {
+        accents.push({
+          primitive: new Hypersphere(v, beamRadius * 1.35),
+          materialId: "node",
+        });
+      }
 
       extraLights.push({
         primitive: new Hypersphere(vec4(0, TESSERACT_CENTER_Y, 0, 0), 0.3),
         materialId: "core",
       });
 
-      // Radial mandala: two concentric node rings plus short spoke beams.
-      // At draft sample counts rings are soft-emissive cyan (`ring-glow`) so they
-      // read without NEE noise — honestly not reflective metal. At final
-      // (samples ≥ RING_GGX_MIN_SAMPLES) they become rough GGX "silver".
+      // ── Six short radial spokes (OrientedCapsule) ──────────────────────
+      const spokeCapsules = 6;
+      for (let i = 0; i < spokeCapsules; i++) {
+        const a = (i / spokeCapsules) * Math.PI * 2;
+        const inner = vec4(Math.cos(a) * 1.72, TESSERACT_CENTER_Y - 0.05, Math.sin(a) * 1.72, 0);
+        const outer = vec4(Math.cos(a) * 2.05, TESSERACT_CENTER_Y - 0.05, Math.sin(a) * 2.05, 0);
+        accents.push({
+          primitive: new OrientedCapsule(inner, outer, 0.08),
+          materialId: beamMaterial,
+        });
+      }
+
+      // ── Mandala rings (capsule-based tori) ─────────────────────────────
+      // Two concentric rings built from OrientedCapsule segments forming
+      // continuous toroidal loops. At draft counts rings are soft-emissive
+      // cyan (`ring-glow`); at final samples they become rough GGX "silver".
       const useMetalRings =
         descriptor.materialType === "ggx" && samples >= RING_GGX_MIN_SAMPLES;
       const ringMaterial = useMetalRings ? "silver" : "ring-glow";
-      // Continuous rings: each TESSERACT_RING_SPECS entry satisfies
-      // nodeRadius >= radius·sin(π/count) so neighbours touch/overlap.
-      let ringNodes = 0;
+      const RING_CAPSULE_COUNTS = [24, 24];
+      let ringCapsules = 0;
+      let ringTori = 0;
       for (let r = 0; r < TESSERACT_RING_SPECS.length; r++) {
-        const { radius, count, y, nodeRadius } = TESSERACT_RING_SPECS[r];
-        for (let i = 0; i < count; i++) {
-          const a = (i / count) * Math.PI * 2 + (r === 0 ? 0 : Math.PI / count);
+        const { radius, y, nodeRadius } = TESSERACT_RING_SPECS[r];
+        const segs = RING_CAPSULE_COUNTS[r];
+        for (let i = 0; i < segs; i++) {
+          const a1 = (i / segs) * Math.PI * 2;
+          const a2 = ((i + 1) / segs) * Math.PI * 2;
+          const p1 = vec4(Math.cos(a1) * radius, y, Math.sin(a1) * radius, 0);
+          const p2 = vec4(Math.cos(a2) * radius, y, Math.sin(a2) * radius, 0);
           accents.push({
-            primitive: new Hypersphere(vec4(Math.cos(a) * radius, y, Math.sin(a) * radius, 0), nodeRadius),
+            primitive: new OrientedCapsule(p1, p2, nodeRadius),
             materialId: ringMaterial,
           });
-          ringNodes += 1;
+          ringCapsules += 1;
         }
+        ringTori += 1;
       }
 
-      // Six short radial spokes from the outer cube toward the first ring.
-      let spokeSpheres = 0;
-      const spokes = 6;
-      for (let i = 0; i < spokes; i++) {
-        const a = (i / spokes) * Math.PI * 2;
-        const inner = vec4(Math.cos(a) * 1.72, TESSERACT_CENTER_Y - 0.05, Math.sin(a) * 1.72, 0);
-        const outer = vec4(Math.cos(a) * 2.05, TESSERACT_CENTER_Y - 0.05, Math.sin(a) * 2.05, 0);
-        for (const primitive of beamChain(inner, outer, 0.08, 0.11)) {
-          accents.push({ primitive, materialId: "beam" });
-          spokeSpheres += 1;
-        }
-      }
-
+      // ── Composition provenance ─────────────────────────────────────────
       composition.tesseract_vertices = verts.length;
       composition.tesseract_edges = TESSERACT_EDGES.length;
-      composition.beam_spheres = beamSpheres;
-      composition.spoke_spheres = spokeSpheres;
-      composition.ring_nodes = ringNodes;
+      composition.beam_capsules = beamCapsules;
+      composition.beam_spheres = 0;
+      composition.spoke_capsules = spokeCapsules;
+      composition.ring_tori = ringTori;
+      composition.ring_capsules = ringCapsules;
+      composition.ring_nodes = 0;
       composition.emissive_cores = 1;
+      composition.beam_material = beamMaterial;
       composition.ring_material = ringMaterial;
+      composition.material_stack = "glass_tube_beam+chrome_joint+core_glow";
       composition.ring_material_note = useMetalRings
         ? "rough GGX silver (approximate reflective metal)"
         : "soft emissive cyan (draft-readable; not metal)";
+      composition.geometry_note =
+        "OrientedCapsule beams + Hypersphere vertex joints + capsule chord rings";
+      composition.postprocess =
+        "bloom (emissive beam bleed) + dark-studio (low-key ground + key/fill rim)";
       break;
     }
     case "mythic-tableau": {

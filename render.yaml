@@ -1,6 +1,13 @@
 # Render Blueprint — Genblaze media (hackathon App URL)
 # https://render.com/docs/blueprint-spec
 #
+# Canonical judge/demo deploy path:
+#   Use this repo-root blueprint when the service must include the bundled
+#   RT4D renderer, prompt-scene bridge, Engine3D still/sequence, and the
+#   shared build-time smoke gates proven by the local image rebuild.
+#   Keep mrs/apps/genblaze-media/render.yaml only for the smaller
+#   app-local NVIDIA-only path.
+#
 # Dashboard equivalent:
 #   Dockerfile Path: ./Dockerfile
 #   Root Directory: (empty — repo root)
@@ -60,6 +67,10 @@ services:
       # the fallback above stays armed for that case.
       - key: GENBLAZE_IMAGE_BACKEND
         value: rt4d
+      # Stills-only judge/demo default. Enable later only if the deployed key
+      # is ready for Cosmos and the public lane is intentionally widened.
+      - key: GENBLAZE_VIDEO_ENABLED
+        value: "0"
       # Free plan is a shared 0.1 CPU and the tracer is single-threaded.
       # tesseract-lattice (~540 objects) at 448×448 / 20 spp timed out at 180s
       # in production when these env vars were unsynced (code defaults). Pin a
@@ -84,6 +95,9 @@ services:
       - key: ENGINE3D_EXPAND_SCRIPT
         value: /app/engine3d-core/scripts/expand-world-document.mjs
       - key: PROMPT_SCENE_EXPAND_WORLD
+        value: "0"
+      # Render health checks must stay cheap: do not ListObjects on every probe.
+      - key: B2_PROBE_ON_HEALTH
         value: "0"
       # Digital Printer HTTP (/printer/*). Health: GET /printer/health
       - key: PRINTER_API_ENABLED

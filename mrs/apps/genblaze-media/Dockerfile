@@ -21,7 +21,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     GENBLAZE_CONNECT_TIMEOUT=30
 
 # System deps kept minimal; genblaze/boto3 are pure wheels on slim
-# genblaze-core 0.3.7 declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
+# genblaze-core 0.3.8 still declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
 COPY requirements-docker.txt .
 RUN pip install --upgrade pip \
  && pip install -r requirements-docker.txt \

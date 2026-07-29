@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/infinity-director/schemas/complexity-evidence.schema.json",
+  "title": "ComplexityEvidence (RenderAccelContract)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "kind",
+    "contractVersion",
+    "contract",
+    "id",
+    "createdAt",
+    "renderPlanId",
+    "accelerator",
+    "sceneGraphHash",
+    "work_model"
+  ],
+  "properties": {
+    "kind": { "const": "ComplexityEvidence" },
+    "contractVersion": { "type": "string" },
+    "contract": { "const": "RenderAccelContract" },
+    "id": { "type": "string" },
+    "createdAt": { "type": "string" },
+    "renderPlanId": { "type": "string" },
+    "accelerator": { "const": "ATCM" },
+    "sceneGraphHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "sceneGraphHash_note": { "type": "string" },
+    "prepass": {
+      "type": "object",
+      "properties": {
+        "used_image": { "type": "boolean" },
+        "prompt_cue": { "type": "number" },
+        "size": { "type": "integer" }
+      }
+    },
+    "mean_complexity": { "type": "number" },
+    "work_model": {
+      "type": "object",
+      "required": ["label"],
+      "properties": {
+        "label": { "const": "estimate_not_measured" }
+      }
+    },
+    "enforcement": { "enum": ["declared", "partial", "enforced"] },
+    "status": { "enum": ["declared", "partial", "skeleton"] }
+  }
+}

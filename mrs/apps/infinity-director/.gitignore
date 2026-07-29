@@ -1,0 +1,7 @@
+# Test artifacts — learning candidates appended during conformance runs
+data/idac-learning-candidates.jsonl
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -19,7 +19,7 @@ import { createDefaultEngine3DRules } from "../../src/governance/rules/defaultRu
 import { DefaultCIEMSOverlay } from "../../src/governance/CIEMSOverlay.js";
 import type { GovernanceRuleContext } from "../../src/governance/dsl/Rule.js";
 
-function makeHost(phaseTrace: EngineTickPhase[]) {
+function makeHost(phaseTrace: EngineTickPhase[], extra?: Partial<import("../../src/engine/EngineHost.js").DefaultEngineHostOptions>) {
   const clock: Clock = {
     get time() {
       return 0;
@@ -66,6 +66,7 @@ function makeHost(phaseTrace: EngineTickPhase[]) {
     renderer,
     replay,
     phaseTrace,
+    ...extra,
   });
   return { host, replay, forces };
 }
@@ -134,33 +135,28 @@ describe("constitutional", () => {
     assert.equal(mod.shaderParams["governanceCriticalCount"], 1);
   });
 
-  it(
-    "GPU allocation requires contract — deferred (no scheduler runtime)",
-    { skip: "GPU scheduler / GPUContract runtime not implemented (declared)" },
-    () => {
-      assert.fail("unreachable");
-    },
-  );
+  it("GPU allocation requires contract", () => {
+    const { host } = makeHost([]);
+    assert.throws(() => host.allocateGPU(null), /requires a contract/);
+    host.allocateGPU({ maxAllocations: 1, maxMemoryMb: 64 });
+    assert.ok(true, "valid contract does not throw");
+  });
 
-  it(
-    "Renderer rejects missing governance signals — deferred",
-    {
-      skip:
-        "NullHeadlessRenderer does not require governance signals (declared cluster rule)",
-    },
-    () => {
-      assert.fail("unreachable");
-    },
-  );
+  it("Renderer rejects missing governance signals", () => {
+    assert.throws(
+      () => {
+        makeHost([], { governanceSignals: [] }).host.engineTick();
+      },
+      /governance signals required/,
+    );
+  });
 
-  it(
-    "Mandala lattice requires governance signals — deferred",
-    {
-      skip:
-        "Visualizer service / lattice signal gate not implemented (declared)",
-    },
-    () => {
-      assert.fail("unreachable");
-    },
-  );
+  it("Mandala lattice requires governance signals", () => {
+    assert.throws(
+      () => {
+        makeHost([], { governanceSignals: [] }).host.engineTick();
+      },
+      /governance signals required/,
+    );
+  });
 });
