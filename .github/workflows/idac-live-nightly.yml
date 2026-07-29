@@ -1,0 +1,24 @@
+name: IDAC Live (optional)
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  idac-live-auto:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Infinity Director deps
+        run: pip install -e ".[dev]"
+        working-directory: mrs/apps/infinity-director
+      - name: Live Genblaze conformance (skip when services down)
+        env:
+          IDAC_LIVE_AUTO: "1"
+        run: python -m pytest -q tests/test_idac_live_conformance.py
+        working-directory: mrs/apps/infinity-director

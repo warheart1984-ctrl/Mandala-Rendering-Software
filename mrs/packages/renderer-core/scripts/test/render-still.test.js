@@ -303,16 +303,18 @@ test("tesseract-lattice archetype reports composition and stays above blank lumi
   assert.equal(provenance.scene, "tesseract-lattice");
   assert.equal(provenance.composition.tesseract_vertices, 16);
   assert.equal(provenance.composition.tesseract_edges, 32);
-  assert.ok(provenance.composition.beam_spheres >= 32);
-  assert.equal(provenance.composition.ring_nodes, 52 + 76);
-  // Bound the CPU cost: continuous rings add ~56 nodes (~541 total).
+  assert.equal(provenance.composition.beam_capsules, 32);
+  assert.equal(provenance.composition.ring_capsules, 48);
+  assert.equal(provenance.composition.ring_tori, 2);
+  // Bound the CPU cost: ~32 beam capsules + 48 ring capsules + 16 joints +
+  // 6 spokes + core ≈ 103 primitives, well under the 800 draft budget.
   assert.ok(
-    provenance.object_count <= 800,
-    `object_count ${provenance.object_count} exceeds the draft CPU budget`,
+    provenance.object_count <= 200,
+    `object_count ${provenance.object_count} should stay under 200 with capsule rings`,
   );
   assert.ok(
-    provenance.object_count >= 500,
-    `object_count ${provenance.object_count} unexpectedly low after continuous rings`,
+    provenance.object_count >= 80,
+    `object_count ${provenance.object_count} unexpectedly low after capsule rings`,
   );
   assert.equal(provenance.composition.emissive_cores, 1);
   // Draft sample counts use soft emissive rings, not black GGX silhouettes.

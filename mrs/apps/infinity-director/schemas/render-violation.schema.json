@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/infinity-director/schemas/render-violation.schema.json",
+  "title": "RenderViolation (RenderAccelContract Article VI)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "kind",
+    "contractVersion",
+    "contract",
+    "id",
+    "createdAt",
+    "article",
+    "code",
+    "message",
+    "no_non_constitutional_fallback"
+  ],
+  "properties": {
+    "kind": { "const": "RenderViolation" },
+    "contractVersion": { "type": "string" },
+    "contract": { "const": "RenderAccelContract" },
+    "id": { "type": "string" },
+    "createdAt": { "type": "string" },
+    "article": { "type": "string" },
+    "code": { "type": "string" },
+    "message": { "type": "string" },
+    "no_non_constitutional_fallback": { "const": true },
+    "enforcement": { "enum": ["declared", "partial", "enforced"] },
+    "details": { "type": "object" }
+  }
+}

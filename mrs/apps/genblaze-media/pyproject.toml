@@ -10,9 +10,9 @@ dependencies = [
   "python-dotenv==1.2.2",
   "pydantic==2.11.7",
   "httpx==0.28.1",
-  "genblaze-core==0.3.7",
+  "genblaze-core==0.3.8",
   "genblaze-s3==0.3.6",
-  "genblaze-nvidia==0.3.2",
+  "genblaze-nvidia==0.3.3",
   "boto3==1.39.14",
   "Pillow==12.3.0",
 ]

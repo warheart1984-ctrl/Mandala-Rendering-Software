@@ -64,7 +64,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # RENDER_REQUEST_API_ENABLED=0: Genblaze POST /api/render-request opt-in.
 # PRINTER_API_ENABLED=1: Digital Printer /printer HTTP live execute opt-in (deploy default).
 
-# genblaze-core 0.3.7 declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
+# genblaze-core 0.3.8 still declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
 COPY mrs/apps/genblaze-media/requirements-docker.txt .
 RUN pip install --upgrade pip \
  && pip install -r requirements-docker.txt \

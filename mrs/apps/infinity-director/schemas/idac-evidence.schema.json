@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/infinity-director/schemas/idac-evidence.schema.json",
+  "title": "EvidenceContract (CIEMS / IDAC)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "kind",
+    "contract_version",
+    "contract",
+    "id",
+    "created_at",
+    "intent_ref",
+    "plan_ref",
+    "execution_trace",
+    "artifacts",
+    "environment",
+    "outcome",
+    "enforcement"
+  ],
+  "properties": {
+    "kind": { "const": "EvidenceContract" },
+    "contract_version": { "type": "string", "pattern": "^0\\.1\\.0$" },
+    "contract": { "const": "IDAC" },
+    "id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string" },
+    "intent_ref": { "type": "string" },
+    "plan_ref": { "type": "string" },
+    "execution_trace": { "type": "object" },
+    "artifacts": { "type": "object" },
+    "environment": { "type": "object" },
+    "outcome": { "enum": ["ok", "violation", "dispatch_error", "declared_stub"] },
+    "invariants": { "type": "array", "items": { "type": "string" } },
+    "enforcement": { "enum": ["declared", "partial", "enforced"] },
+    "status": { "enum": ["declared", "partial", "skeleton"] },
+    "validation": { "type": "object" }
+  }
+}

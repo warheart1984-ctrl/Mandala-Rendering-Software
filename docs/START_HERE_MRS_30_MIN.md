@@ -54,7 +54,7 @@ Do **not** treat this as “world’s first” or unqualified “production-read
 
 ## 2. What can I do in the first 30 minutes?
 
-Requires **Node.js 20+**. From the repository root (`G:\New folder` or your clone path).
+Requires **Node.js 20+**. From the repository root (e.g. `G:\Mandala Rendering Software` or your clone path).
 
 ### Minute 0–10 — Web demo (highest signal)
 
@@ -120,7 +120,7 @@ On Windows, headless PNG needs native `canvas` + VS C++ Build Tools; the **brows
 ## 3. How is the repository organized?
 
 ```text
-G:\New folder\          (or your clone root)
+G:\Mandala Rendering Software\   (or your clone root)
 ├── README.md                 # Capability snapshot + quick start
 ├── constitution/             # Charter / evidence bound
 ├── examples/                 # Web demo, gallery, tutorials, scenes

@@ -11,6 +11,9 @@ import type { LiftedState4D } from "../substrate/LiftedState.js";
 import type { VisualMod } from "../substrate/VisualMod.js";
 import type { ReplayTimeline } from "../replay/ReplayTimeline.js";
 import type { ReplayRecordDraft } from "../replay/ReplayRecord.js";
+import type { GovernanceSignal } from "../governance/CIEMSOverlay.js";
+import type { GPUContract } from "../governance/GPUContract.js";
+import { validateGPUContract } from "../governance/GPUContract.js";
 import {
   createStructuralInvariants,
   TickInvariantState,
@@ -45,6 +48,13 @@ export interface DefaultEngineHostOptions {
   invariants?: Engine3DInvariant[];
   /** Optional phase trace — append-only; does not affect determinism of physics/render. */
   phaseTrace?: EngineTickPhase[];
+  /** Optional GPU contract gate. When set, <code>allocateGPU</code> validates against it. */
+  gpuContract?: GPUContract | null;
+  /**
+   * Optional governance signals. When set, the tick verifies signals are
+   * present before render. Pass an empty array to test the rejection path.
+   */
+  governanceSignals?: GovernanceSignal[];
 }
 
 /**
@@ -68,9 +78,28 @@ export class DefaultEngineHost implements EngineHost {
     return this.tickIndex;
   }
 
+  /**
+   * Validate GPU allocation against the configured GPUContract.
+   * Throws when no contract is provided or the contract is invalid.
+   */
+  allocateGPU(contract?: GPUContract | null): void {
+    const c = contract ?? this.opts.gpuContract ?? null;
+    const err = validateGPUContract(c);
+    if (err) throw new Error(err);
+  }
+
   engineTick(): void {
     this.enforceInvariantsAtTickStart();
     this.tickState.reset();
+
+    // 0. Governance gate — reject render when signals are required but empty
+    if (this.opts.governanceSignals !== undefined) {
+      if (this.opts.governanceSignals.length === 0) {
+        throw new Error(
+          "Renderer governance signals required but none provided",
+        );
+      }
+    }
 
     // 1. Gather
     this.notePhase("gather");

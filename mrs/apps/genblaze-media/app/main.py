@@ -53,6 +53,7 @@ from app.engine3d_still_provider import (
     Engine3dStillPathError,
     engine3d_still_availability,
     generate_engine3d_still,
+    generate_worlddocument_rt4d_still,
     resolve_engine3d_cli_path,
 )
 from app.proton_raster_provider import (
@@ -521,6 +522,21 @@ class PromptToSceneRequest(BaseModel):
     max_depth: int = Field(default=4, ge=1, le=12)
 
 
+class CropRegionModel(BaseModel):
+    """Pixel ROI on the full-frame canvas (top-left origin)."""
+
+    x: int = Field(ge=0)
+    y: int = Field(ge=0)
+    w: int = Field(ge=1, le=1024)
+    h: int = Field(ge=1, le=1024)
+
+
+def _crop_region_dict(region: CropRegionModel | None) -> dict[str, int] | None:
+    if region is None:
+        return None
+    return {"x": region.x, "y": region.y, "w": region.w, "h": region.h}
+
+
 class Engine3dStillRequest(BaseModel):
     """Engine3D structure still (+ optional RT4D composite + polish)."""
 
@@ -572,6 +588,29 @@ class Engine3dStillRequest(BaseModel):
         le=12,
         description="Path-trace max bounce depth (path_trace only)",
     )
+    crop_region: CropRegionModel | None = Field(
+        default=None,
+        description="Optional ROI: render full width×height canvas then crop (tile-faithful)",
+    )
+    tile_index: int | None = Field(
+        default=None,
+        ge=0,
+        description="Optional tile sequence index for staged IDAC evidence",
+    )
+
+
+class Engine3dTileStillRequest(BaseModel):
+    """Per-tile Engine3D still — requires crop_region on the frame canvas."""
+
+    world_path: str | None = Field(default=None, max_length=512)
+    human_glb: str | None = Field(default=None, max_length=512)
+    width: int = Field(default=256, ge=16, le=1024)
+    height: int = Field(default=256, ge=16, le=1024)
+    aov_depth: bool = Field(default=True)
+    aov_normal: bool = Field(default=True)
+    crop_region: CropRegionModel
+    tile_index: int | None = Field(default=None, ge=0)
+    path_trace: bool = Field(default=False)
 
 
 class ProtonRasterRequest(BaseModel):
@@ -1488,7 +1527,7 @@ def api_polish_still(body: PolishStillRequest, request: Request) -> dict:
 
 @app.post("/api/prompt-to-scene")
 def api_prompt_to_scene(body: PromptToSceneRequest) -> dict:
-    """Prompt → SceneSpecification + Engine3D world stub (out-of-process bridge).
+    """Prompt → SceneSpecification + gated Engine3D world (out-of-process bridge).
 
     Optional render=true path-traces the SceneSpecification via RT4D.
     Infinity narrative packages stay out-of-process (not imported under app/).
@@ -1593,25 +1632,54 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
     except Engine3dStillPathError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    try:
-        structure = generate_engine3d_still(
-            settings,
-            width=body.width,
-            height=body.height,
-            aov_depth=body.aov_depth,
-            aov_normal=body.aov_normal,
-            world_path=world_path,
-            human_glb=human_glb,
-            path_trace=bool(body.path_trace),
-            samples=body.samples,
-            max_depth=body.max_depth,
-        )
-    except Engine3dStillPathError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Engine3dStillError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if body.path_trace:
+        if not world_path:
+            raise HTTPException(
+                status_code=400,
+                detail="path_trace=true requires world_path (Engine3D WorldDocument JSON)",
+            )
+        if body.polish:
+            raise HTTPException(
+                status_code=400,
+                detail="polish=true is incompatible with path_trace structure stills",
+            )
+        samples = body.samples if body.samples is not None else 4
+        max_depth = body.max_depth if body.max_depth is not None else 4
+        crop = _crop_region_dict(body.crop_region)
+        try:
+            structure = generate_worlddocument_rt4d_still(
+                settings,
+                world_path=world_path,
+                width=body.width,
+                height=body.height,
+                samples=samples,
+                max_depth=max_depth,
+                crop_region=crop,
+            )
+        except Engine3dStillPathError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Engine3dStillError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+    else:
+        try:
+            structure = generate_engine3d_still(
+                settings,
+                width=body.width,
+                height=body.height,
+                aov_depth=body.aov_depth,
+                aov_normal=body.aov_normal,
+                world_path=world_path,
+                human_glb=human_glb,
+                crop_region=_crop_region_dict(body.crop_region),
+            )
+        except Engine3dStillPathError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Engine3dStillError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     structure_entry = structure.to_dict()
     structure_entry["modality"] = "image"
@@ -1783,6 +1851,30 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
         except Exception as exc:  # noqa: BLE001
             payload["polish_error"] = str(exc)
 
+    return payload
+
+
+@app.post("/api/engine3d-tile-still")
+def api_engine3d_tile_still(body: Engine3dTileStillRequest) -> dict:
+    """Per-tile ROI still — full canvas render + ``crop_region`` (W-TILE-FAITHFUL downstream)."""
+    still = Engine3dStillRequest(
+        world_path=body.world_path,
+        human_glb=body.human_glb,
+        width=body.width,
+        height=body.height,
+        aov_depth=body.aov_depth,
+        aov_normal=body.aov_normal,
+        polish=False,
+        path_trace=body.path_trace,
+        crop_region=body.crop_region,
+        tile_index=body.tile_index,
+    )
+    payload = api_engine3d_still(still)
+    payload["tile"] = {
+        "tile_index": body.tile_index,
+        "crop_region": _crop_region_dict(body.crop_region),
+        "endpoint": "/api/engine3d-tile-still",
+    }
     return payload
 
 

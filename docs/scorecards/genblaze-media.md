@@ -10,7 +10,7 @@
 | Field | Value |
 | --- | --- |
 | Project ID | `genblaze-media` |
-| Repository path | `G:\New folder\mrs\apps\genblaze-media` |
+| Repository path | `G:\Mandala Rendering Software\mrs\apps\genblaze-media` |
 | Review date | 2026-07-24 |
 | Reviewer | agent session (MRS v2 docs land) |
 

@@ -80,6 +80,20 @@ jobs:
         run: npm run test:engine3d
         working-directory: mrs/packages/engine3d-core
 
+  infinity-director:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Infinity Director deps
+        run: pip install -e ".[dev]"
+        working-directory: mrs/apps/infinity-director
+      - name: Pytest (IDAC route + charter gates; live tests skip unless env set)
+        run: python -m pytest -q
+        working-directory: mrs/apps/infinity-director
+
   release-check:
     runs-on: ubuntu-latest
     steps:
@@ -116,3 +130,14 @@ jobs:
         with:
           name: drift-radar
           path: drift-radar.json
+
+  webgpu-live-optional:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Optional WebGPU live (assist paths only; print SoT = cpu.rt4d.print)
+        run: npm run test:gpu-live

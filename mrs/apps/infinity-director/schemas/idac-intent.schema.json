@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/infinity-director/schemas/idac-intent.schema.json",
+  "title": "IntentContract (CIEMS / IDAC)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "kind",
+    "contract_version",
+    "contract",
+    "id",
+    "created_at",
+    "mission_ref",
+    "policy_ref",
+    "domain",
+    "goal",
+    "constraints",
+    "priority",
+    "risk_profile",
+    "enforcement"
+  ],
+  "properties": {
+    "kind": { "const": "IntentContract" },
+    "contract_version": { "type": "string", "pattern": "^0\\.1\\.0$" },
+    "contract": { "const": "IDAC" },
+    "id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string" },
+    "mission_ref": { "type": "string" },
+    "policy_ref": { "type": "string" },
+    "domain": { "enum": ["render", "ai", "compile"] },
+    "goal": {
+      "type": "object",
+      "required": ["statement", "justification"],
+      "properties": {
+        "statement": { "type": "string", "minLength": 1 },
+        "justification": { "type": "string", "minLength": 1 }
+      }
+    },
+    "constraints": { "type": "object" },
+    "priority": { "enum": ["low", "normal", "high", "critical"] },
+    "risk_profile": { "enum": ["conservative", "balanced", "aggressive"] },
+    "invariants": { "type": "array", "items": { "type": "string" } },
+    "enforcement": { "enum": ["declared", "partial", "enforced"] },
+    "status": { "enum": ["declared", "partial", "skeleton"] }
+  }
+}

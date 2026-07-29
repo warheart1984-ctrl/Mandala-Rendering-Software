@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/infinity-director/schemas/render-plan.schema.json",
+  "title": "Director RenderPlan (RenderAccelContract)",
+  "description": "ATCM tile plan bound to explicit router activation. Not CROS lineage RenderPlan.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "kind",
+    "contractVersion",
+    "contract",
+    "id",
+    "createdAt",
+    "accelerator",
+    "routerAuthority",
+    "activation",
+    "print_sot",
+    "frame",
+    "tile_count",
+    "work_model"
+  ],
+  "properties": {
+    "kind": { "const": "RenderPlan" },
+    "contractVersion": { "type": "string", "pattern": "^0\\.1\\.0$" },
+    "contract": { "const": "RenderAccelContract" },
+    "id": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string" },
+    "accelerator": { "const": "ATCM" },
+    "routerAuthority": { "const": "infinity-director" },
+    "activation": { "const": "explicit" },
+    "print_sot": { "const": false },
+    "enforcement": { "enum": ["declared", "partial", "enforced"] },
+    "execution_mode": {
+      "enum": ["full_frame_dispatch", "full_frame_with_tile_evidence"]
+    },
+    "tile_execution_evidence": {
+      "type": "object",
+      "description": "Staged tile sequence metadata when downstream tile API absent"
+    },
+    "frame": {
+      "type": "object",
+      "required": ["width", "height", "tile_size", "threshold"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "tile_size": { "type": "integer", "minimum": 8 },
+        "threshold": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "suggested_speed_profile": { "enum": ["fast", "beauty"] },
+    "tile_count": { "type": "integer", "minimum": 1 },
+    "tiles": { "type": "array" },
+    "work_model": {
+      "type": "object",
+      "required": ["label"],
+      "properties": {
+        "label": { "const": "estimate_not_measured" },
+        "estimated_speedup": { "type": "number", "minimum": 1 },
+        "estimated_work_ratio": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "status": { "enum": ["declared", "partial", "skeleton"] },
+    "math_strategies": {
+      "type": "object",
+      "description": "Optional declared acceleration metadata bound from ATCM C_i. Not per-tile Engine3D execution.",
+      "properties": {
+        "binding": { "const": "from_atcm_complexity" },
+        "execution": { "const": "metadata_only" },
+        "status": { "enum": ["declared", "partial"] },
+        "mean_complexity_C": { "type": "number", "minimum": 0, "maximum": 1 },
+        "adaptive_samples": {
+          "type": "object",
+          "properties": {
+            "strategy": { "const": "C_i_inverse" },
+            "suggested_global_spp": { "type": "integer", "minimum": 1 },
+            "per_tile_note": { "type": "string" }
+          }
+        },
+        "visibility_strategy": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "enum": [
+                "hierarchical_tiled_z_coarse_depth",
+                "bvh_reuse_rt4d",
+                "director_tile_grid_only"
+              ]
+            },
+            "director_today": { "type": "string" },
+            "evidence": { "type": "string" }
+          }
+        },
+        "brdf_strategy": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "enum": ["material_cluster_lut", "piecewise_cheap_tiles", "full_brdf_tiles"]
+            },
+            "cheap_tile_mode": { "enum": ["cheap", "full"] },
+            "director_today": { "type": "string" }
+          }
+        },
+        "upscale_strategy": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "enum": ["low_res_edge_aware_upscale", "tile_aware_post_fx", "none_full_res"]
+            },
+            "director_today": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

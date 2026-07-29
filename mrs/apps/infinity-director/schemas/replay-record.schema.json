@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/infinity-director/schemas/replay-record.schema.json",
+  "title": "ReplayRecord skeleton (RenderAccelContract / Director preview)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["kind", "contractVersion", "contract", "id", "createdAt", "verdict", "status"],
+  "properties": {
+    "kind": { "const": "ReplayRecord" },
+    "contractVersion": { "type": "string" },
+    "contract": { "const": "RenderAccelContract" },
+    "id": { "type": "string" },
+    "createdAt": { "type": "string" },
+    "renderPlanId": { "type": "string" },
+    "complexityEvidenceId": { "type": "string" },
+    "verdict": { "enum": ["unverified", "pass", "fail"] },
+    "replayClass": { "enum": ["declared", "bit-identical", "visual"] },
+    "enforcement": { "enum": ["declared", "partial", "enforced"] },
+    "status": { "enum": ["skeleton", "partial", "declared"] },
+    "tile_timings": {},
+    "tile_timings_note": { "type": "string" },
+    "dispatch": {
+      "type": "object",
+      "properties": {
+        "lane": { "type": "string" },
+        "engine": { "type": "string" },
+        "endpoint": { "type": "string" },
+        "run_id": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

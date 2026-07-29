@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "0.1.0",
+  "scope": "infinity-director-idac-local",
+  "source": "docs/IDAC_CONSTITUTION.md",
+  "note": "IDAC-local charter gate — not MRS engine/constitution CKL SoT",
+  "invariants": [
+    {
+      "id": "no_execution_without_intent",
+      "enforcement": "partial",
+      "requires": ["intent.id", "intent.mission_ref", "intent.policy_ref", "intent.goal.statement", "intent.goal.justification"]
+    },
+    {
+      "id": "no_optimization_without_constitutional_constraints",
+      "enforcement": "declared",
+      "requires": ["plan.optimizer.must_not_execute"]
+    },
+    {
+      "id": "no_execution_without_validated_plan",
+      "enforcement": "partial",
+      "requires": ["plan.plan_id", "plan.intent_ref", "plan.domain"]
+    },
+    {
+      "id": "no_result_without_replayable_evidence",
+      "enforcement": "partial",
+      "requires": ["evidence.intent_ref", "evidence.plan_ref"]
+    },
+    {
+      "id": "no_plan_deviation_without_violation",
+      "enforcement": "partial",
+      "requires": ["plan_frozen_dispatch_match"]
+    },
+    {
+      "id": "no_learning_without_validated_evidence",
+      "enforcement": "skeleton",
+      "requires": ["validation.verdict"]
+    }
+  ]
+}

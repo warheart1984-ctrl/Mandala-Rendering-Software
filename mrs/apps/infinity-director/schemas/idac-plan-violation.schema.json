@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/infinity-director/schemas/idac-plan-violation.schema.json",
+  "title": "PlanViolation (IDAC)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "kind",
+    "contract_version",
+    "contract",
+    "id",
+    "created_at",
+    "code",
+    "message",
+    "plan_ref",
+    "no_plan_mutation_without_replan"
+  ],
+  "properties": {
+    "kind": { "const": "PlanViolation" },
+    "contract_version": { "type": "string" },
+    "contract": { "const": "IDAC" },
+    "id": { "type": "string" },
+    "created_at": { "type": "string" },
+    "code": { "type": "string" },
+    "message": { "type": "string" },
+    "plan_ref": { "type": "string" },
+    "intent_ref": { "type": "string" },
+    "no_plan_mutation_without_replan": { "const": true },
+    "no_non_constitutional_fallback": { "const": true },
+    "enforcement": { "enum": ["declared", "partial", "enforced"] },
+    "details": { "type": "object" }
+  }
+}
