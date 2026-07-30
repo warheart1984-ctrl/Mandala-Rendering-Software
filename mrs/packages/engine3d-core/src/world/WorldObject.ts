@@ -1,4 +1,73 @@
 export type WorldObjectKind = "primitive" | "mesh" | "rig" | "light" | "camera" | "group";
+
+/**
+ * Constitutional object type for world-profile → CKL (partial).
+ * Maps to policy IDs world.terrain | world.architecture | world.water |
+ * world.plant | world.synthetic | world.biogeometric.
+ */
+export type WorldObjectType =
+  | "human"
+  | "terrain"
+  | "architecture"
+  | "water"
+  | "plant"
+  | "synthetic"
+  | "biogeometric"
+  | "prop"
+  | "material"
+  | "unknown";
+
+export interface WorldEntityParentContext {
+  readonly objectId?: string;
+  readonly scaleClass?: string;
+  readonly objectType?: WorldObjectType | string;
+}
+
+export interface WorldEntityWorldContext {
+  readonly worldId?: string;
+  readonly worldProfileId?: string;
+  readonly worldScaleClass?: string;
+  readonly biomeTag?: string;
+}
+
+export interface WorldEntityTerrainContext {
+  readonly profileId?: string;
+  readonly worldScaleClass?: string;
+  readonly landmarkMeters?: number;
+}
+
+export interface WorldEntityArchitecturalContext {
+  readonly profileId?: string;
+  readonly worldScaleClass?: string;
+  readonly moduleScale?: number;
+}
+
+export interface WorldEntityMaterialContext {
+  readonly materialId?: string;
+  readonly profileId?: string;
+  readonly worldScaleClass?: string;
+  readonly roughnessProxy?: number;
+}
+
+/**
+ * Enough context for Amendment VII/VIII Apply / CKL world-profile gates.
+ * Status: **partial**
+ */
+export interface WorldEntityContext {
+  /** Preferred: object type for world.* policy mapping */
+  readonly objectType?: WorldObjectType | string;
+  /** Alias: object.type */
+  readonly type?: WorldObjectType | string;
+  readonly worldProfileId?: string;
+  readonly scaleClass?: string;
+  readonly worldContext?: WorldEntityWorldContext;
+  readonly parentContext?: WorldEntityParentContext;
+  readonly terrainContext?: WorldEntityTerrainContext;
+  readonly architecturalContext?: WorldEntityArchitecturalContext;
+  readonly architectureContext?: WorldEntityArchitecturalContext;
+  readonly materialContext?: WorldEntityMaterialContext;
+}
+
 export type PrimitiveType = "sphere" | "box" | "plane" | "cylinder" | "torus" | "capsule" | "cone" | "pyramid" | "icosphere" | "superquadric";
 export type MaterialType =
   | "basic"
@@ -188,6 +257,8 @@ export interface WorldObject {
   readonly children: readonly WorldObject[];
   readonly light?: LightParams;
   readonly camera?: CameraParams;
+  /** World-profile → CKL context (object type, parent/world/terrain/arch). Status: partial. */
+  readonly entityContext?: WorldEntityContext;
 }
 
 export interface Engine3DWorldDocument {
@@ -204,6 +275,88 @@ export interface Engine3DWorldDocument {
   readonly lights: readonly WorldObject[];
   readonly cameras: readonly WorldObject[];
   readonly activeCameraId: string;
+  /** Document-level world-profile context for ecological inheritance / CKL. Status: partial. */
+  readonly worldContext?: WorldEntityWorldContext;
+}
+
+/** Map entityContext.objectType → CKL world.* policy id. */
+export function worldProfileIdForObjectType(
+  objectType: WorldObjectType | string | undefined | null,
+): string | null {
+  const t = String(objectType ?? "")
+    .trim()
+    .toLowerCase();
+  const map: Record<string, string> = {
+    biogeometric: "world.biogeometric",
+    terrain: "world.terrain",
+    geological: "world.terrain",
+    architecture: "world.architecture",
+    architectural: "world.architecture",
+    building: "world.architecture",
+    water: "world.water",
+    fluid: "world.water",
+    plant: "world.plant",
+    flora: "world.plant",
+    biological: "world.plant",
+    tree: "world.plant",
+    synthetic: "world.synthetic",
+    prop: "world.synthetic",
+    material: "world.material",
+  };
+  return map[t] ?? null;
+}
+
+/** Flatten a WorldObject (+ optional parent/doc) into CKL world-entity evidence shape. */
+export function toWorldEntityForCkl(
+  obj: WorldObject,
+  args?: {
+    readonly parent?: WorldObject | null;
+    readonly worldDoc?: Engine3DWorldDocument | null;
+  },
+): {
+  id: string;
+  objectType?: string;
+  type?: string;
+  worldProfileId?: string | null;
+  scaleClass?: string | null;
+  worldContext?: WorldEntityWorldContext;
+  parentContext?: WorldEntityParentContext;
+  terrainContext?: WorldEntityTerrainContext;
+  architecturalContext?: WorldEntityArchitecturalContext;
+  architectureContext?: WorldEntityArchitecturalContext;
+  materialContext?: WorldEntityMaterialContext;
+} {
+  const ec = obj.entityContext;
+  const parentEc = args?.parent?.entityContext;
+  const docCtx = args?.worldDoc?.worldContext;
+  const objectType = ec?.objectType ?? ec?.type;
+  const worldProfileId =
+    ec?.worldProfileId ??
+    worldProfileIdForObjectType(objectType) ??
+    docCtx?.worldProfileId ??
+    null;
+  const arch = ec?.architectureContext ?? ec?.architecturalContext;
+  return {
+    id: obj.id,
+    objectType: objectType ? String(objectType) : undefined,
+    type: objectType ? String(objectType) : undefined,
+    worldProfileId,
+    scaleClass: ec?.scaleClass ?? null,
+    worldContext: ec?.worldContext ?? docCtx,
+    parentContext:
+      ec?.parentContext ??
+      (parentEc
+        ? {
+            objectId: args?.parent?.id,
+            scaleClass: parentEc.scaleClass,
+            objectType: parentEc.objectType ?? parentEc.type,
+          }
+        : undefined),
+    terrainContext: ec?.terrainContext,
+    architecturalContext: arch,
+    architectureContext: arch,
+    materialContext: ec?.materialContext,
+  };
 }
 
 export const DEFAULT_TRANSFORM: Transform = Object.freeze({

@@ -4,6 +4,18 @@
 |------|------|--------|
 | `HumanFaceNeutral.glb` | Neutral face mesh | **Fixture** in-repo (low tris) |
 | `HumanFaceRigged.glb` | Bones + blendshapes | **Fixture** in-repo |
+| `biometric-profiles.json` | Lawful proportion / scale-class ranges | **partial** |
+| `schemas/biometric-profile.schema.json` | JSON Schema for profiles | **partial** |
+
+## Biometric profiles (Gap-3 patch)
+
+Profiles declare limb-ratio, curvature, and mass-distribution **ranges** plus
+scale classes (`human-sized`, `canine-scale`, `toy-scale`, …). Engine3D loads
+them via `loadBiometricCatalog()` / `inheritMetricsFromContext()`.
+
+Drive-G-1: this is **not** full constitutional biometric enforcement and not
+PKI. Face-only fixtures cannot supply true limb metrics — validators skip or
+explicitly report `limb-metrics-unavailable`.
 
 ## Operator override (preferred)
 

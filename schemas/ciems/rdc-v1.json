@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereign-x.org/ciems/rdc-v1.json",
+  "title": "ReplayDeterminismContract",
+  "description": "RDC v1.0 (CPE-RDC). Lean contract; also embedded as PEP.replayDeterminismRecord. Status: declared.",
+  "type": "object",
+  "$defs": {
+    "replayDeterminismRecord": {
+      "type": "object",
+      "required": ["seed", "resolution", "samples", "deterministicHash"],
+      "properties": {
+        "seed": { "type": ["integer", "number"] },
+        "resolution": { "type": "string" },
+        "samples": { "type": ["integer", "number"] },
+        "device": { "type": ["string", "null"] },
+        "executionParameters": {
+          "type": ["object", "null"],
+          "additionalProperties": true
+        },
+        "deterministicHash": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {
+      "type": "object",
+      "required": ["@context", "artifact", "version"],
+      "properties": {
+        "@context": { "const": "https://sovereign-x.org/ciems/rdc-v1" },
+        "artifact": { "const": "ReplayDeterminismContract" },
+        "version": { "const": "1.0" }
+      }
+    },
+    { "$ref": "#/$defs/replayDeterminismRecord" }
+  ]
+}

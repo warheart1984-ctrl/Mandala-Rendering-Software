@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "CES.Mandala.Render.v1",
+  "title": "CES.Mandala.Render.v1 — Rendering Evidence",
+  "description": "Declared stub. Not runtime-validated by Continuity Ledger v1.",
+  "type": "object",
+  "required": [
+    "ces_id",
+    "render_id",
+    "intent_id",
+    "asset_hash",
+    "created_at",
+    "status"
+  ],
+  "properties": {
+    "ces_id": { "const": "CES.Mandala.Render.v1" },
+    "render_id": { "type": "string" },
+    "intent_id": { "type": "string" },
+    "world_id": { "type": "string" },
+    "timeline_id": { "type": "string" },
+    "asset_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["draft", "verified", "archived"] },
+    "parameters_hash": { "type": "string" },
+    "governance_trace_id": { "type": "string" },
+    "signature": { "type": "string" }
+  },
+  "additionalProperties": true
+}

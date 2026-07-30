@@ -1,0 +1,18 @@
+{
+  "id": "world.water",
+  "policyId": "world.water",
+  "label": "Water / fluid",
+  "domain": "water",
+  "status": "partial",
+  "worldScaleClass": "human-sized",
+  "referenceLandmarkMeters": 1.0,
+  "minEnvironmentalVariance": 0.003,
+  "biomeTag": "hydric",
+  "exampleSubjects": ["water", "pond", "stream", "fog"],
+  "metricFamilies": ["featureScale", "varianceFloor", "opticalDepthProxy"],
+  "ranges": {
+    "featureScale": { "min": 0.01, "max": 100 },
+    "opticalDepthProxy": { "min": 0, "max": 1 }
+  },
+  "notes": "Minimal water catalog stub for CKL world.water — partial."
+}

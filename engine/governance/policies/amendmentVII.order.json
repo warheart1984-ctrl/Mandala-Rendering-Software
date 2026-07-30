@@ -1,0 +1,22 @@
+/**
+ * Amendment VII policy order (short aliases) — matches user patch.
+ * Concrete policy rows live in default.policies.json with matching `order` / `alias`.
+ */
+{
+  "amendmentVII": {
+    "order": [
+      "biometric",
+      "adaptiveScale",
+      "organicVariance",
+      "world.biogeometric",
+      "world.scaleContext",
+      "world.architecture",
+      "world.terrain",
+      "world.water",
+      "world.plant",
+      "world.synthetic",
+      "world.material",
+      "world.variance"
+    ]
+  }
+}

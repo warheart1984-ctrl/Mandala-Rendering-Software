@@ -1,0 +1,9 @@
+{
+  "content": "Continuity Ledger is the shared SoT for agent decisions; conversations are transient.",
+  "content_sha256": "f6057c4355b6d0d80322c3c9fe4cc8a798cdf6a5cd32c925ef1a717f7b8c758f",
+  "source_agent": "fixture-baseline",
+  "session_id": "day-0-baseline",
+  "type": "decision",
+  "subject": "continuity-ledger-sot",
+  "note": "Do not edit content without updating content_sha256. Used by Drift acceptance test."
+}

@@ -67,6 +67,7 @@ namespace GovernedEngine.Conformance
                 ["ckl.deny-without-intent"] = ProbeCklDenyWithoutIntent,
                 ["ckl.modify-param"] = ProbeCklModifyParam,
                 ["ckl.attach-provenance"] = ProbeCklAttachProvenance,
+                ["csr.governance-trace"] = ProbeCsrGovernanceTrace,
             };
         }
 
@@ -350,6 +351,13 @@ namespace GovernedEngine.Conformance
         {
             var result = DecisionEngine.Resolve(MakeIntent(), MakeEvidence(new[] { "ev-001" }), _policySet);
             return (result.AttachProvenance, null);
+        }
+
+        (bool, string) ProbeCsrGovernanceTrace()
+        {
+            var result = DecisionEngine.Resolve(MakeIntent(), MakeEvidence(new[] { "ev-001" }), _policySet);
+            var ok = result.Ok && result.AttachProvenance;
+            return (ok, ok ? null : "CSR governance trace gate did not allow provenance");
         }
 
         sealed class ReplayCaptureTarget : IReplayTarget

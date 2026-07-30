@@ -1,0 +1,23 @@
+id: pattern.near-round-multiplication
+name: Near-round multiplication
+cko_refs:
+  - CKO-MATH-0003
+ime_layers:
+  - 01-numerical
+  - 03-pattern
+  - 06-approximation
+  - 07-self-explanation
+form: "a * (b - 1) = a * b - a"
+intuition: "Use easy numbers, then adjust."
+template:
+  estimate: "Choose nearby round b' (often b+1 or b-1)."
+  adjust: "Correct by adding or subtracting one group of a."
+  compute: "Finish the arithmetic on the easy product."
+  explain: "Name the pattern and why the correction matches the form."
+worked_example:
+  problem: "17 × 19"
+  approximation: "17 × 20 ≈ 340"
+  structural_adjustment: "19 is 20 − 1, so subtract one group of 17."
+  computation: "340 − 17 = 323"
+  explanation: "We used a nearby round number (20), then corrected by subtracting one group of 17."
+status: declared

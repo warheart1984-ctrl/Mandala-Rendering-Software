@@ -1,0 +1,35 @@
+id: aiki:cko/CKO-MATH-0005
+cko_id: CKO-MATH-0005
+series: Math Intuition
+title: "Reasoning loop (predict–solve–check–explain)"
+slug: reasoning-loop
+tags: [ime, self-explanation, verification]
+evergreen: true
+difficulty: beginner
+pedagogy:
+  learning_objectives:
+    - "Run predict → solve → check → explain on every problem."
+    - "Produce a plain-language story of why the steps are valid."
+  key_questions:
+    - "What did I expect, what did I get, and why do they match?"
+  narrative_arc:
+    hook: "The answer is incomplete without the story."
+    sections:
+      - id: predict
+        label: "Predict"
+      - id: solve
+        label: "Solve"
+      - id: check
+        label: "Check"
+      - id: explain
+        label: "Explain"
+formats:
+  primary: [youtube-video, ai-tutor-dialogue]
+ime_layers:
+  - 06-approximation
+  - 07-self-explanation
+pattern_refs: []
+status:
+  lifecycle: draft
+  owner: Dar-z
+  last_updated: "2026-07-29"

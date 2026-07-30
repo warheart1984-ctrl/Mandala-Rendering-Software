@@ -32,8 +32,9 @@ function printHelp() {
   console.log("  inspect-flux-image        Show FLUX lookdev-from-image wiring");
   console.log("  inspect-nim               NIM capability charter summary");
   console.log("  inspect-nim.flux.stills   Per-capability NIM stills detail");
+  console.log("  inspect-legacy-efficient  R9 380 / 3-Layer Path AMD route");
   console.log("  help                      Show this help");
-  console.log("STATUS: declared/skeleton — no live GPU probe.");
+  console.log("STATUS: declared/skeleton — no live GPU probe (except legacy CLI).");
 }
 
 function main() {
@@ -138,6 +139,18 @@ function main() {
     console.log("Output: assist-only images + SceneSpec hints.");
     console.log("Print: barred from print SoT and evidence chain as beauty.");
     console.log("BYOK: sessionStorage; see docs/genblaze/security/byok-security-charter.md");
+    return;
+  }
+
+  if (command === "inspect-legacy-efficient") {
+    console.log("Capability: gpu.compute.amd.legacy_efficient");
+    console.log("Vendor: amd (legacy GCN / R9 380 first-class when host detects)");
+    console.log("Status: partial — sparse tile schedule + intent gate; no live kernel");
+    console.log("Layers: L1 sparse (partial), L2 bytes/FLOP (declared), L3 intent (partial)");
+    console.log("CLI: npm run sx:legacy-efficient -- --intent <id>");
+    console.log("Doc: docs/4d-engine/PHOTOREAL_ON_R9_380.md");
+    console.log("Ban: never print SoT (cpu.rt4d.print remains authoritative)");
+    console.log("Honesty: does not claim Total FLOPs/Time > RTX 4090");
     return;
   }
 

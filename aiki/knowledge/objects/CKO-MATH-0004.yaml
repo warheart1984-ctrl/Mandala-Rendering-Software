@@ -1,0 +1,30 @@
+id: aiki:cko/CKO-MATH-0004
+cko_id: CKO-MATH-0004
+series: Math Intuition
+title: "Fractions as multiple representations"
+slug: fractions-multiple-representations
+tags: [ime, fractions, representations]
+evergreen: true
+difficulty: beginner
+pedagogy:
+  learning_objectives:
+    - "Move fluently among fractions, ratios, division, percentages, and probabilities."
+    - "Choose the representation that makes the next step obvious."
+  key_questions:
+    - "Which view of this quantity unlocks the simplest next move?"
+  narrative_arc:
+    hook: "A fraction is not one object—it is a cluster of views."
+    sections:
+      - id: views
+        label: "Representation graph"
+      - id: switch
+        label: "When to switch views"
+formats:
+  primary: [youtube-video, ai-tutor-dialogue]
+ime_layers:
+  - 05-representations
+pattern_refs: []
+status:
+  lifecycle: draft
+  owner: Dar-z
+  last_updated: "2026-07-29"

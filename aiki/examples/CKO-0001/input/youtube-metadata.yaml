@@ -1,0 +1,43 @@
+cko_id: CKO-0001
+status: skeleton
+youtube:
+  title: "LLM Evaluation Basics: How to Really Evaluate AI Models"
+  description: |
+    Everyone says their model is better—how do we actually know?
+
+    In this Research Decoded episode we cover LLM evaluation basics:
+    - Why evaluation is hard
+    - Intrinsic vs extrinsic metrics
+    - Where leaderboards and demos mislead
+    - A practical checklist for real projects
+
+    This episode is anchored by Canonical Knowledge Object CKO-0001 in the AIKI repo.
+
+    #AI #LLM #Evaluation #Benchmarks #MachineLearning
+  tags:
+    - AI
+    - LLM
+    - Evaluation
+    - Benchmarks
+    - Machine Learning
+    - Research Decoded
+  playlist: Research Decoded
+  category: Education
+  visibility_on_publish: public
+  thumbnail_ref: content/assets/graphics/CKO-0001/thumbnail.png
+  chapters:
+    - { start: "0:00", title: "Hook" }
+    - { start: "0:20", title: "Why evaluation matters" }
+    - { start: "2:00", title: "Intrinsic vs extrinsic" }
+    - { start: "6:00", title: "Where evals fail" }
+    - { start: "9:00", title: "Project checklist" }
+    - { start: "11:00", title: "Takeaway + CTA" }
+publish_gate:
+  requires:
+    - "CKO lifecycle ready-for-script or later"
+    - "script approved"
+    - "visual plan reviewed"
+  after_publish:
+    - "write archive/published/CKO-0001 hashes"
+    - "copy finals into examples/CKO-0001/output/"
+    - "set CKO status.published only when live URL recorded"

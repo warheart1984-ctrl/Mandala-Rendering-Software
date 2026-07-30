@@ -1,0 +1,18 @@
+{
+  "id": "world.plant",
+  "policyId": "world.plant",
+  "label": "Plant / flora",
+  "domain": "plant",
+  "status": "partial",
+  "worldScaleClass": "human-sized",
+  "referenceLandmarkMeters": 2.5,
+  "minEnvironmentalVariance": 0.002,
+  "biomeTag": "temperate-deciduous",
+  "exampleSubjects": ["trees", "understory", "foliage", "canopy"],
+  "metricFamilies": ["branchRatios", "canopyCurvature", "massDistribution"],
+  "ranges": {
+    "canopyCurvature": { "min": 0.05, "max": 2.0 },
+    "branchRatio": { "min": 0.05, "max": 0.8 }
+  },
+  "notes": "Minimal plant catalog stub for CKL world.plant — partial."
+}

@@ -6,6 +6,7 @@ import { Badge } from "./ui";
 import {
   getOpenAi,
   readToolOutput,
+  subscribeToToolOutput,
   type InspectResult,
   type ToolOutputPayload,
 } from "./types";
@@ -45,10 +46,7 @@ export default function App() {
   const inHost = Boolean(getOpenAi());
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      setPayload(readToolOutput());
-    }, 500);
-    return () => window.clearInterval(id);
+    return subscribeToToolOutput(setPayload);
   }, []);
 
   const scene = useMemo(() => extractScene(payload) ?? DEMO_SCENE, [payload]);

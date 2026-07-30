@@ -26,6 +26,7 @@ import {
   neutralFacePose,
   resolveHumanFacePath,
   defaultFaceRiggedGlbPath,
+  applyAmendmentVIIToMeshes,
 } from "../face/index.js";
 import type { World3D } from "../world/World3D.js";
 import { DEFAULT_BRIDGE_CAMERA } from "./Engine3DSceneBridge.js";
@@ -106,6 +107,15 @@ export interface Engine3dStillRequest {
   aov?: { depth?: boolean; normal?: boolean };
   /** Prefer face fixture when true and humanGlb omitted (default true). */
   preferFaceFixture?: boolean;
+  /**
+   * Apply Amendment VII soft gates (biometric scale + organic asymmetry).
+   * Soft mode: corrects toward lawful look; does not over-halt cinematic path.
+   */
+  amendmentVII?: boolean | {
+    scaleClassOrProfileId?: string;
+    mode?: "soft" | "strict";
+    bakeScale?: boolean;
+  };
   meshes?: RasterMesh[];
   runId?: string;
 }
@@ -244,9 +254,27 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
     id: req.cameraId ?? req.camera?.id ?? "cam0",
   });
   const resolved = resolveMeshes(req);
+  let meshes = resolved.meshes;
+  let amendmentNote = "";
+  if (req.amendmentVII) {
+    const opts =
+      typeof req.amendmentVII === "object" ? req.amendmentVII : {};
+    const applied = applyAmendmentVIIToMeshes({
+      meshes,
+      scaleClassOrProfileId: opts.scaleClassOrProfileId ?? "human-sized",
+      mode: opts.mode ?? "soft",
+      bakeScale: opts.bakeScale !== false,
+    });
+    meshes = applied.meshes;
+    amendmentNote =
+      ` Amendment VII soft gates: scale=${applied.uniformScale.toFixed(3)}` +
+      ` organic=${applied.asymmetryApplied ? "nudged" : "ok"}` +
+      (applied.haltCode ? ` halt=${applied.haltCode}` : "") +
+      ".";
+  }
   const rasterReq: RasterStillRequest = {
     camera,
-    meshes: resolved.meshes,
+    meshes,
     aov: {
       depth: req.aov?.depth !== false,
       normal: req.aov?.normal !== false,
@@ -288,7 +316,8 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
       "NOT photoreal skin; NOT RT4D sphere-bridge. Polish separately via Genblaze." +
       (resolved.faceRig
         ? ` Face rig present (asset=${resolved.faceAsset}).`
-        : " Demo sphere-head (not a governed face mesh)."),
+        : " Demo sphere-head (not a governed face mesh).") +
+      amendmentNote,
   };
 
   return {

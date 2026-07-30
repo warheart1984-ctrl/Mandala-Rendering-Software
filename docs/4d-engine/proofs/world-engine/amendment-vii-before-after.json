@@ -1,0 +1,78 @@
+{
+  "kind": "amendment-vii-before-after-still",
+  "status": "partial",
+  "priorityFreeze": "World-profile / biogeometric expansion frozen — Amendment VII three gates on render path first",
+  "asset": "G:\\Mandala Rendering Software\\mrs\\assets\\human\\HumanFaceRigged.glb",
+  "faceAsset": "fixture",
+  "before": {
+    "tag": "before",
+    "proofsPath": "G:\\Mandala Rendering Software\\docs\\4d-engine\\proofs\\world-engine\\amendment-vii-before.png",
+    "bookPath": "G:\\Mandala Rendering Software\\tmp\\book-movie-ch1\\amendment-vii-before-after\\amendment-vii-before.png",
+    "bytes": 50599,
+    "characterScale": 0.4,
+    "gateReport": {
+      "amendmentVII": false,
+      "note": "Ad-hoc character scale 0.4; symmetric fixture positions untouched"
+    }
+  },
+  "after": {
+    "tag": "after",
+    "proofsPath": "G:\\Mandala Rendering Software\\docs\\4d-engine\\proofs\\world-engine\\amendment-vii-after.png",
+    "bookPath": "G:\\Mandala Rendering Software\\tmp\\book-movie-ch1\\amendment-vii-before-after\\amendment-vii-after.png",
+    "bytes": 44180,
+    "characterScale": 0.20090909199773774,
+    "gateReport": {
+      "amendmentVII": true,
+      "mode": "soft",
+      "uniformScale": 0.20090909199773774,
+      "targetHeadHeightMeters": 0.221,
+      "measuredAabbHeight": 1.0999999940395355,
+      "organicVarianceBefore": 0.5494920344774044,
+      "organicVarianceAfter": 0.5496894344678741,
+      "asymmetryApplied": true,
+      "gates": {
+        "biometric": "applied",
+        "adaptiveScale": "applied",
+        "organicVariance": "applied"
+      },
+      "notes": [
+        "ckl-policies: policy-biometric-conformance → policy-adaptive-scale → policy-organic-variance",
+        "scale = defaultUniformScale(1)",
+        "biometric scale: aabbH=1.100 → targetHead=0.221 uniformScale=0.2009",
+        "organic asymmetry on human:face: var 0.5495→0.5497",
+        "EI=EI-ORGANIC-VARIANCE; mode=soft; ckl-wired"
+      ],
+      "issues": [],
+      "ckl": {
+        "source": "engine/governance/biometric/amendmentVII.js",
+        "policies": [
+          "policy-biometric-conformance",
+          "policy-adaptive-scale",
+          "policy-organic-variance"
+        ],
+        "policyManifestSource": "G:\\Mandala Rendering Software\\engine\\governance\\policies\\default.policies.json"
+      }
+    }
+  },
+  "delta": {
+    "characterScaleBefore": 0.4,
+    "characterScaleAfter": 0.20090909199773774,
+    "organicAsymmetryApplied": true,
+    "scaleRatio": 0.5022727299943444
+  },
+  "deltaVsPrior": {
+    "uniformScaleUnchanged": true,
+    "priorUniformScale": 0.20090909199773774,
+    "newUniformScale": 0.20090909199773774,
+    "priorOrganicAfter": 0.5496894344678741,
+    "newOrganicAfter": 0.5496894344678741,
+    "priorNotesHadCklWired": false,
+    "newNotesHadCklWired": true,
+    "cklSource": "engine/governance/biometric/amendmentVII.js",
+    "note": "Scale/organic numeric targets held vs prior soft apply; gate authority now CKL-wired"
+  },
+  "antiOverclaim": "Soft-raster stills only. Not photoreal. Not a constitutional world engine. World Profiles remain declared. Soft-gate deny authority is CKL Amendment VII (partial wiring).",
+  "worldEngineVerdict": "does_not_work_yet_as_world_engine",
+  "amendmentVIIRenderPath": "partial",
+  "cklWiring": "partial"
+}

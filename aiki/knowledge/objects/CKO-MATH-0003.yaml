@@ -1,0 +1,36 @@
+id: aiki:cko/CKO-MATH-0003
+cko_id: CKO-MATH-0003
+series: Math Intuition
+title: "Near-round multiplication pattern"
+slug: near-round-multiplication
+tags: [ime, patterns, multiplication]
+evergreen: true
+difficulty: beginner
+pedagogy:
+  learning_objectives:
+    - "Rewrite a×(b−1) as a×b − a using a nearby round number."
+    - "Explain the adjustment as removing one group."
+  key_questions:
+    - "What round number is one step away, and what correction does that force?"
+  narrative_arc:
+    hook: "17×19 doesn't need long multiplication if you know 17×20."
+    sections:
+      - id: approximate
+        label: "Near-round estimate"
+      - id: adjust
+        label: "Structural correction"
+      - id: explain
+        label: "Why the pattern holds"
+formats:
+  primary: [youtube-video, ai-tutor-dialogue]
+ime_layers:
+  - 01-numerical
+  - 03-pattern
+  - 06-approximation
+  - 07-self-explanation
+pattern_refs:
+  - math/patterns/near-round-multiplication.yaml
+status:
+  lifecycle: draft
+  owner: Dar-z
+  last_updated: "2026-07-29"

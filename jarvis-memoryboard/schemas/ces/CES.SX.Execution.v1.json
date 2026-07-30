@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "CES.SX.Execution.v1",
+  "title": "CES.SX.Execution.v1 — Execution Record",
+  "description": "Declared stub. Not runtime-validated by Continuity Ledger v1.",
+  "type": "object",
+  "required": [
+    "ces_id",
+    "execution_id",
+    "decision_ref",
+    "started_at",
+    "result_hash",
+    "status"
+  ],
+  "properties": {
+    "ces_id": { "const": "CES.SX.Execution.v1" },
+    "execution_id": { "type": "string" },
+    "decision_ref": { "type": "string" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": "string", "format": "date-time" },
+    "result_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["pending", "succeeded", "failed", "archived"] },
+    "runtime_refs": { "type": "array", "items": { "type": "string" } },
+    "authority_id": { "type": "string" },
+    "signature": { "type": "string" }
+  },
+  "additionalProperties": true
+}

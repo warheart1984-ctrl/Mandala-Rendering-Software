@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "biometric-profile/1.0",
+  "status": "partial",
+  "notes": "Lawful proportion ranges for Engine3D fixtures / box sets. Catalog + AABB proxies remain partial. CKL Amendment VII gates (policy-biometric-conformance / adaptive-scale / organic-variance) are enforced when evidence.biometricAmendment is present.",
+  "profiles": [
+    {
+      "id": "human-adult-v1",
+      "label": "Adult human (fixture / soft-raster)",
+      "scaleClass": "human-sized",
+      "referenceHeightMeters": 1.7,
+      "defaultUniformScale": 1.0,
+      "limbRatios": {
+        "armToHeight": { "min": 0.3, "max": 0.48, "unit": "ratio", "note": "shoulder–wrist proxy" },
+        "legToHeight": { "min": 0.4, "max": 0.55, "unit": "ratio" },
+        "torsoToHeight": { "min": 0.28, "max": 0.4, "unit": "ratio" },
+        "headToHeight": { "min": 0.1, "max": 0.16, "unit": "ratio" },
+        "interocularToHeadWidth": { "min": 0.28, "max": 0.42, "unit": "ratio", "note": "face AABB proxy when eyes unknown" }
+      },
+      "curvature": {
+        "maxAsymmetry": { "min": 0, "max": 0.08, "unit": "ratio", "note": "L/R width delta / total width" },
+        "minOrganicVariance": { "min": 0.002, "max": 1, "unit": "ratio", "note": "do not force perfect mirror" },
+        "surfaceCurvatureProxy": { "min": 0.35, "max": 1.2, "unit": "ratio", "note": "depth/width" }
+      },
+      "massDistribution": {
+        "centerOfMassHeightFraction": { "min": 0.45, "max": 0.62, "unit": "ratio" },
+        "shoulderToHipWidth": { "min": 0.85, "max": 1.45, "unit": "ratio" },
+        "chestDepthToWidth": { "min": 0.35, "max": 0.75, "unit": "ratio" }
+      },
+      "tags": ["human", "fixture", "engine3d"]
+    },
+    {
+      "id": "canine-medium-v1",
+      "label": "Medium canine scale",
+      "scaleClass": "canine-scale",
+      "referenceHeightMeters": 0.55,
+      "defaultUniformScale": 0.32,
+      "limbRatios": {
+        "armToHeight": { "min": 0.35, "max": 0.55, "unit": "ratio", "note": "forelimb proxy" },
+        "legToHeight": { "min": 0.35, "max": 0.55, "unit": "ratio" },
+        "torsoToHeight": { "min": 0.35, "max": 0.55, "unit": "ratio" },
+        "headToHeight": { "min": 0.18, "max": 0.32, "unit": "ratio" }
+      },
+      "curvature": {
+        "maxAsymmetry": { "min": 0, "max": 0.1, "unit": "ratio" },
+        "minOrganicVariance": { "min": 0.002, "max": 1, "unit": "ratio" },
+        "surfaceCurvatureProxy": { "min": 0.4, "max": 1.5, "unit": "ratio" }
+      },
+      "massDistribution": {
+        "centerOfMassHeightFraction": { "min": 0.4, "max": 0.58, "unit": "ratio" },
+        "shoulderToHipWidth": { "min": 0.9, "max": 1.35, "unit": "ratio" },
+        "chestDepthToWidth": { "min": 0.45, "max": 0.95, "unit": "ratio" }
+      },
+      "tags": ["canine", "scale-class", "engine3d"]
+    },
+    {
+      "id": "toy-figurine-v1",
+      "label": "Toy / desk figurine scale",
+      "scaleClass": "toy-scale",
+      "referenceHeightMeters": 0.12,
+      "defaultUniformScale": 0.07,
+      "limbRatios": {
+        "armToHeight": { "min": 0.25, "max": 0.5, "unit": "ratio" },
+        "legToHeight": { "min": 0.3, "max": 0.55, "unit": "ratio" },
+        "torsoToHeight": { "min": 0.25, "max": 0.45, "unit": "ratio" },
+        "headToHeight": { "min": 0.15, "max": 0.35, "unit": "ratio", "note": "chibi-friendly" }
+      },
+      "curvature": {
+        "maxAsymmetry": { "min": 0, "max": 0.12, "unit": "ratio" },
+        "minOrganicVariance": { "min": 0.001, "max": 1, "unit": "ratio" },
+        "surfaceCurvatureProxy": { "min": 0.3, "max": 1.4, "unit": "ratio" }
+      },
+      "massDistribution": {
+        "centerOfMassHeightFraction": { "min": 0.4, "max": 0.65, "unit": "ratio" },
+        "shoulderToHipWidth": { "min": 0.8, "max": 1.5, "unit": "ratio" },
+        "chestDepthToWidth": { "min": 0.3, "max": 0.9, "unit": "ratio" }
+      },
+      "tags": ["toy", "scale-class"]
+    }
+  ]
+}

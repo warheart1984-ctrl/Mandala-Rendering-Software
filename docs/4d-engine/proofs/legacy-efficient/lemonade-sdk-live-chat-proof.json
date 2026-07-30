@@ -1,0 +1,51 @@
+{
+  "capturedAt": "2026-07-30T08:43:25.521Z",
+  "adapterId": "sx.adapter.lemonade.sdk.chat",
+  "provider": "lemonade-sdk",
+  "status": "partial",
+  "liveChatRoundTrip": true,
+  "model": "Llama-3.2-1B-Instruct-GGUF",
+  "backend": "llamacpp:vulkan",
+  "hostHint": "FX-8350 / R9 380 — Vulkan GGUF preferred over AVX2-only CPU llama binaries",
+  "notes": {
+    "preferred": "Llama-3.2-1B-Instruct-GGUF",
+    "alsoPulledOnHost": [
+      "Qwen3-0.6B-GGUF",
+      "Bonsai-1.7B-gguf"
+    ],
+    "qwenNote": "Qwen3-0.6B-GGUF may return empty/garbled content on this Vulkan path; Llama-3.2-1B-Instruct is the proven live chat model."
+  },
+  "connect": {
+    "serverUp": true,
+    "selectedBaseUrl": "http://localhost:13305/api/v1",
+    "version": "11.5.0"
+  },
+  "downloadedLlmModels": [
+    "Bonsai-1.7B-gguf",
+    "Llama-3.2-1B-Instruct-GGUF",
+    "Qwen3-0.6B-GGUF"
+  ],
+  "chat": {
+    "ok": true,
+    "content": "OK",
+    "model": "Llama-3.2-1B-Instruct-GGUF",
+    "baseUrl": "http://localhost:13305/api/v1",
+    "elapsedMs": 12496,
+    "usage": {
+      "completion_tokens": 2,
+      "prompt_tokens": 40,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 42
+    },
+    "finishReason": "stop",
+    "code": null,
+    "message": "Lemonade SDK chat via Llama-3.2-1B-Instruct-GGUF"
+  },
+  "invoke": [
+    "node sovereign-x/cli/sx-legacy-efficient.mjs --probe-lemonade-sdk",
+    "node sovereign-x/cli/sx-legacy-efficient.mjs --intent demo --provider lemonade-sdk --chat \"Reply with exactly: OK\"",
+    "node sovereign-x/cli/sx-lemonade-sdk-live-proof.mjs"
+  ]
+}

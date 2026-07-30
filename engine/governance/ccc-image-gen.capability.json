@@ -1,0 +1,8 @@
+{
+  "contractId": "CCC-ImageGen",
+  "capability": "image.gen.provider",
+  "status": "partial",
+  "machineSoT": "sovereign-x/governance/ccc-image-gen.json",
+  "doc": "docs/4d-engine/CCC_IMAGE_GEN.md",
+  "note": "Pointer only — not a charter/policy mutation. Soft capability architecture authorized for image.gen.provider; default.policies.json unchanged."
+}

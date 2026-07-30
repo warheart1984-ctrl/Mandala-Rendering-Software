@@ -29,6 +29,7 @@ const AMD_IDS = [
   "gpu.compute.amd.rocm",
   "gpu.compute.amd.hip",
   "gpu.inference.amd.rocm",
+  "gpu.compute.amd.legacy_efficient",
 ];
 
 /** Prior IDs kept; nim_flux is alias row (still listed upstream). */

@@ -1,0 +1,15 @@
+pipeline_version: 0.1.0
+equivalence: semantic
+narration_mvp: recorded_voice
+stages:
+  - ingestion
+  - generation
+  - rendering
+  - publishing
+replay:
+  command: "python aiki/pipeline/cli.py replay CKO-0001"
+reproducibility:
+  contract: RBC-0001
+  reference_cko: CKO-0001
+  frozen: false
+status: skeleton

@@ -1,0 +1,21 @@
+[project]
+name = "jarvis-memoryboard"
+version = "0.1.0"
+description = "Jarvis memory board — persistent read/write memory for MRS agents"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.116.1",
+  "uvicorn[standard]==0.35.0",
+  "python-dotenv==1.2.2",
+  "pydantic==2.11.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1", "httpx==0.28.1"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

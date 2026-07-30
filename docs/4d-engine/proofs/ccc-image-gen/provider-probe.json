@@ -1,0 +1,28 @@
+{
+  "contractId": "CCC-ImageGen",
+  "capability": "image.gen.provider",
+  "forceGpuDown": false,
+  "tryGenerate": true,
+  "selection": {
+    "selected": "local.gpu",
+    "available": [
+      "local.gpu",
+      "local.cpu"
+    ],
+    "invariantOk": true,
+    "status": "available"
+  },
+  "constitutionalLog": {
+    "imageGenProvider": "local.cpu",
+    "localGpuAvailable": false,
+    "fallbackUsed": true,
+    "reason": "all configured providers failed to produce pixels; status degraded/partial (not architecture-blocked-on-GPU)"
+  },
+  "fallbackUsed": true,
+  "blockedOnGpu": false,
+  "imagesStatus": "degraded/partial — no pixels (not architecture-blocked-on-GPU)",
+  "cascadeStatus": "degraded",
+  "pixelsProduced": false,
+  "lemonadeProbeStatus": "partial",
+  "honesty": "fallbackUsed true when GPU down does not mean architecture blocked; pixels only if a provider produced them"
+}

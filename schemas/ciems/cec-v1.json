@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereign-x.org/ciems/cec-v1.json",
+  "title": "ConstitutionalEvidenceContract",
+  "description": "CEC v1.0 binds PEP+SPR+RDC+audit. Status: declared (spec) / partial (emitter). Does not auto-elevate Full Photoreal.",
+  "type": "object",
+  "required": [
+    "@context",
+    "artifact",
+    "version",
+    "id",
+    "timestamp",
+    "bindings",
+    "invariants",
+    "verification"
+  ],
+  "properties": {
+    "@context": {
+      "const": "https://sovereign-x.org/ciems/cec-v1"
+    },
+    "artifact": {
+      "const": "ConstitutionalEvidenceContract"
+    },
+    "version": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^cec-"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "partial", "held", "verified"]
+    },
+    "photorealClaimLevel": {
+      "type": "string",
+      "enum": ["none", "partial", "full"],
+      "description": "Phase 2 emitters MUST keep partial; Full requires human/ESFR elevation with complete evidence."
+    },
+    "bindings": {
+      "type": "object",
+      "required": ["pep", "spr"],
+      "properties": {
+        "pep": { "type": "string" },
+        "spr": { "type": "string" },
+        "replayDeterminismRecord": { "type": ["string", "null"] },
+        "auditHooks": {
+          "type": "object",
+          "properties": {
+            "esfr": { "type": ["string", "null"] },
+            "inspector": { "type": ["string", "null"] }
+          },
+          "additionalProperties": true
+        },
+        "governanceTrail": { "type": ["string", "null"] },
+        "pepPath": { "type": ["string", "null"] },
+        "sprPath": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "invariants": {
+      "type": "object",
+      "required": [
+        "noPhotorealClaimWithoutEvidence",
+        "evidenceMustBeReplayable",
+        "evidenceMustBeAuditable",
+        "sceneProvenanceMustBeComplete",
+        "determinismMustBeHashVerified"
+      ],
+      "properties": {
+        "noPhotorealClaimWithoutEvidence": { "type": "boolean" },
+        "evidenceMustBeReplayable": { "type": "boolean" },
+        "evidenceMustBeAuditable": { "type": "boolean" },
+        "sceneProvenanceMustBeComplete": { "type": "boolean" },
+        "determinismMustBeHashVerified": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "verification": {
+      "type": "object",
+      "required": ["pepCompleteness", "sprCompleteness"],
+      "properties": {
+        "pepCompleteness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "sprCompleteness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "determinismVerification": { "type": "boolean" },
+        "auditReadiness": { "type": "boolean" },
+        "promotionEligibility": {
+          "type": "string",
+          "enum": [
+            "HOLD",
+            "PROMOTE_WITH_GAPS",
+            "PROMOTE",
+            "REJECT",
+            "NOT_EVALUATED"
+          ]
+        },
+        "fullPhotorealEligible": {
+          "type": "boolean",
+          "description": "Always false in Phase 2 auto-emit; never auto-true."
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

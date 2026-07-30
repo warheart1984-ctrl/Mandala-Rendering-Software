@@ -13,6 +13,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { validate as validateDispatchContract } from "./contracts/gpuDispatchContract.js";
 import { checkGpuPrintSafeguard } from "./contracts/gpuPrintSafeguard.js";
 import { integrateDeterministicAssist } from "./modules/gpu/integrator/deterministicGpuIntegrator.js";
+import {
+  integrateLegacyEfficientBeauty,
+  integrateLegacyEfficientBeautyAsync,
+} from "./modules/gpu/amd/legacyEfficientBeauty.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const requireJson = createRequire(import.meta.url);
@@ -200,6 +204,19 @@ export async function route(capabilityId, request = {}) {
   // Deterministic integrator prototype — assist-only; never print SoT
   if (resolved.capabilityId === "gpu.integrator.deterministic") {
     return integrateDeterministicAssist(request);
+  }
+
+  // Legacy AMD 3-layer efficient beauty — sparse + mem estimate + intent gate
+  // Optional still: Lemonade SD adapter and/or OpenCL Tonga stand-in
+  if (resolved.capabilityId === "gpu.compute.amd.legacy_efficient") {
+    const wantStill =
+      request.requestStill === true ||
+      (request.beautyProvider &&
+        String(request.beautyProvider).toLowerCase() !== "none");
+    if (wantStill) {
+      return integrateLegacyEfficientBeautyAsync(request);
+    }
+    return integrateLegacyEfficientBeauty(request);
   }
 
   // NIM FLUX image ingest / lookdev-from-image — invoke skill module when present

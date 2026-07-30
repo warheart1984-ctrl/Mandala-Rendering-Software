@@ -1,0 +1,21 @@
+{
+  "serverUp": true,
+  "downloadedImageModels": [
+    "RealESRGAN-x4plus",
+    "SD-Turbo",
+    "SD-Turbo-GGUF",
+    "SDXL-Base-1.0",
+    "SDXL-Turbo"
+  ],
+  "weightProvenance": {
+    "code": "WEIGHT_MISSING",
+    "lawful": false,
+    "files": []
+  },
+  "generateOk": false,
+  "generateCode": "model_load_error",
+  "generateMessage": "Failed to load model 'SD-Turbo': sd-server failed to start or become ready",
+  "haltCauseClass": "sd_server",
+  "classifiedFromMessage": "sd_server",
+  "honesty": "Do not claim provenance was root cause unless haltCauseClass===provenance"
+}

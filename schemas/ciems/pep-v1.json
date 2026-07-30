@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereign-x.org/ciems/pep-v1.json",
+  "title": "PhotorealEvidencePacket",
+  "description": "PEP v1.0 (CPE-PHR-EVD). Status: declared (spec) / partial (emitter). Drive-G-1: completeness Partial until fields filled; never auto-promote Full Photoreal.",
+  "type": "object",
+  "required": [
+    "@context",
+    "artifact",
+    "version",
+    "id",
+    "timestamp",
+    "authorityRecord",
+    "materialFidelityProof",
+    "lightingJustificationRecord",
+    "geometryTopologyEvidence",
+    "cameraExposureEvidence",
+    "physicalPlausibilityLedger",
+    "replayDeterminismRecord",
+    "auditHooks"
+  ],
+  "properties": {
+    "@context": {
+      "const": "https://sovereign-x.org/ciems/pep-v1"
+    },
+    "artifact": {
+      "const": "PhotorealEvidencePacket"
+    },
+    "version": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^pep-"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "partial", "held", "verified"]
+    },
+    "photorealClaimLevel": {
+      "type": "string",
+      "enum": ["none", "partial", "full"],
+      "description": "Emitter MUST NOT set full unless completeness and CEC verification allow; Phase 2 emitters keep partial."
+    },
+    "authorityRecord": {
+      "type": "object",
+      "required": ["renderer", "sceneIdentityHash"],
+      "properties": {
+        "renderer": {
+          "type": "object",
+          "required": ["name", "executionMode"],
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": ["string", "null"] },
+            "device": { "type": ["string", "null"] },
+            "executionMode": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "constitutionalRuntime": {
+          "type": "object",
+          "properties": {
+            "jcrVersion": { "type": ["string", "null"] },
+            "executionHash": { "type": ["string", "null"] }
+          },
+          "additionalProperties": true
+        },
+        "sceneIdentityHash": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "materialFidelityProof": {
+      "type": "array",
+      "items": { "$ref": "mfp-c-v1.json#/$defs/materialFidelityEntry" }
+    },
+    "lightingJustificationRecord": {
+      "type": "array",
+      "items": { "$ref": "ljc-v1.json#/$defs/lightingJustificationEntry" }
+    },
+    "geometryTopologyEvidence": {
+      "type": "object",
+      "properties": {
+        "meshCount": { "type": "integer", "minimum": 0 },
+        "meshes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["meshId"],
+            "properties": {
+              "meshId": { "type": "string" },
+              "vertexCount": { "type": ["integer", "null"] },
+              "faceCount": { "type": ["integer", "null"] },
+              "normalIntegrity": { "type": ["number", "null"] },
+              "uvIntegrity": { "type": ["number", "null"] },
+              "topologyHash": { "type": ["string", "null"] }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "cameraExposureEvidence": {
+      "type": "object",
+      "properties": {
+        "cameraId": { "type": ["string", "null"] },
+        "model": { "type": ["string", "null"] },
+        "fov": { "type": ["number", "null"] },
+        "fovJustification": { "type": ["string", "null"] },
+        "exposure": { "type": ["number", "null"] },
+        "exposureJustification": { "type": ["string", "null"] },
+        "sensorModel": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "physicalPlausibilityLedger": {
+      "type": "object",
+      "properties": {
+        "energyConservation": { "type": ["boolean", "null"] },
+        "lightTransport": { "type": ["number", "null"] },
+        "materialReflectanceBounds": { "type": ["number", "null"] },
+        "noiseDistribution": { "type": ["string", "null"] },
+        "sampleDistribution": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "replayDeterminismRecord": {
+      "$ref": "rdc-v1.json#/$defs/replayDeterminismRecord"
+    },
+    "beautyArtifact": {
+      "type": "object",
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "sha256": { "type": ["string", "null"] },
+        "pixelsProduced": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "auditHooks": {
+      "type": "object",
+      "required": ["evidenceCompletenessScore"],
+      "properties": {
+        "esfrHook": { "type": ["string", "null"] },
+        "inspectorHook": { "type": ["string", "null"] },
+        "governanceTrail": { "type": ["string", "null"] },
+        "evidenceCompletenessScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

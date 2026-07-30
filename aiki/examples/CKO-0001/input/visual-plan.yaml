@@ -1,0 +1,49 @@
+status: skeleton
+cko_id: CKO-0001
+template: content/assets/templates/video/template.research-decoded.yaml
+scenes:
+  - id: intro
+    type: "title card + hook VO"
+    duration_hint_seconds: 20
+    text_ref: hook
+    visuals:
+      - "title-card: LLM Evaluation Basics"
+      - "series bumper: Research Decoded"
+  - id: context
+    type: "talking points + simple diagram"
+    duration_hint_seconds: 100
+    text_ref: context
+    visuals:
+      - "slide: Decision under uncertainty"
+      - "callout: SOTA is a headline, not a measurement"
+  - id: methods
+    type: "split diagram"
+    duration_hint_seconds: 240
+    text_ref: methods
+    visuals:
+      - "diagram: intrinsic vs extrinsic metrics"
+      - "table: cheap screen vs job outcome"
+  - id: limits
+    type: "three failure cards"
+    duration_hint_seconds: 180
+    text_ref: limits
+    visuals:
+      - "card: contamination"
+      - "card: saturation / gaming"
+      - "card: wrong proxy"
+  - id: practice
+    type: "checklist"
+    duration_hint_seconds: 120
+    text_ref: practice
+    visuals:
+      - "checklist card: four project evaluation questions"
+  - id: outro
+    type: "takeaway + CTA"
+    duration_hint_seconds: 60
+    text_ref: takeaway
+    visuals:
+      - "summary card: measure what the decision needs"
+      - "CTA: subscribe + comment prompt"
+notes:
+  - "Recording: recorded voice MVP (see config/branding/voice.yaml)."
+  - "Final renders land in content/assets/video/CKO-0001/ and examples/CKO-0001/output/ after publish."

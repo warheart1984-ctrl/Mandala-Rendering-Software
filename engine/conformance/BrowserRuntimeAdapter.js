@@ -14,6 +14,9 @@ import {
   ConstitutionalKnowledgeLayer,
   resolveDecision,
 } from "../governance/ConstitutionalKnowledgeLayer.js";
+import { GovernanceKernel } from "../governance/GovernanceKernel.js";
+import { ConstitutionalStateEngine } from "../../js/constitution/cse.js";
+import { ExecutionOrchestrator } from "../../js/engine/services/orchestrator.js";
 import { TimelinePlayer } from "../../js/engine/cinematic/TimelinePlayer.js";
 import {
   getActorIdentity as browserActorIdentity,
@@ -271,6 +274,52 @@ export async function createBrowserAdapter(fetchImpl) {
       const evidence = makeEvidence();
       const result = resolveDecision(intent, evidence, policySet);
       return { pass: result.attachProvenance === true };
+    },
+
+    // ── csr ─────────────────────────────────────────────────────
+
+    "csr.governance-trace": async () => {
+      const cse = new ConstitutionalStateEngine();
+      const gk = new GovernanceKernel({ ckl });
+      const orchestrator = new ExecutionOrchestrator({ gk, cse });
+      const intent = cse.declareIntent({
+        kind: "conformance-test",
+        goal: "csr-governance-trace",
+      });
+      intent.world = "world-test";
+      intent.type = "play_timeline";
+      const evidence = {
+        id: "ev-conformance",
+        worldId: "world-test",
+        timelineId: "test-timeline",
+        timestamp: "now",
+        vertexCount: 16,
+        edgeCount: 32,
+        theta: 0,
+        d4: 5,
+        d3: 5,
+        speed: 1,
+        scale: 1,
+      };
+
+      const { csr } = await orchestrator.execute({
+        intent,
+        evidence,
+        action: "render.session.start",
+        run: async () => ({ ok: true }),
+      });
+
+      const ok =
+        !!csr?.governanceTrace &&
+        !!csr.governanceTrace.decisionId &&
+        csr.governanceTrace.verdict === "allow" &&
+        Array.isArray(csr.governanceTrace.policiesApplied) &&
+        typeof csr.governanceTrace.precedentCount === "number" &&
+        csr.governanceTrace.attachProvenance === true;
+      return {
+        pass: ok,
+        reason: ok ? undefined : "CSR missing governanceTrace fields",
+      };
     },
   };
 }

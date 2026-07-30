@@ -455,8 +455,19 @@ export const PREDICATE_RUNNERS = Object.freeze({
         (pathHash ? (pathHash.ok ? "pass" : "fail") : "skipped"),
     };
   },
-  "EI-TOPOLOGY": (measurement = {}) =>
-    topologyPreservationHolds(measurement.bvh, measurement),
+"EI-TOPOLOGY": (measurement = {}) =>
+      topologyPreservationHolds(measurement.bvh, measurement),
+    "EI-ORGANIC-VARIANCE": (measurement = {}) => {
+      const measured = measurement.measuredVariance ?? measurement.organicVarianceMeasured;
+      const min = measurement.minOrganicVariance ?? 0.002;
+      const lrAveraged = measurement.lrAveraged === true || measurement.symmetryAveraged === true;
+      const issues = [];
+      if (lrAveraged) issues.push("lr-vertices-averaged");
+      if (typeof min !== "number" || !Number.isFinite(min)) issues.push("missing-minOrganicVariance");
+      if (typeof measured !== "number" || !Number.isFinite(measured)) issues.push("missing-organicVariance-measurement");
+      else if (measured < min) issues.push(`organicVariance=${measured} < min=${min}`);
+      return { ok: issues.length === 0, issues, measured, min };
+    },
 });
 
 /**

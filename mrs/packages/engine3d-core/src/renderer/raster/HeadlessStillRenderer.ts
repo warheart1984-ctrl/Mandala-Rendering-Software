@@ -14,13 +14,18 @@ import { deflateSync } from "node:zlib";
 import { writeFileSync } from "node:fs";
 import { transformPoint, transformVector, normalize3 } from "../../human/mat4.js";
 import type { Mat4Tuple } from "../../human/HumanRigTypes.js";
-import { shadeRasterFragment } from "./RasterMaterial.js";
+import {
+  createCinematicLightRig,
+  shadeRasterFragmentLights,
+  type RasterLight,
+} from "./RasterMaterial.js";
 import {
   applySampledMapsToMaterial,
   type TextureBinder,
 } from "./TextureSampler.js";
 
 export type Vec3 = readonly [number, number, number];
+export type { RasterLight };
 
 export interface RasterCamera {
   id: string;
@@ -52,7 +57,22 @@ export interface RasterMesh {
 export interface RasterStillRequest {
   camera: RasterCamera;
   meshes: RasterMesh[];
+  /** Single key light (toward surface). Ignored when `lights` is set. */
   lightDir?: Vec3;
+  /**
+   * Multi-light rig. When omitted, uses `lightDir` alone, or a cinematic
+   * 3-light rig when `cinematicLighting` is true.
+   */
+  lights?: RasterLight[];
+  /** Expand `lightDir` into key+fill+rim (STATUS: enforced by upgrade tests). */
+  cinematicLighting?: boolean;
+  /**
+   * Gather emissive mesh centers as weak directional fills (max 4).
+   * Soft-raster approximation — not true area lights.
+   */
+  gatherEmissiveLights?: boolean;
+  /** Render at N× resolution then box-downsample (1 or 2). Default 1. */
+  supersample?: 1 | 2;
   aov?: { depth?: boolean; normal?: boolean };
   /** Clear color for beauty (linear RGB 0–1). Default dark gray. */
   clearColor?: Vec3;
@@ -225,18 +245,35 @@ function edge(ax: number, ay: number, bx: number, by: number, cx: number, cy: nu
 }
 
 /**
- * CPU soft-raster: Lambert beauty + geometric depth/normal AOVs.
+ * CPU soft-raster: material-aware beauty + geometric depth/normal AOVs.
+ * Supports multi-light, optional 2× supersample, and emissive fill gathering.
  */
 export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers {
   validateCamera(req.camera);
+  const ss = req.supersample === 2 ? 2 : 1;
+  if (ss === 2) {
+    const hiCam: RasterCamera = {
+      ...req.camera,
+      width: req.camera.width * 2,
+      height: req.camera.height * 2,
+    };
+    const hi = renderStillBuffers({
+      ...req,
+      camera: hiCam,
+      supersample: 1,
+    });
+    return downsampleBuffers2x(hi, req.camera.width | 0, req.camera.height | 0);
+  }
+
   const { camera, meshes } = req;
   const w = camera.width | 0;
   const h = camera.height | 0;
   const wantDepth = req.aov?.depth !== false;
   const wantNormal = req.aov?.normal !== false;
   const clear = req.clearColor ?? ([0.12, 0.13, 0.16] as Vec3);
-  const light = normalize3(
-    ...(req.lightDir ?? ([-0.35, -1.0, -0.45] as Vec3)),
+  const lights = resolveLights(req, meshes);
+  const keyLight = normalize3(
+    ...(lights[0]?.direction ?? req.lightDir ?? ([-0.35, -1.0, -0.45] as Vec3)),
   );
 
   const beauty = new Uint8Array(w * h * 4);
@@ -307,29 +344,36 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
         const y = mvp[1]! * px + mvp[5]! * py + mvp[9]! * pz + mvp[13]!;
         const z = mvp[2]! * px + mvp[6]! * py + mvp[10]! * pz + mvp[14]!;
         const cw = mvp[3]! * px + mvp[7]! * py + mvp[11]! * pz + mvp[15]!;
-        const ndl = Math.max(0, -(nx * light[0] + ny * light[1] + nz * light[2]));
+        const ndl = Math.max(0, -(nx * keyLight[0] + ny * keyLight[1] + nz * keyLight[2]));
         let r: number;
         let g: number;
         let b: number;
         if (mesh.material && !wantTex) {
-          // View approx: toward camera from vertex (eye - worldPos)
           const viewDir: Vec3 = normalize3(
             camera.eye[0] - wx,
             camera.eye[1] - wy,
             camera.eye[2] - wz,
           );
-          const rgb = shadeRasterFragment(
+          const rgb = shadeRasterFragmentLights(
             mesh.material,
             [nx, ny, nz],
-            light,
+            lights,
             viewDir,
           );
           r = rgb[0];
           g = rgb[1];
           b = rgb[2];
         } else if (!wantTex) {
-          // Legacy Lambert: baseColor * (0.2 + 0.8 * ndl)
-          const shade = 0.2 + 0.8 * ndl;
+          // Legacy Lambert: accumulate key + fills
+          let shade = 0.18;
+          for (const L of lights) {
+            const ld = normalize3(...L.direction);
+            const iN =
+              Math.max(0, -(nx * ld[0] + ny * ld[1] + nz * ld[2])) *
+              (L.intensity ?? 1);
+            shade += 0.82 * iN * (lights.length === 1 ? 1 : 0.55);
+          }
+          shade = Math.min(1.35, shade);
           r = mesh.baseColor[0] * shade;
           g = mesh.baseColor[1] * shade;
           b = mesh.baseColor[2] * shade;
@@ -467,7 +511,7 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
               camera.eye[1] - wy,
               camera.eye[2] - wz,
             );
-            const rgb = shadeRasterFragment(shadedMat, nUse, light, viewDir);
+            const rgb = shadeRasterFragmentLights(shadedMat, nUse, lights, viewDir);
             const ao = maps.ao ?? 1;
             rr = rgb[0] * ao;
             gg = rgb[1] * ao;
@@ -507,6 +551,145 @@ export function renderStillBuffers(req: RasterStillRequest): RasterStillBuffers 
   return {
     width: w,
     height: h,
+    beautyRgba: beauty,
+    depthRgba: depthBuf,
+    normalRgba: normalBuf,
+  };
+}
+
+function resolveLights(req: RasterStillRequest, meshes: RasterMesh[]): RasterLight[] {
+  let lights: RasterLight[];
+  if (req.lights?.length) {
+    lights = [...req.lights];
+  } else if (req.cinematicLighting) {
+    lights = createCinematicLightRig(req.lightDir);
+  } else {
+    lights = [
+      {
+        direction: req.lightDir ?? ([-0.35, -1.0, -0.45] as Vec3),
+        intensity: 1,
+      },
+    ];
+  }
+
+  if (req.gatherEmissiveLights) {
+    const extras = gatherEmissiveFills(meshes, 4);
+    lights = [...lights, ...extras];
+  }
+  return lights;
+}
+
+/** Approximate emissive mesh centers as soft directional fills toward origin. */
+function gatherEmissiveFills(meshes: RasterMesh[], maxCount: number): RasterLight[] {
+  const out: RasterLight[] = [];
+  for (const mesh of meshes) {
+    if (out.length >= maxCount) break;
+    const mat = mesh.material;
+    const em =
+      mat?.type === "emissive" ||
+      (mat != null &&
+        mat.emissive[0] + mat.emissive[1] + mat.emissive[2] > 0.4);
+    if (!em) continue;
+    // Average vertex position in model space → world via model matrix origin-ish
+    const pos = mesh.positions;
+    let cx = 0;
+    let cy = 0;
+    let cz = 0;
+    const nVert = Math.floor(pos.length / 3);
+    if (nVert < 1) continue;
+    for (let i = 0; i < nVert; i++) {
+      cx += pos[i * 3] ?? 0;
+      cy += pos[i * 3 + 1] ?? 0;
+      cz += pos[i * 3 + 2] ?? 0;
+    }
+    cx /= nVert;
+    cy /= nVert;
+    cz /= nVert;
+    const [wx, wy, wz] = transformPoint(mesh.modelMatrix, cx, cy, cz);
+    // Light direction toward a typical subject near origin from the emitter.
+    const dx = -wx;
+    const dy = -wy - 0.2;
+    const dz = -wz;
+    const len = Math.hypot(dx, dy, dz) || 1;
+    const intensity = Math.min(
+      0.55,
+      0.18 +
+        (mat
+          ? (mat.emissive[0] + mat.emissive[1] + mat.emissive[2]) * 0.08
+          : 0.2),
+    );
+    out.push({
+      direction: [dx / len, dy / len, dz / len],
+      intensity,
+      color: mat
+        ? [
+            Math.min(1.5, 0.5 + mat.emissive[0] * 0.15),
+            Math.min(1.5, 0.5 + mat.emissive[1] * 0.15),
+            Math.min(1.5, 0.5 + mat.emissive[2] * 0.15),
+          ]
+        : [1, 0.95, 0.85],
+    });
+  }
+  return out;
+}
+
+function downsampleBuffers2x(
+  hi: RasterStillBuffers,
+  outW: number,
+  outH: number,
+): RasterStillBuffers {
+  const hw = hi.width;
+  const beauty = new Uint8Array(outW * outH * 4);
+  const depthBuf = hi.depthRgba ? new Uint8Array(outW * outH * 4) : undefined;
+  const normalBuf = hi.normalRgba ? new Uint8Array(outW * outH * 4) : undefined;
+  for (let y = 0; y < outH; y++) {
+    for (let x = 0; x < outW; x++) {
+      const x0 = x * 2;
+      const y0 = y * 2;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let d = 0;
+      let nx = 0;
+      let ny = 0;
+      let nz = 0;
+      for (let oy = 0; oy < 2; oy++) {
+        for (let ox = 0; ox < 2; ox++) {
+          const si = ((y0 + oy) * hw + (x0 + ox)) * 4;
+          r += hi.beautyRgba[si]!;
+          g += hi.beautyRgba[si + 1]!;
+          b += hi.beautyRgba[si + 2]!;
+          if (hi.depthRgba) {
+            d += hi.depthRgba[si]!;
+          }
+          if (hi.normalRgba) {
+            nx += hi.normalRgba[si]!;
+            ny += hi.normalRgba[si + 1]!;
+            nz += hi.normalRgba[si + 2]!;
+          }
+        }
+      }
+      const o = (y * outW + x) * 4;
+      beauty[o] = Math.round(r / 4);
+      beauty[o + 1] = Math.round(g / 4);
+      beauty[o + 2] = Math.round(b / 4);
+      beauty[o + 3] = 255;
+      if (depthBuf && hi.depthRgba) {
+        const g8 = Math.round(d / 4);
+        depthBuf[o] = depthBuf[o + 1] = depthBuf[o + 2] = g8;
+        depthBuf[o + 3] = 255;
+      }
+      if (normalBuf && hi.normalRgba) {
+        normalBuf[o] = Math.round(nx / 4);
+        normalBuf[o + 1] = Math.round(ny / 4);
+        normalBuf[o + 2] = Math.round(nz / 4);
+        normalBuf[o + 3] = 255;
+      }
+    }
+  }
+  return {
+    width: outW,
+    height: outH,
     beautyRgba: beauty,
     depthRgba: depthBuf,
     normalRgba: normalBuf,

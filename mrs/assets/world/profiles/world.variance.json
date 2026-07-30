@@ -1,0 +1,12 @@
+{
+  "id": "world.variance",
+  "policyId": "world.variance",
+  "label": "Environmental variance floor",
+  "domain": "variance",
+  "status": "partial",
+  "worldScaleClass": "human-sized",
+  "minEnvironmentalVariance": 0.001,
+  "exampleSubjects": ["terrain-irregularity", "organic-surface", "fluid-turbulence"],
+  "metricFamilies": ["environmentalVariance", "organicVariance"],
+  "notes": "Amendment VIII cross-cut — variance floor for world entities. Status partial."
+}

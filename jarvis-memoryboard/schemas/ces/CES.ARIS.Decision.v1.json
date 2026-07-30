@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "CES.ARIS.Decision.v1",
+  "title": "CES.ARIS.Decision.v1 — Governed Decision",
+  "description": "Declared stub. Not runtime-validated by Continuity Ledger v1.",
+  "type": "object",
+  "required": [
+    "ces_id",
+    "decision_id",
+    "statement",
+    "authority_id",
+    "intent_id",
+    "created_at",
+    "content_hash",
+    "status"
+  ],
+  "properties": {
+    "ces_id": { "const": "CES.ARIS.Decision.v1" },
+    "decision_id": { "type": "string" },
+    "statement": { "type": "string" },
+    "authority_id": { "type": "string" },
+    "intent_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "content_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["draft", "verified", "archived"] },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "supersedes": { "type": ["string", "null"] },
+    "governance_trace_id": { "type": "string" },
+    "signature": { "type": "string" }
+  },
+  "additionalProperties": true
+}

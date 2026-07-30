@@ -1,0 +1,17 @@
+{
+  "capturedAt": "2026-07-30T04:10:03.136Z",
+  "compiled": true,
+  "attempts": [
+    {
+      "args": [
+        "scripts/legacy-efficient/hip_hello.hip",
+        "-o",
+        "docs/4d-engine/proofs/legacy-efficient/hip_hello.exe",
+        "--offload-arch=gfx803"
+      ],
+      "exit": 0,
+      "exeExists": true,
+      "offloadArch": "gfx803"
+    }
+  ]
+}

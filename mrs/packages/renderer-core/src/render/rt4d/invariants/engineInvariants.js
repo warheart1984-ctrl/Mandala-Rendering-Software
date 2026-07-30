@@ -133,6 +133,27 @@ export const ENGINE_INVARIANTS = Object.freeze([
     notEnforcedBecause:
       "Transform4D plane rotations are unit-tested for length preservation; render pipeline does not gate on PI-* at runtime.",
   }),
+  Object.freeze({
+    id: "EI-ORGANIC-VARIANCE",
+    layer: /** @type {const} */ ("engine"),
+    title: "Organic variance floor (Amendment VII §3)",
+    statement:
+      "Render-time position variance must remain >= biometric profile minOrganicVariance; L/R vertex averaging that flattens lawful asymmetry is denied.",
+    derived_from: Object.freeze(["PI-GEO-LENGTH", "PI-TRIG-RADIAL"]),
+    status: /** @type {InvariantStatus} */ ("tested"),
+    evidence: Object.freeze([
+      "src/renderer/raster/OrganicVariance.ts::positionOrganicVariance",
+      "src/renderer/raster/OrganicVariance.ts::enforceOrganicVarianceAtRender",
+      "engine/governance/biometric/amendmentVII.js::validateFixtureOrganicVariance",
+    ]),
+    anchors: Object.freeze([
+      "positionOrganicVariance",
+      "enforceOrganicVarianceAtRender",
+      "validateFixtureOrganicVariance",
+    ]),
+    notEnforcedBecause:
+      "Soft-path evaluation available via OrganicVariance gate; CKL policy-organic-variance enforces when biometricAmendment/enforceAmendmentVII active. Not default CKL deny on every render.",
+  }),
 ]);
 
 /**

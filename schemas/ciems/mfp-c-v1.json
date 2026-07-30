@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereign-x.org/ciems/mfp-c-v1.json",
+  "title": "MaterialFidelityProofContract",
+  "description": "MFP-C v1.0 (CPE-MFP). Lean contract; also PEP.materialFidelityProof[]. Status: declared.",
+  "type": "object",
+  "$defs": {
+    "materialFidelityEntry": {
+      "type": "object",
+      "required": ["materialId"],
+      "properties": {
+        "materialId": { "type": "string" },
+        "source": { "type": ["string", "null"] },
+        "shaderGraphHash": { "type": ["string", "null"] },
+        "textureProvenance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "textureId": { "type": "string" },
+              "source": { "type": ["string", "null"] },
+              "checksum": { "type": ["string", "null"] }
+            },
+            "additionalProperties": true
+          }
+        },
+        "bsdfJustification": {
+          "type": "object",
+          "properties": {
+            "model": { "type": ["string", "null"] },
+            "physicalBasis": { "type": ["string", "null"] },
+            "energyConservation": { "type": ["boolean", "null"] }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "properties": {
+    "@context": { "const": "https://sovereign-x.org/ciems/mfp-c-v1" },
+    "artifact": { "const": "MaterialFidelityProofContract" },
+    "version": { "const": "1.0" },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/materialFidelityEntry" }
+    }
+  },
+  "additionalProperties": true
+}

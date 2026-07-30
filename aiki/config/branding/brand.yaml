@@ -1,0 +1,8 @@
+name: "AIKI"
+primary_color: "#0F172A"
+accent_color: "#38BDF8"
+font_primary: "Source Serif 4"
+font_mono: "IBM Plex Mono"
+tone: "clear, rigorous, friendly, non-hype"
+logo_ref: "content/assets/graphics/logo/aiki-logo.svg"
+status: skeleton

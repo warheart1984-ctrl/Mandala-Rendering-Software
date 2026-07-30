@@ -1,0 +1,502 @@
+{
+  "capturedAt": "2026-07-30T03:57:43.304Z",
+  "thesis": "3-Layer Path -- mathematically not mythically",
+  "capabilityResolved": {
+    "ok": true,
+    "capabilityId": "gpu.compute.amd.legacy_efficient",
+    "skill": "sovereign-x/router/modules/gpu/amd/legacyEfficientBeauty.js",
+    "authority": "assist",
+    "capabilityClass": "compute",
+    "vendor": "amd",
+    "backend": "amd"
+  },
+  "routeResult": {
+    "ok": true,
+    "capabilityId": "gpu.compute.amd.legacy_efficient",
+    "authority": "assist",
+    "assistOnly": true,
+    "nonAuthoritative": true,
+    "status": "partial",
+    "layers": {
+      "algorithmic": {
+        "status": "partial",
+        "gainEstimate": 10.666666666666666
+      },
+      "memory": {
+        "status": "declared",
+        "gainEstimate": 0.8888888888888888
+      },
+      "governance": {
+        "status": "partial",
+        "intentId": "demo-sdk-chat",
+        "gainDeclared": 1.5,
+        "note": "intent gate enforced in this module; CKL policies are consumers (not edited)"
+      }
+    },
+    "host": {
+      "legacyGcn": true,
+      "vendor": "amd",
+      "name": "AMD Radeon (TM) R9 380 Series",
+      "routeHint": "gpu.compute.amd.legacy_efficient"
+    },
+    "schedule": {
+      "width": 64,
+      "height": 64,
+      "tileSize": 8,
+      "tilesX": 8,
+      "tilesY": 8,
+      "totalTiles": 64,
+      "activeTiles": 6,
+      "occupancy": 0.09375,
+      "salienceThreshold": 0.68529171750003,
+      "activeIndices": [
+        26,
+        27,
+        28,
+        34,
+        35,
+        36
+      ],
+      "salienceFractionTarget": 0.1
+    },
+    "metrics": {
+      "workTotal": 64,
+      "workApproved": 6,
+      "workWaste": 58,
+      "usefulFraction": 0.09375,
+      "tileOccupancy": 0.09375,
+      "algorithmicGainEstimate": 10.666666666666666,
+      "bytesPerFlopEstimate": 0.0703125,
+      "memoryEfficiencyGainEstimate": 0.8888888888888888,
+      "governanceGainDeclared": 1.5,
+      "combinedGainEstimate": 16,
+      "note": "Combined gain is schedule math (Useful FLOPs fraction × declared mem/gov factors) — not a claim of beating 4090 Total FLOPs/Time"
+    },
+    "bandwidth": {
+      "status": "declared",
+      "denseBytes": 16384,
+      "sparseBytes": 1728,
+      "denseFlops": 262144,
+      "sparseFlops": 24576,
+      "bytesPerFlopDense": 0.0625,
+      "bytesPerFlopSparse": 0.0703125,
+      "memoryEfficiencyGainEstimate": 0.8888888888888888,
+      "note": "Arithmetic estimate — not a device profiler measurement"
+    },
+    "plate": {
+      "kind": "legacyEfficientSdkAssist",
+      "status": "partial",
+      "stillPath": null,
+      "stillProvider": null,
+      "lemonadeSdkProvider": "lemonade-sdk",
+      "note": "Lemonade SDK probe/chat attached (LLM assist; no still pixels)"
+    },
+    "receipt": {
+      "intentId": "demo-sdk-chat",
+      "scheduleHash": "03c8fa1842c22216e88a6fa0fbc38a791699a018cff0399d044860394931dd6a",
+      "status": "partial",
+      "stillProvider": null,
+      "lemonadeSdk": true
+    },
+    "message": "Legacy efficient beauty: schedule + Lemonade SDK chat (Bonsai-1.7B-gguf)",
+    "provenanceKind": "assistProvenance",
+    "beauty": {
+      "providerRequested": "lemonade-sdk",
+      "lemonade": null,
+      "lemonadeSdk": {
+        "probe": {
+          "adapterId": "sx.adapter.lemonade.sdk.chat",
+          "provider": "lemonade-sdk",
+          "status": "partial",
+          "candidates": [
+            "http://localhost:8000/api/v1",
+            "http://localhost:13305/api/v1"
+          ],
+          "selectedBaseUrl": "http://localhost:13305/api/v1",
+          "serverUp": true,
+          "portProbes": [
+            {
+              "baseUrl": "http://localhost:8000/api/v1",
+              "health": {
+                "status": 0,
+                "error": "tcp_closed"
+              },
+              "models": null,
+              "reachable": false,
+              "tcpOpen": false
+            },
+            {
+              "baseUrl": "http://localhost:13305/api/v1",
+              "health": {
+                "status": 200,
+                "body": {
+                  "all_models_loaded": [
+                    {
+                      "backend_alive": true,
+                      "backend_health": "ready",
+                      "backend_url": "http://127.0.0.1:8002/v1",
+                      "checkpoint": "unsloth/Llama-3.2-1B-Instruct-GGUF:Llama-3.2-1B-Instruct-UD-Q4_K_XL.gguf",
+                      "device": "gpu",
+                      "is_busy": false,
+                      "is_streaming": false,
+                      "last_use": 4144772,
+                      "loaded": true,
+                      "max_context_window": 131072,
+                      "model_name": "Llama-3.2-1B-Instruct-GGUF",
+                      "pid": 3336,
+                      "pinned": false,
+                      "recipe": "llamacpp",
+                      "recipe_options": {
+                        "ctx_size": 4096,
+                        "llamacpp_backend": "vulkan"
+                      },
+                      "residency_class": "standard",
+                      "slot_pool": "standard/llm",
+                      "status": "ready",
+                      "type": "llm",
+                      "watchdog_reset": false
+                    }
+                  ],
+                  "max_models": {
+                    "classification": 1,
+                    "embedding": 1,
+                    "image": 1,
+                    "llm": 1,
+                    "reranking": 1,
+                    "transcription": 1,
+                    "tts": 1
+                  },
+                  "model_loaded": "Llama-3.2-1B-Instruct-GGUF",
+                  "pinned_helper_models": {
+                    "classification": 0,
+                    "embedding": 0,
+                    "image": 0,
+                    "llm": 0,
+                    "reranking": 0,
+                    "transcription": 0,
+                    "tts": 0
+                  },
+                  "pinned_models": {
+                    "classification": 0,
+                    "embedding": 0,
+                    "image": 0,
+                    "llm": 0,
+                    "reranking": 0,
+                    "transcription": 0,
+                    "tts": 0
+                  },
+                  "status": "ok",
+                  "telemetry": {
+                    "enabled": false
+                  },
+                  "update_check_done": true,
+                  "version": "11.5.0",
+                  "websocket_port": 9000
+                }
+              },
+              "models": null,
+              "reachable": true,
+              "tcpOpen": true
+            }
+          ],
+          "health": {
+            "status": 200,
+            "body": {
+              "all_models_loaded": [
+                {
+                  "backend_alive": true,
+                  "backend_health": "ready",
+                  "backend_url": "http://127.0.0.1:8002/v1",
+                  "checkpoint": "unsloth/Llama-3.2-1B-Instruct-GGUF:Llama-3.2-1B-Instruct-UD-Q4_K_XL.gguf",
+                  "device": "gpu",
+                  "is_busy": false,
+                  "is_streaming": false,
+                  "last_use": 4144772,
+                  "loaded": true,
+                  "max_context_window": 131072,
+                  "model_name": "Llama-3.2-1B-Instruct-GGUF",
+                  "pid": 3336,
+                  "pinned": false,
+                  "recipe": "llamacpp",
+                  "recipe_options": {
+                    "ctx_size": 4096,
+                    "llamacpp_backend": "vulkan"
+                  },
+                  "residency_class": "standard",
+                  "slot_pool": "standard/llm",
+                  "status": "ready",
+                  "type": "llm",
+                  "watchdog_reset": false
+                }
+              ],
+              "max_models": {
+                "classification": 1,
+                "embedding": 1,
+                "image": 1,
+                "llm": 1,
+                "reranking": 1,
+                "transcription": 1,
+                "tts": 1
+              },
+              "model_loaded": "Llama-3.2-1B-Instruct-GGUF",
+              "pinned_helper_models": {
+                "classification": 0,
+                "embedding": 0,
+                "image": 0,
+                "llm": 0,
+                "reranking": 0,
+                "transcription": 0,
+                "tts": 0
+              },
+              "pinned_models": {
+                "classification": 0,
+                "embedding": 0,
+                "image": 0,
+                "llm": 0,
+                "reranking": 0,
+                "transcription": 0,
+                "tts": 0
+              },
+              "status": "ok",
+              "telemetry": {
+                "enabled": false
+              },
+              "update_check_done": true,
+              "version": "11.5.0",
+              "websocket_port": 9000
+            }
+          },
+          "version": "11.5.0",
+          "models": [
+            {
+              "id": "Bonsai-1.7B-gguf",
+              "recipe": "llamacpp",
+              "downloaded": true,
+              "labels": [
+                "llamacpp",
+                "tool-calling"
+              ],
+              "size": 0.231
+            },
+            {
+              "id": "Llama-3.2-1B-Instruct-GGUF",
+              "recipe": "llamacpp",
+              "downloaded": true,
+              "labels": [
+                "tool-calling"
+              ],
+              "size": 0.777
+            },
+            {
+              "id": "Moonshine-Medium-Streaming",
+              "recipe": "moonshine",
+              "downloaded": true,
+              "labels": [
+                "transcription",
+                "realtime-transcription",
+                "hot"
+              ],
+              "size": 1.08
+            },
+            {
+              "id": "Qwen3-0.6B-GGUF",
+              "recipe": "llamacpp",
+              "downloaded": true,
+              "labels": [
+                "reasoning",
+                "tool-calling"
+              ],
+              "size": 0.356
+            },
+            {
+              "id": "RealESRGAN-x4plus",
+              "recipe": "sd-cpp",
+              "downloaded": true,
+              "labels": [
+                "upscaling",
+                "image"
+              ],
+              "size": 0.062
+            },
+            {
+              "id": "SD-Turbo",
+              "recipe": "sd-cpp",
+              "downloaded": true,
+              "labels": [
+                "image"
+              ],
+              "size": 4.86
+            },
+            {
+              "id": "SD-Turbo-GGUF",
+              "recipe": "sd-cpp",
+              "downloaded": true,
+              "labels": [
+                "image"
+              ],
+              "size": 1.88
+            },
+            {
+              "id": "SDXL-Base-1.0",
+              "recipe": "sd-cpp",
+              "downloaded": true,
+              "labels": [
+                "image"
+              ],
+              "size": 6.46
+            },
+            {
+              "id": "SDXL-Turbo",
+              "recipe": "sd-cpp",
+              "downloaded": true,
+              "labels": [
+                "image"
+              ],
+              "size": 6.46
+            },
+            {
+              "id": "Whisper-Large-v3-Turbo",
+              "recipe": "whispercpp",
+              "downloaded": true,
+              "labels": [
+                "transcription",
+                "realtime-transcription",
+                "hot"
+              ],
+              "size": 1.51
+            },
+            {
+              "id": "kokoro-v1",
+              "recipe": "kokoro",
+              "downloaded": true,
+              "labels": [
+                "tts"
+              ]
+            }
+          ],
+          "llmModels": [
+            {
+              "id": "Bonsai-1.7B-gguf",
+              "recipe": "llamacpp",
+              "downloaded": true,
+              "labels": [
+                "llamacpp",
+                "tool-calling"
+              ],
+              "size": 0.231
+            },
+            {
+              "id": "Llama-3.2-1B-Instruct-GGUF",
+              "recipe": "llamacpp",
+              "downloaded": true,
+              "labels": [
+                "tool-calling"
+              ],
+              "size": 0.777
+            },
+            {
+              "id": "Qwen3-0.6B-GGUF",
+              "recipe": "llamacpp",
+              "downloaded": true,
+              "labels": [
+                "reasoning",
+                "tool-calling"
+              ],
+              "size": 0.356
+            }
+          ],
+          "downloadedLlmModels": [
+            "Bonsai-1.7B-gguf",
+            "Llama-3.2-1B-Instruct-GGUF",
+            "Qwen3-0.6B-GGUF"
+          ],
+          "chatCapable": false,
+          "streamingSupported": true,
+          "ensure": null,
+          "chat": null,
+          "blockers": [],
+          "notes": {
+            "officialDefault": "Lemonade Server OpenAI API defaults to http://localhost:13305/api/v1 (also /v1).",
+            "legacyPaste": "Some user docs / older installs cite http://localhost:8000/api/v1 — probed first when env unset.",
+            "preferredModel": "Llama-3.2-1B-Instruct-GGUF",
+            "backendHint": "On FX-8350 / R9 380 prefer llamacpp:vulkan (avoid AVX2-only CPU llama binaries).",
+            "multimodalSibling": "Images/TTS/STT remain on lemonadeSdAdapter (:13305 multimodal). This adapter is chat/LLM."
+          },
+          "vendorPinHint": "See docs/4d-engine/proofs/legacy-efficient/upstream-vendor-pins.json",
+          "capturedAt": "2026-07-30T03:57:33.975Z"
+        },
+        "chat": {
+          "ok": true,
+          "status": "partial",
+          "adapterId": "sx.adapter.lemonade.sdk.chat",
+          "provider": "lemonade-sdk",
+          "model": "Bonsai-1.7B-gguf",
+          "baseUrl": "http://localhost:13305/api/v1",
+          "content": "OK」\n\n//////////////////////////////////////////////////////////////",
+          "reasoningContent": null,
+          "usage": {
+            "completion_tokens": 64,
+            "prompt_tokens": 17,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "total_tokens": 81
+          },
+          "finishReason": "length",
+          "raw": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": "OK」\n\n//////////////////////////////////////////////////////////////",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1785383863,
+            "id": "chatcmpl-XfINetaf9BKYpiGoi4Nii5PhQKMUkUJz",
+            "model": "C:\\Users\\My PC\\.cache\\huggingface\\hub/models--prism-ml--Bonsai-1.7B-gguf\\snapshots\\210a9e99f79cb184909d49595906526eb2b3dd9a\\Bonsai-1.7B-Q1_0.gguf",
+            "object": "chat.completion",
+            "system_fingerprint": "b9747-d6d899580",
+            "timings": {
+              "cache_n": 0,
+              "predicted_ms": 4918.238,
+              "predicted_n": 64,
+              "predicted_per_second": 13.01279035296787,
+              "predicted_per_token_ms": 76.84746875,
+              "prompt_ms": 169.693,
+              "prompt_n": 17,
+              "prompt_per_second": 100.1809149464032,
+              "prompt_per_token_ms": 9.981941176470588
+            },
+            "usage": {
+              "completion_tokens": 64,
+              "prompt_tokens": 17,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              },
+              "total_tokens": 81
+            }
+          },
+          "elapsedMs": 9306,
+          "assistOnly": true,
+          "nonAuthoritative": true,
+          "message": "Lemonade SDK chat via Bonsai-1.7B-gguf"
+        }
+      },
+      "hip": null,
+      "opencl": null,
+      "stillPath": null,
+      "stillProvider": null
+    }
+  },
+  "invoke": {
+    "cli": "node sovereign-x/cli/sx-legacy-efficient.mjs",
+    "capabilityId": "gpu.compute.amd.legacy_efficient",
+    "still": false,
+    "provider": "lemonade-sdk",
+    "chat": true
+  },
+  "honesty": "Combined gain is schedule math. Does not claim R9 380 Total FLOPs/Time > RTX 4090. Lemonade SD may be blocked (AVX2/ROCm); Lemonade SDK chat needs a downloaded LLM; OpenCL Tonga still is the GPU stand-in on this host."
+}

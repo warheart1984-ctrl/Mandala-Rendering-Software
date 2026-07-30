@@ -1,0 +1,24 @@
+{
+  "capturedAt": "2026-07-30T04:13:12.048Z",
+  "intent": "cycle-rerun-1",
+  "trailNote": "docs/governance/cecp/trails/sx-legacy-efficient-3layer-2026-07/10-cycle-rerun.md",
+  "improved": {
+    "hipSdk": "partial",
+    "beautyHip": "partial",
+    "lemonadeSdkLiveChat": "partial",
+    "openclStill": "partial"
+  },
+  "stillBlocked": {
+    "lemonadeSdGeneration": "blocked",
+    "hipDeviceRuntime": "blocked"
+  },
+  "proofPaths": [
+    "docs/4d-engine/proofs/legacy-efficient/hip-sdk-detection-report.json",
+    "docs/4d-engine/proofs/legacy-efficient/hip-hello-compile-run-proof.json",
+    "docs/4d-engine/proofs/legacy-efficient/lemonade-sdk-live-chat-proof.json",
+    "docs/4d-engine/proofs/legacy-efficient/lemonade-capability-report.json",
+    "docs/4d-engine/proofs/legacy-efficient/sx-route-proof.json",
+    "docs/4d-engine/proofs/legacy-efficient/opencl-tonga-still.png"
+  ],
+  "tests": "27/27 pass (hipSdkProbe, legacyEfficientBeauty, lemonadeSdk*)"
+}

@@ -1,0 +1,19 @@
+name: research-decoded
+intro_seconds: 15
+context_seconds: 75
+core_minutes_min: 6
+core_minutes_max: 10
+summary_seconds: 75
+outro_seconds: 20
+segments:
+  - id: intro
+    maps_from: pedagogy.narrative_arc.hook
+  - id: context
+    maps_from: pedagogy.narrative_arc.sections[0]
+  - id: core
+    maps_from: pedagogy.narrative_arc.sections
+  - id: summary
+    maps_from: pedagogy.learning_objectives
+  - id: outro
+    maps_from: assets.call_to_action
+status: skeleton

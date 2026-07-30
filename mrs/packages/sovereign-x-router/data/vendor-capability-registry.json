@@ -18,7 +18,8 @@
     "gpu.compute.nvidia.cuda",
     "gpu.gen.nvidia.nim_flux",
     "gpu.inference.amd.rocm",
-    "gpu.compute.amd.hip"
+    "gpu.compute.amd.hip",
+    "gpu.compute.amd.legacy_efficient"
   ],
   "aliases": {
     "gpu.gen.nvidia.nim_flux": "ai.gen.nvidia.flux",
@@ -232,6 +233,30 @@
         "Local Lemonade multimodal assist (when configured)"
       ],
       "bannedUses": ["Print beauty SoT", "RT4D GPU SoT"]
+    },
+    {
+      "id": "gpu.compute.amd.legacy_efficient",
+      "capabilityClass": "gpu.compute.amd.legacy_efficient",
+      "vendor": "amd",
+      "authorityTag": "assist",
+      "skillNames": ["hip-rocm", "rocm-setup"],
+      "lane": "upstream",
+      "printLane": "forbidden_for_print",
+      "status": "partial",
+      "hostCapabilityDriven": true,
+      "buildGroups": ["A", "C"],
+      "modalities": ["image"],
+      "allowedUses": [
+        "3-Layer Path sparse/tiled efficient beauty schedule (legacy GCN / R9 380)",
+        "Intent-gated Work_approved metrics",
+        "OpenCL/Vulkan path scaffolding (non-evidence)"
+      ],
+      "bannedUses": [
+        "Digital Printer beauty SoT",
+        "Claim live HIP beauty on Windows R9 380 without probe",
+        "Claim Total FLOPs/Time superiority over RTX 4090"
+      ],
+      "note": "SX first-class route for photoreal-on-legacy efficiency; see docs/4d-engine/PHOTOREAL_ON_R9_380.md"
     }
   ],
   "forbiddenPrintCapabilityIds": [

@@ -1,0 +1,523 @@
+{
+  "adapterId": "sx.adapter.lemonade.sd",
+  "status": "partial",
+  "baseUrl": "http://127.0.0.1:13305/api/v1",
+  "serverUp": true,
+  "health": {
+    "status": 200,
+    "body": {
+      "all_models_loaded": [
+        {
+          "backend_alive": true,
+          "backend_health": "ready",
+          "backend_url": "http://127.0.0.1:8002/v1",
+          "checkpoint": "unsloth/Llama-3.2-1B-Instruct-GGUF:Llama-3.2-1B-Instruct-UD-Q4_K_XL.gguf",
+          "device": "gpu",
+          "is_busy": false,
+          "is_streaming": false,
+          "last_use": 21499335,
+          "loaded": true,
+          "max_context_window": 131072,
+          "model_name": "Llama-3.2-1B-Instruct-GGUF",
+          "pid": 2280,
+          "pinned": false,
+          "recipe": "llamacpp",
+          "recipe_options": {
+            "ctx_size": 4096
+          },
+          "residency_class": "standard",
+          "slot_pool": "standard/llm",
+          "status": "ready",
+          "type": "llm",
+          "watchdog_reset": false
+        }
+      ],
+      "max_models": {
+        "classification": 1,
+        "embedding": 1,
+        "image": 1,
+        "llm": 1,
+        "reranking": 1,
+        "transcription": 1,
+        "tts": 1
+      },
+      "model_loaded": "Llama-3.2-1B-Instruct-GGUF",
+      "pinned_helper_models": {
+        "classification": 0,
+        "embedding": 0,
+        "image": 0,
+        "llm": 0,
+        "reranking": 0,
+        "transcription": 0,
+        "tts": 0
+      },
+      "pinned_models": {
+        "classification": 0,
+        "embedding": 0,
+        "image": 0,
+        "llm": 0,
+        "reranking": 0,
+        "transcription": 0,
+        "tts": 0
+      },
+      "status": "ok",
+      "telemetry": {
+        "enabled": false
+      },
+      "update_check_done": true,
+      "version": "11.5.0",
+      "websocket_port": 9000
+    }
+  },
+  "models": [
+    {
+      "id": "Bonsai-1.7B-gguf",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "llamacpp",
+        "tool-calling"
+      ],
+      "size": 0.231
+    },
+    {
+      "id": "Llama-3.2-1B-Instruct-GGUF",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "tool-calling"
+      ],
+      "size": 0.777
+    },
+    {
+      "id": "Moonshine-Medium-Streaming",
+      "recipe": "moonshine",
+      "downloaded": true,
+      "labels": [
+        "transcription",
+        "realtime-transcription",
+        "hot"
+      ],
+      "size": 1.08
+    },
+    {
+      "id": "Qwen3-0.6B-GGUF",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "reasoning",
+        "tool-calling"
+      ],
+      "size": 0.356
+    },
+    {
+      "id": "RealESRGAN-x4plus",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "upscaling",
+        "image"
+      ],
+      "size": 0.062
+    },
+    {
+      "id": "SD-Turbo",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 4.86
+    },
+    {
+      "id": "SD-Turbo-GGUF",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 1.88
+    },
+    {
+      "id": "SDXL-Base-1.0",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 6.46
+    },
+    {
+      "id": "SDXL-Turbo",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 6.46
+    },
+    {
+      "id": "Whisper-Large-v3-Turbo",
+      "recipe": "whispercpp",
+      "downloaded": true,
+      "labels": [
+        "transcription",
+        "realtime-transcription",
+        "hot"
+      ],
+      "size": 1.51
+    },
+    {
+      "id": "kokoro-v1",
+      "recipe": "kokoro",
+      "downloaded": true,
+      "labels": [
+        "tts"
+      ]
+    }
+  ],
+  "imageModels": [
+    {
+      "id": "RealESRGAN-x4plus",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "upscaling",
+        "image"
+      ],
+      "size": 0.062
+    },
+    {
+      "id": "SD-Turbo",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 4.86
+    },
+    {
+      "id": "SD-Turbo-GGUF",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 1.88
+    },
+    {
+      "id": "SDXL-Base-1.0",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 6.46
+    },
+    {
+      "id": "SDXL-Turbo",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 6.46
+    }
+  ],
+  "downloadedImageModels": [
+    "RealESRGAN-x4plus",
+    "SD-Turbo",
+    "SD-Turbo-GGUF",
+    "SDXL-Base-1.0",
+    "SDXL-Turbo"
+  ],
+  "system": {
+    "processor": "AMD FX(tm)-8350 Eight-Core Processor (4 cores, 8 logical processors)",
+    "amdGpu": [
+      {
+        "available": true,
+        "family": "",
+        "integrated": true,
+        "name": "AMD Radeon (TM) R9 380 Series"
+      }
+    ],
+    "recipesSdCpp": {
+      "backends": {
+        "cpu": {
+          "action": "",
+          "devices": [
+            "cpu"
+          ],
+          "download_filename": "sd-master-8caa3f9-bin-win-avx2-x64.zip",
+          "message": "",
+          "release_url": "https://github.com/leejet/stable-diffusion.cpp/releases/tag/master-721-8caa3f9",
+          "state": "installed",
+          "version": "master-721-8caa3f9"
+        },
+        "cuda": {
+          "action": "",
+          "devices": [],
+          "message": "Unsupported GPU",
+          "state": "unsupported"
+        },
+        "metal": {
+          "action": "",
+          "can_uninstall": true,
+          "devices": [],
+          "message": "Requires macOS",
+          "release_url": "https://github.com/leejet/stable-diffusion.cpp/releases/tag/master-721-8caa3f9",
+          "state": "unsupported",
+          "version": "master-721-8caa3f9"
+        },
+        "rocm": {
+          "action": "",
+          "devices": [],
+          "message": "Unsupported GPU",
+          "state": "unsupported"
+        },
+        "vulkan": {
+          "action": "",
+          "devices": [
+            "amd_gpu",
+            "cpu"
+          ],
+          "download_filename": "sd-master-8caa3f9-bin-win-vulkan-x64.zip",
+          "message": "",
+          "release_url": "https://github.com/leejet/stable-diffusion.cpp/releases/tag/master-721-8caa3f9",
+          "state": "installed",
+          "version": "master-721-8caa3f9"
+        }
+      },
+      "default_backend": "cpu",
+      "display_name": "StableDiffusion.cpp",
+      "experimental": false,
+      "modality": "Image generation",
+      "options": [
+        {
+          "cli_flag": "--sdcpp",
+          "default": "",
+          "group": "Stable Diffusion Options",
+          "help": "SD.cpp backend to use",
+          "name": "sd-cpp_backend",
+          "type_name": "BACKEND"
+        },
+        {
+          "cli_flag": "--sdcpp-args",
+          "default": "",
+          "group": "Stable Diffusion Options",
+          "help": "Custom arguments to pass to sd-server (must not conflict with managed args)",
+          "name": "sdcpp_args",
+          "type_name": "ARGS"
+        },
+        {
+          "cli_flag": "",
+          "default": 20,
+          "group": "Stable Diffusion Options",
+          "help": "Number of diffusion steps",
+          "name": "steps",
+          "type_name": "SIZE"
+        },
+        {
+          "cli_flag": "",
+          "default": 7,
+          "group": "Stable Diffusion Options",
+          "help": "Classifier-free guidance scale",
+          "name": "cfg_scale",
+          "type_name": "SIZE"
+        },
+        {
+          "cli_flag": "",
+          "default": 512,
+          "group": "Stable Diffusion Options",
+          "help": "Output image width",
+          "name": "width",
+          "type_name": "SIZE"
+        },
+        {
+          "cli_flag": "",
+          "default": 512,
+          "group": "Stable Diffusion Options",
+          "help": "Output image height",
+          "name": "height",
+          "type_name": "SIZE"
+        },
+        {
+          "cli_flag": "",
+          "default": "",
+          "group": "Stable Diffusion Options",
+          "help": "Sampling method",
+          "name": "sampling_method",
+          "type_name": "ARGS"
+        },
+        {
+          "cli_flag": "",
+          "default": 0,
+          "group": "Stable Diffusion Options",
+          "help": "Flow shift",
+          "name": "flow_shift",
+          "type_name": "SIZE"
+        }
+      ],
+      "order": 4,
+      "selectable_backend": true,
+      "slot_policy": "standard",
+      "support": [
+        {
+          "backend": "rocm",
+          "device_summary": "Supported AMD ROCm iGPU/dGPU families*",
+          "devices": [
+            {
+              "device": "amd_gpu",
+              "families": [
+                "gfx103X",
+                "gfx110X",
+                "gfx1150",
+                "gfx1151",
+                "gfx1152",
+                "gfx120X"
+              ]
+            }
+          ],
+          "os": [
+            "linux",
+            "windows"
+          ]
+        },
+        {
+          "backend": "cuda",
+          "device_summary": "NVIDIA GPUs (Turing or newer)**",
+          "devices": [
+            {
+              "device": "nvidia_gpu",
+              "families": [
+                "sm_100",
+                "sm_120",
+                "sm_121",
+                "sm_75",
+                "sm_80",
+                "sm_86",
+                "sm_89",
+                "sm_90"
+              ]
+            }
+          ],
+          "os": [
+            "linux",
+            "windows"
+          ]
+        },
+        {
+          "backend": "vulkan",
+          "device_summary": "Vulkan-capable GPUs",
+          "devices": [
+            {
+              "device": "amd_gpu",
+              "families": []
+            },
+            {
+              "device": "cpu",
+              "families": [
+                "x86_64"
+              ]
+            },
+            {
+              "device": "nvidia_gpu",
+              "families": []
+            }
+          ],
+          "os": [
+            "linux",
+            "windows"
+          ]
+        },
+        {
+          "backend": "cpu",
+          "device_summary": "x86_64 CPU",
+          "devices": [
+            {
+              "device": "cpu",
+              "families": [
+                "x86_64"
+              ]
+            }
+          ],
+          "os": [
+            "linux",
+            "windows"
+          ]
+        },
+        {
+          "backend": "metal",
+          "device_summary": "Apple Silicon GPU",
+          "devices": [
+            {
+              "device": "metal",
+              "families": []
+            }
+          ],
+          "os": [
+            "macos"
+          ]
+        }
+      ],
+      "uses_ctx_size": false,
+      "web_display_name": "stable-diffusion.cpp"
+    }
+  },
+  "backendsHint": {
+    "sdcpp": {
+      "preferred": "cpu",
+      "note": "On R9 380 (Tonga) Lemonade marks sd-cpp ROCm unsupported. Prefer `lemonade config set sdcpp.backend=cpu` then probe; FX-8350 hosts may still fail AVX2 sd-cpp binaries (0xC000001D)."
+    }
+  },
+  "generationCapable": false,
+  "blockers": [
+    {
+      "code": "HOST_LEGACY_GCN",
+      "message": "AMD R9 380 / Tonga detected — outside Lemonade sd-cpp ROCm gfx families (RDNA2+)."
+    },
+    {
+      "code": "model_load_error",
+      "message": "Failed to load model 'SD-Turbo': sd-server failed to start or become ready"
+    }
+  ],
+  "capturedAt": "2026-07-30T08:43:48.104Z",
+  "generate": {
+    "ok": false,
+    "status": "blocked",
+    "adapterId": "sx.adapter.lemonade.sd",
+    "provider": "lemonade-local",
+    "code": "model_load_error",
+    "message": "Failed to load model 'SD-Turbo': sd-server failed to start or become ready",
+    "lastError": {
+      "code": "model_load_error",
+      "message": "Failed to load model 'SD-Turbo': sd-server failed to start or become ready",
+      "model": "SD-Turbo",
+      "status": 500
+    },
+    "attempts": [
+      {
+        "model": "SD-Turbo-GGUF",
+        "attempt": 1,
+        "status": 500,
+        "elapsedMs": 10104,
+        "ok": false,
+        "error": "Failed to load model 'SD-Turbo-GGUF': sd-server failed to start or become ready"
+      },
+      {
+        "model": "SD-Turbo",
+        "attempt": 1,
+        "status": 500,
+        "elapsedMs": 10861,
+        "ok": false,
+        "error": "Failed to load model 'SD-Turbo': sd-server failed to start or become ready"
+      }
+    ],
+    "assistOnly": true,
+    "nonAuthoritative": true,
+    "hostHints": {
+      "r9_380": "sd-cpp ROCm unsupported for Tonga; Vulkan/CPU Lemonade binaries may crash with ILLEGAL_INSTRUCTION on FX-8350 (AVX2).",
+      "remediation": "Use OpenCL legacy still path, or run Lemonade SD on a ROCm/RDNA2+ or AVX2 host."
+    }
+  }
+}

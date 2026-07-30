@@ -1,0 +1,36 @@
+# Schema: reasoning trace (predict → solve → check → explain)
+type: object
+required:
+  - problem
+  - predict
+  - solve
+  - check
+  - explain
+properties:
+  problem:
+    type: string
+  predict:
+    type: object
+    properties:
+      estimate: { type: string }
+      confidence_band: { type: string }
+  solve:
+    type: object
+    properties:
+      pattern_id: { type: string }
+      steps:
+        type: array
+        items: { type: string }
+      result: { type: string }
+  check:
+    type: object
+    properties:
+      within_band: { type: boolean }
+      sanity_notes: { type: string }
+  explain:
+    type: object
+    properties:
+      intuitive_story: { type: string }
+      key_pattern: { type: string }
+      why_valid: { type: string }
+status: declared

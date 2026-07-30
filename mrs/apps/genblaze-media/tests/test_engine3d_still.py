@@ -300,6 +300,75 @@ def test_api_engine3d_still_mocked(tmp_path, monkeypatch):
     assert "sphere-bridge" in body["note"].lower() or "NOT RT4D" in body["note"]
 
 
+def test_api_engine3d_still_accepts_prompt_scene_world_document(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr("app.main.get_settings", lambda: _settings())
+    from app import main as main_mod
+    from app.index_store import AssetIndex
+
+    main_mod._index = AssetIndex(tmp_path / "recent.json")
+    png = _tiny_png()
+    world_document = {
+        "id": "prompt-scene-world",
+        "version": "1.0",
+        "objects": [],
+        "camera": {"position": [0, 0, 4], "target": [0, 0, 0]},
+    }
+
+    def fake_gen(settings, **kwargs):
+        assert kwargs["world_document"] == world_document
+        assert kwargs["world_path"] is None
+        run_id = "12121212-1212-1212-1212-121212121212"
+        from app.config import APP_DIR
+
+        put_preview(APP_DIR, run_id, png)
+        return GenerateResult(
+            run_id=run_id,
+            prompt="engine3d-still:prompt-scene-world",
+            model="mrs-engine3d-core/soft-raster",
+            provider="engine3d-still",
+            status="ok",
+            asset_key=f"genblaze-media/engine3d-still/{run_id}/beauty.png",
+            manifest_key=f"genblaze-media/engine3d-still/{run_id}/manifest.json",
+            asset_sha256="d" * 64,
+            preview_url=f"/api/preview/{run_id}",
+            created_at="2026-01-01T00:00:00+00:00",
+            dry_run=False,
+            provenance={
+                "kind": ENGINE3D_STILL_KIND,
+                "structure_source": "engine3d_raster",
+            },
+        )
+
+    monkeypatch.setattr("app.main.generate_engine3d_still", fake_gen)
+    client = TestClient(app)
+    resp = client.post(
+        "/api/engine3d-still",
+        json={
+            "world_document": world_document,
+            "width": 64,
+            "height": 64,
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["structure"]["run_id"] == "12121212-1212-1212-1212-121212121212"
+
+
+def test_api_engine3d_still_rejects_conflicting_world_inputs(monkeypatch):
+    monkeypatch.setattr("app.main.get_settings", lambda: _settings())
+    client = TestClient(app)
+    resp = client.post(
+        "/api/engine3d-still",
+        json={
+            "world_path": "mrs/assets/world.json",
+            "world_document": {"id": "inline", "objects": []},
+        },
+    )
+    assert resp.status_code == 400
+    assert "not both" in resp.json()["detail"]
+
+
 def test_api_engine3d_still_polish_requires_prompt(tmp_path, monkeypatch):
     """Legacy name: empty prompt is now allowed (face/generic defaults apply)."""
     monkeypatch.setattr(

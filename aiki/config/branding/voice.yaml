@@ -1,0 +1,19 @@
+persona:
+  traits:
+    - curious
+    - precise
+    - non-dogmatic
+style_guidelines:
+  avoid:
+    - clickbait
+    - overclaiming
+  prefer:
+    - evidence-backed statements
+    - intuitive analogies
+narration:
+  mvp_mode: recorded_voice
+  tts:
+    enabled: false
+    model: stub
+    voice_profile: shimmer
+status: skeleton

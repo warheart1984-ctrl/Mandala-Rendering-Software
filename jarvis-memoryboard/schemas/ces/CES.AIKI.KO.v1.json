@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "CES.AIKI.KO.v1",
+  "title": "CES.AIKI.KO.v1 — AIKI Knowledge Object",
+  "description": "Declared stub. Not runtime-validated by Continuity Ledger v1.",
+  "type": "object",
+  "required": [
+    "ces_id",
+    "ko_id",
+    "claim",
+    "authority_id",
+    "created_at",
+    "content_hash",
+    "status"
+  ],
+  "properties": {
+    "ces_id": { "const": "CES.AIKI.KO.v1" },
+    "ko_id": { "type": "string", "minLength": 1 },
+    "claim": { "type": "string", "minLength": 1 },
+    "authority_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "content_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["draft", "verified", "archived"] },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "lineage_identity_id": { "type": "string" },
+    "signature": { "type": "string", "description": "Declared — not enforced" }
+  },
+  "additionalProperties": true
+}

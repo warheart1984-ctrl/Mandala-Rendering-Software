@@ -9,7 +9,7 @@ import {
 
 /**
  * Honest capability card for the ChatGPT model (Drive-G-1).
- * No FLUX, no Genblaze, no diffusion / text-to-image claim.
+ * Native local RT4D plus an explicit Genblaze-backed 4D→3D orchestration lane.
  */
 export function handleDescribeCapabilities(): {
   text: string;
@@ -18,8 +18,27 @@ export function handleDescribeCapabilities(): {
   const capabilities = {
     status: "partial",
     product: "MRS 4D Renderer",
-    note: "Local chatgpt-mrs MCP → renderer-core RT4D. Returns MCP image/png content. Does not call Genblaze, FLUX, or B2.",
+    note: "Local RT4D tools return native MCP image/png content. The complete 4D→3D tool calls the configured Genblaze service for RT4D, prompt-to-scene, Engine3D, provenance, and B2-backed asset records.",
     tools: {
+      native_4d_to_3d_pipeline: {
+        status: "enforced",
+        primary: true,
+        tools: ["render_4d_to_3d_pipeline"],
+        stages: [
+          "deterministic RT4D concept still",
+          "governed SceneSpecification reveal",
+          "Engine3D structure still with optional RT4D background composite",
+        ],
+        constraints: {
+          no_diffusion: true,
+          engine3d_polish: false,
+          requires_genblaze_health: [
+            "image_backend=rt4d",
+            "prompt_scene.available=true",
+            "engine3d_still.available=true",
+          ],
+        },
+      },
       rt4d_png_renderer: {
         status: "enforced",
         primary: true,
@@ -62,8 +81,7 @@ export function handleDescribeCapabilities(): {
       mcp_enforced_max: "512² / 32 spp / PNG byte cap — high/512spp rejected at MCP layer",
     },
     not_included: [
-      "FLUX / NVIDIA NIM diffusion",
-      "Genblaze HTTP / B2 storage",
+      "diffusion / img2img polish in native pipeline tools",
       "photogrammetry / image-to-mesh",
       "headless WebGPU wavefront (mock-tested only)",
       "video / MP4 encode",
@@ -72,7 +90,7 @@ export function handleDescribeCapabilities(): {
   };
 
   return {
-    text: "MRS 4D Renderer: primary tools return path-traced PNG (MCP image content). Optional Canvas2D viewport for Scene4DDTO. No Genblaze/FLUX/diffusion.",
+    text: "MRS plugin: native RT4D PNG tools plus a Genblaze-backed RT4D→SceneSpecification→Engine3D pipeline. Results are MCP images with run IDs and provenance; no diffusion polish.",
     capabilities,
   };
 }

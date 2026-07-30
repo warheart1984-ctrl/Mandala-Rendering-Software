@@ -41,12 +41,21 @@ export type {
   Vec3Tuple,
   WorldObject,
   WorldObjectKind,
+  WorldObjectType,
+  WorldEntityContext,
+  WorldEntityWorldContext,
+  WorldEntityParentContext,
+  WorldEntityTerrainContext,
+  WorldEntityArchitecturalContext,
+  WorldEntityMaterialContext,
   WorldGeneratorParams,
 } from "./world/WorldObject.js";
 export {
   DEFAULT_TRANSFORM,
   createUniversalMaterial,
   createWorldObject,
+  worldProfileIdForObjectType,
+  toWorldEntityForCkl,
 } from "./world/WorldObject.js";
 export {
   UNIVERSAL_MATERIAL_TYPES,
@@ -372,6 +381,7 @@ export {
   type RasterStillRequest,
   type RasterStillBuffers,
   type RasterStillFiles,
+  type RasterLight,
 } from "./renderer/raster/HeadlessStillRenderer.js";
 
 export {
@@ -381,6 +391,56 @@ export {
   buildPortraitRasterMeshesFromHumanRig,
   worldMeshToRasterMesh,
 } from "./renderer/raster/portraitMeshes.js";
+
+export {
+  rasterMaterialFromUniversal,
+  rasterMaterialFromBaseColor,
+  shadeRasterFragment,
+  shadeRasterFragmentLights,
+  createCinematicLightRig,
+  createDramaticCinematicLightRig,
+  createDefaultMaterialCatalog,
+  materialTypeCoverage,
+  type RasterMaterial,
+  type ShadeRasterOptions,
+} from "./renderer/raster/RasterMaterial.js";
+
+export {
+  applyDepthFog,
+  applyScreenSpaceAo,
+  applyDepthOfFieldProxy,
+  applyTemporalMotionBlur,
+  applyCinematicColorGrade,
+  applyAcesApproxToneMap,
+  applyVolumetricDust,
+  applyContactShadowBoost,
+  type ScreenSpaceAoOptions,
+  type DepthOfFieldOptions,
+  type TemporalMotionBlurOptions,
+  type CinematicGradeOptions,
+  type AcesToneMapOptions,
+  type VolumetricDustOptions,
+} from "./renderer/raster/RasterPostProcess.js";
+
+export {
+  bridgeConstitutionalMaterial,
+  constitutionalToPbr,
+  pbrToUniversalMaterial,
+  resolveMaterialType,
+  universalToPbr,
+  type ConstitutionalMaterialDescriptor,
+  type PbrParams,
+  type ShaderBridgeResult,
+} from "./renderer/raster/ShaderBridge.js";
+
+export {
+  auditSoftRasterNormalization,
+  rejectSymmetryFlatten,
+  unitizeNormal,
+  positionOrganicVariance,
+  type NormalizationAuditFinding,
+  type NormalizationAuditReport,
+} from "./renderer/raster/OrganicVariance.js";
 
 export type {
   Timeline,
@@ -410,6 +470,17 @@ export type {
   LoadedFaceRig,
   FaceAssetKind,
   ResolvedHumanFacePath,
+  MeshAabb,
+  FixtureFaceEntry,
+  FixtureRegistryReport,
+  ScaleClass,
+  BiometricRange,
+  BiometricProfile,
+  BiometricCatalog,
+  BiometricValidationResult,
+  AabbProportionMetrics,
+  MetricContext,
+  InheritedMetrics,
 } from "./face/index.js";
 export {
   DEFAULT_FACE_BONES,
@@ -428,6 +499,38 @@ export {
   detectFaceAssetKind,
   normalizeHumanFaceName,
   defaultFaceNeutralGlbPath,
+  computeMeshAabb,
+  validateAabb,
+  hashFileSha256,
+  registerFixtureFace,
+  auditDefaultFaceFixtures,
+  CONSTITUTIONAL_SIGNATURE_MEANING,
+  loadBiometricCatalog,
+  getBiometricProfile,
+  resolveBiometricCatalogPath,
+  metricsFromAabb,
+  validateAgainstProfile,
+  validateAabbAgainstProfile,
+  inRange,
+  inheritMetricsFromContext,
+  scaleTripleFromInheritance,
+  requireScaleContext,
+  HALT_MISSING_SCALE,
+  applyAmendmentVIIToMeshes,
+  applyControlledOrganicAsymmetry,
+  CKL_AMENDMENT_VII_POLICY_IDS,
+  CKL_WORLD_PROFILE_POLICY_IDS,
+  evaluateCklAmendmentVIIGate,
+  evaluateCklAmendmentVIIOrdered,
+  evaluateCklWorldProfileGate,
+  evaluateCklWorldProfileOrdered,
+  getCklAmendmentVII,
+  loadAmendmentVIIPolicyManifest,
+  loadWorldProfile,
+  loadBiogeometricCatalog,
+  getWorldProfile,
+  inheritEcologicalScale,
+  HALT_MISSING_WORLD_CONTEXT,
 } from "./face/index.js";
 
 export {

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mrs://assets/world/schemas/biogeometric-profiles.schema.json",
+  "title": "Biogeometric World Profiles (stub)",
+  "description": "DECLARED / SKELETON only. Placeholder domains for World-Profile evolution after CKL Amendment VII. Not loaded by CKL. Not enforced. Not an ecology simulator. See docs/4d-engine/WORLD_PROFILE_BIOGEOMETRIC.md.",
+  "type": "object",
+  "required": ["schemaVersion", "status", "domains"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "biogeometric-profile/0.1-stub"
+    },
+    "status": {
+      "type": "string",
+      "const": "skeleton",
+      "description": "Drive-G-1: skeleton until Substration catalogs + tests exist"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "dependsOn": {
+      "type": "string",
+      "const": "ckl-amendment-vii-biometric-organic",
+      "description": "Promotion blocked until Amendment VII biometric gates remain enforced/partial with tests"
+    },
+    "promotionPath": {
+      "type": "string",
+      "const": "Substrate → Substration → Promotion"
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/domain" }
+    }
+  },
+  "$defs": {
+    "domainId": {
+      "type": "string",
+      "enum": ["biological", "geological", "synthetic", "atmospheric"]
+    },
+    "range": {
+      "type": "object",
+      "required": ["min", "max"],
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "unit": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "domain": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/domainId" },
+        "label": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["declared", "skeleton", "partial", "enforced"],
+          "default": "declared"
+        },
+        "exampleSubjects": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Illustrative only — not a fixture registry"
+        },
+        "metricFamilies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Placeholder family names (e.g. branchRatios, fractureIrregularity) — ranges TBD in Substration"
+        },
+        "placeholderRanges": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/range" },
+          "description": "Optional empty/placeholder ranges; must not be treated as lawful enforcement"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schemaVersion": "biogeometric-profile/0.1-stub",
+      "status": "skeleton",
+      "dependsOn": "ckl-amendment-vii-biometric-organic",
+      "promotionPath": "Substrate → Substration → Promotion",
+      "notes": "Stub example — not a live catalog",
+      "domains": [
+        {
+          "id": "biological",
+          "label": "Biological",
+          "status": "declared",
+          "exampleSubjects": ["trees", "fauna", "foliage"],
+          "metricFamilies": ["branchRatios", "canopyCurvature", "massDistribution"]
+        },
+        {
+          "id": "geological",
+          "label": "Geological",
+          "status": "declared",
+          "exampleSubjects": ["rocks", "cliffs", "soil"],
+          "metricFamilies": ["aspectRatios", "fractureIrregularity"]
+        },
+        {
+          "id": "synthetic",
+          "label": "Synthetic / architecture",
+          "status": "declared",
+          "exampleSubjects": ["buildings", "props"],
+          "metricFamilies": ["moduleScale", "facadeRhythm"]
+        },
+        {
+          "id": "atmospheric",
+          "label": "Atmospheric / fluid",
+          "status": "declared",
+          "exampleSubjects": ["water", "fog", "sky"],
+          "metricFamilies": ["featureScale", "varianceFloor", "opticalDepthProxy"]
+        }
+      ]
+    }
+  ]
+}

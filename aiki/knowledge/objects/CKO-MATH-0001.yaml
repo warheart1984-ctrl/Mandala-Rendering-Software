@@ -1,0 +1,30 @@
+id: aiki:cko/CKO-MATH-0001
+cko_id: CKO-MATH-0001
+series: Math Intuition
+title: "Number sense & magnitude"
+slug: number-sense-magnitude
+tags: [ime, numerical, magnitude]
+evergreen: true
+difficulty: beginner
+pedagogy:
+  learning_objectives:
+    - "Represent integers, fractions, and reals with magnitude and ordering."
+    - "Estimate distance between values before computing exactly."
+  key_questions:
+    - "Which number is closer to the target, and by how much?"
+  narrative_arc:
+    hook: "Before you calculate, feel the size of the answer."
+    sections:
+      - id: magnitude
+        label: "Magnitude and order"
+      - id: distance
+        label: "Distance between values"
+formats:
+  primary: [youtube-video, ai-tutor-dialogue]
+ime_layers:
+  - 01-numerical
+pattern_refs: []
+status:
+  lifecycle: draft
+  owner: Dar-z
+  last_updated: "2026-07-29"

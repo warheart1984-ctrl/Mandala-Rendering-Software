@@ -74,8 +74,21 @@ mrs/packages/renderer-web/_webgpu-smoke/_out/
 
 # Temporary build artifacts
 .tmp_*
+.tmp-*/
+tmp/
 .worktrees/
 renders/
+
+# HIP hello binary under proofs (JSON compile proof is SoT; rebuild with hipcc)
+docs/4d-engine/proofs/legacy-efficient/hip_hello.exe
+docs/4d-engine/proofs/legacy-efficient/*.exe
+docs/4d-engine/proofs/legacy-efficient/hip-hello-*.tmp
+docs/4d-engine/proofs/legacy-efficient/hip-hello-run.log
+
+# Local package metadata / source references kept outside Git
+jarvis-memoryboard/*.egg-info/
+aiki/docs/reference-models/e8/sources/*.docx
+VP_VULKANINFO_*.json
 
 # Operator-provided production face GLBs (keep README / .gitkeep tracked)
 operator-assets/**/*.glb

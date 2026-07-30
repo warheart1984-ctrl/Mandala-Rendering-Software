@@ -1,0 +1,66 @@
+{
+  "status": "partial",
+  "amendmentVII": {
+    "cklGates": "enforced",
+    "policies": [
+      "policy-biometric-conformance",
+      "policy-adaptive-scale",
+      "policy-organic-variance"
+    ],
+    "cisScal": "declared"
+  },
+  "catalogStatus": "partial",
+  "profileIds": [
+    "human-adult-v1",
+    "canine-medium-v1",
+    "toy-figurine-v1"
+  ],
+  "faceLawful": true,
+  "aabbMetrics": {
+    "height": 1.0999999940395355,
+    "width": 1.100000023841858,
+    "depth": 1.100000023841858,
+    "surfaceCurvatureProxy": 1,
+    "asymmetryProxy": 0,
+    "organicVarianceProxy": 0.1414213600688412,
+    "headToHeightProxy": 1,
+    "centerOfMassHeightFractionProxy": 0.5
+  },
+  "inheritance": {
+    "humanScale": 1,
+    "canineScale": 0.3235294117647059
+  },
+  "normalizationAudit": {
+    "status": "partial",
+    "auditedAt": "static-review",
+    "findings": [
+      {
+        "id": "unit-normalize-lighting-normals",
+        "severity": "info",
+        "flattensOrganicPositions": false,
+        "detail": "HeadlessStillRenderer normalize3 on transformed normals is lighting hygiene, not bilateral symmetry."
+      },
+      {
+        "id": "missing-normal-up-fill",
+        "severity": "warn",
+        "flattensOrganicPositions": false,
+        "detail": "worldMeshToRasterMesh fills missing normals with +Y — shading flattens on broken meshes; positions unchanged."
+      },
+      {
+        "id": "no-mirror-average-pass",
+        "severity": "info",
+        "flattensOrganicPositions": false,
+        "detail": "No soft-raster pass averages left/right vertices or forces mirror symmetry before shade."
+      },
+      {
+        "id": "fixture-authoring-symmetry",
+        "severity": "warn",
+        "flattensOrganicPositions": false,
+        "detail": "Synthetic HumanFace*.glb / UV-sphere demos are near-symmetric by construction — organic variance limited at asset source."
+      }
+    ],
+    "overNormalizesOrganicVariance": false,
+    "recommendation": "Preserve authored normals; do not add mirror-average. Prefer operator GLBs for organic asymmetry. Keep minOrganicVariance in biometric profiles."
+  },
+  "antiOverclaim": "CKL gates enforced when biometricAmendment present; catalog/AABB proxies remain partial; CIS SCAL declared"
+}

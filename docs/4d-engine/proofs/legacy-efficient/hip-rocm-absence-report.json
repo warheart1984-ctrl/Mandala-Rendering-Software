@@ -1,0 +1,61 @@
+{
+  "adapterId": "sx.adapter.hip.sdk.probe",
+  "capabilityHint": "gpu.compute.amd.hip",
+  "capturedAt": "2026-07-30T08:51:07.507Z",
+  "statusTag": "partial",
+  "surface": "ROCm/HIP SDK",
+  "hostHint": "Windows AMD — re-run after HIP SDK installer finishes",
+  "env": {
+    "HIP_PATH": "C:\\Program Files\\AMD\\ROCm\\7.1",
+    "ROCM_PATH": "C:\\Program Files\\AMD\\ROCm\\7.1",
+    "HIP_PLATFORM": null,
+    "HIP_COMPILER": null,
+    "pathHasHipBin": true
+  },
+  "candidates": [
+    "C:\\Program Files\\AMD\\ROCm\\7.1",
+    "C:\\Program Files\\AMD\\ROCm\\7.0",
+    "C:\\Program Files\\AMD\\ROCm\\6.4",
+    "C:\\Program Files\\AMD\\HIP",
+    "C:\\Program Files\\HIP SDK"
+  ],
+  "selectedRoot": "C:\\Program Files\\AMD\\ROCm\\7.1",
+  "tools": {
+    "hipcc": "C:\\Program Files\\AMD\\ROCm\\7.1\\bin\\hipcc.exe",
+    "hipconfig": "C:\\Program Files\\AMD\\ROCm\\7.1\\bin\\hipconfig.exe",
+    "hipccVersion": {
+      "ok": true,
+      "stdout": "HIP version: 7.1.51803-d3a86bd04\r\nclang version 21.0.0git (git@github.com:Compute-Mirrors/llvm-project 5dcc622b51ecd499912c1062ce2b0ecda60d8e93)\r\nTarget: x86_64-pc-windows-msvc\r\nThread model: posix\r\nInstalledDir: C:\\Program Files\\AMD\\ROCm\\7.1\\bin",
+      "stderr": "",
+      "error": null
+    },
+    "hipconfigSummary": {
+      "ok": true,
+      "stdout": "HIP version: 7.1.51803-d3a86bd04\r\n\r\n==hipconfig\r\nHIP_PATH           :C:\\Program Files\\AMD\\ROCm\\7.1\r\nROCM_PATH          :C:\\Program Files\\AMD\\ROCm\\7.1\r\nHIP_COMPILER       :clang\r\nHIP_PLATFORM       :amd\r\nHIP_RUNTIME        :rocclr\r\nCPP_CONFIG         : -D__HIP_PLATFORM_HCC__= -D__HIP_PLATFORM_AMD__= -IC:\\Program Files\\AMD\\ROCm\\7.1\\include\r\n\r\n==hip-clang\r\nHIP_CLANG_PATH     :C:\\Program Files\\AMD\\ROCm\\7.1\\bin\r\nllc-version :\r\nhip-clang-cxxflags :\r\n\r\nhip-clang-ldflags :\r\n\r\n\r\n== Environment Variables\r\nPATH=C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;C:\\Program Files\\AMD\\ROCm\\7.1\\bin;c:\\Program Files\\cursor\\resources\\app\\node_modules\\@vscode\\ripgrep\\bin;C:\\VulkanSDK\\1.4.350.0\\Bin;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\OpenSSH\\;C:\\Program Files\\cursor\\resources\\app\\bin;C:\\Program Files\\GitHub CLI\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\nodejs\\;C:\\Pro",
+      "stderr": "'C:\\Program' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n'amdclang++' is not recognized as an internal or external command,\r\noperable program or batch file.\r\nHip Clang Compiler not found\r\n'C:\\Program' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n'C:\\Program' is not recognized as an internal or external command,\r",
+      "error": null
+    }
+  },
+  "headers": {
+    "hip_runtime_h": "C:\\Program Files\\AMD\\ROCm\\7.1\\include\\hip\\hip_runtime.h"
+  },
+  "deviceEnum": {
+    "amdgpuArch": {
+      "ok": true,
+      "stdout": "",
+      "stderr": "Failed to get device count",
+      "error": null
+    },
+    "note": "amdgpu-arch may fail on unsupported discrete GPUs (e.g. GCN Tonga / R9 380)"
+  },
+  "blockers": [],
+  "notes": {
+    "upgradeFromAbsent": "When hipcc.exe exists under Program Files\\AMD\\ROCm\\<ver>, tag SDK install **partial** — not enforced runtime beauty.",
+    "pathQuoting": "hipconfig on Windows may break on spaces in 'C:\\Program Files\\...' unless HIP_PATH is set and tools invoked via absolute quoted paths.",
+    "reProbeCommand": "node sovereign-x/cli/sx-hip-sdk-probe.mjs",
+    "beautyWiring": "legacyEfficientBeauty attaches beauty.hip = probe + resolveHipBeautyKernelStatus; advances to partial when hip-hello-compile-run-proof.json shows compile.ok (device runtime may remain blocked)."
+  },
+  "vendorHeadersPin": "vendor/HIP (gitignored clone) remains a source/headers pin — distinct from Program Files SDK.",
+  "supersededNote": "Superseded naming: SDK detected — see hip-sdk-detection-report.json; statusTag is no longer absent",
+  "previousFilename": "hip-rocm-absence-report.json"
+}

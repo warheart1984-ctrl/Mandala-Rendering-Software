@@ -134,6 +134,19 @@ from app.rt4d_provider import (
     generate_image_rt4d,
     rt4d_availability,
 )
+from app.constitutional_schedule import (
+    ConstitutionalDispatch,
+    ConstitutionalScheduleDenied,
+    _estimate_scene_complexity,
+    _query_audit_trail,
+    build_authority_entry,
+    run_conformance_checks,
+)
+from app.sx_kernel import (
+    CIS,
+    ProcessIntent,
+    SovereignXKernel,
+)
 from app.lemonade_provider import (
     LEMONADE_PROVIDER_ID,
     generate_image_lemonade,
@@ -320,6 +333,12 @@ app.add_middleware(
 app.add_middleware(_ChatgptPluginAuthMiddleware)
 
 _index = AssetIndex(INDEX_PATH)
+
+# Sovereign X Kernel — constitutional governance for every dispatch.
+_sx_kernel = SovereignXKernel()
+
+# Module-level cache of the last kernel governance result (attached to response).
+_last_kernel_result: dict[str, Any] | None = None
 
 
 class GenerateRequest(BaseModel):
@@ -544,6 +563,13 @@ class Engine3dStillRequest(BaseModel):
         default=None,
         max_length=512,
         description="Optional path to world JSON (camera + id)",
+    )
+    world_document: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Optional inline Engine3DWorldDocument, typically from "
+            "/api/prompt-to-scene. Mutually exclusive with world_path."
+        ),
     )
     human_glb: str | None = Field(
         default=None,
@@ -843,6 +869,14 @@ def health(request: Request) -> dict:
             "SceneSpecification → RT4D. Infinity narrative lane is out-of-process only."
         ),
         "chatgpt_plugin": plugin_availability(settings),
+        "sx_kernel": {
+            "active": True,
+            "version": "1.0",
+            "cis": list(CIS.meanings().keys()),
+            "governed_throughput": _sx_kernel.describe()["throughput"],
+            "mandala_energy": _sx_kernel.describe()["energy"],
+            "note": "Sovereign X Kernel governs every dispatch with AUTH/CONT/ENRG/EXEC/REFL/AUDT/SYNC",
+        },
         "flux_then_scene": settings.flux_then_scene,
         "fal_image_fallback": False,
         "prefer_async": False,
@@ -891,6 +925,86 @@ def _dispatch_image(settings: Any, prompt: str, quality: str | None = None):
         raise
 
 
+def _simulate_image_result(prompt: str) -> dict:
+    """Return a simulated image result for demo mode (no GPU required).
+
+    Produces a small checkerboard PNG encoded as base64 so the demo UI
+    can display it inline without any external storage.
+    """
+    import base64, io, struct, uuid, zlib
+    from datetime import datetime, timezone
+
+    width, height = 256, 256
+    # Build a simple PNG: checkerboard pattern, 32-bit RGBA.
+    raw = bytearray()
+    for y in range(height):
+        for x in range(width):
+            bright = 200 if ((x // 32) + (y // 32)) % 2 == 0 else 40
+            raw.extend([bright, bright, bright, 255])
+    # Minimum PNG: IHDR + IDAT + IEND.
+    def _chunk(ctype: bytes, data: bytes) -> bytes:
+        chunk = struct.pack(">I", len(data)) + ctype + data
+        return chunk + struct.pack(">I", zlib.crc32(chunk) & 0xFFFFFFFF)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    raw_data = b""
+    for y in range(height):
+        raw_data += b"\x00" + bytes(raw[y * width * 4 : (y + 1) * width * 4])
+    idat = zlib.compress(raw_data)
+    png_bytes = (
+        b"\x89PNG\r\n\x1a\n"
+        + _chunk(b"IHDR", ihdr)
+        + _chunk(b"IDAT", idat)
+        + _chunk(b"IEND", b"")
+    )
+    b64 = base64.b64encode(png_bytes).decode("ascii")
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    return {
+        "run_id": f"demo-{uuid.uuid4().hex[:12]}",
+        "prompt": prompt,
+        "model": "SovereignX-Demo",
+        "provider": "simulated",
+        "status": "ok",
+        "asset_key": None,
+        "manifest_key": None,
+        "asset_sha256": None,
+        "preview_url": None,
+        "created_at": now,
+        "dry_run": False,
+        "detail": "SX demo mode - simulated render (no GPU)",
+        "prompt_sanitized": False,
+        "quality": None,
+        "provenance": None,
+        "image_base64": f"data:image/png;base64,{b64}",
+    }
+
+
+def _dispatch_image_body(intent: ProcessIntent) -> dict:
+    """Wrapper for ``_dispatch_image`` that accepts a ProcessIntent.
+
+    Used as the ``dispatch_fn`` parameter when the SX kernel schedules
+    a dispatch with ``execute=true``.  When ``SX_DEMO_MODE=1`` is set in
+    the environment, returns a simulated image result instead of calling
+    a real GPU backend — the demo works without API keys or hardware.
+    """
+    if os.getenv("SX_DEMO_MODE", "").strip().lower() in {"1", "true", "yes"}:
+        return _simulate_image_result(intent.prompt)
+    settings = get_settings()
+    result = _dispatch_image(settings, intent.prompt)
+    out = result.to_dict()
+    # Attach inline base64 from the local preview cache so the demo UI
+    # (dashboard / CLI) can display the image without an async fetch.
+    if result.run_id and not out.get("image_base64"):
+        from app.preview_cache import get_preview_path
+        p = get_preview_path(APP_DIR, result.run_id)
+        if p and p.is_file():
+            import base64 as _b64
+            ext = {"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}.get(
+                p.suffix.lstrip("."), "image/png"
+            )
+            out["image_base64"] = f"data:{ext};base64,{_b64.b64encode(p.read_bytes()).decode('ascii')}"
+    return out
+
+
 def _run_generate_common(
     body: GenerateRequest,
     *,
@@ -933,30 +1047,46 @@ def _run_generate_common(
         bool(byok_meta.get("byok_used")),
         len(body.prompt or ""),
     )
+    # ── Constitutional governance via Sovereign X Kernel ──────────────
+    global _last_kernel_result
     try:
-        result = (
-            generate_video(settings, body.prompt)
-            if video
-            else _dispatch_image(settings, body.prompt, quality=body.quality)
+        # Run constitutional governance checks before dispatch (all modalities).
+        modality = "video" if video else "image"
+        intent = ProcessIntent(
+            prompt=body.prompt,
+            authority_id=settings.nvidia_api_key or "genblaze-operator",
+            metadata={"modality": modality},
         )
+        kr = _sx_kernel.schedule(intent)
+        _last_kernel_result = kr.to_dict()
+        if kr.verdict == "halt":
+            raise RuntimeError(f"Constitutional kernel halted: {kr.error}")
+
+        if video:
+            result = generate_video(settings, body.prompt)
+        else:
+            result = _dispatch_image(settings, body.prompt, quality=body.quality)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except GenerationQualityError as exc:
-        # Blank/near-black NIM still or unusable video — not a missing key.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RuntimeError as exc:
-        # Missing NVIDIA/RT4D setup, video disabled, or B2 config — 503 with setup text.
-        # RT4D CLI crashes/timeouts raise RT4DRenderError (not RuntimeError) → 502 below.
-        # Transfer/sink failures are re-raised as non-RuntimeError (see pipeline).
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        # Include chained transfer cause when present (Genblaze SinkError omits it).
-        # Also covers RT4DRenderError (present CLI, failed/timed-out render).
         detail = _format_generation_failure(exc)
         raise HTTPException(status_code=502, detail=f"generation failed: {detail}") from exc
 
     entry = result.to_dict()
     entry["modality"] = "video" if video else entry.get("modality") or "image"
+    # Attach constitutional governance metadata from the kernel.
+    if _last_kernel_result:
+        entry["governance"] = {
+            "kernel": "SovereignXKernel",
+            "verdict": _last_kernel_result["verdict"],
+            "governed_throughput": _last_kernel_result.get("governed_throughput"),
+            "mandala_energy": _last_kernel_result.get("mandala_energy"),
+            "instructions": _last_kernel_result.get("instructions", []),
+        }
     # Persist cloud/synthetic preview_url only — never rewrite to /api/preview before index.
     if body.embed and settings.nvidia_configured and not settings.dry_run:
         try:
@@ -1484,6 +1614,20 @@ def api_polish_still(body: PolishStillRequest, request: Request) -> dict:
     if isinstance(source_entry, dict):
         source_sha256 = source_entry.get("asset_sha256")
 
+    # ── Constitutional governance via Sovereign X Kernel ──────────────
+    try:
+        intent = ProcessIntent(
+            prompt=body.prompt,
+            authority_id=settings.nvidia_api_key or "genblaze-operator",
+            metadata={"modality": "polish", "source_run_id": rid},
+        )
+        kr = _sx_kernel.schedule(intent)
+        _last_kernel_result = kr.to_dict()
+        if kr.verdict == "halt":
+            raise RuntimeError(f"Constitutional kernel halted: {kr.error}")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     try:
         result = polish_image(
             settings,
@@ -1502,6 +1646,15 @@ def api_polish_still(body: PolishStillRequest, request: Request) -> dict:
     payload = result.to_dict()
     payload["resolve"] = resolve_meta if isinstance(resolve_meta, dict) else {}
     payload["source_run_id"] = rid
+    # Attach constitutional governance metadata from the kernel.
+    if _last_kernel_result:
+        payload["governance"] = {
+            "kernel": "SovereignXKernel",
+            "verdict": _last_kernel_result["verdict"],
+            "governed_throughput": _last_kernel_result.get("governed_throughput"),
+            "mandala_energy": _last_kernel_result.get("mandala_energy"),
+            "instructions": _last_kernel_result.get("instructions", []),
+        }
 
     # Index the polish result so it appears in /api/assets.
     entry: dict[str, Any] = {
@@ -1611,6 +1764,33 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
     RT4D sphere-bridge.
     """
     settings = get_settings()
+    if body.world_path and body.world_document is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="provide world_path or world_document, not both",
+        )
+    if body.world_document is not None:
+        objects = body.world_document.get("objects")
+        if not isinstance(body.world_document.get("id"), str):
+            raise HTTPException(
+                status_code=400,
+                detail="world_document.id must be a string",
+            )
+        if not isinstance(objects, list):
+            raise HTTPException(
+                status_code=400,
+                detail="world_document.objects must be an array",
+            )
+        if len(objects) > 2048:
+            raise HTTPException(
+                status_code=400,
+                detail="world_document.objects exceeds the 2048 item cap",
+            )
+        if body.path_trace:
+            raise HTTPException(
+                status_code=400,
+                detail="inline world_document currently supports Engine3D soft-raster only",
+            )
     # Face-aware polish may supply a default prompt when structure has face_rig;
     # still require an explicit prompt for non-face polish requests.
     if body.polish and not (body.prompt or "").strip():
@@ -1671,6 +1851,7 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
                 aov_depth=body.aov_depth,
                 aov_normal=body.aov_normal,
                 world_path=world_path,
+                world_document=body.world_document,
                 human_glb=human_glb,
                 crop_region=_crop_region_dict(body.crop_region),
             )
@@ -1895,12 +2076,36 @@ def api_render_request(body: dict[str, Any]) -> dict:
                 "and ensure the boundary run_pipeline.py is discoverable."
             ),
         )
+    # ── Constitutional governance via Sovereign X Kernel ──────────────
     try:
-        return run_render_request(body, settings, execute=True)
+        intent = ProcessIntent(
+            prompt=body.get("prompt", ""),
+            authority_id=settings.nvidia_api_key or "genblaze-operator",
+            metadata={"modality": "render-request"},
+        )
+        kr = _sx_kernel.schedule(intent)
+        _last_kernel_result = kr.to_dict()
+        if kr.verdict == "halt":
+            raise RuntimeError(f"Constitutional kernel halted: {kr.error}")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    try:
+        result = run_render_request(body, settings, execute=True)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    # Attach constitutional governance metadata.
+    if isinstance(result, dict) and _last_kernel_result:
+        result["governance"] = {
+            "kernel": "SovereignXKernel",
+            "verdict": _last_kernel_result["verdict"],
+            "governed_throughput": _last_kernel_result.get("governed_throughput"),
+            "mandala_energy": _last_kernel_result.get("mandala_energy"),
+            "instructions": _last_kernel_result.get("instructions", []),
+        }
+    return result
 
 
 
@@ -2473,6 +2678,502 @@ def engine3d_logo() -> FileResponse:
     if not STATIC_LOGO.is_file():
         raise HTTPException(status_code=404, detail="logo missing")
     return FileResponse(STATIC_LOGO, media_type="image/svg+xml")
+
+
+# ---------------------------------------------------------------------------
+# Sovereign X CCS — Constitutional Compute Scheduling
+# ---------------------------------------------------------------------------
+
+class CcsDispatchRequest(BaseModel):
+    """Constitutional dispatch request — wraps existing render dispatch
+    with authority chain, continuity verification, and ledger recording.
+
+    This is the Sovereign X Router as Scheduler interface. Every dispatch
+    carries AUTH (who authorized it), CONT (what prior state it continues),
+    REFL (what happened — via RenderReceipt), and AUDT (ledger entry).
+    """
+
+    prompt: str = Field(..., min_length=1, max_length=2000)
+    authority_id: str | None = Field(
+        default=None,
+        description="Operator or Director authority ID for the AUTH chain",
+    )
+    continuity_id: str | None = Field(
+        default=None,
+        description=(
+            "Link to a prior dispatch continuity chain. When set, the "
+            "scheduler verifies the prior receipt exists in the ledger "
+            "before executing."
+        ),
+    )
+    quality: str | None = Field(
+        default=None,
+        description="Render quality hint (draft/final) passed to the provider",
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="When true, run constitutional checks only — skip actual render",
+    )
+
+
+@app.post("/api/ccs/dispatch")
+def api_ccs_dispatch(body: CcsDispatchRequest, request: Request) -> dict:
+    """POST /api/ccs/dispatch — Sovereign X Constitutional Compute Scheduling.
+
+    Wraps the existing Genblaze render dispatch with AUTH/CONT/REFL/AUDT
+    governance checks. Returns both the render result and the RenderReceipt
+    with full constitutional trace.
+
+    This endpoint does NOT replace /api/generate — it adds governance
+    around the same dispatch.
+    """
+    settings = get_settings()
+    prompt = body.prompt.strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    # Build the authority entry (Director or operator signature).
+    authority_entry = None
+    if body.authority_id:
+        authority_entry = build_authority_entry(
+            authority_id=body.authority_id,
+            role="infinity-director",
+            statement=f"ccs dispatch for prompt: {prompt[:80]}",
+        )
+
+    # Initialize the constitutional scheduler.
+    scheduler = ConstitutionalDispatch(settings)
+
+    # AUTH: prepare the route decision with governance trace.
+    try:
+        decision = scheduler.prepare(
+            prompt,
+            authority_override=authority_entry,
+            continuity_id=body.continuity_id,
+            rt4d_enabled=rt4d_availability(settings)["available"],
+        )
+    except ConstitutionalScheduleDenied as exc:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "Constitutional policy denied dispatch",
+                "policies_applied": (
+                    exc.decision.governance_trace.get("policiesApplied")
+                    if exc.decision.governance_trace
+                    else None
+                ),
+                "governance_trace": exc.decision.governance_trace,
+            },
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Constitutional schedule preparation failed: {exc}",
+        ) from exc
+
+    # Dry-run: return the decision without executing.
+    if body.dry_run:
+        return {
+            "status": "dry_run",
+            "decision": decision.to_dict(),
+            "note": "Dry-run: constitutional checks passed, render not executed.",
+        }
+
+    # CONT/REFL: execute dispatch.
+    try:
+        result, receipt = scheduler.execute(
+            decision,
+            prompt,
+            dispatch_fn=generate_image_rt4d,
+            quality=body.quality,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Constitutional dispatch execution failed: {exc}",
+        ) from exc
+
+    # AUDT: record to ledger (best-effort).
+    scheduler.record(receipt)
+
+    return {
+        "status": result.status,
+        "run_id": result.run_id,
+        "model": result.model,
+        "provider": result.provider,
+        "asset_sha256": result.asset_sha256,
+        "preview_url": result.preview_url,
+        "created_at": result.created_at,
+        "detail": result.detail,
+        "decision": decision.to_dict(),
+        "receipt": receipt.to_dict(),
+        "governance_trace": decision.governance_trace,
+        "note": (
+            "Constitutional schedule: AUTH (authority chain) → "
+            "CONT/REFL (dispatch + receipt) → AUDT (ledger entry). "
+            "result.renderer_role and result.ai_role document what each "
+            "system contributed."
+        ),
+    }
+
+
+# ── SceneSpec / SceneSpecification type alias ──────────────────────
+SceneSpecification = dict[str, Any]
+
+
+class CcsPlayTimelineRequest(BaseModel):
+    """Request body for POST /api/ccs/play-timeline."""
+
+    spec: SceneSpecification = Field(
+        ...,
+        description="SceneSpecification JSON (validated by renderer-core/scene-spec CLI)",
+    )
+    continuity_id: str | None = Field(
+        default=None,
+        description="Link this dispatch to a prior continuity chain",
+    )
+    authority_id: str | None = Field(
+        default=None,
+        description="Optional authority id (e.g. Infinity Director) signing the dispatch",
+    )
+    world_id: str | None = Field(
+        default=None,
+        description="World identifier — required for timeline dispatches (ascension evidence)",
+    )
+    quality: str | None = Field(
+        default=None,
+        description="Render quality (draft/final)",
+    )
+
+
+@app.post("/api/ccs/play-timeline")
+def api_ccs_play_timeline(body: CcsPlayTimelineRequest, request: Request) -> dict:
+    """POST /api/ccs/play-timeline — Sovereign X Timeline Scene Render.
+
+    Wraps ``render_scene_spec()`` with AUTH/CONT/REFL/AUDT governance.
+
+    The spec field is a SceneSpecification JSON object that is validated and
+    rendered by the renderer-core scene-spec CLI (Node.js). Returns both the
+    ``GenerateResult`` and the full ``RenderReceipt`` with governance trace.
+    """
+    from app.scene_spec_provider import render_scene_spec
+
+    settings = get_settings()
+    spec = body.spec
+
+    # Build authority entry if provided.
+    authority_entry = None
+    if body.authority_id:
+        authority_entry = build_authority_entry(
+            authority_id=body.authority_id,
+            role="infinity-director",
+            statement=f"play-timeline dispatch for spec id: {spec.get('id', 'unnamed')}",
+        )
+
+    scheduler = ConstitutionalDispatch(settings)
+
+    # AUTH.
+    prompt = f"scene-spec:{spec.get('id', 'unnamed')}"
+    try:
+        decision = scheduler.prepare(
+            prompt,
+            authority_override=authority_entry,
+            continuity_id=body.continuity_id,
+            world_id=body.world_id,
+            rt4d_enabled=True,
+        )
+    except ConstitutionalScheduleDenied as exc:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "Constitutional policy denied play-timeline dispatch",
+                "policies_applied": (
+                    exc.decision.governance_trace.get("policiesApplied")
+                    if exc.decision.governance_trace
+                    else None
+                ),
+                "governance_trace": exc.decision.governance_trace,
+            },
+        ) from exc
+
+    # CONT/REFL: execute scene-spec render.
+    try:
+        result = render_scene_spec(
+            settings,
+            spec,
+            quality=body.quality,
+            storage_kind="ccs-play-timeline",
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Scene-spec render failed: {exc}",
+        ) from exc
+
+    # Build receipt.
+    receipt = build_render_receipt(
+        decision=decision,
+        result=result,
+        renderer="scene-spec",
+        quality=body.quality or "draft",
+    )
+
+    # AUDT: record to ledger (best-effort).
+    scheduler.record(receipt)
+
+    return {
+        "status": result.status,
+        "run_id": result.run_id,
+        "asset_sha256": result.asset_sha256,
+        "preview_url": result.preview_url,
+        "created_at": result.created_at,
+        "spec_id": spec.get("id", "unnamed"),
+        "decision": decision.to_dict(),
+        "receipt": receipt.to_dict(),
+        "governance_trace": decision.governance_trace,
+        "note": (
+            "Constitutional timeline render: AUTH → scene-spec render → "
+            "CONT/REFL (provenance receipt) → AUDT (ledger entry). "
+            "See decision and receipt fields for full trace."
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# CCS Audit Trail
+# ---------------------------------------------------------------------------
+
+@app.get("/api/ccs/audit-trail")
+def api_ccs_audit_trail(
+    request: Request,
+    authority_id: str | None = None,
+    continuity_id: str | None = None,
+    limit: int = 50,
+) -> dict:
+    """GET /api/ccs/audit-trail — query constitutional dispatch ledger.
+
+    Returns receipts from the Memory Board matching the given authority_id
+    or continuity_id, most recent first.
+    """
+    receipts = _query_audit_trail(
+        authority_id=authority_id,
+        continuity_id=continuity_id,
+        limit=min(limit, 200),
+    )
+    return {
+        "count": len(receipts),
+        "authority_id": authority_id,
+        "continuity_id": continuity_id,
+        "receipts": receipts,
+        "note": "Audit trail from Jarvis Memory Board ledger.",
+    }
+
+
+# ---------------------------------------------------------------------------
+# CCS Conformance
+# ---------------------------------------------------------------------------
+
+@app.post("/api/ccs/conformance")
+def api_ccs_conformance(request: Request) -> dict:
+    """POST /api/ccs/conformance — run 16-point conformance checks.
+
+    Evaluates each check from ``default.conformance-profile.json`` against
+    the current runtime. Returns pass/fail per check.
+    """
+    results = run_conformance_checks()
+    passed = sum(1 for r in results if r.get("status") == "pass")
+    failed = sum(1 for r in results if r.get("status") == "fail")
+    return {
+        "total": len(results),
+        "passed": passed,
+        "failed": failed,
+        "checks": results,
+        "conformant": failed == 0,
+        "note": "16-point conformance check against default.conformance-profile.json.",
+    }
+
+
+# ---------------------------------------------------------------------------
+# CCS Scene Spec Optimisation
+# ---------------------------------------------------------------------------
+
+class CcsOptimiseRequest(BaseModel):
+    """Request body for POST /api/ccs/optimise-scene."""
+
+    spec: SceneSpecification = Field(
+        ...,
+        description="SceneSpecification JSON to analyse for render optimisation",
+    )
+
+
+class CcsMultiSignRequest(BaseModel):
+    """Request body for POST /api/ccs/multi-sign-dispatch."""
+
+    prompt: str = Field(..., min_length=1, max_length=2000)
+    authorities: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of authority entries (each from build_authority_entry)",
+    )
+    required_signatures: int = Field(
+        default=1,
+        description="Minimum number of unique authorities required (N-of-M)",
+        ge=0,
+        le=20,
+    )
+    continuity_id: str | None = None
+    world_id: str | None = None
+    quality: str | None = None
+    dry_run: bool = False
+
+
+@app.post("/api/ccs/optimise-scene")
+def api_ccs_optimise_scene(body: CcsOptimiseRequest, request: Request) -> dict:
+    """POST /api/ccs/optimise-scene — analyse spec and tune render params.
+
+    Inspects the SceneSpecification's object count, material references,
+    animation flags, and lighting, then returns recommended render
+    parameters.
+    """
+    analysis = _estimate_scene_complexity(body.spec)
+    return {
+        "analysis": analysis,
+        "note": (
+            "Scene complexity analysis for auto-tuning render params. "
+            "Use recommended_quality, recommended_max_depth, and "
+            "recommended_samples in your dispatch call."
+        ),
+    }
+
+
+@app.post("/api/ccs/multi-sign-dispatch")
+def api_ccs_multi_sign(body: CcsMultiSignRequest, request: Request) -> dict:
+    """POST /api/ccs/multi-sign-dispatch — N-of-M multi-authority signing.
+
+    Requires at least ``required_signatures`` unique authority entries
+    in the ``authorities`` list before the dispatch is allowed.
+    """
+    settings = get_settings()
+    if not body.authorities:
+        raise HTTPException(status_code=400, detail="at least one authority entry required")
+
+    scheduler = ConstitutionalDispatch(settings)
+
+    try:
+        decision = scheduler.prepare(
+            body.prompt,
+            authority_overrides=body.authorities,
+            continuity_id=body.continuity_id,
+            world_id=body.world_id,
+            required_signatures=body.required_signatures,
+        )
+    except ConstitutionalScheduleDenied as exc:
+        authority_ids = [e.get("authority_id", "?") for e in body.authorities]
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "Multi-authority dispatch denied",
+                "authorities_provided": authority_ids,
+                "required_signatures": body.required_signatures,
+                "policies_applied": (
+                    exc.decision.governance_trace.get("policiesApplied")
+                    if exc.decision.governance_trace else None
+                ),
+                "governance_trace": exc.decision.governance_trace,
+            },
+        ) from exc
+
+    unique_ids = len({e.get("authority_id", "") for e in body.authorities if e.get("authority_id")})
+    if body.dry_run:
+        return {
+            "status": "dry_run",
+            "decision": decision.to_dict(),
+            "authorities_provided": len(body.authorities),
+            "unique_authorities": unique_ids,
+            "required_signatures": body.required_signatures,
+            "satisfied": unique_ids >= body.required_signatures,
+            "note": "Multi-authority N-of-M signing check passed.",
+        }
+
+    result, receipt = scheduler.execute(
+        decision,
+        body.prompt,
+        quality=body.quality,
+    )
+    scheduler.record(receipt)
+
+    return {
+        "status": result.status,
+        "run_id": result.run_id,
+        "decision": decision.to_dict(),
+        "receipt": receipt.to_dict(),
+        "authorities_provided": len(body.authorities),
+        "unique_authorities": unique_ids,
+        "required_signatures": body.required_signatures,
+        "satisfied": unique_ids >= body.required_signatures,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Sovereign X Kernel — Scheduling API
+# ---------------------------------------------------------------------------
+
+class SxScheduleRequest(BaseModel):
+    """Request body for POST /api/sx/schedule — direct kernel scheduling."""
+
+    prompt: str = Field(default="", max_length=2000)
+    authority_id: str = Field(default="genblaze-operator", max_length=256)
+    continuity_id: str = Field(default="", max_length=256)
+    world_id: str = Field(default="", max_length=256)
+    energy_kw: float = Field(default=150.0, ge=0.0, le=1e6)
+    dispatch: bool = Field(
+        default=False,
+        description="If true, execute the dispatch function (dry-run otherwise)",
+    )
+    priority: int = Field(default=0, ge=-10, le=10)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+@app.post("/api/sx/schedule")
+def api_sx_schedule(body: SxScheduleRequest) -> dict:
+    """POST /api/sx/schedule — submit a process intent to the Sovereign X Kernel.
+
+    Runs the full CIS pipeline (AUTH/CONT/ENRG/EXEC/REFL/AUDT/SYNC) and
+    returns the verdict, governed throughput, mandala energy, and instruction
+    trace. When ``dispatch=true`` the kernel executes the Genblaze image
+    pipeline as the dispatch function.
+    """
+    intent = ProcessIntent(
+        prompt=body.prompt,
+        authority_id=body.authority_id,
+        continuity_id=body.continuity_id,
+        world_id=body.world_id,
+        energy_kw=body.energy_kw,
+        priority=body.priority,
+        metadata={**body.metadata, "source": "sx-schedule-api"},
+    )
+    dispatch_fn = _dispatch_image_body if body.dispatch else None
+    result = _sx_kernel.schedule(intent, dispatch_fn=dispatch_fn)
+    global _last_kernel_result
+    _last_kernel_result = result.to_dict()
+    return result.to_dict()
+
+
+# ---------------------------------------------------------------------------
+# Sovereign X Kernel — Telemetry / Metrics
+# ---------------------------------------------------------------------------
+
+@app.get("/api/sx/metrics")
+def api_sx_metrics() -> dict:
+    """GET /api/sx/metrics — kernel telemetry and operational counters.
+
+    Returns dispatch count, halt rate, average CIS latency, sync count,
+    and error frequency distribution.
+    """
+    return {
+        "kernel": "SovereignXKernel",
+        "version": "1.0",
+        **(_sx_kernel.metrics()),
+    }
 
 
 @app.get("/legal", response_class=HTMLResponse)

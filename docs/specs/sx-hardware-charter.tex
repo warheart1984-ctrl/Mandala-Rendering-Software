@@ -1,0 +1,158 @@
+% Sovereign X Hardware Charter — Complete Specification Sheet
+% Compile with: pdflatex sx-hardware-charter.tex
+
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage[margin=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\title{Sovereign X G-1 Mandala \\ Governed GPU Specification Sheet}
+\author{Constitutional Compute Fabric — Hardware Charter Volume I}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Constitutional Performance Equation}
+
+The governed throughput is defined as:
+
+\[
+\Pi = \frac{C \cdot M}{R + \Omega} \cdot P
+\]
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Symbol & Meaning & Unit \\
+\midrule
+\(C\) & Compute throughput & TFLOPs \\
+\(M\) & Memory bandwidth & GB/s \\
+\(R\) & Router latency & ns \\
+\(\Omega\) & Governance overhead & ns \\
+\(P\) & Power efficiency & TFLOPs/W \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Mandala G-1 Parameters}
+
+\[
+\begin{aligned}
+C &= 1.2 \times 10^{3} \text{ TFLOPs} \\
+M &= 12 \times 10^{3} \text{ GB/s} \\
+R &= 0.9 \text{ ns} \\
+\Omega &= 0.05 \text{ ns} \\
+P &= 0.85 \text{ TFLOPs/W}
+\end{aligned}
+\]
+
+\[
+\Pi = \frac{(1.2 \times 10^{3}) \cdot (12 \times 10^{3})}{0.9 + 0.05} \cdot 0.85
+\approx 1.29 \times 10^{7} \text{ governed TFLOPs per second}
+\]
+
+\section{Mandala Energy Law (MEL)}
+
+Lawful energy across the multi-arena fabric:
+
+\[
+E_L = \sum_{i=1}^{n} \frac{P_i \cdot C_i}{R_i + \Omega_i}
+\]
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Arena & \(C_i\) (TFLOPs) & \(P_i\) (TFLOPs/W) & \(R_i\) (ns) & \(\Omega_i\) (ns) \\
+\midrule
+CPU  & 250   & 0.90 & 1.2 & 0.08 \\
+GPU  & 1200  & 0.85 & 0.9 & 0.05 \\
+VM   & 600   & 0.80 & 1.5 & 0.07 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Energy Clauses}
+\begin{enumerate}
+  \item \textbf{Lawful Consumption Clause} — All power draw must be authorized by the Router's Energy Governance Contract (EGC).
+  \item \textbf{Continuity Clause} — Energy use must maintain lineage with prior lawful states.
+  \item \textbf{Reflection Clause} — Energy expenditure must produce measurable continuity gain.
+  \item \textbf{Audit Clause} — All wattage is logged in the Constitutional Continuity Ledger.
+\end{enumerate}
+
+\section{Continuity Ledger Protocol (CLP)}
+
+For each event \(E_i\):
+
+\[
+L(E_i) = \{ A_i, D_i, V_i, T_i, \Delta_i \}
+\]
+
+Chain of lawful execution:
+
+\[
+L(E_1) \rightarrow L(E_2) \rightarrow \cdots \rightarrow L(E_n)
+\]
+
+\section{Topology Diagram}
+
+\begin{center}
+\begin{tikzpicture}[node distance=2cm, auto]
+
+\node[rectangle, draw, rounded corners, thick, fill=gray!20, minimum width=8cm, minimum height=1cm] (router) {Sovereign X Router (Unified Constitutional Scheduler)};
+
+\node[rectangle, draw, rounded corners, thick, fill=blue!20, below left=of router, minimum width=3.5cm, minimum height=1cm] (cpu) {CPU Arena};
+\node[rectangle, draw, rounded corners, thick, fill=red!20, below=of router, minimum width=3.5cm, minimum height=1cm] (gpu) {GPU Arena};
+\node[rectangle, draw, rounded corners, thick, fill=green!20, below right=of router, minimum width=3.5cm, minimum height=1cm] (vm) {VM Arena};
+
+\node[rectangle, draw, rounded corners, thick, fill=purple!20, below=3cm of gpu, minimum width=6cm, minimum height=1cm] (driver) {Driver Governance Layer};
+\node[rectangle, draw, rounded corners, thick, fill=orange!20, below=2cm of driver, minimum width=6cm, minimum height=1cm] (tensor) {Quantum Tensor Layer};
+\node[rectangle, draw, rounded corners, thick, fill=yellow!20, below=2cm of tensor, minimum width=6cm, minimum height=1cm] (ledger) {Constitutional Continuity Ledger};
+
+\draw[->, thick] (router) -- (cpu);
+\draw[->, thick] (router) -- (gpu);
+\draw[->, thick] (router) -- (vm);
+\draw[->, thick] (cpu) -- (driver);
+\draw[->, thick] (gpu) -- (driver);
+\draw[->, thick] (vm) -- (driver);
+\draw[->, thick] (driver) -- (tensor);
+\draw[->, thick] (tensor) -- (ledger);
+
+\end{tikzpicture}
+\end{center}
+
+\section{Driver Manifest Schema}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Field & Description \\
+\midrule
+authority\_header & Router-issued signature validating lawful origin \\
+continuity\_packet & Metadata linking driver state to prior lawful version \\
+reflection\_frame & Structured feedback returned to Router for audit \\
+energy\_token & Mandala Energy Law compliance marker \\
+audit\_trail & Immutable record stored in Continuity Ledger \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Comparative Benchmark}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+GPU Model & Governed TFLOPs/s & Governance Overhead & Auditability \\
+\midrule
+Sovereign X G-1 Mandala & 12.9 million & 0.05 ns & Full \\
+Quantum Nova 9000 & 9.8 million & 0.12 ns & Partial \\
+Neural Forge X & 7.2 million & 0.20 ns & None \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}

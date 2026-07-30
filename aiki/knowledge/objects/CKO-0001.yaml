@@ -1,0 +1,125 @@
+id: aiki:cko/CKO-0001
+cko_id: CKO-0001
+series: Research Decoded
+title: "LLM Evaluation Basics"
+slug: llm-evaluation-basics
+category: "AI / Evaluation"
+tags:
+  - llm
+  - evaluation
+  - metrics
+  - benchmarks
+  - research-decoded
+evergreen: true
+difficulty: intermediate
+estimated_duration_minutes: 12
+pedagogy:
+  learning_objectives:
+    - "Explain why LLM evaluation is hard (open-ended outputs, shifting tasks, contested 'goodness')."
+    - "Differentiate intrinsic vs extrinsic evaluation and when each is appropriate."
+    - "Name failure modes of leaderboards and demo-driven claims."
+    - "Apply a practical evaluation checklist to a real project decision."
+  prerequisites:
+    - "Basic understanding of LLMs (prompt → completion)"
+    - "Familiarity with the idea of a benchmark or test set"
+  key_questions:
+    - "How do we know an LLM is 'good'?"
+    - "What does a high benchmark score actually measure?"
+    - "When should we trust extrinsic (task) evaluation over intrinsic scores?"
+  narrative_arc:
+    hook: "Everyone says their model is better—how do we actually know?"
+    sections:
+      - id: context
+        label: "Why evaluation matters"
+        beats:
+          - "Product and research decisions hang on evaluation claims."
+          - "Vague 'SOTA' language hides measurement choices."
+      - id: methods
+        label: "Common evaluation approaches"
+        beats:
+          - "Intrinsic: benchmarks, preference judgments, automated metrics."
+          - "Extrinsic: downstream task success, human workflow outcomes."
+      - id: limits
+        label: "Where evaluations fail"
+        beats:
+          - "Contamination, saturation, and gaming."
+          - "Wrong proxy for the real user job."
+      - id: practice
+        label: "How to think about evaluation in real projects"
+        beats:
+          - "Define the job-to-be-done before picking metrics."
+          - "Combine cheap intrinsic screens with targeted extrinsic checks."
+    takeaway: "Evaluation is a design choice—measure what the decision needs, not what is convenient."
+content_core:
+  definitions:
+    - term: "Intrinsic evaluation"
+      explanation: "Measures model behavior directly on tasks or benchmarks (e.g., accuracy on a held-out set, preference win rate)."
+    - term: "Extrinsic evaluation"
+      explanation: "Measures usefulness in a downstream application or human workflow (e.g., tickets resolved, time-to-edit)."
+    - term: "Leaderboard claim"
+      explanation: "A ranked comparison that is only as meaningful as the benchmark's coverage, contamination controls, and relevance to your use case."
+    - term: "Contamination"
+      explanation: "When evaluation items (or close paraphrases) appear in training data, inflating scores without true generalization."
+  examples:
+    - "Comparing two chatbots on MMLU-style knowledge items (intrinsic) vs measuring support-ticket resolution rate (extrinsic)."
+    - "A demo that looks fluent but fails a small set of domain-critical questions."
+    - "Two models tie on a saturated benchmark but diverge on a private domain suite."
+  analogies:
+    - "Evaluating a student by standardized test scores vs. performance in a real internship."
+    - "Car ads quoting 0–60 times vs. reliability on your daily commute."
+  misconceptions:
+    - "Higher leaderboard rank always means a better product model."
+    - "One number can summarize all LLM quality."
+  references:
+    - type: paper
+      title: "Holistic Evaluation of Language Models (HELM)"
+      link: "https://crfm.stanford.edu/helm/"
+    - type: paper
+      title: "Measuring Massive Multitask Language Understanding (MMLU)"
+      link: "https://arxiv.org/abs/2009.03300"
+  evidence_links:
+    - content/scripts/CKO-0001/outline.md
+    - content/scripts/CKO-0001/script.md
+    - examples/CKO-0001/
+formats:
+  primary:
+    - youtube-video
+  secondary:
+    - podcast
+    - newsletter
+    - course-module
+    - ai-tutor-dialogue
+assets:
+  script_outline_ref: content/scripts/CKO-0001/outline.md
+  script_ref: content/scripts/CKO-0001/script.md
+  visual_plan_ref: content/scripts/CKO-0001/visual-plan.yaml
+  youtube_metadata_ref: content/scripts/CKO-0001/youtube-metadata.yaml
+  example_root: examples/CKO-0001/
+  visual_concepts:
+    - "diagram: intrinsic vs extrinsic metrics"
+    - "timeline: evolution of eval methods"
+    - "checklist card: project evaluation questions"
+  call_to_action:
+    - "Subscribe for weekly AI research breakdowns."
+    - "Comment with the evaluation question your team is stuck on."
+youtube:
+  title: "LLM Evaluation Basics: How to Really Evaluate AI Models"
+  description: >
+    In this episode of Research Decoded, we unpack why LLM evaluation is hard,
+    how intrinsic and extrinsic metrics differ, where leaderboards mislead,
+    and how to think about evaluation in real projects.
+  tags:
+    - AI
+    - LLM
+    - Evaluation
+    - Benchmarks
+    - Machine Learning
+  playlist: Research Decoded
+  thumbnail_ref: content/assets/graphics/CKO-0001/thumbnail.png
+status:
+  lifecycle: ready-for-script
+  owner: Dar-z
+  last_updated: "2026-07-29"
+  frozen: false
+  published: false
+  notes: "Pipeline-ready draft. Not YouTube-live. Not RBC-frozen."
