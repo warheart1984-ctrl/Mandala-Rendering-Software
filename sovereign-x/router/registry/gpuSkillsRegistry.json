@@ -18,6 +18,7 @@
     "gpu.compute.nvidia.cuda": "~/.agents/skills/nvidia-gpu-assist",
     "gpu.inference.amd.rocm": "~/.agents/skills/amd-gpu-assist",
     "gpu.compute.amd.hip": "~/.agents/skills/amd-gpu-assist",
+    "gpu.compute.amd.legacy_efficient": "sovereign-x/router/modules/gpu/amd/legacyEfficientBeauty.js",
     "gpu.integrator.deterministic": "sovereign-x/router/modules/gpu/integrator/deterministicGpuIntegrator.js"
   },
   "capabilityMeta": {
@@ -50,6 +51,27 @@
       "capabilityClass": "compute",
       "authority": "assist",
       "intentHints": ["gpu_denoise", "parity"]
+    },
+    "gpu.compute.amd.legacy_efficient": {
+      "vendor": "amd",
+      "capabilityClass": "compute",
+      "authority": "assist",
+      "status": "partial",
+      "prototype": true,
+      "hostCapabilityDriven": true,
+      "intentHints": [
+        "sparse_beauty",
+        "legacy_gcn",
+        "efficient_tile",
+        "r9_380"
+      ],
+      "layers": {
+        "algorithmic": "partial",
+        "memory": "declared",
+        "governance": "partial"
+      },
+      "bans": ["printSoT", "digitalPrinterEvidence"],
+      "note": "3-Layer Path foothold for legacy GCN (R9 380): sparse tiles + bandwidth estimate + intent gate + Lemonade SD/SDK adapters + OpenCL Tonga still. HIP SDK may be partial (hipSdkProbe) after user install; device support for Tonga still host-dependent."
     },
     "gpu.integrator.deterministic": {
       "vendor": "neutral",

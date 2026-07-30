@@ -1,0 +1,31 @@
+# Schema: IME pattern template (declared)
+type: object
+required:
+  - id
+  - name
+  - form
+  - intuition
+  - template
+properties:
+  id:
+    type: string
+  name:
+    type: string
+  form:
+    type: string
+  intuition:
+    type: string
+  template:
+    type: object
+    properties:
+      estimate: { type: string }
+      adjust: { type: string }
+      compute: { type: string }
+      explain: { type: string }
+  worked_example:
+    type: object
+  cko_refs:
+    type: array
+  ime_layers:
+    type: array
+status: declared

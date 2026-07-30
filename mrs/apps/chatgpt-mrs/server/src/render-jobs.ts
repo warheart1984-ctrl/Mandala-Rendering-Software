@@ -352,6 +352,13 @@ export async function runPromptRender(opts: {
         ? Number(opts.seed) >>> 0
         : undefined;
 
+    let timeout: NodeJS.Timeout | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeout = setTimeout(
+        () => reject(new Error(`render timed out after ${TIMEOUT_MS}ms`)),
+        TIMEOUT_MS
+      );
+    });
     const result = await Promise.race([
       Promise.resolve(
         mod.renderStill({
@@ -363,13 +370,10 @@ export async function runPromptRender(opts: {
           maxDepth: settings.maxDepth,
         })
       ),
-      new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error(`render timed out after ${TIMEOUT_MS}ms`)),
-          TIMEOUT_MS
-        );
-      }),
-    ]);
+      timeoutPromise,
+    ]).finally(() => {
+      if (timeout) clearTimeout(timeout);
+    });
 
     const image = encodePngForMcp(result.png);
     if (keepFile) {

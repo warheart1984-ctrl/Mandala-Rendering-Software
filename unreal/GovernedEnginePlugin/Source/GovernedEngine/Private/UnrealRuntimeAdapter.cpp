@@ -239,5 +239,12 @@ FRuntimeAdapter FUnrealRuntimeAdapter::Build(const FPolicySet& PolicySet)
 		return TPair<bool, FString>(D.bAttachProvenance, FString());
 	});
 
+	Adapter.Probes.Add(TEXT("csr.governance-trace"), [PolicySet]()
+	{
+		const FDecision D = FDecisionEngine::Resolve(MakeIntent(), MakeEvidence({ TEXT("ev-001") }), PolicySet);
+		const bool bPass = D.bAllowed && D.bAttachProvenance;
+		return TPair<bool, FString>(bPass, bPass ? FString() : TEXT("CSR governance trace gate did not allow provenance"));
+	});
+
 	return Adapter;
 }

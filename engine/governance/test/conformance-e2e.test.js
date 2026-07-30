@@ -184,3 +184,39 @@ describe("Conformance: ckl.attach-provenance", () => {
     assert.equal(decision.attachProvenance, true);
   });
 });
+
+describe("Conformance: csr.governance-trace", () => {
+  it("CSR from full orchestrator.execute embeds governanceTrace from CKL decision", async () => {
+    const { ConstitutionalStateEngine } = await import("../../../js/constitution/cse.js");
+    const { ExecutionOrchestrator } = await import("../../../js/engine/services/orchestrator.js");
+    const cse = new ConstitutionalStateEngine();
+    const ckl = new ConstitutionalKnowledgeLayer(defaultPolicies);
+    const gk = new GovernanceKernel({ ckl });
+    const orch = new ExecutionOrchestrator({ gk, cse });
+
+    const intent = cse.declareIntent({ kind: "conformance-test", goal: "csr-governance-trace" });
+    intent.world = "w-conf";
+    intent.type = "play_timeline";
+
+    // Full evidence with all fields required by CSE validateEvidence
+    const evidence = {
+      id: "ev-conf", worldId: "w-conf", timelineId: "tl-conf",
+      timestamp: "now", vertexCount: 16, edgeCount: 32,
+      theta: 0, d4: 5, d3: 5, speed: 1, scale: 1,
+    };
+
+    const { csr } = await orch.execute({
+      intent, evidence,
+      action: "render.session.start",
+      run: async () => ({ ok: true }),
+    });
+
+    assert.ok(csr.governanceTrace, "CSR must embed governanceTrace");
+    assert.ok(csr.governanceTrace.decisionId, "governanceTrace must have decisionId");
+    assert.equal(csr.governanceTrace.verdict, "allow");
+    assert.ok(Array.isArray(csr.governanceTrace.policiesApplied));
+    assert.ok(csr.governanceTrace.policiesApplied.length >= 5);
+    assert.equal(typeof csr.governanceTrace.precedentCount, "number");
+    assert.equal(csr.governanceTrace.attachProvenance, true);
+  });
+});

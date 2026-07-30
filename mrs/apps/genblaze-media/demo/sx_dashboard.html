@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sovereign X Kernel — Constitutional Demo</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --dim: #8b949e;
+    --green: #3fb950;
+    --cyan: #58a6ff;
+    --yellow: #d29922;
+    --red: #f85149;
+    --accent: #7928ca;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    margin-top: 4px;
+    color: var(--dim);
+    font-size: 13px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+  .card h2 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--dim);
+    margin-bottom: 14px;
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+  .input-row input {
+    flex: 1;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border .2s;
+  }
+  .input-row input:focus { border-color: var(--cyan); }
+  .input-row input::placeholder { color: var(--dim); }
+  .btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #9333ea; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-secondary {
+    background: #21262d;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: #30363d; }
+
+  /* CIS Pipeline */
+  .pipeline {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .stage {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stage-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #21262d;
+    border: 1px solid var(--border);
+    transition: all .4s;
+  }
+  .stage-dot.idle { background: #21262d; border-color: var(--border); }
+  .stage-dot.pending { background: var(--yellow); border-color: var(--yellow); animation: pulse 0.6s infinite; }
+  .stage-dot.pass { background: var(--green); border-color: var(--green); }
+  .stage-dot.fail { background: var(--red); border-color: var(--red); }
+  .stage-label { font-size: 11px; font-weight: 500; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stage-arrow { color: var(--border); font-size: 12px; margin: 0 2px; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
+  }
+
+  /* Metrics grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .metric {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .metric-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .metric-unit { font-size: 12px; color: var(--dim); font-weight: 400; }
+  .metric .green { color: var(--green); }
+  .metric .cyan { color: var(--cyan); }
+  .metric .yellow { color: var(--yellow); }
+
+  /* Receipt */
+  .receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .receipt-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .receipt-table td:first-child {
+    color: var(--dim);
+    width: 130px;
+    white-space: nowrap;
+  }
+  .receipt-table tr:last-child td { border-bottom: none; }
+
+  /* Result image */
+  .result-img {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-top: 8px;
+  }
+  .placeholder-img {
+    background: #0d1117;
+    border: 2px dashed var(--border);
+    border-radius: 6px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dim);
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  .hidden { display: none; }
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .status-bar.allow { background: #0f2d14; color: var(--green); border: 1px solid #1a4f22; }
+  .status-bar.halt { background: #2d0f0f; color: var(--red); border: 1px solid #4f1a1a; }
+  .status-bar.waiting { background: #1a1a2d; color: var(--yellow); border: 1px solid #2d2d4f; }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-msg {
+    background: #2d0f0f;
+    border: 1px solid #4f1a1a;
+    color: var(--red);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-allow { background: #0f2d14; color: var(--green); }
+  .badge-halt { background: #2d0f0f; color: var(--red); }
+  .badge-info { background: #1a1a2d; color: var(--cyan); }
+  .elapsed { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--dim); margin-top: 8px; text-align: center; }
+  .footer { text-align: center; margin-top: 32px; padding: 16px; color: var(--dim); font-size: 12px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1><span>SX</span> Kernel — Constitutional Demo</h1>
+  <div class="subtitle">Real-time governance trace with CIS pipeline visualization</div>
+
+  <!-- Prompt input -->
+  <div class="card">
+    <div class="input-row">
+      <input type="text" id="prompt" value="glowing tesseract mandala, 4D hypercube, sacred geometry, cyan and gold" placeholder="Enter a prompt for the SX Kernel...">
+      <button class="btn btn-primary" id="runBtn" onclick="runDemo()">Run Demo</button>
+    </div>
+  </div>
+
+  <!-- Verdict status -->
+  <div id="statusArea" class="hidden"></div>
+  <div id="errorArea" class="hidden"></div>
+
+  <!-- CIS Pipeline -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>CONSTITUTIONAL INSTRUCTION SET (CIS)</h2>
+      <span id="verdictBadge"></span>
+    </div>
+    <div class="pipeline" id="pipeline">
+      <div class="stage"><span class="stage-dot idle" id="dot-AUTH"></span><span class="stage-label">AUTH</span><span class="stage-label" style="color:var(--dim);font-size:10px" id="msg-AUTH"></span></div>
+      <span class="stage-arrow">></span>
+      <div class="stage"><span class="stage-dot idle" id="dot-CONT"></span><span class="stage-label">CONT</span><span class="stage-label" style="color:var(--dim);font-size:10px" id="msg-CONT"></span></div>
+      <span class="stage-arrow">></span>
+      <div class="stage"><span class="stage-dot idle" id="dot-ENRG"></span><span class="stage-label">ENRG</span><span class="stage-label" style="color:var(--dim);font-size:10px" id="msg-ENRG"></span></div>
+      <span class="stage-arrow">></span>
+      <div class="stage"><span class="stage-dot idle" id="dot-EXEC"></span><span class="stage-label">EXEC</span><span class="stage-label" style="color:var(--dim);font-size:10px" id="msg-EXEC"></span></div>
+      <span class="stage-arrow">></span>
+      <div class="stage"><span class="stage-dot idle" id="dot-REFL"></span><span class="stage-label">REFL</span><span class="stage-label" style="color:var(--dim);font-size:10px" id="msg-REFL"></span></div>
+      <span class="stage-arrow">></span>
+      <div class="stage"><span class="stage-dot idle" id="dot-AUDT"></span><span class="stage-label">AUDT</span><span class="stage-label" style="color:var(--dim);font-size:10px" id="msg-AUDT"></span></div>
+      <span class="stage-arrow">></span>
+      <div class="stage"><span class="stage-dot idle" id="dot-SYNC"></span><span class="stage-label">SYNC</span><span class="stage-label" style="color:var(--dim);font-size:10px" id="msg-SYNC"></span></div>
+    </div>
+  </div>
+
+  <!-- Governance Metrics -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>GOVERNANCE METRICS <span style="font-weight:400;color:var(--yellow);font-size:11px">(theoretical model)</span></h2>
+      <span id="elapsedDisplay" class="elapsed"></span>
+    </div>
+    <div class="metrics-grid" id="metricsGrid">
+      <div class="metric">
+        <div class="metric-label">Π Governed Throughput&ensp;<span style="color:var(--yellow);font-size:10px">theoretical</span></div>
+        <div class="metric-value green"><span id="m-throughput">—</span> <span class="metric-unit">TFLOP/s</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">MEL Lawful Energy&ensp;<span style="color:var(--yellow);font-size:10px">theoretical</span></div>
+        <div class="metric-value cyan"><span id="m-energy">—</span> <span class="metric-unit">kW</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Router Latency</div>
+        <div class="metric-value" style="color:var(--dim)"><span id="m-router">—</span> <span class="metric-unit">ns</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Governance Overhead</div>
+        <div class="metric-value" style="color:var(--dim)"><span id="m-gov">—</span> <span class="metric-unit">ns</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Power Efficiency</div>
+        <div class="metric-value yellow"><span id="m-power">—</span> <span class="metric-unit">TFLOP/W</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Kernel CIS Time</div>
+        <div class="metric-value" style="color:var(--dim)"><span id="m-kernel-ms">—</span> <span class="metric-unit">ms</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results side by side -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <!-- Image Result -->
+    <div class="card">
+      <h2>RENDER RESULT</h2>
+      <div id="imageArea">
+        <div class="placeholder-img" id="placeholderImg">Submit a prompt to render</div>
+        <img class="result-img hidden" id="resultImg" alt="Rendered result">
+      </div>
+      <div id="imageMeta" style="margin-top:8px;font-size:12px;color:var(--dim)"></div>
+    </div>
+
+    <!-- Audit Receipt -->
+    <div class="card">
+      <h2>AUDIT RECEIPT</h2>
+      <table class="receipt-table" id="receiptTable">
+        <tr><td>Verdict</td><td><span id="r-verdict">—</span></td></tr>
+        <tr><td>UID</td><td style="word-break:break-all;font-family:monospace;font-size:12px"><span id="r-uid">—</span></td></tr>
+        <tr><td>Authority</td><td><span id="r-auth">—</span></td></tr>
+        <tr><td>Continuity</td><td><span id="r-cont">—</span></td></tr>
+        <tr><td>Executed At</td><td><span id="r-time">—</span></td></tr>
+        <tr><td>Run ID</td><td style="font-family:monospace;font-size:12px"><span id="r-runid">—</span></td></tr>
+        <tr><td>Model</td><td><span id="r-model">—</span></td></tr>
+        <tr><td>Provider</td><td><span id="r-provider">—</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Sovereign X Kernel v1.0 &mdash; Constitutional Governance Pipeline &mdash; CIS: AUTH &gt; CONT &gt; ENRG &gt; EXEC &gt; REFL &gt; AUDT &gt; SYNC
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.origin;
+
+function $(id) { return document.getElementById(id); }
+
+async function runDemo() {
+  const prompt = $('prompt').value.trim();
+  if (!prompt) { showError('Enter a prompt first'); return; }
+
+  // Reset UI
+  resetStages();
+  hideError();
+  $('statusArea').classList.add('hidden');
+  $('errorArea').classList.add('hidden');
+  $('verdictBadge').innerHTML = '';
+  $('r-verdict').textContent = '—';
+  $('imageArea').querySelector('.placeholder-img').classList.remove('hidden');
+  $('resultImg').classList.add('hidden');
+  $('imageMeta').textContent = '';
+  $('elapsedDisplay').textContent = '';
+  $('m-throughput').textContent = '—';
+  $('m-energy').textContent = '—';
+  $('m-router').textContent = '—';
+  $('m-gov').textContent = '—';
+  $('m-power').textContent = '—';
+  $('m-kernel-ms').textContent = '—';
+
+  // Show waiting state
+  showStatus('waiting', 'Constitutional review in progress...');
+  $('runBtn').disabled = true;
+  $('runBtn').textContent = 'Running...';
+
+  // Animate stages as they would execute
+  animateStage('AUTH');
+  await sleep(300);
+  animateStage('CONT');
+  await sleep(200);
+  animateStage('ENRG');
+  await sleep(200);
+
+  // Make the actual API call
+  try {
+    const resp = await fetch(`${API_BASE}/api/sx/schedule`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, dispatch: true }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${errText}`);
+    }
+
+    const result = await resp.json();
+
+    // Animate remaining stages
+    animateStage('EXEC');
+    await sleep(400);
+    animateStage('REFL');
+    await sleep(300);
+    animateStage('AUDT');
+    await sleep(200);
+    animateStage('SYNC');
+
+    // Render results
+    renderResult(result);
+
+  } catch (err) {
+    showError(err.message);
+    $('statusArea').classList.add('hidden');
+  } finally {
+    $('runBtn').disabled = false;
+    $('runBtn').textContent = 'Run Demo';
+  }
+}
+
+function renderResult(result) {
+  const verdict = result.verdict || '?';
+  const instructions = result.instructions || [];
+  const throughput = result.governed_throughput || {};
+  const tpParams = throughput.params || {};
+  const energy = result.mandala_energy || {};
+  const receipt = result.receipt || {};
+  const execResult = receipt.result || {};
+
+  // Verdict
+  const isAllow = verdict === 'allow';
+  showStatus(isAllow ? 'allow' : 'halt', `Constitutional Verdict: ${verdict.toUpperCase()}`);
+  $('verdictBadge').innerHTML = `<span class="badge ${isAllow ? 'badge-allow' : 'badge-halt'}">${verdict.toUpperCase()}</span>`;
+
+  // Mark stages based on instructions
+  instructions.forEach(instr => {
+    const dot = $('dot-' + instr);
+    if (dot) {
+      dot.className = 'stage-dot pass';
+    }
+  });
+  if (!isAllow) {
+    const haltDot = $('dot-HALT');
+    if (haltDot) haltDot.className = 'stage-dot fail';
+  }
+
+  // Receipt fields
+  $('r-verdict').textContent = verdict.toUpperCase();
+  $('r-verdict').className = isAllow ? 'green' : '';
+  $('r-uid').textContent = receipt.uid || '—';
+  $('r-auth').textContent = receipt.authority_id || '—';
+  $('r-cont').textContent = receipt.continuity_id || '(none)';
+  $('r-time').textContent = receipt.executed_at || '—';
+  $('r-runid').textContent = execResult.run_id || '—';
+  $('r-model').textContent = execResult.model || '—';
+  $('r-provider').textContent = execResult.provider || '—';
+
+  // Metrics
+  const piVal = throughput.governed_throughput_tflops_per_second;
+  if (piVal != null) $('m-throughput').textContent = Number(piVal).toLocaleString(undefined, {maximumFractionDigits:2});
+  const melVal = energy.total_lawful_energy;
+  if (melVal != null) $('m-energy').textContent = Number(melVal).toFixed(2);
+  if (tpParams.router_latency_ns != null) $('m-router').textContent = tpParams.router_latency_ns;
+  if (tpParams.governance_overhead_ns != null) $('m-gov').textContent = tpParams.governance_overhead_ns;
+  if (tpParams.power_efficiency_tflops_per_w != null) $('m-power').textContent = tpParams.power_efficiency_tflops_per_w;
+
+  // Timing
+  const elapsedNs = result.elapsed_ns || 0;
+  $('m-kernel-ms').textContent = (elapsedNs / 1_000_000).toFixed(2);
+  $('elapsedDisplay').textContent = `CIS: ${(elapsedNs / 1_000_000).toFixed(2)} ms`;
+
+  // Image
+  const imageB64 = execResult.image_base64;
+  if (imageB64) {
+    $('placeholderImg').classList.add('hidden');
+    const img = $('resultImg');
+    img.src = imageB64;
+    img.classList.remove('hidden');
+    $('imageMeta').textContent = `${execResult.model || '?'} · ${execResult.provider || '?'} · ${execResult.status || '?'}`;
+  } else if (execResult.preview_url) {
+    $('placeholderImg').classList.add('hidden');
+    const img = $('resultImg');
+    img.src = execResult.preview_url;
+    img.classList.remove('hidden');
+    $('imageMeta').textContent = execResult.preview_url;
+  }
+}
+
+function animateStage(name) {
+  const dot = $('dot-' + name);
+  if (!dot) return;
+  dot.className = 'stage-dot pending';
+}
+
+function resetStages() {
+  ['AUTH','CONT','ENRG','EXEC','REFL','AUDT','SYNC','HALT'].forEach(name => {
+    const dot = $('dot-' + name);
+    if (dot) dot.className = 'stage-dot idle';
+  });
+}
+
+function showStatus(type, text) {
+  const area = $('statusArea');
+  area.className = 'status-bar ' + type;
+  area.innerHTML = (type === 'waiting' ? '<div class="spinner"></div>' : '') + text;
+  area.classList.remove('hidden');
+}
+
+function showError(msg) {
+  $('errorArea').className = 'error-msg';
+  $('errorArea').textContent = msg;
+  $('errorArea').classList.remove('hidden');
+}
+
+function hideError() { $('errorArea').classList.add('hidden'); }
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Initial check
+(async function() {
+  try {
+    const resp = await fetch(`${API_BASE}/health`);
+    const data = await resp.json();
+    if (data.status === 'ok' && data.sx_kernel) {
+      const sk = data.sx_kernel;
+      document.title = `SX Kernel ${sk.version} — Constitutional Demo`;
+      const pi = sk.governed_throughput?.governed_throughput_tflops_per_second;
+      if (pi != null) $('m-throughput').textContent = Number(pi).toLocaleString(undefined, {maximumFractionDigits:2});
+      document.querySelector('.subtitle').textContent =
+        `Kernel ${sk.version} · CIS: ${(sk.cis || []).join(' · ')} · Pi: ${pi ? Number(pi).toLocaleString() : '?'} TFLOP/s`;
+    }
+  } catch (e) {
+    document.querySelector('.subtitle').textContent = 'Server offline — start with SX_DEMO_MODE=1';
+  }
+})();
+</script>
+</body>
+</html>

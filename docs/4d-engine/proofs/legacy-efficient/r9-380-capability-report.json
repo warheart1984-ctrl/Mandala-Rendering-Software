@@ -1,0 +1,102 @@
+﻿{
+    "capturedAt":  "2026-07-30T01:49:37.9717500Z",
+    "host":  "DESKTOP-G7PGKQQ",
+    "gpu":  {
+                "pnp":  "PCI\\VEN_1002\u0026DEV_6939\u0026SUBSYS_20151462\u0026REV_F1\\4\u002614E8F4CB\u00260\u00260010",
+                "name":  "AMD Radeon (TM) R9 380 Series",
+                "adapterRAM_bytes":  4293918720,
+                "year":  2015,
+                "architecture":  "GCN Tonga (Hawaii-class R9 380)",
+                "vram_dedicated_approx_GiB":  4,
+                "driverVersion":  "27.20.20903.8001"
+            },
+    "vulkan":  {
+                   "statusTag":  "enforced-detect",
+                   "subgroupSize":  64,
+                   "maxComputeSharedMemorySize":  65536,
+                   "memoryHeaps":  [
+                                       {
+                                           "size_GiB":  3.75,
+                                           "note":  "device-local ~4GB VRAM",
+                                           "index":  0
+                                       },
+                                       {
+                                           "size_GiB":  7.7,
+                                           "note":  "host-visible/shared",
+                                           "index":  1
+                                       },
+                                       {
+                                           "size_GiB":  0.25,
+                                           "note":  "small heap",
+                                           "index":  2
+                                       }
+                                   ],
+                   "deviceName":  "AMD Radeon (TM) R9 380 Series",
+                   "apiVersion":  "1.2.170",
+                   "instanceVersion":  "1.4.350",
+                   "maxImageDimension2D":  16384,
+                   "driverInfo":  "21.5.2"
+               },
+    "opencl":  {
+                   "deviceVersion":  "OpenCL 2.0 AMD-APP (3240.6)",
+                   "maxWorkGroupSize":  256,
+                   "openclC":  "OpenCL C 2.0",
+                   "deviceName":  "Tonga",
+                   "platformVersion":  "OpenCL 2.1 AMD-APP (3240.6)",
+                   "maxAlloc_bytes":  3422552064,
+                   "board":  "AMD Radeon (TM) R9 380 Series",
+                   "globalMemory_bytes":  4294967296,
+                   "localMemory_bytes":  32768,
+                   "platform":  "AMD Accelerated Parallel Processing",
+                   "maxClockMHz":  980,
+                   "statusTag":  "enforced-detect",
+                   "maxComputeUnits":  28
+               },
+    "dx":  {
+               "dedicatedMemory_MiB":  4070,
+               "statusTag":  "enforced-detect",
+               "sharedMemory_MiB":  8142,
+               "featureLevels":  [
+                                     "12_0",
+                                     "11_1",
+                                     "11_0",
+                                     "10_1",
+                                     "10_0",
+                                     "9_3",
+                                     "9_2",
+                                     "9_1"
+                                 ],
+               "driverModel":  "WDDM 2.7",
+               "ddiVersion":  12
+           },
+    "lemonade":  {
+                     "version":  "11.5.0",
+                     "modelsLoaded":  [
+
+                                      ],
+                     "port":  13305,
+                     "serverRunning":  true,
+                     "modelsDownloaded":  [
+                                              "Moonshine-Medium-Streaming",
+                                              "RealESRGAN-x4plus",
+                                              "SD-Turbo",
+                                              "SD-Turbo-GGUF",
+                                              "SDXL-Base-1.0",
+                                              "Whisper-Large-v3-Turbo",
+                                              "kokoro-v1"
+                                          ],
+                     "loadProbes":  {
+                                        "SD-Turbo":  "FAIL (prior) sd-server",
+                                        "SD-Turbo-GGUF":  "FAIL HTTP 500 sd-server",
+                                        "RealESRGAN-x4plus":  "FAIL HTTP 500 sd-server",
+                                        "SDXL-Base-1.0":  "FAIL (prior) sd-server"
+                                    },
+                     "statusTag":  "partial",
+                     "note":  "sd-cpp recipe fails to start on R9 380; Whisper/kokoro non-image paths may still work"
+                 },
+    "rocm":  {
+                 "available":  false,
+                 "note":  "rocminfo/hipInfo absent on PATH"
+             },
+    "honesty":  "Detection + Lemonade load probes only. Does not claim HIP beauty SoT or photoreal. R9 380 cannot beat RTX 4090 on Total FLOPs/Time."
+}

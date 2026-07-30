@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "CES.Lineage.Identity.v1",
+  "title": "CES.Lineage.Identity.v1 — Identity & Provenance",
+  "description": "Declared stub. Shared identity domain intent for unified provenance.",
+  "type": "object",
+  "required": [
+    "ces_id",
+    "identity_id",
+    "principal",
+    "created_at",
+    "content_hash"
+  ],
+  "properties": {
+    "ces_id": { "const": "CES.Lineage.Identity.v1" },
+    "identity_id": { "type": "string" },
+    "principal": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "content_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "parent_identity_id": { "type": ["string", "null"] },
+    "authority_id": { "type": "string" },
+    "signature": { "type": "string" }
+  },
+  "additionalProperties": true
+}

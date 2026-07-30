@@ -1,0 +1,31 @@
+{
+  "capturedAt": "2026-07-30T03:10:00.000Z",
+  "note": "vendor/ is gitignored; clones live on disk under this workspace. Re-run git -C vendor/<repo> rev-parse HEAD to refresh.",
+  "vendorRoot": "G:/Mandala Rendering Software/vendor",
+  "repos": {
+    "lemonade-sdk/lemonade": {
+      "path": "vendor/lemonade",
+      "remote": "https://github.com/lemonade-sdk/lemonade.git",
+      "sha": "044138de2694562f8128ba1254960c34ff866465",
+      "commitDate": "2026-07-29T18:42:29Z",
+      "subject": "fix(test): stabilize semantic router similarity thresholds (#2824)",
+      "cloneDepth": 1
+    },
+    "ROCm/HIP": {
+      "path": "vendor/HIP",
+      "remote": "https://github.com/ROCm/HIP.git",
+      "sha": "1377114f8220724206f1f5a770501fda11d8d1e1",
+      "commitDate": "2026-07-27T15:27:36Z",
+      "subject": "Enable llms generation and per-page download button for HIP (#8315)",
+      "cloneDepth": 1,
+      "headersPresent": true,
+      "hip_runtime_h": "vendor/HIP/include/hip/hip_runtime.h"
+    }
+  },
+  "lemonadeServerInstalled": {
+    "cli": "C:/Users/My PC/AppData/Local/lemonade_server/bin/lemonade.exe",
+    "statusPort": 13305,
+    "versionObserved": "11.5.0"
+  }
+}
+

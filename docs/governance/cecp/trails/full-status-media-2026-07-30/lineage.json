@@ -1,0 +1,28 @@
+{
+  "trailId": "full-status-media-2026-07-30",
+  "feature": "full-status-media-standings",
+  "started": "2026-07-30",
+  "overallStatus": "partial",
+  "mode": ["Pipeline-Conductor", "Librarian", "Anchor", "Testwright"],
+  "stages": {
+    "01-architect": "complete",
+    "02-builder": "complete",
+    "03-implementor": "complete",
+    "04-reviewer": "PASS_WITH_GAPS",
+    "05-inspector": "PASS_WITH_GAPS",
+    "06-esfr": "PASS_WITH_GAPS"
+  },
+  "promotionEligibility": "PROMOTE_WITH_GAPS",
+  "antiOverclaim": [
+    "no Full Photoreal",
+    "no Phase 4 certified",
+    "Lemonade held",
+    "soft-raster != photoreal"
+  ],
+  "relatedTrails": [
+    "verification-cycle-media-2026-07-30",
+    "blender-10s-cycles-2026-07-30",
+    "cinematic-quality-v2-2026-07",
+    "governed-render-one-command-2026-07"
+  ]
+}

@@ -1,0 +1,49 @@
+# Inference Provider Interface — config stub
+# Status: skeleton. No API keys. No live calls.
+
+status: skeleton
+ipi_version: "0.1.0-declared"
+
+# Swap backends here without changing AIKI core engines.
+default_routing:
+  reasoning: openai
+  image: openai
+  vision: anthropic
+  local: ollama
+
+providers:
+  openai:
+    enabled: false
+    kind: cloud
+    adapter: pipeline.inference.adapters.openai_stub.OpenAIStubProvider
+    notes: "Enable only via env-injected credentials outside the repo."
+  anthropic:
+    enabled: false
+    kind: cloud
+    adapter: pipeline.inference.adapters.anthropic_stub.AnthropicStubProvider
+  google:
+    enabled: false
+    kind: cloud
+    adapter: pipeline.inference.adapters.google_stub.GoogleStubProvider
+  mistral:
+    enabled: false
+    kind: cloud
+    adapter: pipeline.inference.adapters.mistral_stub.MistralStubProvider
+  ollama:
+    enabled: false
+    kind: local
+    adapter: pipeline.inference.adapters.ollama_stub.OllamaStubProvider
+  vllm:
+    enabled: false
+    kind: local
+    adapter: pipeline.inference.adapters.vllm_stub.VLLMStubProvider
+  aais:
+    enabled: false
+    kind: local
+    adapter: pipeline.inference.adapters.aais_stub.AAISStubProvider
+    notes: "Optional local runtime. Not a core AIKI dependency."
+
+policy:
+  forbid_hardcoded_vendor_in_engines: true
+  secrets_in_repo: false
+  aais_is_optional_provider: true

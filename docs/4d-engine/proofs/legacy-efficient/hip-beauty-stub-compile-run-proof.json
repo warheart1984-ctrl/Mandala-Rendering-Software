@@ -1,0 +1,41 @@
+{
+  "capturedAt": "2026-07-30T08:52:00.000Z",
+  "adapterId": "sx.adapter.hip.beauty.stub.compile",
+  "capabilityHint": "gpu.compute.amd.hip",
+  "statusTag": "partial",
+  "surface": "HIP beauty stub tile-fill compile (richer than hello; device runtime still blocked on Tonga)",
+  "hostHint": "FX-8350 / R9 380 — ROCm 7.1 hipcc compiles beautyTileFill --offload-arch=gfx803; hipGetDeviceCount finds 0 ROCm devices",
+  "cycle": "cycle-rerun-2",
+  "source": "scripts/legacy-efficient/hip_beauty_stub.hip",
+  "deltaVsHello": "RGBA8 8x8 tile fill kernel + host verify path; still compile-only evidence on this GPU",
+  "compile": {
+    "ok": true,
+    "hipcc": "C:\\\\Program Files\\\\AMD\\\\ROCm\\\\7.1\\\\bin\\\\hipcc.exe",
+    "args": [
+      "scripts/legacy-efficient/hip_beauty_stub.hip",
+      "-o",
+      "docs/4d-engine/proofs/legacy-efficient/hip_beauty_stub.exe",
+      "--offload-arch=gfx803"
+    ],
+    "exit": 0,
+    "offloadArch": "gfx803",
+    "exeBytes": 156672
+  },
+  "run": {
+    "attempted": true,
+    "exitCode": 2,
+    "log": "hipGetDeviceCount status=100 count=0\nNO_DEVICE beauty_stub",
+    "deviceRuntime": "blocked",
+    "note": "NO_DEVICE beauty_stub — same Tonga ROCm enum gap as hello"
+  },
+  "beautyHip": {
+    "previous": "partial",
+    "now": "partial",
+    "meaning": "Richer stub compiles; does not promote beauty.hip beyond partial; device runtime remains blocked"
+  },
+  "invoke": [
+    "set HIP_PATH=C:\\\\Program Files\\\\AMD\\\\ROCm\\\\7.1",
+    "hipcc scripts/legacy-efficient/hip_beauty_stub.hip -o docs/4d-engine/proofs/legacy-efficient/hip_beauty_stub.exe --offload-arch=gfx803",
+    "docs/4d-engine/proofs/legacy-efficient/hip_beauty_stub.exe"
+  ]
+}

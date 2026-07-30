@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereign-x.org/schemas/ciems/cpcs-v1.json",
+  "title": "ConstitutionalPhotorealCertification",
+  "description": "CPCS v1.0 (CPE-CPCS-PHR). Status: declared (spec) / partial (evaluator). certified:true only when all Phase 4 gates pass — never auto-claim PHASE_4_FULL_PHOTOREAL.",
+  "type": "object",
+  "required": [
+    "rendererId",
+    "runId",
+    "certified",
+    "certificationLevel",
+    "eligibilityScore",
+    "pepCompleteness",
+    "sprCompleteness",
+    "checklistPassCount",
+    "dreVerified",
+    "auditVerdict"
+  ],
+  "properties": {
+    "@context": { "const": "https://sovereign-x.org/ciems/cpcs-v1" },
+    "artifact": { "const": "ConstitutionalPhotorealCertification" },
+    "version": { "const": "1.0" },
+    "id": { "type": "string", "pattern": "^cpcs-" },
+    "timestamp": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "partial", "held", "verified"]
+    },
+    "rendererId": { "type": "string" },
+    "runId": { "type": "string" },
+    "certified": { "type": "boolean" },
+    "certificationLevel": {
+      "type": "string",
+      "enum": ["NONE", "PHASE_4_FULL_PHOTOREAL"]
+    },
+    "eligibilityScore": { "type": "number", "minimum": 0, "maximum": 1 },
+    "pepCompleteness": { "type": "number", "minimum": 0, "maximum": 1 },
+    "sprCompleteness": { "type": "number", "minimum": 0, "maximum": 1 },
+    "checklistPassCount": { "type": "integer", "minimum": 0 },
+    "dreVerified": { "type": "boolean" },
+    "auditVerdict": { "type": "string" },
+    "criteria": { "type": "object", "additionalProperties": true },
+    "failedGates": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "note": { "type": "string" }
+  },
+  "additionalProperties": true
+}

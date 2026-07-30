@@ -30,6 +30,7 @@ describe("sx-capabilities CLI", () => {
     assert.match(r.stdout, /gpu\.gen\.nvidia\.nim_flux/);
     assert.match(r.stdout, /gpu\.integrator\.deterministic/);
     assert.match(r.stdout, /gpu\.compute\.amd\.hip/);
+    assert.match(r.stdout, /gpu\.compute\.amd\.legacy_efficient/);
   });
 
   it("inspect cpu.rt4d.print shows authoritative meta", () => {

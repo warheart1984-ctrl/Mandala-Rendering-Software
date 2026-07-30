@@ -1,0 +1,19 @@
+{
+  "schema": "ccs-registration-registry-v0",
+  "status": "declared",
+  "note": "Empty runtime registration. Stubs only — not loaded or enforced by Continuity Ledger v1.",
+  "ces": [
+    { "id": "CES.AIKI.KO.v1", "status": "declared", "schema": "schemas/ces/CES.AIKI.KO.v1.json", "owner": "AIKI" },
+    { "id": "CES.ARIS.Decision.v1", "status": "declared", "schema": "schemas/ces/CES.ARIS.Decision.v1.json", "owner": "ARIS" },
+    { "id": "CES.SX.Execution.v1", "status": "declared", "schema": "schemas/ces/CES.SX.Execution.v1.json", "owner": "Sovereign-X" },
+    { "id": "CES.Lineage.Identity.v1", "status": "declared", "schema": "schemas/ces/CES.Lineage.Identity.v1.json", "owner": "Lineage" },
+    { "id": "CES.Mandala.Render.v1", "status": "declared", "schema": "schemas/ces/CES.Mandala.Render.v1.json", "owner": "Mandala" }
+  ],
+  "rc": [
+    { "id": "RC.AIKI.v1", "status": "declared", "schema": "schemas/rc/RC.AIKI.v1.json", "owner": "AIKI" },
+    { "id": "RC.ARIS.v1", "status": "declared", "schema": "schemas/rc/RC.ARIS.v1.json", "owner": "ARIS" },
+    { "id": "RC.SX.v1", "status": "declared", "schema": "schemas/rc/RC.SX.v1.json", "owner": "Sovereign-X" },
+    { "id": "RC.Lineage.v1", "status": "declared", "schema": "schemas/rc/RC.Lineage.v1.json", "owner": "Lineage" },
+    { "id": "RC.Mandala.v1", "status": "declared", "schema": "schemas/rc/RC.Mandala.v1.json", "owner": "Mandala" }
+  ]
+}

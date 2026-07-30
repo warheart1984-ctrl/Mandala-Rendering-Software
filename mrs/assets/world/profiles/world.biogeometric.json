@@ -1,0 +1,14 @@
+{
+  "id": "world.biogeometric",
+  "policyId": "world.biogeometric",
+  "label": "Biogeometric umbrella",
+  "domain": "biogeometric",
+  "status": "partial",
+  "worldScaleClass": "human-sized",
+  "referenceLandmarkMeters": 1.7,
+  "minEnvironmentalVariance": 0.001,
+  "biomeTag": "generic-biogeometric",
+  "exampleSubjects": ["world-root", "biome-anchor"],
+  "metricFamilies": ["landmarkHeight", "worldScaleClass", "environmentalVariance"],
+  "notes": "Umbrella world-profile stub. Status partial — not a full ecology engine."
+}

@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "specHash": "152b17ed7ffe00f7e03a9cb2effccf34fbcba338c72d251988278ed3e01a63cb",
+  "seed": 42,
+  "timestamp": "2026-07-30T18:20:00.143Z",
+  "width": 448,
+  "height": 448,
+  "primitiveCount": 357,
+  "planeCount": 1,
+  "lightCount": 1,
+  "materialCount": 2,
+  "worldDocument": {
+    "id": "hackathon-tesseract-spin"
+  }
+}

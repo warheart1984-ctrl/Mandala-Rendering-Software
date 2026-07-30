@@ -1,0 +1,12 @@
+{
+  "id": "world.material",
+  "policyId": "world.material",
+  "label": "Material context",
+  "domain": "material",
+  "status": "partial",
+  "worldScaleClass": "human-sized",
+  "minEnvironmentalVariance": 0.0005,
+  "exampleSubjects": ["stone", "wood", "metal", "skin", "water-surface"],
+  "metricFamilies": ["materialId", "roughnessProxy", "albedoProxy"],
+  "notes": "Amendment VIII cross-cut — materialContext law. Status partial."
+}

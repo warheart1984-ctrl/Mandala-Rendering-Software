@@ -5,6 +5,14 @@
 
 import { CONTRACTS, resolveAuthority } from "../constitution/contracts.js";
 import { nowIso } from "../runtime/types.js";
+import {
+  evaluateAmendmentVIIPolicy,
+  POLICY_IDS as AMENDMENT_VII_POLICY_IDS,
+} from "./biometric/amendmentVII.js";
+import {
+  evaluateWorldProfilePolicy,
+  WORLD_PROFILE_ORDER,
+} from "./biometric/amendmentVIII.js";
 
 export class ConstitutionalKnowledgeLayer {
   /**
@@ -67,6 +75,10 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
   const requirements = [];
   let attachProvenance = false;
   let paramAdjust = null;
+  /** @type {string|null} */
+  let haltCode = null;
+  /** @type {object|null} */
+  let auditReceipt = null;
 
   if (!intent) {
     return {
@@ -264,6 +276,49 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
         }
       }
     }
+
+    // CKL Amendment VII — biometric → adaptive-scale → organic-variance
+    // Opt-in via evidence.biometricAmendment / enforceAmendmentVII (Drive-G-1).
+    if (
+      policy.condition === "biometric_amendment_vii" &&
+      Object.values(AMENDMENT_VII_POLICY_IDS).includes(policy.id)
+    ) {
+      const gate = evaluateAmendmentVIIPolicy(policy.id, intent, evidence);
+      if (gate.applies && !gate.ok) {
+        violations.push(policy.id);
+        if (!haltCode && gate.haltCode) {
+          haltCode = gate.haltCode;
+          auditReceipt = gate.auditReceipt ?? null;
+        }
+        if (Array.isArray(gate.issues)) {
+          for (const issue of gate.issues) {
+            requirements.push(`amendment-vii:${issue}`);
+          }
+        }
+      }
+    }
+
+    // World-profile → CKL (partial). Opt-in via worldProfileAmendment /
+    // enforceWorldProfile. Necessary for world objects; not sufficient for
+    // Lemonade plates or CIS SCAL.
+    if (
+      policy.condition === "world_profile_ckl" &&
+      WORLD_PROFILE_ORDER.includes(policy.id)
+    ) {
+      const gate = evaluateWorldProfilePolicy(policy.id, intent, evidence);
+      if (gate.applies && !gate.ok) {
+        violations.push(policy.id);
+        if (!haltCode && gate.haltCode) {
+          haltCode = gate.haltCode;
+          auditReceipt = gate.auditReceipt ?? null;
+        }
+        if (Array.isArray(gate.issues)) {
+          for (const issue of gate.issues) {
+            requirements.push(`world-profile:${issue}`);
+          }
+        }
+      }
+    }
   }
 
   // Drift from precedents: if recent denials for same type, slow cinematic
@@ -279,12 +334,16 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
   if (violations.length) {
     return {
       ok: false,
-      verdict: "deny",
-      reason: "Constitutional policy violation",
+      verdict: haltCode ? "halt" : "deny",
+      reason: haltCode
+        ? `Constitutional halt: ${haltCode}`
+        : "Constitutional policy violation",
       violations,
       requirements,
       attachProvenance,
       paramAdjust,
+      haltCode: haltCode ?? null,
+      auditReceipt: auditReceipt ?? null,
     };
   }
 
@@ -296,6 +355,8 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
     requirements,
     attachProvenance,
     paramAdjust,
+    haltCode: null,
+    auditReceipt: null,
     decisionId: `decision-${intent.id}`,
   };
 }

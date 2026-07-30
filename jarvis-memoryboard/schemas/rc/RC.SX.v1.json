@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "RC.SX.v1",
+  "title": "RC.SX.v1 — SX Execution Replay Contract",
+  "description": "Declared reconstruction rules stub. Not executed by Continuity Ledger v1.",
+  "type": "object",
+  "required": ["rc_id", "version", "inputs", "reconstruction"],
+  "properties": {
+    "rc_id": { "const": "RC.SX.v1" },
+    "version": { "const": "1" },
+    "inputs": {
+      "type": "array",
+      "items": { "enum": ["CES.SX.Execution.v1", "CES.ARIS.Decision.v1"] }
+    },
+    "reconstruction": {
+      "type": "string",
+      "description": "Declared: reconstruct execution timeline from decision_ref + result_hash."
+    },
+    "determinism": { "const": "required" }
+  }
+}

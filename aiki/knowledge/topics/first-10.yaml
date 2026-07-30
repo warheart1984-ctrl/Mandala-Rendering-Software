@@ -1,0 +1,42 @@
+topics:
+  - id: topic-01
+    series: ai-this-week
+    title: "What 'state-of-the-art' really means in AI."
+    status: stub
+  - id: topic-02
+    series: ai-this-week
+    title: "Benchmarks vs reality: why AI demos mislead."
+    status: stub
+  - id: topic-03
+    series: research-decoded
+    title: "LLM Evaluation Basics."
+    cko_id: CKO-0001
+    status: draft
+  - id: topic-04
+    series: research-decoded
+    title: "Prompting vs fine-tuning: what research actually says."
+    status: stub
+  - id: topic-05
+    series: math-intuition
+    title: "Why gradients are the language of learning."
+    status: stub
+  - id: topic-06
+    series: math-intuition
+    title: "Probability as belief, not just fractions."
+    status: stub
+  - id: topic-07
+    series: code-with-ai
+    title: "Designing prompts like APIs."
+    status: stub
+  - id: topic-08
+    series: code-with-ai
+    title: "Using AI to refactor legacy code safely."
+    status: stub
+  - id: topic-09
+    series: tool-lab
+    title: "Building a personal research assistant workflow."
+    status: stub
+  - id: topic-10
+    series: tool-lab
+    title: "From idea to prototype with AI tools."
+    status: stub

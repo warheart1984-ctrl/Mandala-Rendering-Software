@@ -12,6 +12,8 @@ import { ISL_OPENING_4D_REVEAL } from "../../engine/scripting/scripts/opening_4d
 import { ISL_MYTHAR_ASCENSION } from "../../engine/scripting/scripts/mythar_ascension.isl.js";
 import { IntentService } from "./services/intent.js";
 import { EvidenceService } from "./services/evidence.js";
+import { createJarvisMemoryClient } from "./services/jarvis-memory.js";
+import { createJarvisSession } from "./services/jarvis-session.js";
 import { ExecutionOrchestrator } from "./services/orchestrator.js";
 import { ReplayService } from "./services/replay.js";
 import { SceneGraph } from "./scene/SceneGraph.js";
@@ -19,13 +21,19 @@ import { TimelinePlayer } from "./cinematic/TimelinePlayer.js";
 import { ProvenanceRecorder } from "../../engine/runtime/ProvenanceRecorder.js";
 import { CssvRegistry, BrowserCssvHost } from "../../engine/cssv/CssvRegistry.js";
 
-export async function bootEngine({ onRecord } = {}) {
+export async function bootEngine({ onRecord, memoryQuery, memoryLimit, includeMemoryBoard } = {}) {
   const cse = new ConstitutionalStateEngine({ onRecord });
   const ckl = await ConstitutionalKnowledgeLayer.loadDefault(fetch);
-  const gk = new GovernanceKernel({ ckl, cse });
+  const gk = new GovernanceKernel({ ckl });
   const isl = createIslEngine();
   const intents = new IntentService();
   const evidence = new EvidenceService();
+  const memory = createJarvisMemoryClient({ fetch });
+  const session = await createJarvisSession(memory, {
+    query: memoryQuery,
+    limit: memoryLimit,
+    includeBoard: includeMemoryBoard ?? true,
+  });
   const orchestrator = new ExecutionOrchestrator({ gk, cse });
   const replay = new ReplayService(cse);
   const scene = new SceneGraph();
@@ -78,6 +86,8 @@ export async function bootEngine({ onRecord } = {}) {
     islAscensionScript: ISL_MYTHAR_ASCENSION,
     intents,
     evidence,
+    memory,
+    session,
     orchestrator,
     replay,
     scene,

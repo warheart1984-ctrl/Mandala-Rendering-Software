@@ -63,7 +63,25 @@ import {
   render4dPromptInputShape,
   handleRender4dPrompt,
 } from "./tools/render-4d-prompt.js";
+import {
+  render4dTo3dInputShape,
+  handleRender4dTo3d,
+} from "./tools/render-4d-to-3d.js";
 import { handleDescribeCapabilities } from "./tools/describe-capabilities.js";
+import {
+  deleteJarvisMemoryInputShape,
+  fetchJarvisMemoryInputShape,
+  handleDeleteJarvisMemory,
+  handleFetchJarvisMemory,
+  handleSearchJarvisMemory,
+  handleWriteJarvisSessionSummary,
+  handleUpdateJarvisMemory,
+  handleWriteJarvisMemory,
+  searchJarvisMemoryInputShape,
+  updateJarvisMemoryInputShape,
+  writeJarvisSessionSummaryInputShape,
+  writeJarvisMemoryInputShape,
+} from "./tools/jarvis-memory.js";
 import {
   getRenderDir,
   safeRenderFileName,
@@ -73,7 +91,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** Widget HTML: mrs/apps/chatgpt-mrs/assets/ (Vite web build target) */
 const ASSETS_DIR = path.resolve(__dirname, "../../assets");
-const RESOURCE_URI = "ui://mrs-viewport/mrs-viewport.html";
+const RESOURCE_URI = "ui://mrs-viewport/v1.html";
 const PORT = Number(process.env.PORT ?? process.env.MRS_CHATGPT_PORT ?? 8000);
 
 const authenticator = createAuthenticator();
@@ -96,7 +114,10 @@ function readWidgetHtml(): string {
 
 function widgetMeta(invoking: string, invoked: string) {
   return {
-    ui: { resourceUri: RESOURCE_URI },
+    ui: {
+      resourceUri: RESOURCE_URI,
+      visibility: ["model", "app"],
+    },
     "openai/outputTemplate": RESOURCE_URI,
     "openai/toolInvocation/invoking": invoking,
     "openai/toolInvocation/invoked": invoked,
@@ -104,12 +125,9 @@ function widgetMeta(invoking: string, invoked: string) {
   } as const;
 }
 
-/** Progress-only meta — no outputTemplate, so ChatGPT does not force the viewport. */
-function renderProgressMeta(invoking: string, invoked: string) {
-  // ext-apps registerAppTool requires _meta.ui; omit openai/outputTemplate so
-  // ChatGPT does not force the viewport widget for PNG image responses.
+/** Status-only metadata for native tool results that must not open the widget. */
+function toolStatusMeta(invoking: string, invoked: string) {
   return {
-    ui: { resourceUri: RESOURCE_URI },
     "openai/toolInvocation/invoking": invoking,
     "openai/toolInvocation/invoked": invoked,
   } as const;
@@ -124,10 +142,16 @@ function mcpImageContent(image: PngImagePayload) {
 }
 
 function createMrsServer(): McpServer {
-  const server = new McpServer({
-    name: "mrs-4d-renderer",
-    version: "0.2.0",
-  });
+  const server = new McpServer(
+    {
+      name: "mrs-4d-renderer",
+      version: "0.3.0",
+    },
+    {
+      instructions:
+        "Use render_4d_to_3d_pipeline for a complete native prompt→RT4D→governed scene→Engine3D result. Use render_4d_prompt for a single deterministic 4D still. These render tools return native image content and do not require the viewport. Treat returned image blocks as primary visual evidence: present them with their stage labels and reason from visible content instead of summarizing only metadata. Use create_4d_scene only when the user asks for an interactive wireframe scene. Never describe RT4D or Engine3D output as diffusion-generated.",
+    }
+  );
 
   const widgetHtml = readWidgetHtml();
 
@@ -146,6 +170,17 @@ function createMrsServer(): McpServer {
           uri: RESOURCE_URI,
           mimeType: RESOURCE_MIME_TYPE,
           text: widgetHtml,
+          _meta: {
+            ui: {
+              prefersBorder: true,
+              csp: {
+                connectDomains: [],
+                resourceDomains: [],
+              },
+            },
+            "openai/widgetDescription":
+              "Interactive MRS Scene4DDTO wireframe viewport with projection and inspection controls.",
+          },
         },
       ],
     })
@@ -184,6 +219,11 @@ function createMrsServer(): McpServer {
       title: "Update 4D Scene",
       description: "Patch an in-memory scene; best-effort LiveLink set_config.",
       inputSchema: updateSceneInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
       _meta: widgetMeta("Updating 4D scene", "Scene updated"),
     },
     async (args) => {
@@ -207,6 +247,11 @@ function createMrsServer(): McpServer {
       description:
         "Inspect a screen point or 4D ray via in-process MRSInspector4D (LiveLink optional).",
       inputSchema: inspectPointInputShape,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       _meta: widgetMeta("Inspecting 4D point", "Inspect complete"),
     },
     async (args) => {
@@ -230,6 +275,11 @@ function createMrsServer(): McpServer {
       description:
         "Export scene as json/mesh (real) or glTF/image via ExportManager when canvas works; replay not_implemented.",
       inputSchema: exportSceneInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       _meta: widgetMeta("Exporting scene", "Export finished"),
     },
     async (args) => {
@@ -250,6 +300,11 @@ function createMrsServer(): McpServer {
       description:
         "timeline: declared keyframe metadata; cssv: not_implemented in this slice.",
       inputSchema: replaySceneInputShape,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       _meta: widgetMeta("Preparing replay", "Replay metadata attached"),
     },
     async (args) => {
@@ -262,8 +317,7 @@ function createMrsServer(): McpServer {
     }
   );
 
-  registerAppTool(
-    server,
+  server.registerTool(
     "validate_scene_spec",
     {
       title: "Validate Scene Specification",
@@ -275,20 +329,18 @@ function createMrsServer(): McpServer {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetMeta("Validating scene spec", "Validation complete"),
+      _meta: toolStatusMeta("Validating scene spec", "Validation complete"),
     },
     async (args) => {
       const { ok, text, errors } = handleValidateSceneSpec(args);
       return {
         content: [{ type: "text" as const, text }],
         structuredContent: { ok, errors },
-        _meta: widgetMeta("Validating scene spec", "Validation complete"),
       };
     }
   );
 
-  registerAppTool(
-    server,
+  server.registerTool(
     "render_scene_spec_rt4d",
     {
       title: "Render Scene Spec (RT4D PNG)",
@@ -296,11 +348,11 @@ function createMrsServer(): McpServer {
         "Path-trace a SceneSpecification via local MRS RT4D (CPU) and return a PNG image plus provenance. Deterministic procedural renderer — not FLUX, not diffusion, not Genblaze. Default quality=draft.",
       inputSchema: renderSceneSpecInputShape,
       annotations: {
-        readOnlyHint: false,
+        readOnlyHint: true,
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: renderProgressMeta("Path-tracing scene", "RT4D PNG ready"),
+      _meta: toolStatusMeta("Path-tracing scene", "RT4D PNG ready"),
     },
     async (args) => {
       try {
@@ -311,7 +363,6 @@ function createMrsServer(): McpServer {
             mcpImageContent(image),
           ],
           structuredContent: { render },
-          _meta: renderProgressMeta("Path-tracing scene", "RT4D PNG ready"),
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -326,8 +377,7 @@ function createMrsServer(): McpServer {
     }
   );
 
-  registerAppTool(
-    server,
+  server.registerTool(
     "render_4d_prompt",
     {
       title: "Render 4D from Prompt (RT4D PNG)",
@@ -335,11 +385,11 @@ function createMrsServer(): McpServer {
         "Render a deterministic procedural 4D still from a text prompt (prompt selects scene archetype + palette). Returns PNG image + SHA-256 provenance. NOT text-to-image / not diffusion.",
       inputSchema: render4dPromptInputShape,
       annotations: {
-        readOnlyHint: false,
+        readOnlyHint: true,
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: renderProgressMeta("Rendering 4D still", "RT4D PNG ready"),
+      _meta: toolStatusMeta("Rendering 4D still", "RT4D PNG ready"),
     },
     async (args) => {
       try {
@@ -350,7 +400,6 @@ function createMrsServer(): McpServer {
             mcpImageContent(image),
           ],
           structuredContent: { render },
-          _meta: renderProgressMeta("Rendering 4D still", "RT4D PNG ready"),
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -368,8 +417,247 @@ function createMrsServer(): McpServer {
     }
   );
 
-  registerAppTool(
-    server,
+  server.registerTool(
+    "render_4d_to_3d_pipeline",
+    {
+      title: "Render Native 4D to 3D Pipeline",
+      description:
+        "Use this when the user wants a complete native rendering journey: deterministic RT4D concept → governed SceneSpecification reveal → Engine3D structure/composite. Returns three primary image blocks for inline presentation and visual comparison, preserves run IDs and SHA-256 provenance, and forbids diffusion/img2img polish.",
+      inputSchema: render4dTo3dInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
+      _meta: toolStatusMeta(
+        "Running native 4D to 3D pipeline",
+        "4D to 3D renders ready"
+      ),
+    },
+    async (args) => {
+      try {
+        const { text, content, pipeline } = await handleRender4dTo3d(args);
+        return {
+          content: [{ type: "text" as const, text }, ...content],
+          structuredContent: { pipeline },
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Native 4D to 3D pipeline failed: ${message}`,
+            },
+          ],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "search_jarvis_memory",
+    {
+      title: "Search Jarvis Memory",
+      description:
+        "Use this when you want live or archived Jarvis session memory, board context, or prior decisions relevant to the current task.",
+      inputSchema: searchJarvisMemoryInputShape,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: toolStatusMeta("Reading Jarvis memory", "Jarvis memory ready"),
+    },
+    async (args) => {
+      try {
+        const { text, structured } = await handleSearchJarvisMemory(args);
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: structured,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Jarvis search failed: ${message}` }],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "fetch_jarvis_memory",
+    {
+      title: "Fetch Jarvis Memory",
+      description:
+        "Use this when you already know a Jarvis memory id and want the full stored record.",
+      inputSchema: fetchJarvisMemoryInputShape,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: toolStatusMeta("Fetching Jarvis memory", "Jarvis memory fetched"),
+    },
+    async (args) => {
+      try {
+        const { text, structured } = await handleFetchJarvisMemory(args);
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: structured,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Jarvis fetch failed: ${message}` }],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "write_jarvis_memory",
+    {
+      title: "Write Jarvis Memory",
+      description:
+        "Use this when you want to persist a concise memory, session summary, preference, or decision into the Jarvis memory board.",
+      inputSchema: writeJarvisMemoryInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
+      _meta: toolStatusMeta("Writing Jarvis memory", "Jarvis memory stored"),
+    },
+    async (args) => {
+      try {
+        const { text, structured } = await handleWriteJarvisMemory(args);
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: structured,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Jarvis write failed: ${message}` }],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "update_jarvis_memory",
+    {
+      title: "Update Jarvis Memory",
+      description:
+        "Use this when you want to revise an existing Jarvis memory by id, including content, tags, scope, or truth status.",
+      inputSchema: updateJarvisMemoryInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
+      _meta: toolStatusMeta("Updating Jarvis memory", "Jarvis memory updated"),
+    },
+    async (args) => {
+      try {
+        const { text, structured } = await handleUpdateJarvisMemory(args);
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: structured,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Jarvis update failed: ${message}` }],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "write_jarvis_session_summary",
+    {
+      title: "Write Jarvis Session Summary",
+      description:
+        "Use this when you want to persist a standard session recap in one call with objective, decisions, touched systems, open threads, and notes.",
+      inputSchema: writeJarvisSessionSummaryInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
+      _meta: toolStatusMeta(
+        "Writing Jarvis session summary",
+        "Jarvis session summary stored"
+      ),
+    },
+    async (args) => {
+      try {
+        const { text, structured } = await handleWriteJarvisSessionSummary(args);
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: structured,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Jarvis session summary write failed: ${message}`,
+            },
+          ],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "delete_jarvis_memory",
+    {
+      title: "Delete Jarvis Memory",
+      description:
+        "Use this when you want to delete an existing Jarvis memory by id.",
+      inputSchema: deleteJarvisMemoryInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: true,
+      },
+      _meta: toolStatusMeta("Deleting Jarvis memory", "Jarvis memory deleted"),
+    },
+    async (args) => {
+      try {
+        const { text, structured } = await handleDeleteJarvisMemory(args);
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: structured,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Jarvis delete failed: ${message}` }],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
     "describe_4drs_capabilities",
     {
       title: "Describe 4DRS Capabilities",
@@ -386,14 +674,13 @@ function createMrsServer(): McpServer {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: renderProgressMeta("Reading capabilities", "Capabilities ready"),
+      _meta: toolStatusMeta("Reading capabilities", "Capabilities ready"),
     },
     async () => {
       const { text, capabilities } = handleDescribeCapabilities();
       return {
         content: [{ type: "text" as const, text }],
         structuredContent: { capabilities },
-        _meta: renderProgressMeta("Reading capabilities", "Capabilities ready"),
       };
     }
   );
@@ -564,6 +851,7 @@ const httpServer = createServer(async (req, res) => {
           legacySse: `GET ${ssePath} + POST ${ssePostPath}`,
         },
         tools: [
+          "render_4d_to_3d_pipeline",
           "render_4d_prompt",
           "render_scene_spec_rt4d",
           "validate_scene_spec",
@@ -634,7 +922,9 @@ httpServer.listen(PORT, () => {
     `  Legacy POST:     http://127.0.0.1:${PORT}${ssePostPath}?sessionId=...`
   );
   console.log(`  Health: GET http://127.0.0.1:${PORT}/health`);
-  console.log(`  Primary tools: render_4d_prompt, render_scene_spec_rt4d`);
+  console.log(
+    `  Primary tools: render_4d_to_3d_pipeline, render_4d_prompt, render_scene_spec_rt4d`
+  );
   console.log(`  LiveLink default: ${resolveLiveLinkUrl()}`);
   console.log(`  Assets: ${ASSETS_DIR}`);
 });

@@ -19,6 +19,36 @@ from app.models import DispatchTarget
 
 
 TILE_STILL_ENDPOINT = "/api/engine3d-tile-still"
+CCS_DISPATCH_ENDPOINT = "/api/ccs/dispatch"
+
+DIRECTOR_AUTHORITY_ID = "infinity-director"
+
+
+def _utc_now() -> str:
+    """ISO-8601 UTC timestamp without microsecond noise."""
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _build_authority_entry(
+    authority_id: str = DIRECTOR_AUTHORITY_ID,
+    *,
+    role: str = "infinity-director",
+    statement: str | None = None,
+) -> dict[str, Any]:
+    """Build an authority chain entry for constitutional scheduling.
+
+    Mirrors ``genblaze-media/app/constitutional_schedule.build_authority_entry``
+    so the Director can sign tile dispatches without importing from the Genblaze
+    service (which is an independent process communicating over HTTP).
+    """
+    return {
+        "authority_id": authority_id,
+        "role": role,
+        "statement": statement or "director tile dispatch",
+        "timestamp": _utc_now(),
+    }
 
 
 def normalize_tile_bounds(tile: dict[str, Any]) -> dict[str, int]:
@@ -152,8 +182,16 @@ def dispatch_tile_faithful(
     base_payload: dict[str, Any],
     client: httpx.Client | None = None,
     dispatch_fn: Any | None = None,
+    constitutional_mode: bool = False,
+    continuity_id: str | None = None,
 ) -> dict[str, Any]:
-    """Loop Genblaze tile stills; return FinalFrame-shaped dispatch result."""
+    """Loop Genblaze tile stills; return FinalFrame-shaped dispatch result.
+
+    When ``constitutional_mode`` is ``True``, each tile is dispatched via
+    ``/api/ccs/dispatch`` with a Director-signed authority entry and the
+    tile index in its continuity chain. Otherwise the default
+    ``/api/engine3d-tile-still`` path is used.
+    """
     _dispatch = dispatch_fn or dispatch_render
     frame = render_plan.get("frame") or {}
     fw = int(frame.get("width") or base_payload.get("width") or 256)
@@ -169,15 +207,36 @@ def dispatch_tile_faithful(
     try:
         for index, tile in enumerate(tiles):
             bounds = normalize_tile_bounds(tile)
-            payload = {
-                **{k: v for k, v in base_payload.items() if k not in {"crop_region", "tile_index"}},
-                "width": fw,
-                "height": fh,
-                "crop_region": bounds,
-                "tile_index": index,
-                "polish": False,
-            }
-            target = DispatchTarget(endpoint=TILE_STILL_ENDPOINT, payload=payload)
+
+            if constitutional_mode:
+                # Director signs each tile with its own authority entry.
+                authority_entry = _build_authority_entry(
+                    authority_id=DIRECTOR_AUTHORITY_ID,
+                    role="infinity-director",
+                    statement=f"tile_faithful dispatch tile={index} "
+                    f"bounds={bounds['x']},{bounds['y']},{bounds['w']}x{bounds['h']}",
+                )
+                payload = {
+                    "prompt": base_payload.get("prompt", ""),
+                    "authority_override": authority_entry,
+                    "continuity_id": f"{continuity_id or 'tile-chain'}/tile-{index}",
+                    "quality": base_payload.get("quality", "draft"),
+                    "dry_run": False,
+                    **{k: v for k, v in base_payload.items()
+                       if k not in {"prompt", "quality"}},
+                }
+                target = DispatchTarget(endpoint=CCS_DISPATCH_ENDPOINT, payload=payload)
+            else:
+                payload = {
+                    **{k: v for k, v in base_payload.items()
+                       if k not in {"crop_region", "tile_index"}},
+                    "width": fw,
+                    "height": fh,
+                    "crop_region": bounds,
+                    "tile_index": index,
+                    "polish": False,
+                }
+                target = DispatchTarget(endpoint=TILE_STILL_ENDPOINT, payload=payload)
             try:
                 try:
                     body = _dispatch(settings, target, client=http)
@@ -194,6 +253,7 @@ def dispatch_tile_faithful(
                 )
                 raise
             run_id = _structure_run_id(body)
+            dispatch_endpoint = CCS_DISPATCH_ENDPOINT if constitutional_mode else TILE_STILL_ENDPOINT
             staged.append(
                 {
                     "sequence_index": index,
@@ -202,7 +262,7 @@ def dispatch_tile_faithful(
                     "complexity_C": tile.get("complexity"),
                     "dispatch": {
                         "status": "success",
-                        "endpoint": TILE_STILL_ENDPOINT,
+                        "endpoint": dispatch_endpoint,
                         "run_id": run_id,
                     },
                 },
@@ -246,13 +306,19 @@ def dispatch_tile_faithful(
         if composite_sha256:
             structure_block["asset_sha256"] = composite_sha256
 
+        dispatch_endpoint = CCS_DISPATCH_ENDPOINT if constitutional_mode else TILE_STILL_ENDPOINT
+        note = (
+            "Tile-faithful Genblaze dispatch via /api/ccs/dispatch "
+            "with Director-signed authority entries."
+            if constitutional_mode
+            else "Tile-faithful Genblaze dispatch: one full-frame soft-raster per tile "
+            "with crop_region; Director merged tiles into FinalFrame."
+        )
         return {
             "structure": structure_block,
-            "note": (
-                "Tile-faithful Genblaze dispatch: one full-frame soft-raster per tile "
-                "with crop_region; Director merged tiles into FinalFrame."
-            ),
-            "tile": {"endpoint": TILE_STILL_ENDPOINT, "tiles_dispatched": len(staged)},
+            "note": note,
+            "tile": {"endpoint": dispatch_endpoint, "tiles_dispatched": len(staged)},
+            "constitutional": constitutional_mode,
         }
     finally:
         if own_client:

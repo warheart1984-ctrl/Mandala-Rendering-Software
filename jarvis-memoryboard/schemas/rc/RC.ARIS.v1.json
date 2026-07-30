@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "RC.ARIS.v1",
+  "title": "RC.ARIS.v1 — ARIS Replay Contract",
+  "description": "Declared reconstruction rules stub. Not executed by Continuity Ledger v1.",
+  "type": "object",
+  "required": ["rc_id", "version", "inputs", "reconstruction"],
+  "properties": {
+    "rc_id": { "const": "RC.ARIS.v1" },
+    "version": { "const": "1" },
+    "inputs": {
+      "type": "array",
+      "items": { "enum": ["CES.ARIS.Decision.v1", "CES.Lineage.Identity.v1"] }
+    },
+    "reconstruction": {
+      "type": "string",
+      "description": "Declared: replay governed decisions with governance_trace and supersedes edges."
+    },
+    "determinism": { "const": "required" }
+  }
+}

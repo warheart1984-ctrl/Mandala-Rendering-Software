@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mrs://assets/human/schemas/biometric-profile.schema.json",
+  "title": "Engine3D Constitutional Biometric Profile",
+  "description": "Lawful ranges for fixture/operator figure proportions. Status: partial — schema + validators exist; not a runtime biometric enforcement charter policy. Not PKI. Not photoreal anatomy enforcement.",
+  "type": "object",
+  "required": ["schemaVersion", "profiles"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "biometric-profile/1.0"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "partial", "enforced", "skeleton"],
+      "description": "Drive-G-1 maturity tag for this catalog"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/profile" }
+    }
+  },
+  "$defs": {
+    "range": {
+      "type": "object",
+      "required": ["min", "max"],
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "unit": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "required": ["id", "scaleClass", "referenceHeightMeters", "limbRatios", "curvature", "massDistribution"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string" },
+        "scaleClass": {
+          "type": "string",
+          "enum": ["human-sized", "canine-scale", "feline-scale", "toy-scale", "monument-scale", "custom"]
+        },
+        "referenceHeightMeters": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Canonical standing height used for adaptive metric inheritance"
+        },
+        "defaultUniformScale": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1,
+          "description": "World-unit scale when context entity height is unknown"
+        },
+        "limbRatios": {
+          "type": "object",
+          "required": ["armToHeight", "legToHeight", "torsoToHeight", "headToHeight"],
+          "additionalProperties": false,
+          "properties": {
+            "armToHeight": { "$ref": "#/$defs/range" },
+            "legToHeight": { "$ref": "#/$defs/range" },
+            "torsoToHeight": { "$ref": "#/$defs/range" },
+            "headToHeight": { "$ref": "#/$defs/range" },
+            "interocularToHeadWidth": { "$ref": "#/$defs/range" }
+          }
+        },
+        "curvature": {
+          "type": "object",
+          "required": ["maxAsymmetry", "minOrganicVariance"],
+          "additionalProperties": false,
+          "properties": {
+            "maxAsymmetry": {
+              "$ref": "#/$defs/range",
+              "description": "Allowed left/right AABB or metric delta (0 = perfect mirror)"
+            },
+            "minOrganicVariance": {
+              "$ref": "#/$defs/range",
+              "description": "Minimum retained variance so enforcement must not flatten organics to zero"
+            },
+            "surfaceCurvatureProxy": {
+              "$ref": "#/$defs/range",
+              "description": "Optional AABB aspect proxy for curve richness (depth/width)"
+            }
+          }
+        },
+        "massDistribution": {
+          "type": "object",
+          "required": ["centerOfMassHeightFraction", "shoulderToHipWidth"],
+          "additionalProperties": false,
+          "properties": {
+            "centerOfMassHeightFraction": { "$ref": "#/$defs/range" },
+            "shoulderToHipWidth": { "$ref": "#/$defs/range" },
+            "chestDepthToWidth": { "$ref": "#/$defs/range" }
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

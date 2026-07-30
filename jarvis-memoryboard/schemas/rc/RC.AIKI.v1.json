@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "RC.AIKI.v1",
+  "title": "RC.AIKI.v1 — AIKI Replay Contract",
+  "description": "Declared reconstruction rules stub. Not executed by Continuity Ledger v1.",
+  "type": "object",
+  "required": ["rc_id", "version", "inputs", "reconstruction"],
+  "properties": {
+    "rc_id": { "const": "RC.AIKI.v1" },
+    "version": { "const": "1" },
+    "inputs": {
+      "type": "array",
+      "items": { "enum": ["CES.AIKI.KO.v1", "CES.Lineage.Identity.v1"] }
+    },
+    "reconstruction": {
+      "type": "string",
+      "description": "Declared: rebuild KO graph from registered evidence hashes in order."
+    },
+    "determinism": { "const": "required" }
+  }
+}

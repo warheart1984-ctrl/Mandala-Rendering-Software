@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereign-x.org/ciems/spr-v1.json",
+  "title": "SceneProvenanceRecord",
+  "description": "SPR v1.0 (CPE-SCN-PRV). Status: declared (spec) / partial (emitter from GLB+provenance).",
+  "type": "object",
+  "required": [
+    "@context",
+    "artifact",
+    "version",
+    "id",
+    "timestamp",
+    "sceneIdentityBlock",
+    "assetProvenanceLedger",
+    "geometryProvenance",
+    "materialProvenance",
+    "lightingProvenance",
+    "cameraProvenance",
+    "environmentProvenance",
+    "constitutionalHooks"
+  ],
+  "properties": {
+    "@context": {
+      "const": "https://sovereign-x.org/ciems/spr-v1"
+    },
+    "artifact": {
+      "const": "SceneProvenanceRecord"
+    },
+    "version": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^spr-"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "partial", "held", "verified"]
+    },
+    "sceneIdentityBlock": {
+      "type": "object",
+      "required": ["sceneUUID", "glbHash"],
+      "properties": {
+        "sceneUUID": { "type": "string" },
+        "glbHash": { "type": "string" },
+        "glbProvenanceChain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "hash"],
+            "properties": {
+              "source": { "type": "string" },
+              "hash": { "type": "string" },
+              "timestamp": { "type": ["string", "null"] }
+            },
+            "additionalProperties": true
+          }
+        },
+        "creationTimestamp": { "type": ["string", "null"] },
+        "modificationLedger": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": { "type": "string" },
+              "target": { "type": ["string", "null"] },
+              "timestamp": { "type": ["string", "null"] },
+              "hash": { "type": ["string", "null"] }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "assetProvenanceLedger": { "type": "array" },
+    "geometryProvenance": { "type": "array" },
+    "materialProvenance": { "type": "array" },
+    "lightingProvenance": { "type": "array" },
+    "cameraProvenance": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "environmentProvenance": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "constitutionalHooks": {
+      "type": "object",
+      "required": ["evidenceCompletenessScore"],
+      "properties": {
+        "esfrHook": { "type": ["string", "null"] },
+        "inspectorHook": { "type": ["string", "null"] },
+        "governanceTrail": { "type": ["string", "null"] },
+        "evidenceCompletenessScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

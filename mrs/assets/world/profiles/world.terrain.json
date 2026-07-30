@@ -1,0 +1,18 @@
+{
+  "id": "world.terrain",
+  "policyId": "world.terrain",
+  "label": "Terrain / geological",
+  "domain": "terrain",
+  "status": "partial",
+  "worldScaleClass": "human-sized",
+  "referenceLandmarkMeters": 10,
+  "minEnvironmentalVariance": 0.002,
+  "biomeTag": "terrain-generic",
+  "exampleSubjects": ["rocks", "cliffs", "soil", "ground"],
+  "metricFamilies": ["aspectRatios", "fractureIrregularity", "environmentalVariance"],
+  "ranges": {
+    "fractureIrregularity": { "min": 0.01, "max": 1.0 },
+    "aspectRatio": { "min": 0.05, "max": 20 }
+  },
+  "notes": "Minimal terrain catalog stub for CKL world.terrain — partial."
+}

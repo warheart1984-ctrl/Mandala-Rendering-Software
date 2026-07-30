@@ -1,0 +1,17 @@
+{
+  "id": "world.synthetic",
+  "policyId": "world.synthetic",
+  "label": "Synthetic / props",
+  "domain": "synthetic",
+  "status": "partial",
+  "worldScaleClass": "human-sized",
+  "referenceLandmarkMeters": 0.5,
+  "minEnvironmentalVariance": 0.0005,
+  "biomeTag": "synthetic-props",
+  "exampleSubjects": ["props", "furniture", "devices", "artifacts"],
+  "metricFamilies": ["moduleScale", "massProxy", "environmentalVariance"],
+  "ranges": {
+    "moduleScale": { "min": 0.01, "max": 10 }
+  },
+  "notes": "Minimal synthetic catalog stub for CKL world.synthetic — partial."
+}

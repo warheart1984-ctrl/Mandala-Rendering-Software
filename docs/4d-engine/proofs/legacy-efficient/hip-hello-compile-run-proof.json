@@ -1,0 +1,40 @@
+{
+  "capturedAt": "2026-07-30T08:52:00.000Z",
+  "adapterId": "sx.adapter.hip.hello.compile",
+  "capabilityHint": "gpu.compute.amd.hip",
+  "statusTag": "partial",
+  "surface": "HIP hello compile (device runtime still blocked on Tonga)",
+  "hostHint": "FX-8350 / R9 380 — ROCm 7.1 hipcc compiles --offload-arch=gfx803; hipGetDeviceCount finds 0 ROCm devices",
+  "cycle": "cycle-rerun-2",
+  "source": "scripts/legacy-efficient/hip_hello.hip",
+  "compile": {
+    "ok": true,
+    "hipcc": "C:\\\\Program Files\\\\AMD\\\\ROCm\\\\7.1\\\\bin\\\\hipcc.exe",
+    "args": [
+      "scripts/legacy-efficient/hip_hello.hip",
+      "-o",
+      "docs/4d-engine/proofs/legacy-efficient/hip_hello.exe",
+      "--offload-arch=gfx803"
+    ],
+    "exit": 0,
+    "offloadArch": "gfx803",
+    "exeBytes": 155648
+  },
+  "run": {
+    "attempted": true,
+    "exitCode": 2,
+    "log": "hipGetDeviceCount status=100 count=0\nNO_DEVICE",
+    "deviceRuntime": "blocked",
+    "note": "hipInfo / hip_hello: no ROCm-capable device (GCN Tonga outside ROCm device enum)"
+  },
+  "beautyHip": {
+    "previous": "partial",
+    "now": "partial",
+    "meaning": "Compile path reconfirmed with hipcc; runtime kernel on this discrete GPU remains blocked — OpenCL still is the proven beauty still path"
+  },
+  "invoke": [
+    "set HIP_PATH=C:\\\\Program Files\\\\AMD\\\\ROCm\\\\7.1",
+    "hipcc scripts/legacy-efficient/hip_hello.hip -o docs/4d-engine/proofs/legacy-efficient/hip_hello.exe --offload-arch=gfx803",
+    "docs/4d-engine/proofs/legacy-efficient/hip_hello.exe"
+  ]
+}

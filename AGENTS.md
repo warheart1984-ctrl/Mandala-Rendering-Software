@@ -315,3 +315,80 @@ update `LEMONADE_HOST` / `LEMONADE_PORT` in the shell environment so the
 `lemonade` CLI matches.
 
 <!-- END amd-skills:local-ai-use -->
+
+<!-- BEGIN jarvis-memoryboard -->
+## Jarvis Memory Board (Agent Persistent Memory)
+
+This workspace includes a persistent read/write memory board service at
+`jarvis-memoryboard/` for cross-session agent memory. Start it with:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8001
+```
+
+Or from the project root:
+
+```bash
+cd jarvis-memoryboard && python -m app
+```
+
+### API endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/jarvis/memory` | List memories (params: `?truth_scope=live&query=...&limit=N`) |
+| `POST` | `/api/jarvis/memory` | Create a memory |
+| `GET` | `/api/jarvis/memory/{id}` | Read a memory |
+| `PATCH` | `/api/jarvis/memory/{id}` | Update a memory |
+| `DELETE` | `/api/jarvis/memory/{id}` | Delete a memory |
+| `GET` | `/api/jarvis/memory/board` | Read the board context |
+| `POST` | `/api/jarvis/memory/board` | Replace the board |
+| `PATCH` | `/api/jarvis/memory/board` | Update board fields |
+
+### Memory model
+
+```json
+{
+  "id": "mem-abc123",
+  "content": "Session state and decisions made so far...",
+  "category": "signal",
+  "tags": ["tesseract", "4d", "governance"],
+  "scope": "session",
+  "state_class": "live",
+  "truth_status": "stable_user",
+  "created_at": "2026-07-29T20:00:00+00:00",
+  "updated_at": "2026-07-29T20:00:00+00:00"
+}
+```
+
+### Agent startup
+
+At the start of each session:
+1. `GET /api/jarvis/memory?truth_scope=live&limit=32` to load stored context
+2. `POST /api/jarvis/memory` at the end to persist the session summary
+
+Set `JARVIS_MEMORYBOARD_URL` environment variable or use `http://localhost:8001`
+by default, matching the Director's `DIRECTOR_MEMORYBOARD_BASE_URL`.
+
+<!-- END jarvis-memoryboard -->
+
+## Learned User Preferences
+
+- Intends to write Book 2 of *The Burden of Contradiction*; Book 1 is *The Archive of Consent* v1.2. Will supply the outline and Book 1 next — do not start drafting Book 2 until those materials are provided.
+- For book-to-film work, prefer the Mandala movie path as a real 3D motion picture (camera motion, humans, buildings, materials, depth, polish) over static slides; prioritize cinematic quality and a strong first ~10 seconds over feature sprawl.
+- For large multi-step work, prefer launching the MRS crew with repo skills, vendor skills, and Mandala modes rather than single-path improvisation.
+- Prefer honest status tags (`skeleton` / `partial` / blocked-with-evidence) and no unauthorized constitutional charter edits; mark Lemonade SD / ROCm gaps as partial and close them with adapters rather than overclaiming.
+- Prefer beating larger GPUs via algorithmic efficiency, memory efficiency, and governance (useful-FLOPs), wired through the Sovereign X router, over assuming a newer discrete GPU.
+- For AIKI: keep a Mission Lock; evaluate features on understanding, evidence/reproducibility, and ten-year sense; use a vendor-neutral Inference Provider Interface; treat GitHub Issues/Discussions/PRs as the long-term source of truth and ship CKO-0001 once the scaffold is ready.
+- Wants Jarvis/cross-chat persistent memory hooked so context carries across chats; prefer Continuity Ledger decisions/evidence over chat dumps.
+
+## Learned Workspace Facts
+
+- *The Archive of Consent* v1.2 is the Book 1 title in the *Burden of Contradiction* series; user reports the `.docx` is already on Drive `G:\` (earlier Chapter 1 movie work also used Downloads / `The_Archive_of_Consent_DRAFT v1.2.docx`).
+- Chapter 1 book-movie artifacts and cinematic-v2 showcases live under `tmp/book-movie-ch1/` (Engine3D soft-raster / `--upgrade` path; soft-raster is not photoreal).
+- This host uses an AMD R9 380-class GPU: Lemonade SD/`sd-server` image generation has been probed blocked; Lemonade chat/TTS can run without `sd-server`; ROCm/HIP was previously absent and the user has pursued AMD HIP SDK install.
+- AIKI scaffold lives under `aiki/` in this workspace; remote target includes `warheart1984-ctrl/AIKI-Constitution-v0.1`.
+- Jarvis Continuity Ledger / memoryboard is expected at `http://localhost:8001` (or `JARVIS_MEMORYBOARD_URL`), with session hooks writing `.cursor/hooks/state/jarvis-live-context.md`.
+- Efficiency-layer / GPU-path work is intended to hook through the Sovereign X router (`sovereign-x/`).
+- Constitutional Reality Engine Phase 1 scaffold work has used `G:\cre\` as a top-level Drive-G project path.
+- GitHub remote for this product line includes `warheart1984-ctrl/Mandala-Rendering-System-MRS-`.

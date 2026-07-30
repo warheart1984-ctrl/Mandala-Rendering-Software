@@ -81,8 +81,14 @@ export class ConstitutionalStateEngine {
 
   /**
    * Governed execute: Intent → Evidence → Authority → Execution → CSR
+   *
+   * When `decision` is provided (from GovernanceKernel.evaluateIntent), its
+   * governance trace (paramAdjust, attachProvenance, policiesApplied,
+   * precedentCount, decisionId) is embedded in the CSR.  This closes the
+   * CKL→CSE integration gap: policy evaluations from ConstitutionalKnowledgeLayer
+   * flow into the execution record without a second independent path.
    */
-  async execute({ intent, evidence, action, run }) {
+  async execute({ intent, evidence, action, run, decision = null }) {
     if (!intent?.id) {
       throw new Error("No execution without intent");
     }
@@ -110,7 +116,7 @@ export class ConstitutionalStateEngine {
     this._append({
       phase: "planning",
       intentId: intent.id,
-      payload: { action, contractId: auth.contractId },
+      payload: { action, contractId: auth.contractId, decision },
     });
 
     let result;
@@ -134,6 +140,16 @@ export class ConstitutionalStateEngine {
       charterId: this.charterId,
       evidence,
       result,
+      governanceTrace: decision
+        ? {
+            decisionId: decision.decisionId,
+            verdict: decision.verdict,
+            policiesApplied: decision.policiesApplied,
+            precedentCount: decision.precedentCount,
+            paramAdjust: decision.paramAdjust,
+            attachProvenance: Boolean(decision.attachProvenance),
+          }
+        : null,
       createdAt: nowIso(),
     };
 

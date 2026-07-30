@@ -236,6 +236,10 @@ class RouteDecision:
     Produced by ``decide_route()`` and consumed by the pipeline dispatch.
     The decision is the pre-execution honesty contract: it declares intent
     before any pixels are rendered.
+
+    Sovereign X constitutional fields (authority_chain, continuity_id,
+    governance_trace) are set by ``ConstitutionalDispatch.prepare()`` to
+    trace who authorized the dispatch and what policies were checked.
     """
 
     path_kind: PathKind
@@ -251,11 +255,32 @@ class RouteDecision:
     """Where composition cues come from (e.g. 'rt4d-structure', 'depth-map')."""
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    authority_chain: tuple[dict[str, Any], ...] = ()
+    """Ordered trace of who authorized this dispatch (Sovereign X AUTH layer).
+
+    Each entry: ``{"authority_id": str, "role": str, "statement": str}``.
+    Empty when the constitutional scheduler is not active.
+    """
+    continuity_id: str | None = None
+    """Link to a prior dispatch or render state (Sovereign X CONT layer).
+
+    When set, this dispatch continues from a previous continuity chain.
+    The scheduler verifies that the prior receipt exists and is compatible.
+    """
+    governance_trace: dict[str, Any] | None = None
+    """Policy evaluation evidence (mirrors CKL/CSE governanceTrace).
+
+    Populated when ``ConstitutionalDispatch.prepare()`` runs policy checks.
+    Contains: decisionId, verdict, policiesApplied, precedentCount,
+    paramAdjust, attachProvenance.
+    """
+
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         d["path_kind"] = self.path_kind.value
         d["renderer_role"] = self.renderer_role.value
         d["ai_role"] = self.ai_role.value
+        d["authority_chain"] = list(self.authority_chain)
         return d
 
 
@@ -466,6 +491,18 @@ class RenderReceipt:
     warnings: list[str] = field(default_factory=list)
     """Any deviations from the intended route (e.g. fallback, provider failure)."""
 
+    # Sovereign X constitutional fields (copied from RouteDecision at receipt build)
+    authority_chain: list[dict[str, Any]] = field(default_factory=list)
+    """Ordered trace of who authorized this dispatch."""
+    continuity_id: str | None = None
+    """Link to prior dispatch state (CONT layer continuity chain)."""
+    governance_trace: dict[str, Any] | None = None
+    """Policy evaluation evidence from CKL/CSE governance check."""
+
+    # Ledger
+    ledger_tx_id: str | None = None
+    """Memory Board transaction ID where this receipt is stored."""
+
     # Provenance chain
     run_id: str | None = None
     source_run_id: str | None = None
@@ -605,6 +642,10 @@ def build_render_receipt(
         composition_preserved=composition_preserved,
         note=". ".join(note_parts),
         warnings=list(warnings or []),
+        # Constitutional fields propagated from decision
+        authority_chain=list(decision.authority_chain),
+        continuity_id=decision.continuity_id,
+        governance_trace=decision.governance_trace,
         run_id=run_id,
         source_run_id=source_run_id,
         metadata=dict(metadata or {}),

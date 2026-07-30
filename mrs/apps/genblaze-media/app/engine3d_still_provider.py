@@ -319,6 +319,7 @@ def generate_engine3d_still(
     aov_depth: bool = True,
     aov_normal: bool = True,
     world_path: str | None = None,
+    world_document: dict[str, Any] | None = None,
     human_glb: str | None = None,
     crop_region: CropRegion | None = None,
 ) -> GenerateResult:
@@ -347,6 +348,13 @@ def generate_engine3d_still(
     tmp_root.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="e3d-", dir=str(tmp_root)))
     try:
+        if world_document is not None:
+            world_input = work / "world-document.json"
+            world_input.write_text(
+                json.dumps(world_document, separators=(",", ":")),
+                encoding="utf-8",
+            )
+            world_path = str(world_input)
         provenance = _run_still_cli(
             settings,
             out_dir=work,

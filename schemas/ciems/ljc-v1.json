@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sovereign-x.org/ciems/ljc-v1.json",
+  "title": "LightingJustificationContract",
+  "description": "LJC v1.0 (CPE-LJC). Lean contract; also PEP.lightingJustificationRecord[]. Status: declared.",
+  "type": "object",
+  "$defs": {
+    "lightingJustificationEntry": {
+      "type": "object",
+      "required": ["lightId", "type"],
+      "properties": {
+        "lightId": { "type": "string" },
+        "type": { "type": "string" },
+        "intensity": { "type": ["number", "string", "null"] },
+        "intensityJustification": { "type": ["string", "null"] },
+        "colorTemperature": { "type": ["number", "string", "null"] },
+        "colorJustification": { "type": ["string", "null"] },
+        "shadowPlausibility": { "type": ["number", "string", "null"] },
+        "globalIlluminationContribution": {
+          "type": ["number", "string", "null"]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "properties": {
+    "@context": { "const": "https://sovereign-x.org/ciems/ljc-v1" },
+    "artifact": { "const": "LightingJustificationContract" },
+    "version": { "const": "1.0" },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/lightingJustificationEntry" }
+    }
+  },
+  "additionalProperties": true
+}

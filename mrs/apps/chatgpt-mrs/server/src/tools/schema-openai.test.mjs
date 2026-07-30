@@ -11,6 +11,15 @@ import { updateSceneInputShape } from "./update-scene.js";
 import { replaySceneInputShape } from "./replay-scene.js";
 import { validateSceneSpecInputShape } from "./validate-scene-spec.js";
 import { renderSceneSpecInputShape } from "./render-scene-spec.js";
+import { render4dTo3dInputShape } from "./render-4d-to-3d.js";
+import {
+  deleteJarvisMemoryInputShape,
+  fetchJarvisMemoryInputShape,
+  searchJarvisMemoryInputShape,
+  updateJarvisMemoryInputShape,
+  writeJarvisSessionSummaryInputShape,
+  writeJarvisMemoryInputShape,
+} from "./jarvis-memory.js";
 import {
   asVec4,
   numberPairArray,
@@ -72,6 +81,13 @@ describe("OpenAI-compatible MCP tool schemas", () => {
       replaySceneInputShape,
       validateSceneSpecInputShape,
       renderSceneSpecInputShape,
+      render4dTo3dInputShape,
+      searchJarvisMemoryInputShape,
+      fetchJarvisMemoryInputShape,
+      writeJarvisMemoryInputShape,
+      updateJarvisMemoryInputShape,
+      deleteJarvisMemoryInputShape,
+      writeJarvisSessionSummaryInputShape,
     ]) {
       assertNoTupleItems(zodToJsonSchema(z.object(shape)));
     }

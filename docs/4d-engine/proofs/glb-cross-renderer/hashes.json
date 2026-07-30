@@ -1,0 +1,52 @@
+{
+  "schema": "mrs.glb-cross-renderer.proof.v1",
+  "date": "2026-07-30",
+  "blenderPath": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+  "blenderVersion": "5.2.0 LTS",
+  "spec": "mrs/packages/renderer-core/examples/scene-spec-tesseract.json",
+  "seed": 42,
+  "specHash": "152b17ed7ffe00f7e03a9cb2effccf34fbcba338c72d251988278ed3e01a63cb",
+  "glb": {
+    "path": "tmp/glb-repro/scene.glb",
+    "bytes": 12622660,
+    "sha256": "3ebe5d8fc4ac41d7cdba80bb65994d8e2d164ae6defae2bf4bfd1ede7fefbf1e",
+    "dualExportByteIdentical": true
+  },
+  "provenance": {
+    "structuralMatchAcrossExports": true,
+    "note": "timestamp differs per export (wall-clock); not part of geometric identity"
+  },
+  "cycles": {
+    "settings": {
+      "samples": 32,
+      "width": 256,
+      "height": 256,
+      "seed": 0,
+      "denoising": true,
+      "device": "CPU (HIP/OptiX unavailable on this host)"
+    },
+    "cycles-a": {
+      "path": "tmp/glb-repro/cycles-a.png",
+      "docPath": "docs/4d-engine/proofs/glb-cross-renderer/cycles-a.png",
+      "fileSha256": "70993a2df28056523591027b668e209a1a6c5bbca58805ebb0d21ae09d0d9610",
+      "pixelSha256": "8b5b3e3b8a5916058728d3aa680fdc64f1afad4f30c63987ea970be19779fc45",
+      "bytes": 74562
+    },
+    "cycles-b": {
+      "path": "tmp/glb-repro/cycles-b.png",
+      "docPath": "docs/4d-engine/proofs/glb-cross-renderer/cycles-b.png",
+      "fileSha256": "e2eddb11c0c915e4f828b47440ebbe71c65a18caaa0ad0137c594aa64bb9f9e1",
+      "pixelSha256": "8b5b3e3b8a5916058728d3aa680fdc64f1afad4f30c63987ea970be19779fc45",
+      "bytes": 74562
+    },
+    "fileBitIdentical": false,
+    "pixelBitIdentical": true
+  },
+  "governedRender": {
+    "runDir": "tmp/governed-render-external-pbr-cycles/9de3536aacc4f922",
+    "exportStatus": "held",
+    "cyclesStatus": "complete",
+    "pixelsProduced": true,
+    "photorealClaim": true
+  }
+}

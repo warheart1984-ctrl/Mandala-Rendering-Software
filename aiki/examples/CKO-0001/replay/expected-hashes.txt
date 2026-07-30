@@ -1,0 +1,7 @@
+# Expected provenance hashes after CKO-0001 publish freeze
+cko.hash
+script.hash
+narration.hash
+visuals.hash
+video.hash
+pipeline-version.txt

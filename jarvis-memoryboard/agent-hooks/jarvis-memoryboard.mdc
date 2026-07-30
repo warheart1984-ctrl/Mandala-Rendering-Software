@@ -1,0 +1,33 @@
+---
+description: Continuity Ledger — load provenance-backed records; store decisions/evidence not chat dumps
+alwaysApply: true
+---
+
+# Jarvis Continuity Ledger (cross-chat)
+
+Shared continuity substrate at `http://localhost:8001` (or `JARVIS_MEMORYBOARD_URL`).
+**Continuity unifies evidence, not domains** (see `jarvis-memoryboard/docs/CONSTITUTIONAL_BOUNDARY_CLAUSE.md` — declared).
+Store **decisions/evidence**, not chats. Ledger preserves continuity; it does not adjudicate truth.
+
+## Session start (mandatory)
+
+1. Read `.cursor/hooks/state/jarvis-live-context.md` if present.
+2. Else call `GET /api/jarvis/memory/retrieve?truth_scope=live&limit=32` and `GET /api/jarvis/memory/board`.
+3. Honor unresolved conflicts (do not merge). Prefer `status=verified` decisions as *caller claims*, not proven truth.
+
+## Write rules
+
+POST `/api/jarvis/memory` with Continuity Ledger fields:
+`content`, `source_agent`, `session_id`, `type` (`decision|fact|task|preference|architecture|research`),
+`confidence`, `evidence`, `status` (`draft|verified|archived`), optional `supersedes`, optional `subject`.
+
+Prefer `type=decision` + evidence links for durable outcomes. Never silently merge conflicts.
+
+**Clause V (declared, not enforced):** avoid posting emotion/transient chat dumps into the ledger.
+SessionEnd auto-posts are transitional — prefer explicit decision/evidence records.
+
+## Session end
+
+POST verified/draft **decisions** (not full transcripts).
+
+If the service is down, note once and continue. Start: `jarvis-memoryboard/scripts/start-memoryboard.ps1`.

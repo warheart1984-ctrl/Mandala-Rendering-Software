@@ -18,7 +18,7 @@
     "test:workspace": "pnpm run test:renderer && pnpm run test:engine3d && pnpm run test:sovereign-x-router && pnpm run test:chatgpt-app-server && pnpm run test:genblaze-prompt-scene && pnpm run test:genblaze-engine3d-still",
     "test:engine3d": "pnpm --filter @mrs/engine3d-core run test:engine3d",
     "test:sovereign-x-router": "pnpm --filter @mrs/sovereign-x-router test",
-    "test:chatgpt-app-server": "pnpm --filter @mrs/chatgpt-app-server run test:schema",
+    "test:chatgpt-app-server": "pnpm --filter @mrs/chatgpt-app-server test && pnpm --filter @mrs/chatgpt-app-web run typecheck",
     "test:genblaze-prompt-scene": "pytest apps/genblaze-media/tests/test_prompt_to_scene.py -k \"run_bridge_expand or render_true_real_bridge or post_prompt_to_scene_render_true_real_api or prompt_to_scene\"",
     "test:genblaze-engine3d-still": "pytest apps/genblaze-media/tests/test_engine3d_still.py -k \"engine3d_still_real_route or api_engine3d_still or health_exposes_engine3d_still or availability_shape\"",
     "test:deploy-smoke": "pnpm run test:deploy-smoke:prompt-scene && pnpm run test:deploy-smoke:engine3d-still",

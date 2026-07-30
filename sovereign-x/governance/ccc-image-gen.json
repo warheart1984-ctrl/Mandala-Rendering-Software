@@ -1,0 +1,116 @@
+{
+  "contractId": "CCC-ImageGen",
+  "capability": "image.gen.provider",
+  "version": "1.1.0",
+  "status": "partial",
+  "doc": "docs/4d-engine/CCC_IMAGE_GEN.md",
+  "strategyDoc": "docs/4d-engine/PHOTOREAL_PROVIDER_STRATEGY.md",
+  "invariant": {
+    "id": "image.gen.at-least-one-provider",
+    "rule": "at_least_one_provider_available",
+    "onFail": "invariant_fail",
+    "note": "Do not classify as architecture-blocked-on-GPU when any provider remains configured. Photoreal stubs without URL do not satisfy beauty claims."
+  },
+  "layoutVsBeauty": {
+    "layout": ["engine3d.soft", "opencl.gen"],
+    "layoutNote": "engine3d.soft is governed-render primary layout (outside this cascade). opencl.gen is CCC layout assist.",
+    "beauty": ["photoreal.remote.diffusion", "photoreal.external.pbr"],
+    "lemonade": "held until pixelsProduced:true",
+    "r9_380": "true photoreal will not land locally — see strategy doc"
+  },
+  "providers": [
+    {
+      "id": "local.gpu",
+      "priority": 1,
+      "status": "partial",
+      "adapter": "sx.adapter.lemonade.sd",
+      "envEnable": [],
+      "envDisable": ["IMAGE_GEN_DISABLE_LOCAL_GPU"],
+      "notes": "Lemonade local GPU / ROCm path; optional, not required for capability availability. Hold promotion until pixelsProduced:true on this host."
+    },
+    {
+      "id": "opencl.gen",
+      "priority": 2,
+      "status": "partial",
+      "role": "layout",
+      "capability": "image.gen.opencl",
+      "adapter": "sx.adapter.image.gen.opencl",
+      "envDisable": ["IMAGE_GEN_DISABLE_OPENCL"],
+      "notes": "First-class local OpenCL pixel source (CL-Gen). Scene-aware still on R9 380/Tonga. Prefer when Lemonade cannot produce pixels. Not SDXL-in-OpenCL; not Engine3D soft-raster parity."
+    },
+    {
+      "id": "local.cpu",
+      "priority": 3,
+      "status": "declared",
+      "adapter": "sx.adapter.image.gen.local.cpu",
+      "envDisable": ["IMAGE_GEN_DISABLE_LOCAL_CPU"],
+      "notes": "Lemonade CPU/Vulkan preferred when configured; otherwise lawful deferred stub (no fake PNG)."
+    },
+    {
+      "id": "remote.gpu",
+      "priority": 4,
+      "status": "declared",
+      "adapter": "sx.adapter.image.gen.remote.gpu",
+      "envUrl": "IMAGE_GEN_REMOTE_GPU_URL",
+      "notes": "Connect stub until remote GPU endpoint is configured and verified."
+    },
+    {
+      "id": "remote.service",
+      "priority": 5,
+      "status": "declared",
+      "adapter": "sx.adapter.image.gen.remote.service",
+      "envUrl": "IMAGE_GEN_REMOTE_SERVICE_URL",
+      "notes": "Connect stub for managed remote diffusion service."
+    },
+    {
+      "id": "photoreal.remote.diffusion",
+      "priority": 6,
+      "status": "declared",
+      "role": "beauty",
+      "adapter": "sx.adapter.image.gen.photoreal.remote.diffusion",
+      "envUrl": "PHOTOREAL_REMOTE_DIFFUSION_URL",
+      "envDisable": ["PHOTOREAL_DISABLE_REMOTE_DIFFUSION"],
+      "notes": "Hybrid path beauty: conditioned remote diffusion (SDXL etc.) over governed layout. Stub/partial — no fake photoreal PNG when unconfigured."
+    },
+    {
+      "id": "photoreal.external.pbr",
+      "priority": 7,
+      "status": "partial",
+      "role": "beauty",
+      "adapter": "sx.adapter.image.gen.photoreal.external.pbr",
+      "envUrl": "PHOTOREAL_EXTERNAL_PBR_URL",
+      "envDisable": ["PHOTOREAL_DISABLE_EXTERNAL_PBR"],
+      "envSpec": "PHOTOREAL_EXTERNAL_PBR_SPEC",
+      "envBlender": "BLENDER_PATH",
+      "implementation": "sovereign-x/router/modules/gpu/amd/externalPbrBeauty.js",
+      "notes": "Local GLB export (Held) + Blender Cycles when available. Without Blender: export Held, Cycles Blocked/deferred — no fake photoreal PNG. Optional PHOTOREAL_EXTERNAL_PBR_URL remains remote stub path."
+    }
+  ],
+  "selectionPriority": [
+    "local.gpu",
+    "opencl.gen",
+    "local.cpu",
+    "remote.gpu",
+    "remote.service",
+    "photoreal.remote.diffusion",
+    "photoreal.external.pbr"
+  ],
+  "beautySelection": {
+    "helper": "selectPhotorealBeautyProvider",
+    "modes": ["none", "remote", "external-pbr"],
+    "cli": "mrs:governed-render --beauty remote|external-pbr"
+  },
+  "constitutionalLogFields": [
+    "imageGenProvider",
+    "localGpuAvailable",
+    "fallbackUsed",
+    "reason"
+  ],
+  "honesty": {
+    "engine3dSoftRaster": "separate_local_layout_path",
+    "noFakePngFromStub": true,
+    "noGpuBeautyClaimWithoutPixels": true,
+    "noPhotorealClaimOnR9380Local": true,
+    "allProvidersFailPixels": "degraded_or_partial_with_audit_log"
+  }
+}

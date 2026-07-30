@@ -96,6 +96,12 @@
       "domain": "ckl",
       "description": "CKL sets attachProvenance for render/play intents.",
       "severity": "high"
+    },
+    {
+      "id": "csr.governance-trace",
+      "domain": "csr",
+      "description": "CSR emitted by ExecutionOrchestrator.execute embeds governanceTrace from CKL decision (decisionId, verdict, policiesApplied, precedentCount, paramAdjust, attachProvenance).",
+      "severity": "high"
     }
   ]
 }

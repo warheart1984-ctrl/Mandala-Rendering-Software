@@ -9,6 +9,13 @@
 git clone <repo-url> && cd "Mandala Rendering Software"
 npm install
 
+# One prompt → governed soft-raster still + verification trail
+npm run mrs:governed-render -- --prompt "dim room soft light, human at table"
+# → tmp/governed-render/<runId>/still.png + verification-trail.json
+# (Engine3D soft-raster layout; Lemonade held; not photoreal — see docs/4d-engine/PHOTOREAL_PROVIDER_STRATEGY.md)
+# optional: --beauty remote  → select photoreal.remote.diffusion (deferred stub if URL unset)
+# optional: --beauty external-pbr → GLB export Held; Cycles beauty if BLENDER_PATH / Blender on PATH
+
 # Run the web demo
 npm run serve
 # open http://localhost:8080

@@ -198,6 +198,30 @@ async function governed({ kind, goal, action, actor, evidence, run }) {
   return engine.orchestrator.execute({ intent, evidence, action, run });
 }
 
+function installJarvisAutoPersist() {
+  if (!engine?.session) return;
+  engine.session.setObjective("Governed Mythar Plains browser session");
+  engine.session.addTouchedSystem("js/app");
+  engine.session.addTouchedSystem("js/engine/services");
+  engine.session.installAutoPersist(window, {
+    getSummary(reason) {
+      const csrs = engine?.cse?.listCsrs?.() ?? [];
+      const recent = csrs.slice(-3).map((csr) => `${csr.action}:${csr.id}`);
+      return {
+        decisions: recent.length ? recent : ["No CSR emitted during session"],
+        openThreads: engine?.timelinePlayer?.playing
+          ? [`Timeline still playing at ${engine.timelinePlayer.timeSec.toFixed(2)}s`]
+          : [],
+        notes: [
+          `Renderer surface ${renderer.surfaceId ?? "tesseract"}`,
+          `CSR count ${csrs.length}`,
+          `Shutdown captured on ${reason}`,
+        ],
+      };
+    },
+  });
+}
+
 btnPicture.addEventListener("click", async () => {
   try {
     setBusy(true);
@@ -496,6 +520,7 @@ window.addEventListener("resize", () => renderer.resize());
       run: async () => ({ worldId: engine.world.id }),
     });
 
+    installJarvisAutoPersist();
     setStatus("Boot complete — Play Opening or Mythar Ascension, or capture/export.");
     refreshCsrLog();
   } catch (err) {

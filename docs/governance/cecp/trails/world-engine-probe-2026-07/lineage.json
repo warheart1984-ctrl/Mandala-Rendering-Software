@@ -1,0 +1,20 @@
+{
+  "trailId": "world-engine-probe-2026-07",
+  "started": "2026-07-30",
+  "overallStatus": "partial",
+  "worldEngineVerdict": "does_not_work_yet",
+  "amendmentVIICkl": "enforced",
+  "amendmentVIIRenderPath": "partial",
+  "priorityFreeze": "world-profile-biogeometric-expansion",
+  "proofs": {
+    "invariantsReport": "docs/4d-engine/proofs/world-engine/RENDERER_BEHAVIOR_INVARIANTS.md",
+    "beforePng": "docs/4d-engine/proofs/world-engine/amendment-vii-before.png",
+    "afterPng": "docs/4d-engine/proofs/world-engine/amendment-vii-after.png",
+    "manifest": "docs/4d-engine/proofs/world-engine/amendment-vii-before-after.json"
+  },
+  "esfr": {
+    "verdict": "PASS_WITH_GAPS",
+    "promotionEligibility": "HOLD",
+    "scopedNote": "HOLD for world engine; Amendment VII soft render-path may be treated PROMOTE_WITH_GAPS only"
+  }
+}

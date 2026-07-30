@@ -1,0 +1,327 @@
+{
+  "adapterId": "sx.adapter.lemonade.sdk.chat",
+  "provider": "lemonade-sdk",
+  "status": "partial",
+  "candidates": [
+    "http://localhost:8000/api/v1",
+    "http://localhost:13305/api/v1"
+  ],
+  "selectedBaseUrl": "http://localhost:13305/api/v1",
+  "serverUp": true,
+  "portProbes": [
+    {
+      "baseUrl": "http://localhost:8000/api/v1",
+      "health": {
+        "status": 0,
+        "error": "tcp_closed"
+      },
+      "models": null,
+      "reachable": false,
+      "tcpOpen": false
+    },
+    {
+      "baseUrl": "http://localhost:13305/api/v1",
+      "health": {
+        "status": 200,
+        "body": {
+          "all_models_loaded": [],
+          "max_models": {
+            "classification": 1,
+            "embedding": 1,
+            "image": 1,
+            "llm": 1,
+            "reranking": 1,
+            "transcription": 1,
+            "tts": 1
+          },
+          "model_loaded": null,
+          "pinned_helper_models": {
+            "classification": 0,
+            "embedding": 0,
+            "image": 0,
+            "llm": 0,
+            "reranking": 0,
+            "transcription": 0,
+            "tts": 0
+          },
+          "pinned_models": {
+            "classification": 0,
+            "embedding": 0,
+            "image": 0,
+            "llm": 0,
+            "reranking": 0,
+            "transcription": 0,
+            "tts": 0
+          },
+          "status": "ok",
+          "telemetry": {
+            "enabled": false
+          },
+          "update_check_done": true,
+          "version": "11.5.0",
+          "websocket_port": 9000
+        }
+      },
+      "models": null,
+      "reachable": true,
+      "tcpOpen": true
+    }
+  ],
+  "health": {
+    "status": 200,
+    "body": {
+      "all_models_loaded": [],
+      "max_models": {
+        "classification": 1,
+        "embedding": 1,
+        "image": 1,
+        "llm": 1,
+        "reranking": 1,
+        "transcription": 1,
+        "tts": 1
+      },
+      "model_loaded": null,
+      "pinned_helper_models": {
+        "classification": 0,
+        "embedding": 0,
+        "image": 0,
+        "llm": 0,
+        "reranking": 0,
+        "transcription": 0,
+        "tts": 0
+      },
+      "pinned_models": {
+        "classification": 0,
+        "embedding": 0,
+        "image": 0,
+        "llm": 0,
+        "reranking": 0,
+        "transcription": 0,
+        "tts": 0
+      },
+      "status": "ok",
+      "telemetry": {
+        "enabled": false
+      },
+      "update_check_done": true,
+      "version": "11.5.0",
+      "websocket_port": 9000
+    }
+  },
+  "version": "11.5.0",
+  "models": [
+    {
+      "id": "Bonsai-1.7B-gguf",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "llamacpp",
+        "tool-calling"
+      ],
+      "size": 0.231
+    },
+    {
+      "id": "Llama-3.2-1B-Instruct-GGUF",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "tool-calling"
+      ],
+      "size": 0.777
+    },
+    {
+      "id": "Moonshine-Medium-Streaming",
+      "recipe": "moonshine",
+      "downloaded": true,
+      "labels": [
+        "transcription",
+        "realtime-transcription",
+        "hot"
+      ],
+      "size": 1.08
+    },
+    {
+      "id": "Qwen3-0.6B-GGUF",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "reasoning",
+        "tool-calling"
+      ],
+      "size": 0.356
+    },
+    {
+      "id": "RealESRGAN-x4plus",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "upscaling",
+        "image"
+      ],
+      "size": 0.062
+    },
+    {
+      "id": "SD-Turbo",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 4.86
+    },
+    {
+      "id": "SD-Turbo-GGUF",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 1.88
+    },
+    {
+      "id": "SDXL-Base-1.0",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 6.46
+    },
+    {
+      "id": "SDXL-Turbo",
+      "recipe": "sd-cpp",
+      "downloaded": true,
+      "labels": [
+        "image"
+      ],
+      "size": 6.46
+    },
+    {
+      "id": "Whisper-Large-v3-Turbo",
+      "recipe": "whispercpp",
+      "downloaded": true,
+      "labels": [
+        "transcription",
+        "realtime-transcription",
+        "hot"
+      ],
+      "size": 1.51
+    },
+    {
+      "id": "kokoro-v1",
+      "recipe": "kokoro",
+      "downloaded": true,
+      "labels": [
+        "tts"
+      ]
+    }
+  ],
+  "llmModels": [
+    {
+      "id": "Bonsai-1.7B-gguf",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "llamacpp",
+        "tool-calling"
+      ],
+      "size": 0.231
+    },
+    {
+      "id": "Llama-3.2-1B-Instruct-GGUF",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "tool-calling"
+      ],
+      "size": 0.777
+    },
+    {
+      "id": "Qwen3-0.6B-GGUF",
+      "recipe": "llamacpp",
+      "downloaded": true,
+      "labels": [
+        "reasoning",
+        "tool-calling"
+      ],
+      "size": 0.356
+    }
+  ],
+  "downloadedLlmModels": [
+    "Bonsai-1.7B-gguf",
+    "Llama-3.2-1B-Instruct-GGUF",
+    "Qwen3-0.6B-GGUF"
+  ],
+  "chatCapable": true,
+  "streamingSupported": true,
+  "ensure": null,
+  "chat": {
+    "ok": true,
+    "status": "partial",
+    "adapterId": "sx.adapter.lemonade.sdk.chat",
+    "provider": "lemonade-sdk",
+    "model": "Bonsai-1.7B-gguf",
+    "baseUrl": "http://localhost:13305/api/v1",
+    "content": "OKorse organisers本站////////////",
+    "reasoningContent": null,
+    "usage": {
+      "completion_tokens": 16,
+      "prompt_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 33
+    },
+    "finishReason": "length",
+    "raw": {
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "content": "OKorse organisers本站////////////",
+            "role": "assistant"
+          }
+        }
+      ],
+      "created": 1785401056,
+      "id": "chatcmpl-3hBYkcZF2wtu4lu6Ug2Zf7VSeMdom9G8",
+      "model": "C:\\Users\\My PC\\.cache\\huggingface\\hub/models--prism-ml--Bonsai-1.7B-gguf\\snapshots\\210a9e99f79cb184909d49595906526eb2b3dd9a\\Bonsai-1.7B-Q1_0.gguf",
+      "object": "chat.completion",
+      "system_fingerprint": "b9747-d6d899580",
+      "timings": {
+        "cache_n": 0,
+        "predicted_ms": 1152.244,
+        "predicted_n": 16,
+        "predicted_per_second": 13.885947768007473,
+        "predicted_per_token_ms": 72.01525,
+        "prompt_ms": 150.419,
+        "prompt_n": 17,
+        "prompt_per_second": 113.01763739953063,
+        "prompt_per_token_ms": 8.848176470588236
+      },
+      "usage": {
+        "completion_tokens": 16,
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "total_tokens": 33
+      }
+    },
+    "elapsedMs": 6709,
+    "assistOnly": true,
+    "nonAuthoritative": true,
+    "message": "Lemonade SDK chat via Bonsai-1.7B-gguf"
+  },
+  "blockers": [],
+  "notes": {
+    "officialDefault": "Lemonade Server OpenAI API defaults to http://localhost:13305/api/v1 (also /v1).",
+    "legacyPaste": "Some user docs / older installs cite http://localhost:8000/api/v1 — probed first when env unset.",
+    "preferredModel": "Llama-3.2-1B-Instruct-GGUF",
+    "backendHint": "On FX-8350 / R9 380 prefer llamacpp:vulkan (avoid AVX2-only CPU llama binaries).",
+    "multimodalSibling": "Images/TTS/STT remain on lemonadeSdAdapter (:13305 multimodal). This adapter is chat/LLM."
+  },
+  "vendorPinHint": "See docs/4d-engine/proofs/legacy-efficient/upstream-vendor-pins.json",
+  "capturedAt": "2026-07-30T08:44:10.210Z"
+}

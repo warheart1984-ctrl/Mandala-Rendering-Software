@@ -1,0 +1,59 @@
+{
+  "ok": false,
+  "issues": [
+    "HumanFaceNeutral:rig-load-failed:Face rig validation failed: missingBones=none missingBlendshapes=Smile,Frown,BlinkLeft,BlinkRight,Squint,WideEyes,MouthOpen,MouthNarrow",
+    "HumanFaceNeutral:aabb-invalid",
+    "HumanFaceNeutral:aabb-empty"
+  ],
+  "constitutionalSignatureMeaning": "contentHash (sha256 of GLB bytes) + GovernedAssetManifest.provenance + AssetProvenanceRecord — evidence fields, not PKI",
+  "entries": [
+    {
+      "logicalName": "HumanFaceRigged",
+      "faceAsset": "fixture",
+      "lawfulForRaster": true,
+      "contentHash": "sha256:08fb1e9d02e2dccc1ddf9013356a901e07487bf430e350cb7a64106f71dff74c",
+      "aabb": {
+        "min": [
+          -0.550000011920929,
+          -0.4000000059604645,
+          -0.550000011920929
+        ],
+        "max": [
+          0.550000011920929,
+          0.699999988079071,
+          0.550000011920929
+        ],
+        "valid": true,
+        "vertexCount": 117
+      },
+      "issues": [],
+      "path": "G:\\Mandala Rendering Software\\mrs\\assets\\human\\HumanFaceRigged.glb"
+    },
+    {
+      "logicalName": "HumanFaceNeutral",
+      "faceAsset": "fixture",
+      "lawfulForRaster": false,
+      "contentHash": "sha256:ea2d5b1478ad7da342f48ee91b9edddd76affce9a4de7015d24eb685430badb2",
+      "aabb": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          0,
+          0,
+          0
+        ],
+        "valid": false,
+        "vertexCount": 0
+      },
+      "issues": [
+        "rig-load-failed:Face rig validation failed: missingBones=none missingBlendshapes=Smile,Frown,BlinkLeft,BlinkRight,Squint,WideEyes,MouthOpen,MouthNarrow",
+        "aabb-invalid",
+        "aabb-empty"
+      ],
+      "path": "G:\\Mandala Rendering Software\\mrs\\assets\\human\\HumanFaceNeutral.glb"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ pnpm workspace for the Mathematical Reality Substrate (MRS) renderer and ChatGPT
 | `@mrs/renderer-core` | `packages/renderer-core` | Former `4d-renderer/` — surfaces, CanvasRenderer, inspector, LiveLink, PLP; PI-* / cross-runtime / SX-PTIG (see package README) |
 | `@mrs/scene-schema` | `packages/scene-schema` | `Scene4DDTO` + WorldDocument DTOs; validators / serialize (see package README) |
 | `@mrs/renderer-web` | `packages/renderer-web` | Browser host: WebGPU via GPUMeshRenderer when available, else Canvas2D (unit-tested fallback; not yet verified on a live GPU in CI) |
-| `@mrs/chatgpt-app-server` | `apps/chatgpt-mrs/server` | MCP SSE server + 5 tools |
+| `@mrs/chatgpt-app-server` | `apps/chatgpt-mrs/server` | Streamable HTTP MCP plugin with native RT4D and 4D→3D tools |
 | `@mrs/chatgpt-app-web` | `apps/chatgpt-mrs/web` | Vite React skybridge widget |
 | `cros` (Python) | `packages/cros` | CROS scaffold — CI-001..006, dual profiles, Seedance adapter **skeleton**; not a farm |
 | genblaze-media | `apps/genblaze-media` | FastAPI FLUX→B2 stills MVP; optional RT4D image backend; video opt-in (Cosmos / Seedance); `/cros` docs page only |

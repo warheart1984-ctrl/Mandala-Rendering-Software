@@ -1,0 +1,30 @@
+{
+  "capturedAt": "2026-07-30T13:12:13.124709+00:00",
+  "statusTag": "partial",
+  "provider": "opencl-legacy",
+  "purpose": "HIP/ROCm stand-in proof on Windows R9 380 (Tonga)",
+  "ok": true,
+  "platforms": [
+    {
+      "name": "AMD Accelerated Parallel Processing",
+      "version": "OpenCL 2.1 AMD-APP (3240.6)",
+      "vendor": "Advanced Micro Devices, Inc."
+    }
+  ],
+  "devices": [
+    {
+      "name": "Tonga",
+      "board": "AMD Radeon (TM) R9 380 Series",
+      "version": "OpenCL 2.0 AMD-APP (3240.6)",
+      "max_compute_units": 28,
+      "global_mem_size": 4294967296
+    }
+  ],
+  "deviceName": "Tonga",
+  "width": 512,
+  "height": 512,
+  "elapsedMs": 21.511,
+  "outPath": "G:/Mandala Rendering Software/docs/4d-engine/proofs/legacy-efficient/opencl-tonga-still.png",
+  "byteLength": 68253,
+  "note": "OpenCL kernel wrote RGBA still on AMD Tonga. Not Lemonade SD; not ROCm/HIP. Partial GPU beauty stand-in."
+}

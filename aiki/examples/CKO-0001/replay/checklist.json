@@ -1,0 +1,25 @@
+{
+  "cko_id": "CKO-0001",
+  "mode": "semantic",
+  "frozen": false,
+  "required_inputs": [
+    "knowledge/objects/CKO-0001.yaml",
+    "content/scripts/CKO-0001/outline.md",
+    "content/scripts/CKO-0001/script.md",
+    "content/scripts/CKO-0001/visual-plan.yaml",
+    "content/scripts/CKO-0001/youtube-metadata.yaml",
+    "examples/CKO-0001/input/"
+  ],
+  "required_when_frozen": [
+    "archive/published/CKO-0001/cko.hash",
+    "archive/published/CKO-0001/script.hash",
+    "archive/published/CKO-0001/narration.hash",
+    "archive/published/CKO-0001/visuals.hash",
+    "archive/published/CKO-0001/video.hash",
+    "archive/published/CKO-0001/pipeline-version.txt"
+  ],
+  "commands": [
+    "python aiki/pipeline/cli.py replay CKO-0001",
+    "python aiki/pipeline/cli.py test-reproducibility --cko CKO-0001"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "world.scaleContext",
+  "policyId": "world.scaleContext",
+  "label": "World scale context",
+  "domain": "scaleContext",
+  "status": "partial",
+  "worldScaleClass": "human-sized",
+  "referenceLandmarkMeters": 1.7,
+  "minEnvironmentalVariance": 0.001,
+  "exampleSubjects": ["world-root-scale", "CIS-SCAL-verify"],
+  "metricFamilies": ["worldScaleClass", "landmarkHeight"],
+  "notes": "Amendment VIII cross-cut — scale inheritance + CIS SCAL verify against this profile. Status partial. Genblaze opcode bind not shipped."
+}

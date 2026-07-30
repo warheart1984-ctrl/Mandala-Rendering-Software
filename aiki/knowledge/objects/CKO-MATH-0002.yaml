@@ -1,0 +1,31 @@
+id: aiki:cko/CKO-MATH-0002
+cko_id: CKO-MATH-0002
+series: Math Intuition
+title: "Estimation-before-precision"
+slug: estimation-before-precision
+tags: [ime, heuristics, confidence-bands]
+evergreen: true
+difficulty: beginner
+pedagogy:
+  learning_objectives:
+    - "Always estimate before exact calculation."
+    - "Track confidence bands for plausible answers."
+  key_questions:
+    - "What range must the answer fall into?"
+  narrative_arc:
+    hook: "An estimate is a guardrail, not a guess."
+    sections:
+      - id: estimate
+        label: "Make a band"
+      - id: refine
+        label: "Tighten with structure"
+formats:
+  primary: [youtube-video, ai-tutor-dialogue]
+ime_layers:
+  - 01-numerical
+  - 06-approximation
+pattern_refs: []
+status:
+  lifecycle: draft
+  owner: Dar-z
+  last_updated: "2026-07-29"

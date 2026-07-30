@@ -1,0 +1,18 @@
+# Schema: math CKO extensions (declared)
+type: object
+required:
+  - cko_id
+  - ime_layers
+properties:
+  cko_id:
+    type: string
+    pattern: "^CKO-MATH-[0-9]{4}$"
+  ime_layers:
+    type: array
+    items:
+      type: string
+  pattern_refs:
+    type: array
+    items:
+      type: string
+status: declared

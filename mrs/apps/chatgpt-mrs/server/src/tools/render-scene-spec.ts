@@ -83,7 +83,20 @@ export async function handleRenderSceneSpec(
 ): Promise<RenderToolResult> {
   const parsed = parser.parse(args ?? {});
   const quality = (parsed.quality ?? "draft") as QualityPreset;
-  const sceneSpec = parseSceneSpecPayload(parsed.sceneSpec);
+  const sceneSpecPayload = parseSceneSpecPayload(parsed.sceneSpec);
+  const sceneSpec =
+    parsed.seed == null
+      ? sceneSpecPayload
+      : {
+          ...sceneSpecPayload,
+          output: {
+            ...(typeof sceneSpecPayload.output === "object" &&
+            sceneSpecPayload.output
+              ? (sceneSpecPayload.output as Record<string, unknown>)
+              : {}),
+            seed: parsed.seed >>> 0,
+          },
+        };
 
   const structural = parseSceneSpecification(sceneSpec);
   if (!structural.ok) {
@@ -102,7 +115,14 @@ export async function handleRenderSceneSpec(
     throw new Error(`unsupported SceneSpecification: ${msg}`);
   }
 
-  const result = await runSceneSpecRender(sceneSpec, quality);
+  const result = await runSceneSpecRender(sceneSpec, {
+    quality,
+    width: parsed.width,
+    height: parsed.height,
+    samples: parsed.samples,
+    maxDepth: parsed.maxDepth,
+    keepFile: false,
+  });
 
   const sha256 = result.image.sha256;
   return {

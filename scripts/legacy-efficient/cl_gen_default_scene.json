@@ -1,0 +1,70 @@
+{
+  "schema": "cl-gen.scene.v0",
+  "statusTag": "partial",
+  "note": "Compact dim-room-ish scene for OpenCL CL-Gen. Not Engine3D soft-raster parity; not SDXL.",
+  "worldContext": "interior.dim-room",
+  "worldProfileId": "world.architecture",
+  "scaleClass": "human-sized",
+  "camera": {
+    "eye": [0.35, 1.35, 3.4],
+    "look": [0.0, 0.95, -0.2],
+    "up": [0.0, 1.0, 0.0],
+    "fovDeg": 48.0
+  },
+  "ambient": [0.018, 0.016, 0.022],
+  "lights": [
+    {
+      "pos": [0.55, 1.75, 0.35],
+      "color": [1.0, 0.82, 0.55],
+      "intensity": 2.8
+    },
+    {
+      "pos": [-1.2, 1.4, 1.0],
+      "color": [0.35, 0.45, 0.75],
+      "intensity": 0.55
+    }
+  ],
+  "spheres": [
+    {
+      "center": [-0.55, 0.42, 0.15],
+      "radius": 0.42,
+      "albedo": [0.42, 0.18, 0.14],
+      "emissive": [0.0, 0.0, 0.0]
+    },
+    {
+      "center": [0.75, 0.28, -0.35],
+      "radius": 0.28,
+      "albedo": [0.22, 0.24, 0.28],
+      "emissive": [0.0, 0.0, 0.0]
+    },
+    {
+      "center": [0.95, 1.05, -1.05],
+      "radius": 0.12,
+      "albedo": [0.05, 0.05, 0.06],
+      "emissive": [3.2, 2.4, 1.35]
+    }
+  ],
+  "planes": [
+    {
+      "point": [0.0, 0.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "albedo": [0.11, 0.10, 0.09]
+    },
+    {
+      "point": [0.0, 0.0, -1.6],
+      "normal": [0.0, 0.0, 1.0],
+      "albedo": [0.07, 0.065, 0.08]
+    },
+    {
+      "point": [-1.8, 0.0, 0.0],
+      "normal": [1.0, 0.0, 0.0],
+      "albedo": [0.075, 0.07, 0.085]
+    }
+  ],
+  "post": {
+    "grain": 0.035,
+    "dofStrength": 0.28,
+    "focusDist": 3.15,
+    "vignette": 0.35
+  }
+}

@@ -31,7 +31,7 @@ export class ExecutionOrchestrator {
       throw new Error(decision.reason);
     }
     const plan = this.plan(intent, action);
-    const csr = await this.cse.execute({ intent, evidence, action, run });
+    const csr = await this.cse.execute({ intent, evidence, action, run, decision });
     return { plan, decision, csr };
   }
 }

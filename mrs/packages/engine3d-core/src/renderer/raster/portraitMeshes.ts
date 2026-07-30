@@ -41,14 +41,25 @@ export function buildBoxMesh(
   ];
   const positions: number[] = [];
   const normals: number[] = [];
+  const uvs: number[] = [];
   const indices: number[] = [];
   let vi = 0;
+  // Per-face quad UVs (0,0)-(1,0)-(1,1)-(0,1)
+  const faceUv: Array<[number, number]> = [
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+  ];
   for (const f of faces) {
     const base = vi;
+    let ui = 0;
     for (const ci of f.idx) {
       const c = corners[ci]!;
       positions.push(c[0], c[1], c[2]);
       normals.push(f.n[0], f.n[1], f.n[2]);
+      const uv = faceUv[ui++]!;
+      uvs.push(uv[0], uv[1]);
       vi += 1;
     }
     indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
@@ -60,6 +71,7 @@ export function buildBoxMesh(
     indices: new Uint32Array(indices),
     modelMatrix,
     baseColor,
+    uvs: new Float32Array(uvs),
   };
 }
 

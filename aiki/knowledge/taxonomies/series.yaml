@@ -1,0 +1,11 @@
+series:
+  - id: ai-this-week
+    title: AI This Week
+  - id: research-decoded
+    title: Research Decoded
+  - id: math-intuition
+    title: Math Intuition
+  - id: code-with-ai
+    title: Code With AI
+  - id: tool-lab
+    title: Tool Lab

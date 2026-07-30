@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "biogeometric-profile/0.1-partial",
+  "status": "partial",
+  "dependsOn": "ckl-amendment-viii-world-profile",
+  "promotionPath": "Substrate → Substration → Promotion",
+  "notes": "Partial world-profile catalog (Amendment VIII). Nine CKL policy IDs (world.*) have dedicated stubs under profiles/. Not a full biogeometric / ecology engine. Lemonade plates / CIS SCAL Genblaze bind are separate and not implied PASS.",
+  "profiles": [
+    {
+      "id": "temperate-grove-v1",
+      "label": "Temperate grove (foothold)",
+      "domain": "biological",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "referenceLandmarkMeters": 1.7,
+      "biomeTag": "temperate-deciduous",
+      "exampleSubjects": ["trees", "understory", "human-scale fauna"],
+      "metricFamilies": ["landmarkHeight", "worldScaleClass"],
+      "notes": "Legacy foothold; prefer world.plant / world.biogeometric policy IDs for CKL"
+    },
+    {
+      "id": "world.biogeometric",
+      "policyId": "world.biogeometric",
+      "domain": "biogeometric",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "referenceLandmarkMeters": 1.7,
+      "minEnvironmentalVariance": 0.001
+    },
+    {
+      "id": "world.terrain",
+      "policyId": "world.terrain",
+      "domain": "terrain",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "referenceLandmarkMeters": 10,
+      "minEnvironmentalVariance": 0.002
+    },
+    {
+      "id": "world.architecture",
+      "policyId": "world.architecture",
+      "domain": "architecture",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "referenceLandmarkMeters": 3.0,
+      "minEnvironmentalVariance": 0.0005
+    },
+    {
+      "id": "world.water",
+      "policyId": "world.water",
+      "domain": "water",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "referenceLandmarkMeters": 1.0,
+      "minEnvironmentalVariance": 0.003
+    },
+    {
+      "id": "world.plant",
+      "policyId": "world.plant",
+      "domain": "plant",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "referenceLandmarkMeters": 2.5,
+      "minEnvironmentalVariance": 0.002
+    },
+    {
+      "id": "world.synthetic",
+      "policyId": "world.synthetic",
+      "domain": "synthetic",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "referenceLandmarkMeters": 0.5,
+      "minEnvironmentalVariance": 0.0005
+    },
+    {
+      "id": "world.material",
+      "policyId": "world.material",
+      "domain": "material",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "minEnvironmentalVariance": 0.0005
+    },
+    {
+      "id": "world.scaleContext",
+      "policyId": "world.scaleContext",
+      "domain": "scaleContext",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "referenceLandmarkMeters": 1.7,
+      "minEnvironmentalVariance": 0.001
+    },
+    {
+      "id": "world.variance",
+      "policyId": "world.variance",
+      "domain": "variance",
+      "status": "partial",
+      "worldScaleClass": "human-sized",
+      "minEnvironmentalVariance": 0.001
+    }
+  ]
+}
