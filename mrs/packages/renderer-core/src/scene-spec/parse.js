@@ -298,6 +298,35 @@ function validateAnimation(value, path, errors) {
 }
 
 /**
+ * Validate optional shot metadata — sequence/episode/shot identifiers + frame range.
+ * Used for versioned SceneSpecs and shot/sequence management (render track).
+ */
+function validateShot(value, path, errors) {
+  const obj = expectObject(value, path, errors);
+  if (obj === null) return;
+  if (obj.sequenceId !== undefined) expectString(obj.sequenceId, joinPath(path, "sequenceId"), errors);
+  if (obj.episodeId !== undefined) expectString(obj.episodeId, joinPath(path, "episodeId"), errors);
+  if (obj.shotId !== undefined) expectString(obj.shotId, joinPath(path, "shotId"), errors);
+  if (obj.take !== undefined) {
+    expectFiniteNumber(obj.take, joinPath(path, "take"), errors);
+    if (Number.isFinite(obj.take) && obj.take < 0) {
+      errors.push({ path: joinPath(path, "take"), message: "take must be >= 0" });
+    }
+  }
+  if (obj.frameStart !== undefined) {
+    expectFiniteNumber(obj.frameStart, joinPath(path, "frameStart"), errors);
+  }
+  if (obj.frameEnd !== undefined) {
+    expectFiniteNumber(obj.frameEnd, joinPath(path, "frameEnd"), errors);
+  }
+  if (Number.isFinite(obj.frameStart) && Number.isFinite(obj.frameEnd) && obj.frameStart > obj.frameEnd) {
+    errors.push({ path, message: "frameStart must be <= frameEnd" });
+  }
+  if (obj.sceneVersion !== undefined) expectString(obj.sceneVersion, joinPath(path, "sceneVersion"), errors);
+  if (obj.shotVersion !== undefined) expectString(obj.shotVersion, joinPath(path, "shotVersion"), errors);
+}
+
+/**
  * Structural parse/validate of a SceneSpecification (WorldDocument + extensions).
  * @param {unknown} value
  * @returns {ValidationResult}
@@ -357,6 +386,10 @@ export function parseSceneSpecification(value) {
   }
   if (obj.metadata !== undefined && !isPlainObject(obj.metadata)) {
     errors.push({ path: "metadata", message: "expected object" });
+  }
+
+  if (obj.shot !== undefined) {
+    validateShot(obj.shot, "shot", errors);
   }
 
   if (errors.length > 0) return fail(errors);

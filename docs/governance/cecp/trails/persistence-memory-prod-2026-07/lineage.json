@@ -1,0 +1,24 @@
+{
+  "trailId": "persistence-memory-prod-2026-07",
+  "feature": "persistence-memory Continuity Ledger production baseline",
+  "started": "2026-07-30",
+  "clonePath": "G:\\persistence-memory",
+  "branch": "crew/prod-readiness-2026-07",
+  "stages": [
+    { "id": "01", "role": "architect", "status": "complete" },
+    { "id": "02", "role": "builder", "status": "complete" },
+    { "id": "03", "role": "implementor", "status": "complete" },
+    { "id": "04", "role": "reviewer", "status": "PASS_WITH_GAPS" },
+    { "id": "05", "role": "inspector", "status": "PASS_WITH_GAPS" },
+    {
+      "id": "06",
+      "role": "esfr",
+      "ESFRVerdict": "PASS_WITH_GAPS",
+      "PromotionEligibility": "PROMOTE_WITH_GAPS"
+    }
+  ],
+  "evidence": {
+    "pytest": "51 passed",
+    "command": "python -m pytest -q"
+  }
+}

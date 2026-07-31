@@ -105,6 +105,48 @@ describe("parseSceneSpecification", () => {
     assert.equal(r.ok, false);
     assert.ok(r.errors.some((e) => e.path === "materials[0].color"));
   });
+
+  it("accepts valid shot metadata", () => {
+    const r = parseSceneSpecification({
+      schemaVersion: "1.0",
+      id: "shot-ok",
+      entities: [{ id: "e", geometry: { kind: "empty" } }],
+      shot: {
+        sequenceId: "seq001",
+        episodeId: "ep01",
+        shotId: "shot_010",
+        take: 3,
+        frameStart: 1001,
+        frameEnd: 1048,
+        sceneVersion: "v1.2",
+        shotVersion: "v3",
+      },
+    });
+    assert.equal(r.ok, true);
+    assert.equal(r.value.shot.shotId, "shot_010");
+  });
+
+  it("rejects frameStart > frameEnd", () => {
+    const r = parseSceneSpecification({
+      schemaVersion: "1.0",
+      id: "shot-bad-frame",
+      entities: [{ id: "e", geometry: { kind: "empty" } }],
+      shot: { frameStart: 50, frameEnd: 10 },
+    });
+    assert.equal(r.ok, false);
+    assert.ok(r.errors.some((e) => e.path === "shot"));
+  });
+
+  it("rejects negative take", () => {
+    const r = parseSceneSpecification({
+      schemaVersion: "1.0",
+      id: "shot-bad-take",
+      entities: [{ id: "e", geometry: { kind: "empty" } }],
+      shot: { take: -1 },
+    });
+    assert.equal(r.ok, false);
+    assert.ok(r.errors.some((e) => e.path === "shot.take"));
+  });
 });
 
 describe("validateSceneCapabilities", () => {

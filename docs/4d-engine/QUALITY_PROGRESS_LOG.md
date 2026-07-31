@@ -12,6 +12,24 @@ Every cycle answers:
 
 ---
 
+## 2026-07-30 — Prod face fixture + scene-type Cycles plates
+
+| Field | Value |
+|-------|-------|
+| Fixture | `mrs/assets/human/HumanFaceRiggedProd.glb` (~752 KB, ~9600 tris, 4 primitives, FACS morphs) |
+| Builder | `mrs/packages/engine3d-core/scripts/build-prod-face-fixture.mjs` |
+| Pipeline | `mrs/apps/genblaze-media/app/face_pipeline.py` (`--scene-type face\|tesseract`) |
+| Validation | `validate-face-glb.mjs` — Valid YES, zero warnings (prod + CI rigged) |
+| Conformance | `npm run test:conformance` → **17/17** incl. `csr.governance-trace` |
+| Sample plates | `mrs/apps/genblaze-media/output/test/hero20.png` · `abstract2.png` |
+
+1. **Improved / happened:** Higher-detail in-repo face fixture is pipeline default; build/validate scripts use `eyes` + `TEXCOORD_0`; scene variety via `--scene-type` (face copies prod GLB; tesseract uses `render-glb`→Cycles). Cycles path remains honest CPU fallback on this host (Blender 5.2 no OpenCL; R9 380 no HIP).
+2. **Artificial / gaps:** Ellipsoid + eye spheres + mouth torus — **not** a photoreal human sculpt; face beauty stays **partial** (not Full Photoreal / not Phase 4).
+3. **Measured:** Prod GLB 751920 B / ~9600 tris; validator clean; conformance 17/17; plates present under genblaze-media `output/test/` (not repo-root `output/test/`).
+4. **Next bottleneck:** Operator sculpt / topology toward photoreal face quality; GPU Cycles only if a supported device appears.
+
+---
+
 ## 2026-07-30 — Full status media standings (MRS crew)
 
 | Field | Value |

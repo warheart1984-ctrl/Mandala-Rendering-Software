@@ -87,6 +87,7 @@ function pad(bytes, padByte = 0) {
 function buildSphere(latBands = 8, lonBands = 12, radius = 0.55) {
   const positions = [];
   const normals = [];
+  const uvs = [];
   for (let lat = 0; lat <= latBands; lat++) {
     const theta = (lat * Math.PI) / latBands;
     const sinT = Math.sin(theta);
@@ -94,11 +95,12 @@ function buildSphere(latBands = 8, lonBands = 12, radius = 0.55) {
     for (let lon = 0; lon <= lonBands; lon++) {
       const phi = (lon * 2 * Math.PI) / lonBands;
       const x = radius * Math.cos(phi) * sinT;
-      const y = radius * cosT + 0.15; // slight upward bias (head)
+      const y = radius * cosT + 0.15;
       const z = radius * Math.sin(phi) * sinT;
       positions.push(x, y, z);
       const len = Math.hypot(x, y - 0.15, z) || 1;
       normals.push(x / len, (y - 0.15) / len, z / len);
+      uvs.push(lon / lonBands, lat / latBands);
     }
   }
   const indices = [];
@@ -110,7 +112,7 @@ function buildSphere(latBands = 8, lonBands = 12, radius = 0.55) {
       indices.push(second, second + 1, first + 1);
     }
   }
-  return { positions, normals, indices, vertexCount: positions.length / 3 };
+  return { positions, normals, uvs, indices, vertexCount: positions.length / 3 };
 }
 
 function morphDeltas(vertexCount, kind) {
@@ -162,7 +164,7 @@ function buildGlb({ withMorphs }) {
   function addAccessor(bytes, componentType, count, type) {
     const padded = pad(bytes);
     const bv = bufferViews.length;
-    bufferViews.push({ byteOffset, byteLength: bytes.byteLength });
+    bufferViews.push({ byteOffset, byteLength: bytes.byteLength, buffer: 0 });
     binChunks.push(padded);
     byteOffset += padded.byteLength;
     const ai = accessors.length;
@@ -172,6 +174,7 @@ function buildGlb({ withMorphs }) {
 
   const position = addAccessor(f32(sphere.positions), 5126, sphere.vertexCount, "VEC3");
   const normal = addAccessor(f32(sphere.normals), 5126, sphere.vertexCount, "VEC3");
+  const texcoord = addAccessor(f32(sphere.uvs), 5126, sphere.vertexCount, "VEC2");
 
   // All verts → Head (joint 0)
   const jointsArr = [];
@@ -197,7 +200,7 @@ function buildGlb({ withMorphs }) {
         sphere.vertexCount,
         "VEC3",
       );
-      targets.push({ POSITION: deltaAcc, extras: { humanRigMorphId: name } });
+      targets.push({ POSITION: deltaAcc });
     }
   }
 
@@ -293,6 +296,7 @@ function buildGlb({ withMorphs }) {
             attributes: {
               POSITION: position,
               NORMAL: normal,
+              TEXCOORD_0: texcoord,
               JOINTS_0: joints,
               WEIGHTS_0: weights,
             },
@@ -318,7 +322,7 @@ function buildGlb({ withMorphs }) {
         },
       },
       {
-        name: "eye",
+        name: "eyes",
         extras: { humanRigMaterialType: "eyes" },
         pbrMetallicRoughness: {
           baseColorFactor: [0.15, 0.2, 0.35, 1],
@@ -339,6 +343,8 @@ function buildGlb({ withMorphs }) {
     animations: [
       {
         name: "neutral",
+        channels: [],
+        samplers: [],
         extras: {
           humanRigPoseId: "neutral",
           ...(withMorphs
