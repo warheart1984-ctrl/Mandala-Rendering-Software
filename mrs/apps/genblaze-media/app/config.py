@@ -214,6 +214,9 @@ class Settings:
     polish_model: str | None = None
     polish_default_strength: float = 0.45
     polish_backend: str = "auto"
+    # --- Media look lane (FLUX/Lemonade/polish prompt steer; partial) ---
+    # GENBLAZE_STYLE=anime | default. Request body ``style`` overrides.
+    media_style: str = "default"
     # --- Prompt → SceneSpecification / Engine3DWorldDocument (out-of-process) ---
     prompt_scene_bridge_enabled: bool = True
     prompt_scene_bridge_script_path: str | None = None
@@ -536,6 +539,13 @@ def get_settings() -> Settings:
         polish_backend = polish_backend_raw
     else:
         polish_backend = "auto"
+    # Media look lane — anime is partial (prompt steer), not Full Photoreal.
+    from app.style_steer import normalize_style
+
+    try:
+        media_style = normalize_style(os.getenv("GENBLAZE_STYLE"))
+    except ValueError:
+        media_style = "default"
 
     # --- Prompt → scene bridge (out-of-process Infinity narrative lane) ---
     # Default ON when run_bridge.py exists; operators can pin ENABLED=0.
@@ -727,6 +737,7 @@ def get_settings() -> Settings:
         polish_model=polish_model,
         polish_default_strength=polish_strength,
         polish_backend=polish_backend,
+        media_style=media_style,
         prompt_scene_bridge_enabled=prompt_scene_bridge_enabled,
         prompt_scene_bridge_script_path=prompt_scene_bridge_script_override,
         prompt_scene_bridge_python=prompt_scene_bridge_python,

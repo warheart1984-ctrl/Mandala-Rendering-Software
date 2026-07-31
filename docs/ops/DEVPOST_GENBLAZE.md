@@ -22,6 +22,8 @@ Evidence-bound copy for the Backblaze Generative AI Media Hackathon. Paste only 
 
 This is **concept media for MRS / 4D scene authoring** — Genblaze does **not** render 4D; MRS remains the 4D renderer.
 
+**Look lane (2026-07-31):** Prefer `GENBLAZE_STYLE=anime` or API `"style":"anime"` for stylized FLUX/Lemonade/polish stills (**partial** — prompt steer, not Full Photoreal). Cycles photoreal (`external-pbr`) stays optional.
+
 v2 ops themes (durable search, authoring bridge, CI): [`GENBLAZE_MEDIA_V2_ROADMAP.md`](./GENBLAZE_MEDIA_V2_ROADMAP.md) — **planned**, distinct from RT4D GPU v2.
 
 ### Hook to the 4D stack (honest)
@@ -40,8 +42,9 @@ Health: `GET /health` (live `status:ok`).
 
 Verified live (2026-07-31):
 - `b2_configured:true` — B2 bucket `Mandala-Rendering-System`, region `us-east-005`.
+- Durable upload confirmed in-bucket: `genblaze-media/rt4d/334b24d9-4354-47fe-997e-18c6f840ed14/render.png` (72,351 bytes) + `manifest.json` (2,754 bytes) with `asset_sha256: b565e0200cab75a51f841327b0d8305ce3fa75520866fc7d66956a3d76183785`, seed 3476402779, scene `tesseract-lattice`. 19 runs persisted.
 - `rt4d.available:true` — deterministic RT4D stills; `POST /api/generate` returned `run_id 334b24d9-…` and the preview was a real `image/png` (72,351 bytes).
-- NVIDIA NIM (`flux.1-schnell`) is **armed but currently unavailable** (gateway 504, warmup probe same); the deploy pins `GENBLAZE_IMAGE_BACKEND=rt4d` so stills are served by the deterministic 4D path tracer, with NVIDIA fallback armed. Do not claim a live FLUX NIM image until the 504 clears.
+- NVIDIA NIM (`flux.1-schnell`) is **armed but currently unavailable** — key is valid (direct calls pass auth; only schema-validation 422s for non-supported sizes), but the model returns gateway **504 after 300 s** on direct calls (warmup probe same). The deploy pins `GENBLAZE_IMAGE_BACKEND=rt4d` so stills are served by the deterministic 4D path tracer, with NVIDIA fallback armed. Do not claim a live FLUX NIM image until the 504 clears.
 
 Local: `http://127.0.0.1:8787/` · Health: `/health`
 

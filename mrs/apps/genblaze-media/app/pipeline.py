@@ -45,6 +45,9 @@ class GenerateResult:
     prompt_sanitized: bool = False
     quality: dict[str, Any] | None = None
     provenance: dict[str, Any] | None = None
+    # Media look lane (GENBLAZE_STYLE / API style) — anime is partial steer.
+    style: str | None = None
+    style_steered: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

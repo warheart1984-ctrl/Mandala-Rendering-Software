@@ -12,6 +12,72 @@ Every cycle answers:
 
 ---
 
+## 2026-07-31 — Fail-closed AnimeWorldProfile claim gate (Genblaze)
+
+| Field | Value |
+|-------|-------|
+| Module | `mrs/apps/genblaze-media/app/constitutional_anime_render.py` |
+| Gate | `resolve_anime_claim` — **enforced** in Genblaze unit tests |
+| CKL policy | Still **declared** (no `default.policies.json` edit) |
+| Doctrine slice | `docs/governance/DIMENSIONAL_COMPRESSION.md` §7 |
+
+1. **Improved / happened:** Manifests require validated `anime_world_profile_id`; `anime_claim: true` only with validated profile + distinct beauty pixels (diffusion or cel-proxy). Structure-only / invalid profile / identity pixels deny the claim.
+2. **Artificial / gaps:** CKL runtime deny remains **declared**; shot-level generate API does not yet require profile id; diffusion beauty replay still **declared**.
+3. **Measured:** `tests/test_constitutional_anime_render.py` deny + allow paths for `resolve_anime_claim` / pipeline.
+4. **Next bottleneck:** Wire profile id onto Genblaze generate/polish receipts; optional CKL policy only with explicit auth.
+
+---
+
+## 2026-07-31 — Dimensional Compression formalized (methodology)
+
+| Field | Value |
+|-------|-------|
+| Doctrine | `docs/governance/DIMENSIONAL_COMPRESSION.md` (**declared**) |
+| Trail | `docs/governance/cecp/trails/dimensional-compression-2026-07/` |
+| Applied | Constitutional Anime Arena/Invariants/Execution + CIEMS/continuity secondary |
+| Acronym map | JCK…CCC → repo paths (no invented expansions) |
+
+1. **Improved / happened:** Made explicit the three-layer compression law CIEMS/MRS already use intuitively (Arena → Invariants → Execution); bound it to anime profile/lane/continuity artifacts without amending the charter.
+2. **Artificial / gaps:** Principle not runtime-gated; JCK/JCR/CEL expansions remain undeclared tokens where missing; anime CKL deny still **declared**.
+3. **Measured:** Docs + cross-links only this cycle (no new pixel probes).
+4. **Next bottleneck:** Fail-closed `anime_world_profile_id` + deny `anime_claim: true` without validated profile / beauty pixels. *(landed — see entry above)*
+
+---
+
+## 2026-07-31 — Constitutional Anime Rendering (entry-point lock)
+
+| Field | Value |
+|-------|-------|
+| Trail | `docs/governance/cecp/trails/constitutional-anime-rendering-2026-07/` |
+| Schema | `schemas/anime/AnimeWorldProfile.v1.schema.json` (**skeleton**) |
+| Validator | `mrs/apps/genblaze-media/app/anime_world_profile.py` (**skeleton**) |
+| Anime look lane | **partial** (`style_steer`) |
+| Profile enforcement | **declared** (gate points documented; no CKL deny) |
+| ESFR | **PASS_WITH_GAPS** / **PROMOTE_WITH_GAPS** |
+
+1. **Improved / happened:** User-affirmed entry point captured: governed stylization (cel, mist, silhouettes, line weight, 3D env + 2D characters, continuity, 4D motifs) — not a photorealism apology. `AnimeWorldProfile` schema + example + field validator; Genblaze `/health` exposes `entry_point` + profile fragment; ink-cel trail cross-linked as Engine3D slice.
+2. **Artificial / gaps:** Shot-vs-profile enforcement not runtime; ink-cel pixels still design-only; NIM/FLUX anime remain creative assist (not Digital Printer SoT); Lemonade SD held on this host when `pixelsProduced` is false.
+3. **Measured:** Unit tests for profile validate + style_steer health fragment (see trail 03/05).
+4. **Next bottleneck:** Map profile `shadow_steps`/`outline_rules` into Engine3D ink-cel; attach `anime_world_profile_id` on manifests; opt-in replay freeze.
+
+---
+
+## 2026-07-31 — Anime media look lane (Genblaze partial)
+
+| Field | Value |
+|-------|-------|
+| Lane | `GENBLAZE_STYLE=anime` / API `style=anime` |
+| Module | `mrs/apps/genblaze-media/app/style_steer.py` |
+| Status | **partial** (FLUX/Lemonade/polish prompt steer) |
+| Photoreal Cycles | Optional (`external-pbr`); not required for media demos |
+
+1. **Improved / happened:** First-class anime look flag on generate/polish/engine3d-still; health exposes `media_style`; README honesty row.
+2. **Artificial / gaps:** Steering is prompt-only — not a dedicated anime model, not cel-shader in Engine3D, not Digital Printer SoT. RT4D structure pixels ignore anime steer.
+3. **Measured:** Unit/API dry-run tests in `tests/test_style_steer.py` (style accepted + steer suffix).
+4. **Next bottleneck:** Live FLUX/NIM sample plate with `style=anime` when gateway 504 clears; optional UI style control polish.
+
+---
+
 ## 2026-07-30 — Prod face fixture + scene-type Cycles plates
 
 | Field | Value |
