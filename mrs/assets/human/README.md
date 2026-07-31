@@ -3,7 +3,8 @@
 | File | Role | Status |
 |------|------|--------|
 | `HumanFaceNeutral.glb` | Neutral face mesh | **Fixture** in-repo (low tris) |
-| `HumanFaceRigged.glb` | Bones + blendshapes | **Fixture** in-repo |
+| `HumanFaceRigged.glb` | Bones + blendshapes | **Fixture** in-repo (CI baseline) |
+| `HumanFaceRiggedProd.glb` | Higher-detail fixture (ellipsoid head, eye spheres, mouth, FACS) | **Fixture** in-repo (~752 KB, ~10k tris) — Genblaze face pipeline **default**; **not** Full Photoreal |
 | `biometric-profiles.json` | Lawful proportion / scale-class ranges | **partial** |
 | `schemas/biometric-profile.schema.json` | JSON Schema for profiles | **partial** |
 
@@ -54,6 +55,8 @@ See [ENGINE3D_FACE_STRUCTURE_SPEC_v1.0](../../../docs/4d-engine/engine3d/ENGINE3
 ```bash
 cd mrs/packages/engine3d-core
 node scripts/build-face-fixture-glb.mjs
+node scripts/build-prod-face-fixture.mjs   # → HumanFaceRiggedProd.glb
+npm run validate:face-glb -- ../../assets/human/HumanFaceRiggedProd.glb
 ```
 
 ## Required bones / blendshapes
@@ -61,3 +64,31 @@ node scripts/build-face-fixture-glb.mjs
 Bones: Head, Jaw, LeftEye, RightEye, LeftBrow, RightBrow, UpperLip, LowerLip  
 
 Blendshapes: Smile, Frown, BlinkLeft, BlinkRight, Squint, WideEyes, MouthOpen, MouthNarrow
+
+## Production GLB Pipeline (partial)
+
+| Script | Purpose | Input | Output |
+|--------|---------|-------|--------|
+| `scripts/build-prod-face-fixture.mjs` | In-repo higher-detail face fixture | (procedural) | `HumanFaceRiggedProd.glb` |
+| `scripts/blender_face_rig_setup.py` | Build full rig in Blender | `.blend` with sculpt | `HumanFaceRigged.glb` (bones, blendshapes, skin, UVs, materials) |
+| `scripts/validate-face-glb.mjs` | Validate against spec | `*.glb` | JSON report (bones, blendshapes, skin, materials, UVs) |
+
+**Usage (Blender):**
+```bash
+# Inside Blender Python env (run from Blender):
+blender -b character.blend -P mrs/packages/engine3d-core/scripts/blender_face_rig_setup.py -- --output HumanFaceRigged.glb
+```
+
+**Usage (Validator):**
+```bash
+cd mrs/packages/engine3d-core
+node scripts/validate-face-glb.mjs HumanFaceRigged.glb
+```
+
+The validator checks:
+- 9 required bones (Head, Jaw, Left/Right Eye/Brow, Upper/Lower Lip)
+- 8 required blendshapes (Smile, Frown, Blink L/R, Squint, WideEyes, MouthOpen/Narrow)
+- Skin (joints, weights, inverse bind matrices)
+- Materials (face_skin, eyes, mouth)
+- UVs (TEXCOORD_0)
+- Skinning attributes (JOINTS_0, WEIGHTS_0)
