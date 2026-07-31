@@ -6,7 +6,8 @@ Evidence-bound copy for the Backblaze Generative AI Media Hackathon. Paste only 
 
 | Role | Provider | Model |
 | --- | --- | --- |
-| Image generation | NVIDIA NIM (`genblaze-nvidia`) | `black-forest-labs/flux.1-schnell` |
+| Image generation (live) | MRS RT4D deterministic 4D path tracer (`genblaze-rt4d`) | procedural SceneSpec (seed-varied; not text-to-image) |
+| Image generation (armed fallback) | NVIDIA NIM (`genblaze-nvidia`) | `black-forest-labs/flux.1-schnell` |
 | Prompt embeddings / semantic search | NVIDIA Integrate API | `nvidia/nv-embedcode-7b-v1` |
 | Orchestration + provenance | Backblaze Genblaze | `genblaze-core` + `genblaze-s3` |
 | Durable object storage | Backblaze B2 (S3-compatible) | Bucket `Mandala-Rendering-System` (`us-east-005`) |
@@ -15,7 +16,7 @@ Evidence-bound copy for the Backblaze Generative AI Media Hackathon. Paste only 
 
 ## B2 and Genblaze usage
 
-**Genblaze** runs the media pipeline: NVIDIA FLUX image step → SHA-256 provenance manifest → upload via `genblaze-s3` `S3StorageBackend.for_backblaze`. The thin FastAPI UI (`mrs/apps/genblaze-media`) takes a prompt, returns asset/manifest keys and a short-lived **presigned** preview (private bucket).
+**Genblaze** runs the media pipeline: image step (deterministic RT4D stills by default, NVIDIA NIM FLUX as armed fallback) → SHA-256 provenance manifest → upload via `genblaze-s3` `S3StorageBackend.for_backblaze`. The thin FastAPI UI (`mrs/apps/genblaze-media`) takes a prompt, returns asset/manifest keys and a short-lived **presigned** preview (private bucket).
 
 **B2** stores generated concept stills and manifests under prefix `genblaze-media/`. After generate, prompts are optionally embedded with **nv-embedcode** and indexed locally so judges can semantic-search recent assets (`POST /api/search`).
 
@@ -25,7 +26,7 @@ v2 ops themes (durable search, authoring bridge, CI): [`GENBLAZE_MEDIA_V2_ROADMA
 
 ### Hook to the 4D stack (honest)
 
-1. Judge/operator generates a FLUX still via this app (NIM GenAI `flux.1-schnell`).
+1. Judge/operator generates a still via this app — RT4D deterministic stills by default (`GENBLAZE_IMAGE_BACKEND=rt4d`), NVIDIA NIM FLUX as armed fallback.
 2. Asset + manifest land on **B2** under `genblaze-media/` with SHA-256 provenance.
 3. MRS / `examples/web-demo.html` (and Inspector live-link) consume those URLs as **reference / texture / moodboard** inputs for scene authoring — not as a 4D simulation step.
 
@@ -33,7 +34,14 @@ That bridge is the product story: generative media pipeline → durable B2 → c
 
 ## App URL
 
-Deploy `mrs/apps/genblaze-media` (Docker / `render.yaml`) and paste the public HTTPS URL here after Render/Railway is live.
+**Live (Render, free tier, repo-root Dockerfile):** `https://mandala-rendering-system-mrs.onrender.com/`
+
+Health: `GET /health` (live `status:ok`).
+
+Verified live (2026-07-31):
+- `b2_configured:true` — B2 bucket `Mandala-Rendering-System`, region `us-east-005`.
+- `rt4d.available:true` — deterministic RT4D stills; `POST /api/generate` returned `run_id 334b24d9-…` and the preview was a real `image/png` (72,351 bytes).
+- NVIDIA NIM (`flux.1-schnell`) is **armed but currently unavailable** (gateway 504, warmup probe same); the deploy pins `GENBLAZE_IMAGE_BACKEND=rt4d` so stills are served by the deterministic 4D path tracer, with NVIDIA fallback armed. Do not claim a live FLUX NIM image until the 504 clears.
 
 Local: `http://127.0.0.1:8787/` · Health: `/health`
 
