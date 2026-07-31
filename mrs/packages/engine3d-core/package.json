@@ -31,6 +31,7 @@
     "validate:face-glb": "npm run build && node scripts/validate-face-glb.mjs",
     "render:engine3d-still": "npm run build && node scripts/render-engine3d-still.mjs --engine3d-still",
     "render:engine3d-sequence": "npm run build && node scripts/render-engine3d-sequence.mjs --engine3d-sequence",
+    "render:anime-continuity-5shot": "npm run build && node scripts/run-anime-continuity-5shot.mjs --engine3d-continuity",
     "test:scene-bridge": "npm run build && node --test dist/test/scene/scene-bridge.test.js",
     "demo:engine3d": "npm run build && node dist/demo/demo-engine3d.js",
     "expand:world": "npm run build && node scripts/expand-world-document.mjs"

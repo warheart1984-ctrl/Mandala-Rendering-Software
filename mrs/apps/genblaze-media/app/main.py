@@ -76,6 +76,13 @@ from app.face_polish_defaults import (
     resolve_face_polish_prompt,
     resolve_face_polish_strength,
 )
+from app.style_steer import (
+    ANIME_NOTE,
+    STYLE_ANIME,
+    apply_style_steer,
+    resolve_style,
+    style_health_payload,
+)
 from app.face_creation_assist_provider import (
     FaceCreationAssistError,
     face_creation_assist_availability,
@@ -400,6 +407,15 @@ class GenerateRequest(BaseModel):
             "Honored for stills only; ignored for video."
         ),
     )
+    style: str | None = Field(
+        default=None,
+        max_length=32,
+        description=(
+            "Media look lane: 'anime' (cel-shaded FLUX/Lemonade/polish prompt steer, "
+            "status partial) or 'default'. Overrides GENBLAZE_STYLE when set. "
+            "Does not claim photoreal; Cycles external-pbr remains optional."
+        ),
+    )
 
 
 class SearchRequest(BaseModel):
@@ -521,6 +537,11 @@ class PolishStillRequest(BaseModel):
         description="Img2img strength; default from GENBLAZE_POLISH_DEFAULT_STRENGTH",
     )
     quality: str | None = Field(default=None, description="Reserved quality hint")
+    style: str | None = Field(
+        default=None,
+        max_length=32,
+        description="Look lane: 'anime' | 'default' (overrides GENBLAZE_STYLE)",
+    )
 
 
 class PromptToSceneRequest(BaseModel):
@@ -590,6 +611,14 @@ class Engine3dStillRequest(BaseModel):
         description="Polish prompt (required when polish=true)",
     )
     polish_strength: float | None = Field(default=None, ge=0.0, le=1.0)
+    style: str | None = Field(
+        default=None,
+        max_length=32,
+        description=(
+            "Look lane for optional polish: 'anime' | 'default'. "
+            "Overrides GENBLAZE_STYLE; steers polish prompt when polish=true."
+        ),
+    )
     rt4d_background_run_id: str | None = Field(
         default=None,
         max_length=64,
@@ -803,6 +832,8 @@ def health(request: Request) -> dict:
             "rt4d.available field above is the authoritative check for this "
             "running image."
         ),
+        "media_style": style_health_payload(getattr(settings, "media_style", None)),
+        "media_style_note": ANIME_NOTE,
         "scene_spec": scene_spec_availability(settings),
         "scene_spec_note": (
             "POST /api/render-scene accepts a SceneSpecification JSON and renders "
@@ -1040,12 +1071,22 @@ def _run_generate_common(
     # "the UI never called the API". Log arrival and completion explicitly.
     kind = "video" if video else "image"
     started = time.monotonic()
+    try:
+        style = resolve_style(
+            request_style=getattr(body, "style", None),
+            settings_style=getattr(settings, "media_style", None),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    prompt_for_gen, style_steered = apply_style_steer(body.prompt, style)
     logger.info(
-        "generate start · modality=%s backend=%s byok=%s prompt_chars=%d",
+        "generate start · modality=%s backend=%s byok=%s style=%s steered=%s prompt_chars=%d",
         kind,
         "nvidia-video" if video else settings.image_backend,
         bool(byok_meta.get("byok_used")),
-        len(body.prompt or ""),
+        style,
+        style_steered,
+        len(prompt_for_gen or ""),
     )
     # ── Constitutional governance via Sovereign X Kernel ──────────────
     global _last_kernel_result
@@ -1053,9 +1094,9 @@ def _run_generate_common(
         # Run constitutional governance checks before dispatch (all modalities).
         modality = "video" if video else "image"
         intent = ProcessIntent(
-            prompt=body.prompt,
+            prompt=prompt_for_gen,
             authority_id=settings.nvidia_api_key or "genblaze-operator",
-            metadata={"modality": modality},
+            metadata={"modality": modality, "style": style},
         )
         kr = _sx_kernel.schedule(intent)
         _last_kernel_result = kr.to_dict()
@@ -1063,9 +1104,9 @@ def _run_generate_common(
             raise RuntimeError(f"Constitutional kernel halted: {kr.error}")
 
         if video:
-            result = generate_video(settings, body.prompt)
+            result = generate_video(settings, prompt_for_gen)
         else:
-            result = _dispatch_image(settings, body.prompt, quality=body.quality)
+            result = _dispatch_image(settings, prompt_for_gen, quality=body.quality)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except GenerationQualityError as exc:
@@ -1076,7 +1117,20 @@ def _run_generate_common(
         detail = _format_generation_failure(exc)
         raise HTTPException(status_code=502, detail=f"generation failed: {detail}") from exc
 
+    if hasattr(result, "style"):
+        result.style = style
+    if hasattr(result, "style_steered"):
+        result.style_steered = style_steered
+    if style == STYLE_ANIME:
+        note = "style=anime (partial: diffusion prompt steer)"
+        if getattr(settings, "rt4d_selected", False) and not video:
+            note += "; RT4D pixels ignore anime steer — use FLUX/Lemonade/polish for look"
+        if note not in (getattr(result, "detail", None) or ""):
+            result.detail = (result.detail + " · " if result.detail else "") + note
+
     entry = result.to_dict()
+    entry["style"] = style
+    entry["style_steered"] = style_steered
     entry["modality"] = "video" if video else entry.get("modality") or "image"
     # Attach constitutional governance metadata from the kernel.
     if _last_kernel_result:
@@ -1146,6 +1200,7 @@ def _run_generate_common(
                 polish_prompt = resolve_lattice_polish_prompt(
                     body.polish_prompt, lattice=True
                 ) or LATTICE_POLISH_DEFAULT_PROMPT
+            polish_prompt, _ = apply_style_steer(polish_prompt, style)
             pol_res = _polish_pipeline(
                 # Polish is out of BYOK scope — never proxy per-request keys into polish.
                 base_settings,
@@ -1614,12 +1669,21 @@ def api_polish_still(body: PolishStillRequest, request: Request) -> dict:
     if isinstance(source_entry, dict):
         source_sha256 = source_entry.get("asset_sha256")
 
+    try:
+        style = resolve_style(
+            request_style=getattr(body, "style", None),
+            settings_style=getattr(settings, "media_style", None),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    polish_prompt, style_steered = apply_style_steer(body.prompt, style)
+
     # ── Constitutional governance via Sovereign X Kernel ──────────────
     try:
         intent = ProcessIntent(
-            prompt=body.prompt,
+            prompt=polish_prompt,
             authority_id=settings.nvidia_api_key or "genblaze-operator",
-            metadata={"modality": "polish", "source_run_id": rid},
+            metadata={"modality": "polish", "source_run_id": rid, "style": style},
         )
         kr = _sx_kernel.schedule(intent)
         _last_kernel_result = kr.to_dict()
@@ -1632,7 +1696,7 @@ def api_polish_still(body: PolishStillRequest, request: Request) -> dict:
         result = polish_image(
             settings,
             image_bytes,
-            body.prompt,
+            polish_prompt,
             structure_run_id=rid,
             structure_sha256=source_sha256,
             strength=body.strength,
@@ -1644,6 +1708,8 @@ def api_polish_still(body: PolishStillRequest, request: Request) -> dict:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     payload = result.to_dict()
+    payload["style"] = style
+    payload["style_steered"] = style_steered
     payload["resolve"] = resolve_meta if isinstance(resolve_meta, dict) else {}
     payload["source_run_id"] = rid
     # Attach constitutional governance metadata from the kernel.
@@ -1980,7 +2046,19 @@ def api_engine3d_still(body: Engine3dStillRequest) -> dict:
         ):
             face_rig = True
 
-        polish_prompt = resolve_face_polish_prompt(body.prompt, face_rig=face_rig)
+        try:
+            eng_style = resolve_style(
+                request_style=getattr(body, "style", None),
+                settings_style=getattr(settings, "media_style", None),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        polish_prompt = resolve_face_polish_prompt(
+            body.prompt,
+            face_rig=face_rig,
+            style=eng_style,
+        )
+        polish_prompt, _style_steered = apply_style_steer(polish_prompt, eng_style)
         polish_strength = resolve_face_polish_strength(
             body.polish_strength,
             face_rig=face_rig,

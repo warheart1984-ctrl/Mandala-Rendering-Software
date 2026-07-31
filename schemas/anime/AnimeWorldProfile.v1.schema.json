@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4dce.local/schemas/anime/AnimeWorldProfile.v1.schema.json",
+  "title": "AnimeWorldProfile",
+  "description": "AnimeWorldProfile v1.0 contract for Constitutional Anime Rendering. Validation status: partial (hand validator + schema). Runtime CKL shot-gate enforcement remains declared. See docs/governance/RENDER_CONSTITUTION_ANIME.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profileId",
+    "schemaVersion",
+    "status",
+    "color_palette",
+    "shadow_steps",
+    "outline_rules",
+    "material_classes",
+    "facial_proportion_profile",
+    "motion_timing",
+    "background_detail_budget",
+    "lighting_constraints",
+    "continuity_invariants",
+    "provenance_requirements"
+  ],
+  "properties": {
+    "profileId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable id, e.g. anime.mandala-cel.v1"
+    },
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "skeleton", "partial", "enforced"],
+      "description": "Evidence-bound maturity of this profile instance"
+    },
+    "displayName": { "type": "string" },
+    "entryPoint": {
+      "type": "string",
+      "const": "constitutional-anime-rendering",
+      "description": "Product entry-point thesis tag"
+    },
+    "color_palette": {
+      "type": "object",
+      "required": ["roles", "maxDistinctHues"],
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "type": "object",
+          "description": "Named hex colors (e.g. key, shadow, accent, line, mist)",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$"
+          }
+        },
+        "maxDistinctHues": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 64
+        },
+        "posterizeLevels": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32,
+          "description": "0 = disabled; aligns with ink-cel paletteLevels when wired"
+        }
+      }
+    },
+    "shadow_steps": {
+      "type": "object",
+      "required": ["bandCount", "boundaries", "levels"],
+      "additionalProperties": false,
+      "properties": {
+        "bandCount": { "type": "integer", "minimum": 2, "maximum": 8 },
+        "boundaries": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "minItems": 1
+        },
+        "levels": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "minItems": 2
+        },
+        "shadowFloor": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "outline_rules": {
+      "type": "object",
+      "required": ["enabled", "lineWidthPx", "inkStrength"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "lineWidthPx": { "type": "number", "minimum": 0, "maximum": 8 },
+        "inkStrength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "inkColor": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "depthThreshold": { "type": "number", "minimum": 0 },
+        "normalThreshold": { "type": "number", "minimum": 0 },
+        "variableWeight": {
+          "type": "boolean",
+          "description": "Declared: silhouette-weighted lines; not enforced in soft-raster yet"
+        }
+      }
+    },
+    "material_classes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "shading"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "shading": {
+            "type": "string",
+            "enum": ["cel", "flat", "emissive", "mist", "metallic-cel"]
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "facial_proportion_profile": {
+      "type": "object",
+      "required": ["id", "eyeScaleBias", "jawSoftness"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "eyeScaleBias": { "type": "number", "minimum": 0.5, "maximum": 2.0 },
+        "jawSoftness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "noseProminence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "amendmentViiSoftGates": {
+          "type": "string",
+          "enum": ["opt-in", "off", "declared"],
+          "description": "Binding to Amendment VII face soft gates — declared until profile→gate bridge exists"
+        }
+      }
+    },
+    "motion_timing": {
+      "type": "object",
+      "required": ["fps", "easingBias"],
+      "additionalProperties": false,
+      "properties": {
+        "fps": { "type": "integer", "enum": [12, 24, 30] },
+        "easingBias": {
+          "type": "string",
+          "enum": ["linear", "ease-in-out", "snappy", "hold-heavy"]
+        },
+        "maxCameraAccel": { "type": "number", "minimum": 0 },
+        "holdFrameBias": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "background_detail_budget": {
+      "type": "object",
+      "required": ["maxDistinctProps", "midgroundSimplify"],
+      "additionalProperties": false,
+      "properties": {
+        "maxDistinctProps": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "midgroundSimplify": { "type": "boolean" },
+        "fogDensityHint": { "type": "number", "minimum": 0, "maximum": 1 },
+        "volumetricMist": { "type": "boolean" }
+      }
+    },
+    "lighting_constraints": {
+      "type": "object",
+      "required": ["keyFillRatioMax", "forbidUnmotivatedRim"],
+      "additionalProperties": false,
+      "properties": {
+        "keyFillRatioMax": { "type": "number", "minimum": 1 },
+        "forbidUnmotivatedRim": { "type": "boolean" },
+        "maxActiveLights": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "paletteLocked": { "type": "boolean" },
+        "volumetricGodrays": {
+          "type": "string",
+          "enum": ["allowed", "budgeted", "forbidden"]
+        }
+      }
+    },
+    "continuity_invariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "rule"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "rule": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["character", "palette", "line", "lighting", "camera", "4d-motif"]
+          }
+        }
+      }
+    },
+    "provenance_requirements": {
+      "type": "object",
+      "required": ["attachStyleId", "attachProfileId", "requireIntentId"],
+      "additionalProperties": false,
+      "properties": {
+        "attachStyleId": { "type": "boolean" },
+        "attachProfileId": { "type": "boolean" },
+        "requireIntentId": { "type": "boolean" },
+        "requireWorldId": { "type": "boolean" },
+        "requireTimelineId": { "type": "boolean" },
+        "replayDeterminism": {
+          "type": "string",
+          "enum": ["declared", "partial", "enforced"],
+          "description": "Shot replay determinism maturity for this profile"
+        },
+        "manifestFields": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "bindings": {
+      "type": "object",
+      "description": "Declared integration points — not runtime gates",
+      "additionalProperties": false,
+      "properties": {
+        "genblazeStyle": {
+          "type": "string",
+          "const": "anime",
+          "description": "Maps to GENBLAZE_STYLE / API style=anime (partial prompt steer)"
+        },
+        "engine3dStyle": {
+          "type": "string",
+          "enum": ["ink-cel", "cinematic", "undeclared"],
+          "description": "ink-cel lane is designed (partial design); not yet implemented"
+        },
+        "amendmentViiiWorldProfile": {
+          "type": "string",
+          "description": "Optional Amendment VIII catalog id — declared bridge"
+        },
+        "unityHost": { "type": "string", "enum": ["declared", "skeleton"] },
+        "unrealHost": { "type": "string", "enum": ["declared", "skeleton"] },
+        "rt4dRole": {
+          "type": "string",
+          "description": "4D geometry for portals/spirits/impossible architecture — structure SoT, not anime beauty SoT"
+        }
+      }
+    },
+    "nonClaims": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Explicit non-claims for Drive-G-1 honesty"
+    }
+  }
+}

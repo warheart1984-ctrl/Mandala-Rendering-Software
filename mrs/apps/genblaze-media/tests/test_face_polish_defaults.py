@@ -13,8 +13,15 @@ def test_face_prompt_default_when_empty_and_face_rig():
     assert "preserve facial structure" in resolve_face_polish_prompt("", face_rig=True)
 
 
+def test_face_prompt_anime_style_default():
+    text = resolve_face_polish_prompt(None, face_rig=True, style="anime")
+    assert "anime" in text.lower()
+    assert "cel-shaded" in text.lower()
+
+
 def test_face_prompt_respects_explicit():
     assert resolve_face_polish_prompt("my look", face_rig=True) == "my look"
+    assert resolve_face_polish_prompt("my look", face_rig=True, style="anime") == "my look"
 
 
 def test_face_strength_caps_default():

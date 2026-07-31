@@ -1,0 +1,176 @@
+{
+  "schemaVersion": "1.0.0",
+  "planId": "constitutional-anime-continuity-5shot.v1",
+  "status": "partial",
+  "entryPoint": "constitutional-anime-rendering",
+  "anime_world_profile_id": "anime.mandala-cel.v1",
+  "anime_world_profile_path": "schemas/anime/examples/mandala-cel-v1.example.json",
+  "worldId": "world.anime.duo-portal.v1",
+  "timelineId": "timeline.anime.continuity-5shot.v1",
+  "renderer": {
+    "kind": "engine3d-soft-raster",
+    "status": "partial",
+    "note": "Governed stylization structure plates. Not photoreal. Ink-cel InkOptions mapping remains declared; cel banding applied as profile-aligned post proxy."
+  },
+  "characters": [
+    {
+      "id": "char.kael",
+      "displayName": "Kael",
+      "silhouette": "sphere-head-box-torso",
+      "skinColor": [0.92, 0.74, 0.62],
+      "clothColor": [0.77, 0.36, 0.15],
+      "offset": [-0.7, 0, 0],
+      "notes": "Accent-role costume (palette accent #C45C26)"
+    },
+    {
+      "id": "char.mira",
+      "displayName": "Mira",
+      "silhouette": "sphere-head-box-torso",
+      "skinColor": [0.9, 0.78, 0.68],
+      "clothColor": [0.56, 0.66, 0.77],
+      "offset": [0.7, 0, 0],
+      "notes": "Mist-role costume (palette mist #8FA8C4)"
+    }
+  ],
+  "cameraAngles": [
+    {
+      "id": "cam.front-medium",
+      "eye": [0, 0.45, 3.35],
+      "lookAt": [0, 0.25, 0],
+      "up": [0, 1, 0],
+      "fovY": 0.78
+    },
+    {
+      "id": "cam.three-quarter-left",
+      "eye": [-2.35, 0.55, 2.55],
+      "lookAt": [0, 0.3, 0],
+      "up": [0, 1, 0],
+      "fovY": 0.72
+    },
+    {
+      "id": "cam.low-dramatic",
+      "eye": [0.25, -0.15, 2.9],
+      "lookAt": [0, 0.55, 0],
+      "up": [0, 1, 0],
+      "fovY": 0.85
+    }
+  ],
+  "lightingPresets": {
+    "light.day-key": {
+      "rig": "cinematic",
+      "keyDir": [-0.35, -1.0, -0.45],
+      "clearColor": [0.12, 0.11, 0.16],
+      "fogRgb": [0.56, 0.66, 0.77],
+      "fogStrength": 0.35,
+      "gradeBias": "neutral-cool",
+      "constraintsNote": "Obeys mandala-cel lighting_constraints: max 4 lights, palette-locked, motivated key"
+    },
+    "light.golden-hour": {
+      "rig": "dramatic",
+      "keyDir": [-0.55, -0.75, -0.35],
+      "clearColor": [0.18, 0.1, 0.08],
+      "fogRgb": [0.95, 0.7, 0.45],
+      "fogStrength": 0.42,
+      "gradeBias": "warm",
+      "constraintsNote": "Warmer key, reduced fill; still within keyFillRatioMax 4.0"
+    },
+    "light.moon-rim": {
+      "rig": "dramatic",
+      "keyDir": [0.4, -0.55, 0.55],
+      "clearColor": [0.05, 0.07, 0.14],
+      "fogRgb": [0.35, 0.45, 0.7],
+      "fogStrength": 0.5,
+      "gradeBias": "cool-night",
+      "constraintsNote": "Cool motivated moonlight; rim allowed as sky-motivated"
+    },
+    "light.portal-emissive": {
+      "rig": "dramatic",
+      "keyDir": [-0.2, -0.9, -0.3],
+      "clearColor": [0.04, 0.05, 0.12],
+      "fogRgb": [0.5, 0.35, 0.85],
+      "fogStrength": 0.55,
+      "gatherEmissiveLights": true,
+      "gradeBias": "spirit-violet",
+      "constraintsNote": "Emissive portal contributes gather fills (≤4); spirit class from profile"
+    },
+    "light.aftermath-soft": {
+      "rig": "cinematic",
+      "keyDir": [-0.25, -1.0, -0.4],
+      "clearColor": [0.1, 0.11, 0.15],
+      "fogRgb": [0.7, 0.75, 0.85],
+      "fogStrength": 0.28,
+      "gradeBias": "soft-dawn",
+      "constraintsNote": "Soft aftermath; lower contrast after portal collapse"
+    }
+  },
+  "shots": [
+    {
+      "shotId": "shot-01-establish",
+      "intentId": "intent.anime.continuity.shot-01",
+      "timeSeconds": 0.0,
+      "cameraAngleId": "cam.front-medium",
+      "lightingPresetId": "light.day-key",
+      "characterIds": ["char.kael", "char.mira"],
+      "transform": false,
+      "prompt": "Kael and Mira stand before a quiet mandala courtyard at day; cel-shaded anime continuity establishing two-shot",
+      "notes": "Same duo, front medium, day key"
+    },
+    {
+      "shotId": "shot-02-dialogue",
+      "intentId": "intent.anime.continuity.shot-02",
+      "timeSeconds": 2.5,
+      "cameraAngleId": "cam.three-quarter-left",
+      "lightingPresetId": "light.golden-hour",
+      "characterIds": ["char.kael", "char.mira"],
+      "transform": false,
+      "prompt": "Three-quarter dialogue beat; golden-hour cel light; Kael and Mira hold silhouette continuity",
+      "notes": "Reuse angle A2; lighting shifts warm"
+    },
+    {
+      "shotId": "shot-03-tension",
+      "intentId": "intent.anime.continuity.shot-03",
+      "timeSeconds": 5.0,
+      "cameraAngleId": "cam.low-dramatic",
+      "lightingPresetId": "light.moon-rim",
+      "characterIds": ["char.kael", "char.mira"],
+      "transform": false,
+      "prompt": "Low dramatic angle; moon rim tension before the portal opens; same two characters",
+      "notes": "Third distinct camera angle"
+    },
+    {
+      "shotId": "shot-04-transform",
+      "intentId": "intent.anime.continuity.shot-04",
+      "timeSeconds": 7.5,
+      "cameraAngleId": "cam.three-quarter-left",
+      "lightingPresetId": "light.portal-emissive",
+      "characterIds": ["char.kael", "char.mira"],
+      "transform": true,
+      "transformKind": "4d-portal-tesseract",
+      "prompt": "Impossible 4D portal / tesseract bloom between Kael and Mira; emissive-spirit class; governed anime stylization",
+      "notes": "Sole transformation sequence; angle reused (A2); 4D geometry soft-raster proxy"
+    },
+    {
+      "shotId": "shot-05-aftermath",
+      "intentId": "intent.anime.continuity.shot-05",
+      "timeSeconds": 10.0,
+      "cameraAngleId": "cam.front-medium",
+      "lightingPresetId": "light.aftermath-soft",
+      "characterIds": ["char.kael", "char.mira"],
+      "transform": false,
+      "transformRemnant": true,
+      "prompt": "Aftermath: portal remnant fades; Kael and Mira remain; soft dawn cel light; continuity close",
+      "notes": "Reuse A1; soft lighting; remnant proves sequence, not new cast"
+    }
+  ],
+  "replay": {
+    "mode": "dual-run-frozen-params",
+    "status": "partial",
+    "note": "Re-render each shot from frozen parameters; assert beauty sha256 equality. Full CSE ReplayService pixel replay remains partial at host layer."
+  },
+  "nonClaims": [
+    "Not Full Photoreal",
+    "Not Lemonade SD beauty SoT (host may block sd-server)",
+    "Not CKL-enforced anime shot gate",
+    "Ink-cel InkOptions binding declared — cel banding is profile-aligned post proxy"
+  ]
+}

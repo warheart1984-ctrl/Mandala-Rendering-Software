@@ -1025,6 +1025,16 @@
           <option value="draft" selected>Draft (fast — smaller / noisier)</option>
           <option value="final">Final (slower — RT4D profile)</option>
         </select>
+        <label for="media-style" style="margin-top:0.75rem">Look lane</label>
+        <select id="media-style">
+          <option value="default">Default (no anime steer)</option>
+          <option value="anime" selected>Anime (partial — FLUX/polish prompt steer)</option>
+        </select>
+        <div class="inline-note">
+          Anime steers diffusion prompts toward cel-shaded look. Not Full Photoreal;
+          Cycles photoreal remains optional. RT4D structure stills ignore anime pixels —
+          use NVIDIA/Lemonade/polish for the look.
+        </div>
         <div class="row">
           <button type="submit" id="go">Generate</button>
           <button type="button" class="secondary" id="refresh">Refresh assets</button>
@@ -2291,11 +2301,13 @@
       try {
         const thenScene = document.getElementById("then-scene")?.checked === true;
         const modelOverride = sessionStorage.getItem(BYOK_MODEL);
+        const mediaStyle = document.getElementById("media-style")?.value || "default";
         const genBody = {
           prompt,
           embed: true,
           then_scene: thenScene,
           quality: stillQuality,
+          style: mediaStyle,
         };
         if (modelOverride) genBody.model = modelOverride;
         const res = await fetch("/api/generate", {
@@ -2700,6 +2712,7 @@
             run_id: latestStill.run_id,
             prompt: polishPromptVal || "enhance materials, refine contrast and lighting",
             strength,
+            style: document.getElementById("media-style")?.value || "default",
           };
           const res = await fetch("/api/polish-still", {
             method: "POST",
@@ -2780,6 +2793,7 @@
           if (doPolish) {
             body.prompt = polishPrompt;
             body.polish_strength = 0.45;
+            body.style = document.getElementById("media-style")?.value || "default";
           }
           const res = await fetch("/api/engine3d-still", {
             method: "POST",

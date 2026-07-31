@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4dce.local/schemas/anime/ContinuityShotEvidence.v1.schema.json",
+  "title": "ContinuityShotEvidence",
+  "description": "Per-shot evidence record for Constitutional Anime continuity cycles. Extends AnimeWorldProfile provenance_requirements with frozen render parameters for dual-run replay. Status: partial.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "intentId",
+    "worldId",
+    "timelineId",
+    "timeSeconds",
+    "parameters",
+    "anime_world_profile_id",
+    "shotId"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "shotId": { "type": "string", "minLength": 1 },
+    "intentId": { "type": "string", "minLength": 1 },
+    "worldId": { "type": "string", "minLength": 1 },
+    "timelineId": { "type": "string", "minLength": 1 },
+    "timeSeconds": { "type": "number" },
+    "anime_world_profile_id": { "type": "string", "minLength": 1 },
+    "characterIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "cameraAngleId": { "type": "string" },
+    "lightingPresetId": { "type": "string" },
+    "transform": { "type": "boolean" },
+    "beauty_path": { "type": "string" },
+    "beauty_sha256": { "type": "string" },
+    "parameters": {
+      "type": "object",
+      "description": "Frozen deterministic render parameters for dual-run replay",
+      "required": ["width", "height", "camera", "lights", "clearColor", "seed"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 16 },
+        "height": { "type": "integer", "minimum": 16 },
+        "seed": { "type": "integer" },
+        "camera": { "type": "object" },
+        "lights": { "type": "array" },
+        "clearColor": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "fogRgb": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "fogStrength": { "type": "number" },
+        "celBandBoundaries": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "celBandLevels": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "meshSignature": { "type": "string" },
+        "gatherEmissiveLights": { "type": "boolean" }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "properties": {
+        "pass": { "type": "integer" },
+        "dualRunMatch": { "type": "boolean" },
+        "pass1_sha256": { "type": "string" },
+        "pass2_sha256": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["enforced", "partial", "declared", "skeleton", "blocked"]
+        }
+      }
+    },
+    "statusTags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["enforced", "partial", "declared", "skeleton", "blocked"]
+      }
+    }
+  }
+}

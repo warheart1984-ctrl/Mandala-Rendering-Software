@@ -1,0 +1,122 @@
+{
+  "profileId": "anime.mandala-cel.v1",
+  "schemaVersion": "1.0.0",
+  "status": "partial",
+  "displayName": "Mandala Cel v1",
+  "entryPoint": "constitutional-anime-rendering",
+  "color_palette": {
+    "roles": {
+      "key": "#F2E6D8",
+      "shadow": "#3A2F4A",
+      "accent": "#C45C26",
+      "line": "#0D0C12",
+      "mist": "#8FA8C4"
+    },
+    "maxDistinctHues": 12,
+    "posterizeLevels": 0
+  },
+  "shadow_steps": {
+    "bandCount": 3,
+    "boundaries": [0.3, 0.7],
+    "levels": [0.18, 0.62, 1.0],
+    "shadowFloor": 0.12
+  },
+  "outline_rules": {
+    "enabled": true,
+    "lineWidthPx": 1,
+    "inkStrength": 0.85,
+    "inkColor": [0.05, 0.05, 0.08],
+    "depthThreshold": 0.06,
+    "normalThreshold": 0.14,
+    "variableWeight": true
+  },
+  "material_classes": [
+    { "id": "skin-cel", "shading": "cel", "notes": "2D-inspired character skin" },
+    { "id": "cloth-flat", "shading": "flat" },
+    { "id": "env-mist", "shading": "mist", "notes": "Volumetric mist budget" },
+    { "id": "metal-cel", "shading": "metallic-cel" },
+    { "id": "emissive-spirit", "shading": "emissive", "notes": "4D spirit / portal glow" }
+  ],
+  "facial_proportion_profile": {
+    "id": "anime.face.expressive-v1",
+    "eyeScaleBias": 1.25,
+    "jawSoftness": 0.7,
+    "noseProminence": 0.35,
+    "amendmentViiSoftGates": "declared"
+  },
+  "motion_timing": {
+    "fps": 24,
+    "easingBias": "hold-heavy",
+    "maxCameraAccel": 2.5,
+    "holdFrameBias": 0.35
+  },
+  "background_detail_budget": {
+    "maxDistinctProps": 24,
+    "midgroundSimplify": true,
+    "fogDensityHint": 0.35,
+    "volumetricMist": true
+  },
+  "lighting_constraints": {
+    "keyFillRatioMax": 4.0,
+    "forbidUnmotivatedRim": true,
+    "maxActiveLights": 4,
+    "paletteLocked": true,
+    "volumetricGodrays": "budgeted"
+  },
+  "continuity_invariants": [
+    {
+      "id": "same-character-silhouette",
+      "rule": "Character silhouette and costume color roles stay within palette roles across shots",
+      "severity": "character"
+    },
+    {
+      "id": "palette-lock",
+      "rule": "No shot may introduce hues beyond maxDistinctHues without profile supersession",
+      "severity": "palette"
+    },
+    {
+      "id": "line-weight-band",
+      "rule": "Outline lineWidthPx and inkStrength stay within outline_rules",
+      "severity": "line"
+    },
+    {
+      "id": "lighting-motivation",
+      "rule": "Rim/key must obey lighting_constraints; hardware limits become design decisions",
+      "severity": "lighting"
+    },
+    {
+      "id": "4d-motif-continuity",
+      "rule": "Portals/spirits/impossible architecture use RT4D structure with emissive-spirit class",
+      "severity": "4d-motif"
+    }
+  ],
+  "provenance_requirements": {
+    "attachStyleId": true,
+    "attachProfileId": true,
+    "requireIntentId": true,
+    "requireWorldId": true,
+    "requireTimelineId": true,
+    "replayDeterminism": "declared",
+    "manifestFields": [
+      "style",
+      "anime_world_profile_id",
+      "beauty_sha256",
+      "ink_sha256"
+    ]
+  },
+  "bindings": {
+    "genblazeStyle": "anime",
+    "engine3dStyle": "ink-cel",
+    "amendmentViiiWorldProfile": "declared-bridge",
+    "unityHost": "declared",
+    "unrealHost": "declared",
+    "rt4dRole": "structure-portals-spirits-impossible-architecture"
+  },
+  "nonClaims": [
+    "Not Full Photoreal",
+    "Not Digital Printer beauty SoT (NIM/FLUX anime stills are creative assist)",
+    "Not CKL-enforced shot gate until tests + policy wiring exist",
+    "Lemonade SD / sd-server held on AMD R9 380-class host when pixelsProduced is false",
+    "Unity/Unreal hosts remain declared/skeleton"
+  ]
+}

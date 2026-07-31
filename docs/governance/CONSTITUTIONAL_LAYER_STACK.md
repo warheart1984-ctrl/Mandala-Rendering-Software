@@ -64,14 +64,26 @@ onto existing engine modules is **declared** future work and must not overclaim.
 
 ---
 
+## Dimensional Compression (companion methodology)
+
+**Declared** compression law across Arena → Invariant → Execution layers:
+[`DIMENSIONAL_COMPRESSION.md`](./DIMENSIONAL_COMPRESSION.md). It explains how
+CIEMS / MRS reduce unbounded possibility without dropping trust invariants.
+It is **not** a fifth stack organ and does **not** amend the charter. Applied
+worksheets: `cecp/trails/dimensional-compression-2026-07/`.
+
+---
+
 ## References
 
 | Doc | Role |
 |-----|------|
 | `docs/governance/CECP_OMEGA_PROTOCOL.md` | CECP protocol + reference registry |
+| `docs/governance/DIMENSIONAL_COMPRESSION.md` | Principle of Dimensional Compression (**declared**) |
 | `docs/governance/esfr/` | ESFR ship gate (protocol, contract, promotion, pipeline v2, matrix, probes, lineage seed) |
 | `docs/governance/esfr/pipeline.cecp-v2.md` | CECP v2.0 crew pipeline diagram (incl. ESFR) |
 | `docs/governance/cecp/trails/prompt-scene-adapter-2026-07/` | CECP reference #1 |
 | `docs/governance/cecp/trails/proton-raster-2026-07/` | CECP reference #2 |
+| `docs/governance/cecp/trails/dimensional-compression-2026-07/` | Dimensional Compression trail + applied exercise |
 | `docs/governance/cecp/EVIDENCE_TRAIL_TEMPLATE.md` | Trail template |
 | `AGENTS.md` | Agent lawbook (P1–P5); not amended by this file |
