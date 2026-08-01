@@ -12,6 +12,41 @@ Every cycle answers:
 
 ---
 
+## 2026-08-01 — Projection meta-pattern locked (decision process / promotion gate)
+
+| Field | Value |
+|-------|-------|
+| Contract §6 | Decision Process / Promotion Gate — **declared / partial** |
+| Pattern | **experiment → provenance → contract → promotion** |
+| Promotion | default anime-structure Projector4D remains **declared** |
+| Print SoT / Digital Printer | untouched |
+
+1. **Improved / happened:** User-affirmed landing captured in existing projection docs: biggest win = formalizing the decision process (not crowning one projector); multi-lane conclusion stands; pole-stress boundary shapes lane policy.
+2. **Artificial / gaps:** Still not a CKL gate; ink/cel + viewer-comprehension studies incomplete; no default promotion.
+3. **Measured:** Docs-only this cycle; prior pole-stress counts unchanged (reject vs accept near pole).
+4. **Next bottleneck:** Richer comprehension evidence before any declared→partial default promotion.
+
+---
+
+## 2026-08-01 — Anime Structure Plate Projector contract + \(w\)-story design note
+
+| Field | Value |
+|-------|-------|
+| Contract | `docs/4d-engine/projection/ANIME_STRUCTURE_PLATE_PROJECTOR_CONTRACT.v1.md` (**declared / partial**) |
+| Design note | `docs/4d-engine/projection/W_AS_STORY_VS_FLAT_AXIS.md` (**declared**) |
+| Verify | `docs/4d-engine/projection/USER_4D_TO_3D_MATH_VERIFY.md` |
+| Schema | `schemas/4d-engine/v1/StructurePlateProjectionProvenance.v1.schema.json` (**declared**) |
+| Runner | `mrs/packages/renderer-core/scripts/rt4d-project-compare.mjs` (**partial**) |
+| Evidence | `tmp/rt4d-project-compare/` · commits `7f47af3` / `fec593b` |
+| Print SoT / Digital Printer | untouched |
+
+1. **Improved / happened:** Locked Projector4D vs drop_w as lane-local reference models with provenance; formal contract + design note; evaluation stance = no universal winner (story vs literal debug); pole-stress + rich-scene runner flags.
+2. **Artificial / gaps:** Not a CKL runtime gate; Engine3D plates often fallback soft-raster; rich scene ≠ full ink-cel; default anime-structure promotion of Projector4D remains **declared**.
+3. **Measured:** Shared-hit compare (foreshortening / depth / replay hashes); pole-stress reject counts when `--pole-stress` run.
+4. **Next bottleneck:** Richer ink-cel comprehension evidence; then decide declared→partial default for anime-structure only.
+
+---
+
 ## 2026-07-31 — Fail-closed AnimeWorldProfile claim gate (Genblaze)
 
 | Field | Value |
