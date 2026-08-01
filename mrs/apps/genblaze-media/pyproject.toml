@@ -19,6 +19,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest==9.1.1"]
+# Hackathon GMI Cloud fan-out (also requirements-gmi.txt; Docker installs optionally).
+gmi = ["genblaze-gmicloud>=0.3.2,<0.4"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

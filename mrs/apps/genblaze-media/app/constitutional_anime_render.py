@@ -2,7 +2,7 @@
 
 Stages:
   1) Structure plate (Engine3D soft-raster / provided PNG / continuity reuse)
-  2) Anime painter (fal | lemonade probe | local cel-proxy) or structure-only
+   2) Anime painter (fal | hfspace | lemonade probe | local cel-proxy) or structure-only
   3) Continuity + provenance report
 
 Drive-G-1:
@@ -37,7 +37,7 @@ from app.anime_world_profile import (
     load_anime_world_profile,
     validate_anime_world_profile,
 )
-from app.config import _load_dotenv_files
+from app.config import _load_dotenv_files, resolve_repo_root
 from app.style_steer import ANIME_STEER_SUFFIX, apply_style_steer
 
 # Match the app's canonical env source (repo-root .env then app-local .env,
@@ -61,10 +61,13 @@ BACKEND_CEL_PROXY = "cel-proxy"
 BACKEND_FAL = "fal"
 BACKEND_LEMONADE = "lemonade"
 BACKEND_NVIDIA = "nvidia"
+BACKEND_HFSPACE = "hfspace"
+BACKEND_GMICLOUD = "gmicloud"
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[4]
+    # Monorepo checkout vs Docker /app shallow layout (see config.resolve_repo_root).
+    return resolve_repo_root()
 
 
 def _utc_now() -> str:
@@ -508,8 +511,168 @@ def probe_nvidia(live: bool | None = None) -> PainterProbe:
     )
 
 
+def probe_hfspace(live: bool | None = None) -> PainterProbe:
+    """Three-state probe for the keyless HF Space img2img lane.
+
+    ``configured`` is keyless (true when the Space URL is set), but fail-closes
+    to ``configured=False`` when ``GENBLAZE_POLISH_ENABLED`` is off (policy gate,
+    same as :func:`probe_fal`). Live mode checks that the Space responds; it does
+    **not** burn ZeroGPU quota on a full infer in the probe (detail notes this).
+    """
+    live = _env_live() if live is None else live
+    url = (os.getenv("GENBLAZE_HFSPACE_URL") or "").strip().rstrip("/") or None
+    if not url:
+        return PainterProbe(
+            backend=BACKEND_HFSPACE,
+            configured=False,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="missing GENBLAZE_HFSPACE_URL",
+            env_vars_required=["GENBLAZE_HFSPACE_URL"],
+        )
+    if not _polish_enabled():
+        return PainterProbe(
+            backend=BACKEND_HFSPACE,
+            configured=False,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail=(
+                "GENBLAZE_POLISH_ENABLED not enabled (fail closed); "
+                "hfspace is keyless but policy gate off"
+            ),
+            env_vars_required=["GENBLAZE_HFSPACE_URL"],
+        )
+    if not live:
+        return PainterProbe(
+            backend=BACKEND_HFSPACE,
+            configured=True,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="configured (live probe disabled via GENBLAZE_PROBE_LIVE=0)",
+            env_vars_required=["GENBLAZE_HFSPACE_URL"],
+        )
+    try:
+        import httpx
+
+        with httpx.Client(timeout=20.0) as client:
+            resp = client.get(f"{url}/")
+    except Exception as exc:  # noqa: BLE001
+        return PainterProbe(
+            backend=BACKEND_HFSPACE,
+            configured=True,
+            reachable=False,
+            operational=False,
+            verified=True,
+            last_verified=_utc_now(),
+            detail=f"hfspace: unreachable ({type(exc).__name__}: {exc})",
+            env_vars_required=["GENBLAZE_HFSPACE_URL"],
+        )
+    if resp.status_code == 200:
+        return PainterProbe(
+            backend=BACKEND_HFSPACE,
+            configured=True,
+            reachable=True,
+            operational=True,
+            verified=True,
+            last_verified=_utc_now(),
+            detail=(
+                "hfspace: space reachable (HTTP 200); infer not exercised by probe "
+                "(ZeroGPU cold-start/quota)"
+            ),
+            env_vars_required=["GENBLAZE_HFSPACE_URL"],
+        )
+    return PainterProbe(
+        backend=BACKEND_HFSPACE,
+        configured=True,
+        reachable=True,
+        operational=False,
+        verified=True,
+        last_verified=_utc_now(),
+        detail=f"hfspace: space responded (HTTP {resp.status_code})",
+        env_vars_required=["GENBLAZE_HFSPACE_URL"],
+    )
+
+
+def probe_gmicloud(live: bool | None = None) -> PainterProbe:
+    """Three-state probe for GMI Cloud T2I (GenBlaze SDK / hackathon credits).
+
+    Status: **partial** — configured when ``GMI_API_KEY`` is set; live reachability
+    requires ``genblaze-gmicloud``. Probe does not burn credits on a full generate.
+    """
+    live = _env_live() if live is None else live
+    key = (os.getenv("GMI_API_KEY") or "").strip()
+    if not key:
+        return PainterProbe(
+            backend=BACKEND_GMICLOUD,
+            configured=False,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="missing GMI_API_KEY",
+            env_vars_required=["GMI_API_KEY"],
+        )
+    try:
+        from app.gmi_provider import gmi_sdk_available
+
+        sdk_ok = gmi_sdk_available()
+    except Exception:  # noqa: BLE001
+        sdk_ok = False
+    if not sdk_ok:
+        return PainterProbe(
+            backend=BACKEND_GMICLOUD,
+            configured=True,
+            reachable=False,
+            operational=False,
+            verified=True,
+            last_verified=_utc_now(),
+            detail=(
+                "GMI_API_KEY set but genblaze-gmicloud not installed "
+                "(pip install genblaze-gmicloud)"
+            ),
+            env_vars_required=["GMI_API_KEY"],
+        )
+    if not live:
+        return PainterProbe(
+            backend=BACKEND_GMICLOUD,
+            configured=True,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="configured (live probe disabled via GENBLAZE_PROBE_LIVE=0)",
+            env_vars_required=["GMI_API_KEY"],
+        )
+    # Key + SDK present — mark operational without a billed generate.
+    return PainterProbe(
+        backend=BACKEND_GMICLOUD,
+        configured=True,
+        reachable=True,
+        operational=True,
+        verified=True,
+        last_verified=_utc_now(),
+        detail=(
+            "gmicloud: key+SDK present; live T2I not exercised by probe "
+            "(credits spend on generate)"
+        ),
+        env_vars_required=["GMI_API_KEY"],
+    )
+
+
 def probe_painters(live: bool | None = None) -> list[PainterProbe]:
-    return [probe_fal(live), probe_lemonade(live), probe_nvidia(live)]
+    return [
+        probe_fal(live),
+        probe_hfspace(live),
+        probe_gmicloud(live),
+        probe_lemonade(live),
+        probe_nvidia(live),
+    ]
 
 
 def build_assertion(
@@ -813,6 +976,48 @@ def try_lemonade_t2i(prompt: str) -> tuple[bytes | None, str]:
         return None, f"lemonade: {type(exc).__name__}: {exc}"
 
 
+def try_hfspace_polish(structure_png: bytes, prompt: str) -> tuple[bytes | None, str]:
+    """Keyless HF Space img2img — free fallback leg (quota-capped, best-effort)."""
+    polish_flag = (os.getenv("GENBLAZE_POLISH_ENABLED") or "").strip().lower()
+    if polish_flag not in {"1", "true", "yes", "on"}:
+        return None, "hfspace: GENBLAZE_POLISH_ENABLED not set (fail closed)"
+    try:
+        from app.image_polish import PolishError, _hfspace_img2img
+
+        pixels = _hfspace_img2img(structure_png, prompt, strength=0.45)
+        return pixels, "hfspace: img2img ok (keyless HF Space fallback)"
+    except PolishError as exc:
+        return None, f"hfspace: polish error ({exc})"
+    except Exception as exc:  # noqa: BLE001
+        return None, f"hfspace: {type(exc).__name__}: {exc}"
+
+
+def try_gmicloud_t2i(prompt: str) -> tuple[bytes | None, str]:
+    """GMI Cloud text→image via GenBlaze SDK — does **not** preserve structure.
+
+    Label honestly: T2I is not img2img. Prefer fal/hfspace when structure lock
+    matters. Status: **partial** (needs ``GMI_API_KEY`` + ``genblaze-gmicloud``).
+    """
+    try:
+        from app.config import get_settings
+        from app.gmi_provider import GmiError, GmiNotConfiguredError, generate_image_gmi
+
+        settings = get_settings()
+        result = generate_image_gmi(settings, prompt)
+        if not result.image_bytes:
+            return None, f"gmicloud: empty image ({result.detail or 'no bytes'})"
+        return (
+            result.image_bytes,
+            "gmicloud: t2i ok (not img2img — structure not preserved)",
+        )
+    except GmiNotConfiguredError as exc:
+        return None, f"gmicloud: not configured ({exc})"
+    except GmiError as exc:
+        return None, f"gmicloud: generate error ({exc})"
+    except Exception as exc:  # noqa: BLE001
+        return None, f"gmicloud: {type(exc).__name__}: {exc}"
+
+
 def run_beauty_stage(
     *,
     structure_png: bytes,
@@ -844,7 +1049,14 @@ def run_beauty_stage(
     )
     order: list[str]
     if painter_pref == "auto":
-        order = [BACKEND_FAL, BACKEND_LEMONADE, BACKEND_CEL_PROXY]
+        # Live polish order: fal → hfspace → gmicloud → lemonade → cel-proxy
+        order = [
+            BACKEND_FAL,
+            BACKEND_HFSPACE,
+            BACKEND_GMICLOUD,
+            BACKEND_LEMONADE,
+            BACKEND_CEL_PROXY,
+        ]
     elif painter_pref == BACKEND_NONE:
         order = []
     else:
@@ -864,6 +1076,26 @@ def run_beauty_stage(
             details.append(detail)
             if pixels:
                 beauty_bytes, lane, backend = pixels, LANE_BEAUTY, BACKEND_FAL
+                break
+        elif candidate == BACKEND_HFSPACE:
+            if probe is None or not probe.available:
+                details.append(probe.detail if probe else "hfspace: not probed")
+                continue
+            pixels, detail = try_hfspace_polish(structure_png, steered)
+            details.append(detail)
+            if pixels:
+                # img2img preserves structure (like fal); claim on gate only.
+                beauty_bytes, lane, backend = pixels, LANE_BEAUTY, BACKEND_HFSPACE
+                break
+        elif candidate == BACKEND_GMICLOUD:
+            if probe is None or not probe.available:
+                details.append(probe.detail if probe else "gmicloud: not probed")
+                continue
+            pixels, detail = try_gmicloud_t2i(steered)
+            details.append(detail)
+            if pixels:
+                # T2I does not preserve structure — claim only if gate allows.
+                beauty_bytes, lane, backend = pixels, LANE_BEAUTY, BACKEND_GMICLOUD
                 break
         elif candidate == BACKEND_LEMONADE:
             if probe is None or not probe.available:
@@ -1234,8 +1466,19 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--painter",
         default="auto",
-        choices=["auto", "fal", "lemonade", "cel-proxy", "none"],
-        help="Beauty backend preference (auto tries fal→lemonade→cel-proxy)",
+        choices=[
+            "auto",
+            "fal",
+            "hfspace",
+            "gmicloud",
+            "lemonade",
+            "cel-proxy",
+            "none",
+        ],
+        help=(
+            "Beauty backend preference "
+            "(auto tries fal→hfspace→gmicloud→lemonade→cel-proxy)"
+        ),
     )
     p.add_argument(
         "--no-cel-proxy",

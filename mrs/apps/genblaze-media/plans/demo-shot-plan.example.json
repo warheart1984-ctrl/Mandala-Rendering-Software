@@ -1,0 +1,10 @@
+{
+  "shot_id": "mandala-open",
+  "prompt": "cel-shaded mandala oracle mask grown from metallic petals, anime look, clean lineart",
+  "frames": "0-5",
+  "anime_world_profile_id": "mandala-cel-v1",
+  "prompts": {
+    "0": "wide establishing: cel-shaded mandala temple gates at dawn",
+    "1": "oracle mask close-up, metallic petals, anime cel shading"
+  }
+}

@@ -2,6 +2,11 @@
 # Pillow is NOT listed here: genblaze-core==0.3.8 still declares pillow<12, which conflicts
 # with the CVE pin Pillow==12.3.0 under modern pip. Dockerfiles install packages from
 # this file, then overlay with: pip install --no-deps Pillow==12.3.0
+#
+# SoT for Render/hackathon App URL: repo-root Dockerfile (context = repo root).
+# App-local Dockerfile is NVIDIA-only (no RT4D). Both install this file, then
+# optionally install requirements-gmi.txt (genblaze-gmicloud) with non-fatal fallback.
+# GMI_API_KEY is never baked into the image — set on Render dashboard at runtime.
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
 python-dotenv==1.2.2

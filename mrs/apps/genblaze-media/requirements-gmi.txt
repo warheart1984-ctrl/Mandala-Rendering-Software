@@ -1,0 +1,5 @@
+# Optional GenBlaze GMI Cloud SDK (hackathon fan-out).
+# Not required for unit tests, dry-run, or RT4D/demo-cache serve paths.
+# Dockerfiles install this with a non-fatal fallback when the package is unavailable.
+# Local: pip install -r requirements-gmi.txt   OR   pip install -e ".[gmi]"
+genblaze-gmicloud>=0.3.2,<0.4

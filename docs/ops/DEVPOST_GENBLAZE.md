@@ -2,17 +2,26 @@
 
 Evidence-bound copy for the Backblaze Generative AI Media Hackathon. Paste only what the live App URL actually does.
 
+## Judge-facing pitch (2026-08)
+
+- **B2 + provenance:** every demo frame lands under `genblaze-media/demo-cache/{shot}/fNNNN/` with SHA-256 sidecars (`intentId` / `worldId` / `timelineId` / provider / hash).
+- **Multi-provider failover:** GenBlaze cascade **GMI Cloud (SDK fan-out) → fal → NVIDIA → hfspace (free fallback)** — disclosed on `/health.provider_cascade`.
+- **Cached demo resilience:** pre-render across a 24h window with GMI credits; live UI serves `source: b2-cache` while still probing failover legs. Cache miss + painter fail → `structure-only` (no silent fake live anime).
+- **Ops doc:** [`HACKATHON_DEMO_CACHE_B2.md`](./HACKATHON_DEMO_CACHE_B2.md) · deploy [`RENDER_DASHBOARD_DEPLOY_GENBLAZE.md`](./RENDER_DASHBOARD_DEPLOY_GENBLAZE.md).
+
 ## Providers and models
 
 | Role | Provider | Model |
 | --- | --- | --- |
 | Image generation (live) | MRS RT4D deterministic 4D path tracer (`genblaze-rt4d`) | procedural SceneSpec (seed-varied; not text-to-image) |
 | Image generation (armed fallback) | NVIDIA NIM (`genblaze-nvidia`) | `black-forest-labs/flux.1-schnell` |
+| Hackathon fan-out (credits) | GMI Cloud via GenBlaze SDK (`genblaze-gmicloud`) | `seedream-5.0-lite` (configurable) |
+| Free fallback polish | HF Space (`hfspace-flux-klein`) | `FLUX.2-Klein-9B` |
 | Prompt embeddings / semantic search | NVIDIA Integrate API | `nvidia/nv-embedcode-7b-v1` |
 | Orchestration + provenance | Backblaze Genblaze | `genblaze-core` + `genblaze-s3` |
 | Durable object storage | Backblaze B2 (S3-compatible) | Bucket `Mandala-Rendering-System` (`us-east-005`) |
 
-**Not used in this MVP:** GMI Cloud paid image/video, Lawful Nova / AI organism stacks.
+**GMI Cloud:** eligible Devpost participants get free credits — wire `GMI_API_KEY`; do not claim live GMI in CI without keys.
 
 ## B2 and Genblaze usage
 
@@ -50,10 +59,10 @@ Local: `http://127.0.0.1:8787/` · Health: `/health`
 
 ## Demo video outline (~3 min)
 
-1. Open App URL → show `/health` (NVIDIA + B2 flags).
-2. Generate a short mandala/4D-concept prompt → show preview + SHA-256 / B2 keys.
-3. Semantic search with a related query → show ranked results.
-4. Optional: B2 console list under `genblaze-media/`.
+1. Open App URL → show `/health` (`b2_configured`, `provider_cascade`, `demo_cache`, `gmi`).
+2. With `GENBLAZE_DEMO_CACHE=1`, generate → show `source: b2-cache` + SHA-256 / B2 keys (honest label).
+3. Point at cascade: GMI primary / hfspace free fallback (failover story).
+4. Optional: semantic search + B2 console list under `genblaze-media/demo-cache/`.
 
 ## GitHub
 

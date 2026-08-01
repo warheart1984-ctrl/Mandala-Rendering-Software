@@ -94,6 +94,28 @@ jobs:
         run: python -m pytest -q
         working-directory: mrs/apps/infinity-director
 
+  # Genblaze hackathon demo-cache — unit + schedule hint only (no API keys).
+  genblaze-demo-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Genblaze deps (no GMI key / no live SDK required)
+        working-directory: mrs/apps/genblaze-media
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Unit tests + --schedule-hint-only
+        working-directory: mrs/apps/genblaze-media
+        env:
+          GENBLAZE_DRY_RUN: "1"
+          GENBLAZE_SKIP_LOCAL_SD: "1"
+        run: |
+          python -m pytest tests/test_demo_cache.py -q
+          python -m app.pre_render --plan plans/demo-shot-plan.example.json --schedule-hint-only --skip-local-sd
+
   release-check:
     runs-on: ubuntu-latest
     steps:

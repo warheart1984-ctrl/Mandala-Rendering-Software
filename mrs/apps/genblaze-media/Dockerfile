@@ -22,10 +22,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # System deps kept minimal; genblaze/boto3 are pure wheels on slim
 # genblaze-core 0.3.8 still declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
+# Optional GMI SDK — non-fatal if package missing (keys never in image).
+# Prefer repo-root Dockerfile for Render (RT4D + Engine3D); this context is NVIDIA-only.
 COPY requirements-docker.txt .
+COPY requirements-gmi.txt .
 RUN pip install --upgrade pip \
  && pip install -r requirements-docker.txt \
- && pip install --no-deps Pillow==12.3.0
+ && pip install --no-deps Pillow==12.3.0 \
+ && (pip install -r requirements-gmi.txt \
+     || echo "WARN: genblaze-gmicloud optional install failed; GMI path unavailable until package installs.")
 
 COPY app ./app
 

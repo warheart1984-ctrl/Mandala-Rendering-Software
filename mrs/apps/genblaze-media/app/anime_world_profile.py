@@ -14,6 +14,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from app.config import resolve_repo_root
+
 SCHEMA_VERSION = "1.0.0"
 # Mirror style_steer.STYLE_ANIME — avoid circular import with style_steer health wire.
 PREFERRED_STYLE_ID = "anime"
@@ -45,8 +47,8 @@ _DEFAULT_EXAMPLE_REL = Path("schemas") / "anime" / "examples" / "mandala-cel-v1.
 
 
 def _repo_root() -> Path:
-    # mrs/apps/genblaze-media/app/anime_world_profile.py → repo root
-    return Path(__file__).resolve().parents[4]
+    # Monorepo: mrs/apps/genblaze-media → repo root; Docker: /app (shallow).
+    return resolve_repo_root()
 
 
 def default_example_path() -> Path:
