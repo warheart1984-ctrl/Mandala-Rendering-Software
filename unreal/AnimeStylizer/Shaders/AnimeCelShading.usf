@@ -1,0 +1,62 @@
+// Copyright 2026 MRS. All Rights Reserved.
+// Status: partial — 2–8 band toon + shadow tint + highlight sketch.
+// RDG wiring: skeleton (AnimeCelShadingPass). Zero diffusion.
+
+#include "/Engine/Public/Platform.ush"
+
+#define THREADS_X 8
+#define THREADS_Y 8
+
+RWTexture2D<float4> OutputTexture;
+
+Texture2D<float4> SceneColorTexture;
+Texture2D<float> SceneDepthTexture;
+
+cbuffer CelShadingParameters
+{
+    int CelBands;
+    float ShadowBias;
+    float4 ShadowTint;
+    float HighlightIntensity;
+    float2 InvResolution;
+};
+
+[numthreads(THREADS_X, THREADS_Y, 1)]
+void MainCS(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    uint Width = 0;
+    uint Height = 0;
+    OutputTexture.GetDimensions(Width, Height);
+    uint2 PixelPos = DispatchThreadID.xy;
+    
+    if (PixelPos.x >= Width || PixelPos.y >= Height)
+    {
+        return;
+    }
+    
+    // Sample scene color
+    float4 SceneColor = SceneColorTexture.Load(uint3(PixelPos, 0));
+    float Depth = SceneDepthTexture.Load(uint3(PixelPos, 0)).r;
+    
+    // Convert to luminance for shading
+    float3 ColorRGB = SceneColor.rgb;
+    float Luminance = dot(ColorRGB, float3(0.2126, 0.7152, 0.0722));
+    
+    // Cel shading: quantize luminance into bands
+    float BandSize = 1.0f / float(CelBands);
+    float QuantizedLum = floor(Luminance / BandSize + ShadowBias) * BandSize;
+    
+    // Apply shadow tint to darker bands
+    float3 ShadowColor = ShadowTint.rgb;
+    float3 FinalColor = lerp(ColorRGB * HighlightIntensity, ShadowColor, 1.0f - QuantizedLum);
+    
+    // Apply band quantization to each channel for posterization
+    FinalColor = floor(FinalColor / BandSize + ShadowBias) * BandSize;
+    
+    // Boost highlights slightly
+    float HighlightMask = step(1.0f - BandSize, Luminance);
+    FinalColor = lerp(FinalColor, FinalColor * HighlightIntensity, HighlightMask);
+    
+    // Preserve alpha
+    OutputTexture[PixelPos] = float4(saturate(FinalColor), SceneColor.a);
+}

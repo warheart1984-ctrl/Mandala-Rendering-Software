@@ -1,0 +1,135 @@
+// Copyright 2026 MRS. All Rights Reserved.
+// Status: partial — 8-neighbor Sobel-like depth+normal outline sketch.
+// RDG wiring: skeleton (AnimeOutlinePass). Zero diffusion.
+
+#include "/Engine/Public/Platform.ush"
+
+#define THREADS_X 8
+#define THREADS_Y 8
+
+RWTexture2D<float4> OutputTexture;
+
+Texture2D<float> SceneDepthTexture;
+Texture2D<float4> SceneNormalTexture;
+
+cbuffer OutlineParameters
+{
+    float OutlineThickness;
+    float DepthThreshold;
+    float NormalThreshold;
+    float4 OutlineColor;
+    float2 InvResolution;
+};
+
+[numthreads(THREADS_X, THREADS_Y, 1)]
+void MainCS(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    uint Width = 0;
+    uint Height = 0;
+    OutputTexture.GetDimensions(Width, Height);
+    uint2 Resolution = uint2(Width, Height);
+    uint2 PixelPos = DispatchThreadID.xy;
+    
+    if (PixelPos.x >= Width || PixelPos.y >= Height)
+    {
+        return;
+    }
+    
+    // Sample center pixel depth and normal
+    float2 UV = (float2(PixelPos) + 0.5f) * InvResolution;
+    float CenterDepth = SceneDepthTexture.Load(uint3(PixelPos, 0)).r;
+    float4 CenterNormal = SceneNormalTexture.Load(uint3(PixelPos, 0));
+    
+    // Reconstruct view-space normal from GBuffer (packed in RGB)
+    float3 ViewNormal = CenterNormal.rgb * 2.0f - 1.0f;
+    
+    // Sample neighbors for edge detection
+    float OutlineAmount = 0.0f;
+    
+    // 8-neighbor Sobel-like edge detection
+    const int2 Offsets[8] = {
+        int2(-1, -1), int2(0, -1), int2(1, -1),
+        int2(-1,  0),              int2(1,  0),
+        int2(-1,  1), int2(0,  1), int2(1,  1)
+    };
+    
+    float MaxDepthDiff = 0.0f;
+    float MaxNormalDiff = 0.0f;
+    
+    [unroll]
+    for (int i = 0; i < 8; ++i)
+    {
+        int2 NeighborPos = int2(PixelPos) + Offsets[i];
+        
+        // Clamp to texture bounds
+        NeighborPos = clamp(NeighborPos, int2(0, 0), int2(Resolution - 1));
+        
+        float NeighborDepth = SceneDepthTexture.Load(uint3(NeighborPos, 0)).r;
+        float4 NeighborNormal = SceneNormalTexture.Load(uint3(NeighborPos, 0));
+        float3 NeighborViewNormal = NeighborNormal.rgb * 2.0f - 1.0f;
+        
+        float DepthDiff = abs(NeighborDepth - CenterDepth);
+        float NormalDiff = 1.0f - dot(ViewNormal, NeighborViewNormal);
+        
+        MaxDepthDiff = max(MaxDepthDiff, DepthDiff);
+        MaxNormalDiff = max(MaxNormalDiff, NormalDiff);
+    }
+    
+    // Edge detection thresholds
+    bool bDepthEdge = MaxDepthDiff > DepthThreshold;
+    bool bNormalEdge = MaxNormalDiff > NormalThreshold;
+    
+    if (bDepthEdge || bNormalEdge)
+    {
+        // Calculate outline intensity based on edge strength
+        float EdgeStrength = max(MaxDepthDiff / DepthThreshold, MaxNormalDiff / NormalThreshold);
+        EdgeStrength = saturate(EdgeStrength);
+        
+        // Apply outline thickness by dilating
+        float OutlineMask = EdgeStrength;
+        
+        // Apply thickness via additional neighbor checks
+        if (OutlineThickness > 1.0f)
+        {
+            float MaxNeighborEdge = 0.0f;
+            int ThicknessInt = int(ceil(OutlineThickness));
+            
+            for (int dy = -ThicknessInt; dy <= ThicknessInt; ++dy)
+            {
+                for (int dx = -ThicknessInt; dx <= ThicknessInt; ++dx)
+                {
+                    if (dx == 0 && dy == 0) continue;
+                    
+                    int2 ThickPos = int2(PixelPos) + int2(dx, dy);
+                    ThickPos = clamp(ThickPos, int2(0, 0), int2(Resolution - 1));
+                    
+                    float ThickDepth = SceneDepthTexture.Load(uint3(ThickPos, 0)).r;
+                    float4 ThickNormal = SceneNormalTexture.Load(uint3(ThickPos, 0));
+                    float3 ThickViewNormal = ThickNormal.rgb * 2.0f - 1.0f;
+                    
+                    float ThickDepthDiff = abs(ThickDepth - CenterDepth);
+                    float ThickNormalDiff = 1.0f - dot(ViewNormal, ThickViewNormal);
+                    
+                    bool bThickDepthEdge = ThickDepthDiff > DepthThreshold;
+                    bool bThickNormalEdge = ThickNormalDiff > NormalThreshold;
+                    
+                    if (bThickDepthEdge || bThickNormalEdge)
+                    {
+                        MaxNeighborEdge = max(MaxNeighborEdge, max(ThickDepthDiff / DepthThreshold, ThickNormalDiff / NormalThreshold));
+                    }
+                }
+            }
+            
+            OutlineMask = max(OutlineMask, MaxNeighborEdge);
+        }
+        
+        // Output outline color with original scene color blended
+        float4 SceneColor = float4(0, 0, 0, 1); // Will be composited in post-process
+        OutputTexture[PixelPos] = float4(OutlineColor.rgb * OutlineMask, OutlineMask);
+    }
+    else
+    {
+        // No edge - transparent
+        OutputTexture[PixelPos] = float4(0, 0, 0, 0);
+    }
+}

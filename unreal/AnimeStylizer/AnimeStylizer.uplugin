@@ -1,0 +1,27 @@
+{
+    "FileVersion": 3,
+    "Version": 1,
+    "VersionName": "0.1.0-skeleton",
+    "FriendlyName": "AnimeStylizer",
+    "Description": "Cel-shaded anime post-process scaffold for Unreal — outline, toon, palette LUT, color grade, temporal AA. Zero diffusion. Status: skeleton/partial (MRS Unreal host is skeleton).",
+    "Category": "Rendering",
+    "CreatedBy": "MRS",
+    "CreatedByURL": "",
+    "DocsURL": "",
+    "MarketplaceURL": "",
+    "SupportURL": "",
+    "CanContainContent": true,
+    "IsBetaVersion": true,
+    "IsExperimentalVersion": true,
+    "Installed": false,
+    "Modules": [
+        {
+            "Name": "AnimeStylizer",
+            "Type": "Runtime",
+            "LoadingPhase": "PostConfigInit",
+            "WhitelistPlatforms": ["Win64"],
+            "AdditionalDependencies": []
+        }
+    ],
+    "Plugins": []
+}

@@ -1,0 +1,128 @@
+// Copyright 2026 MRS. All Rights Reserved.
+
+// Anime Stylizer Post-Process Material
+// Usage: Create Material -> Post Process Domain -> Unlit -> Copy this node graph
+
+/*
+MATERIAL NODES:
+
+1. SCENE TEXTURE: SceneColor (SceneTexture:PostProcessInput0)
+2. SCENE TEXTURE: SceneDepth (SceneTexture:SceneDepth)
+3. SCENE TEXTURE: GBufferA (SceneTexture:GBufferA) - Normal
+4. SCENE TEXTURE: Velocity (SceneTexture:Velocity)
+
+OUTLINE PASS:
+- Sample SceneDepth at current pixel + 8 neighbors
+- Sample GBufferA (normal) at current pixel + 8 neighbors
+- Compute max depth difference and max normal difference
+- If depthDiff > DepthThreshold OR normalDiff > NormalThreshold -> edge
+- Output outline color * edge strength
+
+CEL SHADING PASS:
+- Convert SceneColor to luminance (dot with 0.2126, 0.7152, 0.0722)
+- Quantize: floor(lum / bandSize + shadowBias) * bandSize
+- BandSize = 1.0 / CelBands
+- Lerp between highlight color and shadow tint based on quantized lum
+- Apply posterization to each channel
+
+PALETTE LUT:
+- If PaletteLUT texture provided:
+  - Sample luminance of cel-shaded color
+  - Sample PaletteLUT at (lum, 0.5)
+  - Lerp between cel color and LUT color by PaletteIntensity
+
+SATURATION/CONTRAST:
+- Saturation: lerp(gray, color, saturation)
+- Contrast: (color - 0.5) * contrast + 0.5
+
+TEMPORAL AA:
+- Sample current frame
+- Sample velocity texture
+- Reproject previous frame UV = UV - velocity * jitterScale
+- Sample previous frame at reprojected UV
+- History rejection: if |current - prev| > threshold -> reject history
+- Neighborhood clamping: clamp prev color to 3x3 neighborhood min/max
+- Final = lerp(current, clampedPrev, historyWeight * varianceWeight)
+
+PARAMETERS (Material Parameters):
+- OutlineThickness (Scalar, default 1.5)
+- OutlineColor (Vector4, default 0.05, 0.05, 0.05, 1.0)
+- OutlineDepthThreshold (Scalar, default 0.05)
+- OutlineNormalThreshold (Scalar, default 0.3)
+- CelBands (Scalar, default 3)
+- ShadowBias (Scalar, default 0.001)
+- ShadowTint (Vector4, default 0.2, 0.2, 0.3, 1.0)
+- HighlightIntensity (Scalar, default 1.2)
+- PaletteLUT (Texture2D, optional)
+- PaletteIntensity (Scalar, default 1.0)
+- Saturation (Scalar, default 1.1)
+- Contrast (Scalar, default 1.15)
+- TemporalAAEnabled (StaticBool, default true)
+- TAAJitterScale (Scalar, default 0.5)
+- StructurePlate (Texture2D, optional)
+- StructureBlend (Scalar, default 0.3)
+
+USAGE:
+1. Create Material -> Post Process Domain -> Unlit Shading Model
+2. Build node graph as described
+2. Add to Post Process Volume -> Post Process Materials
+3. Or use in SceneCaptureComponent2D -> Post Process Materials
+*/
+
+/* HLSL CUSTOM NODE FOR OUTLINE (put in Custom node):
+float3 ViewNormal = SceneTextureLookup(UV, 14, 0).rgb * 2.0 - 1.0; // GBufferA
+float CenterDepth = SceneTextureLookup(UV, 0, 0).r; // SceneDepth
+
+float MaxDepthDiff = 0;
+float MaxNormalDiff = 0;
+
+for (int i = 0; i < 8; i++) {
+    float2 Offset = Offsets[i] * InvResolution;
+    float2 NeighborUV = UV + Offset;
+    float NeighborDepth = SceneTextureLookup(NeighborUV, 0, 0).r;
+    float3 NeighborNormal = SceneTextureLookup(NeighborUV, 14, 0).rgb * 2.0 - 1.0;
+    
+    float DepthDiff = abs(NeighborDepth - CenterDepth);
+    float NormalDiff = 1.0 - dot(ViewNormal, NeighborNormal);
+    
+    MaxDepthDiff = max(MaxDepthDiff, DepthDiff);
+    MaxNormalDiff = max(MaxNormalDiff, NormalDiff);
+}
+
+bool bEdge = (MaxDepthDiff > DepthThreshold) || (MaxNormalDiff > NormalThreshold);
+return bEdge ? OutlineColor.rgb : 0;
+*/
+
+/* HLSL CUSTOM NODE FOR CEL SHADING:
+float Lum = dot(Color.rgb, float3(0.2126, 0.7152, 0.0722));
+float BandSize = 1.0 / CelBands;
+float QuantizedLum = floor(Lum / BandSize + ShadowBias) * BandSize;
+float3 Result = lerp(Color.rgb * HighlightIntensity, ShadowTint.rgb, 1.0 - QuantizedLum);
+Result = floor(Result / BandSize + ShadowBias) * BandSize;
+float HighlightMask = step(1.0 - BandSize, Lum);
+Result = lerp(Result, Result * HighlightIntensity, HighlightMask);
+return Result;
+*/
+
+/* HLSL CUSTOM NODE FOR TEMPORAL AA:
+float2 PrevUV = UV - Velocity * JitterScale;
+float4 PrevColor = Texture2DSampleLevel(PreviousFrameTexture, Sampler, PrevUV, 0);
+float3 Diff = abs(CurrentColor.rgb - PrevColor.rgb);
+float MaxDiff = max(Diff.r, max(Diff.g, Diff.b));
+float HistoryWeight = 1.0 - saturate(MaxDiff / 0.1);
+
+// Neighborhood clamp
+float3 MinColor = CurrentColor.rgb;
+float3 MaxColor = CurrentColor.rgb;
+for (int dy = -1; dy <= 1; dy++) {
+    for (int dx = -1; dx <= 1; dx++) {
+        if (dx == 0 && dy == 0) continue;
+        float3 Neighbor = Texture2DSampleLevel(CurrentFrameTexture, Sampler, UV + float2(dx, dy) * InvResolution, 0).rgb;
+        MinColor = min(MinColor, Neighbor);
+        MaxColor = max(MaxColor, Neighbor);
+    }
+}
+float3 ClampedPrev = clamp(PrevColor.rgb, MinColor, MaxColor);
+float3 Final = lerp(CurrentColor.rgb, ClampedPrev, HistoryWeight);
+return Final;
+*/
