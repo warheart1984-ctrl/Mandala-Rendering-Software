@@ -12,6 +12,25 @@ Every cycle answers:
 
 ---
 
+## 2026-08-01 — Anime-Structure promotion package + Option C pole fallback
+
+| Field | Value |
+|-------|-------|
+| Gate | `docs/4d-engine/projection/PROMOTION_GATE.v1.md` — **Not ready** |
+| Checklist | ~70% readiness; blockers: pole thresholds / ink-cel / CI provenance |
+| Mitigation | Option C auto-fallback (**partial**) in `rt4d-project-compare.mjs` |
+| Thresholds | \(\varepsilon=0.15\), \(S_{\max}=6\), \(S_{\min}=0.05\), \(R_{\max}=0.45\), reject_ratio \(0.20\) |
+| Hybrid (Option D) | documented future only |
+| ProjCC / CSE-CCC | `docs/governance/projcc/*` — **draft** eligibility ≠ promotion |
+| Print SoT / Digital Printer | untouched |
+
+1. **Improved / happened:** Landed promotion gate, readiness checklist, decision matrix, diagrams, ProjCC review/binding diff, release + Devpost notes; wired Option C defaults in compare runner with provenance fallback notes.
+2. **Artificial / gaps:** Not a CKL gate; ink-cel still **declared**; CI provenance validator missing; \(R_{\max}\) is set-level mark only; promotion stays **declared / not ready**.
+3. **Measured:** Runner constants + pole-stress Option C path (re-run `--pole-stress` for fresh counts).
+4. **Next bottleneck:** Ink-cel plates + CI schema validator before any declared→promoted step.
+
+---
+
 ## 2026-08-01 — Projection meta-pattern locked (decision process / promotion gate)
 
 | Field | Value |
