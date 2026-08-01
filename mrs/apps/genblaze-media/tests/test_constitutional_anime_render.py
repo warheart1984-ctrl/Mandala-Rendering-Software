@@ -22,6 +22,7 @@ from app.anime_world_profile import (
 from app.constitutional_anime_render import (
     BACKEND_CEL_PROXY,
     BACKEND_FAL,
+    BACKEND_HFSPACE,
     BACKEND_NONE,
     LANE_BEAUTY,
     LANE_STRUCTURE_ONLY,
@@ -30,6 +31,7 @@ from app.constitutional_anime_render import (
     build_assertion,
     main,
     probe_fal,
+    probe_hfspace,
     probe_lemonade,
     probe_nvidia,
     resolve_anime_claim,
@@ -279,6 +281,90 @@ def test_probe_nvidia_ok(monkeypatch):
     assert p.last_verified is not None
 
 
+def test_probe_hfspace_keyless_configured(monkeypatch):
+    monkeypatch.setenv("GENBLAZE_HFSPACE_URL", "https://example.hf.space")
+    monkeypatch.setenv("GENBLAZE_POLISH_ENABLED", "1")
+    monkeypatch.setenv("GENBLAZE_PROBE_LIVE", "0")
+    p = probe_hfspace()
+    assert p.available
+    assert p.configured is True
+    assert p.reachable is None
+    assert p.operational is None
+    assert p.verified is False
+    assert p.last_verified is None
+    assert "disabled" in p.detail
+
+
+def test_probe_hfspace_missing_url_fails_closed(monkeypatch):
+    monkeypatch.delenv("GENBLAZE_HFSPACE_URL", raising=False)
+    monkeypatch.setenv("GENBLAZE_POLISH_ENABLED", "1")
+    p = probe_hfspace()
+    assert not p.available
+    assert p.configured is False
+    assert "GENBLAZE_HFSPACE_URL" in p.detail
+
+
+def test_probe_hfspace_polish_disabled_fails_closed(monkeypatch):
+    monkeypatch.setenv("GENBLAZE_HFSPACE_URL", "https://example.hf.space")
+    monkeypatch.setenv("GENBLAZE_POLISH_ENABLED", "0")
+    p = probe_hfspace()
+    assert not p.available
+    assert p.configured is False
+    assert p.verified is False
+    assert "GENBLAZE_POLISH_ENABLED" in p.detail
+
+
+def test_probe_hfspace_live_root_ok(monkeypatch):
+    monkeypatch.setenv("GENBLAZE_HFSPACE_URL", "https://example.hf.space")
+    monkeypatch.setenv("GENBLAZE_POLISH_ENABLED", "1")
+    _fake_httpx(
+        monkeypatch,
+        lambda *a, **k: FakeClient([("get", "example.hf.space", FakeResp(200))]),
+    )
+    p = probe_hfspace(live=True)
+    assert p.available
+    assert p.configured is True
+    assert p.reachable is True
+    assert p.operational is True
+    assert p.verified is True
+    assert p.last_verified is not None
+    assert "200" in p.detail
+
+
+def test_probe_hfspace_live_root_error(monkeypatch):
+    monkeypatch.setenv("GENBLAZE_HFSPACE_URL", "https://example.hf.space")
+    monkeypatch.setenv("GENBLAZE_POLISH_ENABLED", "1")
+    _fake_httpx(
+        monkeypatch,
+        lambda *a, **k: FakeClient([("get", "example.hf.space", FakeResp(503))]),
+    )
+    p = probe_hfspace(live=True)
+    assert not p.available
+    assert p.configured is True
+    assert p.reachable is True
+    assert p.operational is False
+    assert p.verified is True
+    assert "503" in p.detail
+
+
+def test_probe_hfspace_live_unreachable(monkeypatch):
+    monkeypatch.setenv("GENBLAZE_HFSPACE_URL", "https://example.hf.space")
+    monkeypatch.setenv("GENBLAZE_POLISH_ENABLED", "1")
+
+    class _RaisingFakeClient(FakeClient):
+        def get(self, url):
+            raise TimeoutError("probe timeout")
+
+    _fake_httpx(monkeypatch, lambda *a, **k: _RaisingFakeClient())
+    p = probe_hfspace(live=True)
+    assert not p.available
+    assert p.configured is True
+    assert p.reachable is False
+    assert p.operational is False
+    assert p.verified is True
+    assert "unreachable" in p.detail
+
+
 def test_painter_probe_three_state_report():
     p = PainterProbe(
         backend=BACKEND_FAL,
@@ -419,6 +505,37 @@ def test_run_beauty_stage_auto_with_empty_probe_map_skips_unprobed():
     assert backend == BACKEND_CEL_PROXY
     assert claim is True
     assert "cel-proxy" in detail
+
+
+def test_run_beauty_stage_auto_prefers_hfspace_before_cel_proxy(monkeypatch):
+    monkeypatch.setenv("GENBLAZE_POLISH_ENABLED", "1")
+    monkeypatch.setenv("GENBLAZE_HFSPACE_URL", "https://example.hf.space")
+    monkeypatch.setattr(
+        "app.constitutional_anime_render.try_hfspace_polish",
+        lambda structure_png, prompt: (_tiny_png_bytes((255, 0, 128)), "hfspace: img2img ok"),
+    )
+    png = _tiny_png_bytes()
+    hf_probe = PainterProbe(
+        backend=BACKEND_HFSPACE,
+        configured=True,
+        reachable=True,
+        operational=True,
+        verified=True,
+        last_verified="2026-07-31T12:00:00+00:00",
+        detail="hfspace: space reachable (HTTP 200)",
+        env_vars_required=["GENBLAZE_HFSPACE_URL"],
+    )
+    beauty, lane, backend, claim, detail = run_beauty_stage(
+        structure_png=png,
+        profile=_profile_dict(),
+        painter_pref="auto",
+        allow_cel_proxy=True,
+        probe_map={BACKEND_HFSPACE: hf_probe},
+    )
+    assert lane == LANE_BEAUTY
+    assert backend == BACKEND_HFSPACE
+    assert claim is True
+    assert "hfspace" in detail
 
 
 def test_probe_only_exits_zero_offline(tmp_path, monkeypatch, capsys):

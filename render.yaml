@@ -24,6 +24,14 @@ services:
     envVars:
       - key: NVIDIA_API_KEY
         sync: false
+      # Hackathon GMI credits — set in dashboard; never commit. Image may include
+      # optional genblaze-gmicloud (requirements-gmi.txt); key is runtime-only.
+      - key: GMI_API_KEY
+        sync: false
+      - key: GMI_BASE_URL
+        sync: false
+      - key: FAL_KEY
+        sync: false
       - key: B2_KEY_ID
         sync: false
       - key: B2_APPLICATION_KEY

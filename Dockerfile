@@ -64,11 +64,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # RENDER_REQUEST_API_ENABLED=0: Genblaze POST /api/render-request opt-in.
 # PRINTER_API_ENABLED=1: Digital Printer /printer HTTP live execute opt-in (deploy default).
 
-# genblaze-core 0.3.8 still declares pillow<12; overlay Pillow 12.3.0 for CVE fixes
+# genblaze-core 0.3.8 still declares pillow<12; overlay Pillow 12.3.0 for CVE fixes.
+# Optional GMI SDK (requirements-gmi.txt): preferred for hackathon fan-out; build
+# must not fail if PyPI/package is briefly unavailable (app degrades to declared).
 COPY mrs/apps/genblaze-media/requirements-docker.txt .
+COPY mrs/apps/genblaze-media/requirements-gmi.txt .
 RUN pip install --upgrade pip \
  && pip install -r requirements-docker.txt \
- && pip install --no-deps Pillow==12.3.0
+ && pip install --no-deps Pillow==12.3.0 \
+ && (pip install -r requirements-gmi.txt \
+     || echo "WARN: genblaze-gmicloud optional install failed; GMI path unavailable until package installs. Runtime needs GMI_API_KEY on Render.")
 
 # Node runtime for the RT4D renderer backend. Only the binary is copied: npm is
 # not needed because render-still.mjs imports node builtins plus renderer-core

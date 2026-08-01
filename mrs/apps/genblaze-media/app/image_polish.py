@@ -8,7 +8,9 @@ Drive-G-1 honesty:
 
     The primary backend is fal.ai FLUX image-to-image (FAL_KEY). If NVIDIA
     adds a supported img2img endpoint in the future, this module will attempt
-    NVIDIA first with a fal fallback.
+    NVIDIA first with a fal fallback. A keyless HF Space img2img backend
+    (``hfspace``) is also wired as a free fallback — third-party, quota-capped,
+    and not a substitute for the paid/reliable lanes.
 
     High strength (>0.65) can erase the input structure. For abstract/lattice
     scenes, strength 0.35-0.55 is recommended so geometry stays readable.
@@ -18,7 +20,9 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass
@@ -36,6 +40,18 @@ POLISH_PROVIDER_ID = "fal-flux-img2img"
 POLISH_DEFAULT_MODEL = "fal-ai/flux/dev/image-to-image"
 POLISH_DEFAULT_STRENGTH = 0.45
 POLISH_DEFAULT_NUM_STEPS = 28
+
+# Keyless HF Space backend — community FLUX.2-Klein-9B ZeroGPU img2img Space.
+# Free but quota-capped (~2 min/day anonymous ZeroGPU) and third-party hosted;
+# treat as best-effort fallback, never as the primary render path.
+POLISH_PROVIDER_ID_HFSPACE = "hfspace-flux-klein"
+POLISH_HFSPACE_MODEL = "FLUX.2-Klein-9B"
+POLISH_HFSPACE_DEFAULT_URL = "https://m3st3rj4k3l-flux-2-klein-multi-lora.hf.space"
+POLISH_HFSPACE_TIMEOUT = 180.0
+POLISH_HFSPACE_POLL_INTERVAL = 4.0
+POLISH_HFSPACE_CANVAS_MIN = 512
+POLISH_HFSPACE_CANVAS_MAX = 2048
+POLISH_HFSPACE_LORA_WEIGHTS = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
 
 
 class PolishError(Exception):
@@ -60,6 +76,7 @@ class PolishResult:
     preview_url: str | None
     created_at: str
     detail: str | None = None
+    img2img: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -74,14 +91,14 @@ class PolishResult:
             "asset_sha256": self.asset_sha256,
             "preview_url": self.preview_url,
             "created_at": self.created_at,
-            "img2img": True,
+            "img2img": self.img2img,
             "detail": self.detail,
             "manifest": {
                 "structure_run_id": self.structure_run_id,
                 "structure_sha256": self.structure_sha256,
                 "polish_provider": self.provider,
                 "polish_model": self.model,
-                "img2img": True,
+                "img2img": self.img2img,
             },
         }
 
@@ -267,6 +284,241 @@ def _try_nvidia_img2img(
     return None
 
 
+def _hfspace_parse_sse(text: str) -> list[tuple[str, str]]:
+    """Parse Gradio SSE ``(event_name, data)`` pairs from a poll response body."""
+    events: list[tuple[str, str]] = []
+    name = ""
+    payload: list[str] = []
+
+    def _push() -> None:
+        nonlocal name
+        nonlocal payload
+        if payload:
+            events.append((name, "\n".join(payload)))
+        name = ""
+        payload = []
+
+    for line in text.splitlines():
+        if line.strip() == "":
+            _push()
+            continue
+        if line.startswith("event:"):
+            name = line[len("event:") :].strip()
+            continue
+        if line.startswith("data:"):
+            payload.append(line[len("data:") :].lstrip())
+    _push()
+    return events
+
+
+_HFSPACE_IMAGE_URL_RE = re.compile(r'"url"\s*:\s*"(https?://[^"]*gradio_api/file=[^"]+)"')
+_HFSPACE_FAILURE_HINTS = re.compile(r"failed|error|exception|quota|timeout", re.IGNORECASE)
+_HFSPACE_ERROR_KEYS = {"error", "message", "exception", "detail"}
+
+
+def _hfspace_extract_image_url(sse: str) -> str | None:
+    match = _HFSPACE_IMAGE_URL_RE.search(sse)
+    if not match:
+        return None
+    return match.group(1).replace("\\/", "/")
+
+
+def _hfspace_extract_embedded_error(data_text: str) -> str | None:
+    """Best-effort extraction of the Space's error text from an SSE data blob."""
+    try:
+        parsed = json.loads(data_text)
+    except (ValueError, TypeError):
+        line_match = re.search(r'"([^"]*(?:failed|error|exception|quota)[^"]*)"', data_text)
+        return line_match.group(1)[:500] if line_match else None
+
+    hits: list[str] = []
+
+    def _walk(value: Any) -> None:
+        if isinstance(value, str):
+            if _HFSPACE_FAILURE_HINTS.search(value):
+                hits.append(value[:500])
+            return
+        if isinstance(value, list):
+            for item in value:
+                _walk(item)
+            return
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if str(key).lower() in _HFSPACE_ERROR_KEYS and isinstance(item, str):
+                    hits.append(item[:500])
+                    return
+            for item in value.values():
+                _walk(item)
+
+    _walk(parsed)
+    return hits[0] if hits else None
+
+
+def _hfspace_upload(client: httpx.Client, image_bytes: bytes, space_url: str) -> str:
+    """Upload the base image and return the Space's ``FileData.path``."""
+    resp = client.post(
+        f"{space_url}/gradio_api/upload",
+        files={"files": ("input.png", image_bytes, "application/octet-stream")},
+    )
+    if resp.status_code != 200:
+        raise PolishError(
+            f"HF Space upload failed (HTTP {resp.status_code}): {resp.text[:300]}"
+        )
+    try:
+        body = resp.json()
+    except ValueError as exc:
+        raise PolishError(
+            f"HF Space upload response is not JSON: {exc}"
+        ) from exc
+    path = body[0] if isinstance(body, list) and body else None
+    if not isinstance(path, str) or not path:
+        raise PolishError("HF Space upload returned an unexpected response")
+    return path
+
+
+def _hfspace_build_payload(
+    base_path: str,
+    prompt: str,
+    strength: float,
+) -> list[Any]:
+    """Mirror the verified TS provider payload for FLUX.2-Klein-9B infer."""
+    seed = int(hashlib.sha256((prompt + str(strength)).encode()).hexdigest()[:8], 16)
+    return [
+        {"path": base_path},
+        [],
+        prompt,
+        "",
+        "",
+        [],
+        seed,
+        False,
+        1.0,
+        4,
+        "None",
+        "Auto (from base image)",
+        1024,
+        1024,
+        "Stretch",
+        "#000000",
+        1,
+        "Random seed each run",
+        0.4,
+        1.4,
+        {},
+        *POLISH_HFSPACE_LORA_WEIGHTS,
+    ]
+
+
+def _hfspace_start_infer(
+    client: httpx.Client,
+    data: list[Any],
+    space_url: str,
+) -> str:
+    """Start the ``/infer`` event and return its ``event_id``."""
+    resp = client.post(
+        f"{space_url}/gradio_api/call/infer",
+        json={"data": data},
+        headers={"Content-Type": "application/json"},
+    )
+    if resp.status_code != 200:
+        raise PolishError(
+            f"HF Space inference start failed (HTTP {resp.status_code}): {resp.text[:300]}"
+        )
+    try:
+        body = resp.json()
+    except ValueError as exc:
+        raise PolishError(
+            f"HF Space inference start response is not JSON: {exc}"
+        ) from exc
+    event_id = body.get("event_id") if isinstance(body, dict) else None
+    if not isinstance(event_id, str) or not event_id:
+        raise PolishError("HF Space inference start returned an unexpected response")
+    return event_id
+
+
+def _hfspace_await_result(
+    client: httpx.Client,
+    space_url: str,
+    event_id: str,
+    timeout: float,
+) -> str:
+    """Poll the SSE stream until the output image URL or a failure/timeout."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        resp = client.get(f"{space_url}/gradio_api/call/infer/{event_id}")
+        if resp.status_code == 200:
+            text = resp.text
+            for name, data in _hfspace_parse_sse(text):
+                url = _hfspace_extract_image_url(data)
+                if url:
+                    return url
+                embedded_error = _hfspace_extract_embedded_error(data)
+                if embedded_error:
+                    raise PolishError(
+                        f"HF Space inference failed: {embedded_error}"
+                    )
+                event_name = name or (_hfspace_json_event(text) or "")
+                if event_name in ("error", "complete"):
+                    if event_name == "complete":
+                        raise PolishError(
+                            "HF Space finished without producing an image"
+                        )
+                    raise PolishError(
+                        "HF Space inference failed: unknown error"
+                    )
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(POLISH_HFSPACE_POLL_INTERVAL, remaining))
+    raise PolishError("HF Space generation timed out")
+
+
+def _hfspace_json_event(text: str) -> str | None:
+    try:
+        parsed = json.loads(text)
+    except (ValueError, TypeError):
+        return None
+    if isinstance(parsed, dict):
+        event = parsed.get("event")
+        return str(event) if isinstance(event, str) else None
+    return None
+
+
+def _hfspace_img2img(
+    image_bytes: bytes,
+    prompt: str,
+    strength: float = POLISH_DEFAULT_STRENGTH,
+    space_url: str = POLISH_HFSPACE_DEFAULT_URL,
+    timeout: float = POLISH_HFSPACE_TIMEOUT,
+) -> bytes:
+    """Keyless img2img via the community FLUX.2-Klein-9B HF Space.
+
+    Flow: ``/gradio_api/upload`` → ``/gradio_api/call/infer`` (SSE poll) →
+    download the ``gradio_api/file=`` output PNG. Free but third-party and
+    quota-capped (anonymous ZeroGPU ~2 min/day); best-effort fallback only.
+
+    Raises:
+        PolishError: on upload/infer/poll/download failure or timeout.
+    """
+    space_url = space_url.rstrip("/")
+    try:
+        with httpx.Client(timeout=httpx.Timeout(timeout, connect=30.0)) as client:
+            base_path = _hfspace_upload(client, image_bytes, space_url)
+            data = _hfspace_build_payload(base_path, prompt, strength)
+            event_id = _hfspace_start_infer(client, data, space_url)
+            image_url = _hfspace_await_result(client, space_url, event_id, timeout)
+            img_resp = client.get(image_url)
+            if img_resp.status_code != 200:
+                raise PolishError(
+                    f"HF Space result download failed (HTTP {img_resp.status_code})"
+                )
+            return img_resp.content
+    except PolishError:
+        raise
+    except httpx.HTTPError as exc:
+        raise PolishError(f"HF Space img2img transport error: {exc}") from exc
+
+
 def polish_image(
     settings: Settings,
     image_bytes: bytes,
@@ -364,6 +616,30 @@ def polish_image(
             except PolishError:
                 raise
 
+    # Try the keyless HF Space fallback if NVIDIA and fal both failed/skipped.
+    if polished_bytes is None and settings.polish_backend in ("hfspace", "auto"):
+        if not settings.hfspace_configured:
+            if settings.polish_backend == "hfspace":
+                raise PolishNotConfiguredError(
+                    "Polish backend is 'hfspace' but no Space URL is configured "
+                    "(set GENBLAZE_HFSPACE_URL)."
+                )
+        else:
+            try:
+                logger.info("Attempting keyless HF Space img2img polish...")
+                polished_bytes = _hfspace_img2img(
+                    image_bytes,
+                    prompt,
+                    strength=resolved_strength,
+                    space_url=settings.hfspace_url,
+                    timeout=settings.hfspace_timeout_seconds,
+                )
+                provider_used = POLISH_PROVIDER_ID_HFSPACE
+                model_used = POLISH_HFSPACE_MODEL
+                logger.info("HF Space img2img succeeded")
+            except PolishError:
+                raise
+
     if polished_bytes is None:
         if settings.polish_backend == "nvidia":
             raise PolishError(
@@ -373,7 +649,8 @@ def polish_image(
             )
         raise PolishNotConfiguredError(
             "No img2img provider available. "
-            "Configure FAL_KEY (or NVIDIA_API_KEY if NIM supports img2img on your key) "
+            "Configure FAL_KEY (or NVIDIA_API_KEY if NIM supports img2img on your key, "
+            "or leave GENBLAZE_POLISH_BACKEND=auto to use the keyless HF Space URL) "
             "and set GENBLAZE_POLISH_ENABLED=1."
         )
 
@@ -403,13 +680,27 @@ def polish_image(
 
 def polish_availability(settings: Settings) -> dict[str, Any]:
     """Cheap /health disclosure — whether the polish path can work."""
+    from app.provider_cascade import cascade_health
+
     nvidia_img2img_possible = bool(settings.nvidia_configured)
     fal_img2img_possible = bool(settings.fal_api_key)
+    hfspace_img2img_possible = bool(settings.hfspace_configured)
+    gmi_possible = bool(getattr(settings, "gmi_configured", False))
     enabled = bool(settings.polish_enabled)
     ready = enabled and (
         (settings.polish_backend == "fal" and fal_img2img_possible)
         or (settings.polish_backend == "nvidia" and nvidia_img2img_possible)
-        or (settings.polish_backend == "auto" and (nvidia_img2img_possible or fal_img2img_possible))
+        or (settings.polish_backend == "hfspace" and hfspace_img2img_possible)
+        or (settings.polish_backend == "gmi" and gmi_possible)
+        or (
+            settings.polish_backend == "auto"
+            and (
+                nvidia_img2img_possible
+                or fal_img2img_possible
+                or hfspace_img2img_possible
+                or gmi_possible
+            )
+        )
     )
     return {
         "available": ready,
@@ -419,10 +710,14 @@ def polish_availability(settings: Settings) -> dict[str, Any]:
         "default_strength": settings.polish_default_strength,
         "nvidia_img2img_possible": nvidia_img2img_possible,
         "fal_img2img_possible": fal_img2img_possible,
+        "hfspace_img2img_possible": hfspace_img2img_possible,
+        "gmi_configured": gmi_possible,
         "img2img_wired": ready,
+        "provider_cascade": cascade_health(settings),
         "note": (
             "POST /api/polish-still applies diffusion img2img to a prior "
             "RT4D/generate still. Structure pass = MRS; polish = diffusion edit. "
-            "Not geometric reconstruction."
+            "Hackathon fan-out primary is GMI (T2I / pre-render); polish legs are "
+            "fal → nvidia → hfspace (free fallback). Not geometric reconstruction."
         ),
     }

@@ -77,6 +77,20 @@ def _model_id(settings: Settings) -> str:
 
 def lemonade_availability(settings: Settings) -> dict[str, Any]:
     """Cheap health probe for /health (does not pull models)."""
+    if getattr(settings, "skip_local_sd", False):
+        return {
+            "available": False,
+            "skipped": True,
+            "skip_reason": "GENBLAZE_SKIP_LOCAL_SD=1",
+            "base_url": _base_url(settings),
+            "model": _model_id(settings),
+            "size": getattr(settings, "lemonade_size", None) or DEFAULT_LEMONADE_SIZE,
+            "help": (
+                "Local SD / Lemonade skipped on this host. "
+                "Pre-render beauty frames on a GMI-credit or cloud-capable machine "
+                "(see docs/ops/HACKATHON_DEMO_CACHE_B2.md)."
+            ),
+        }
     base = _base_url(settings)
     health_url = urljoin(base + "/", "health")
     # Some Lemonade builds expose /api/v1/health; others answer on root /health.
@@ -240,6 +254,11 @@ def generate_image_lemonade(settings: Settings, prompt: str) -> GenerateResult:
     cleaned = (prompt or "").strip()
     if not cleaned:
         raise ValueError("prompt is required")
+    if getattr(settings, "skip_local_sd", False):
+        raise RuntimeError(
+            "GENBLAZE_SKIP_LOCAL_SD=1: local Lemonade/SD is disabled on this host. "
+            "Pre-render with GMI on a cloud-capable machine, or unset the flag."
+        )
 
     run_id = str(uuid.uuid4())
     created_at = _utc_now()

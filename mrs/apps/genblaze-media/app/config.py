@@ -183,6 +183,9 @@ class Settings:
     lemonade_steps: int = 4
     lemonade_timeout_seconds: float = 600.0
     lemonade_api_key: str | None = None
+    # GENBLAZE_SKIP_LOCAL_SD=1 — skip Lemonade/local SD (AMD hosts without sd-server).
+    # Pre-render beauty on a cloud-capable / GMI-credit host instead.
+    skip_local_sd: bool = False
     rt4d_node_path: str = "node"
     rt4d_script_path: str | None = None
     scene_spec_script_path: str | None = None
@@ -214,6 +217,22 @@ class Settings:
     polish_model: str | None = None
     polish_default_strength: float = 0.45
     polish_backend: str = "auto"
+    # Keyless HF Space img2img backend (FLUX.2-Klein-9B ZeroGPU Space)
+    hfspace_url: str = "https://m3st3rj4k3l-flux-2-klein-multi-lora.hf.space"
+    hfspace_timeout_seconds: float = 180.0
+    # --- GMI Cloud (GenBlaze SDK fan-out; hackathon credits) ---
+    gmi_api_key: str | None = None
+    gmi_base_url: str | None = None
+    gmi_image_model: str = "seedream-5.0-lite"
+    # --- Demo cache (pre-render → B2 → live overlay) ---
+    # GENBLAZE_DEMO_CACHE=1 serves B2 cached frames; still probes provider health.
+    demo_cache_enabled: bool = False
+    demo_cache_shot_id: str | None = None
+    demo_cache_default_frame: int = 0
+    # GENBLAZE_PRE_RENDER_FALLBACK=1 — on live generate failure, serve
+    # {prefix}/pre-render/structure.png from B2 (source=b2-structure-cache).
+    pre_render_fallback_enabled: bool = False
+    pre_render_shots_per_hour: int = 4
     # --- Media look lane (FLUX/Lemonade/polish prompt steer; partial) ---
     # GENBLAZE_STYLE=anime | default. Request body ``style`` overrides.
     media_style: str = "default"
@@ -255,6 +274,14 @@ class Settings:
     @property
     def nvidia_configured(self) -> bool:
         return bool(self.nvidia_api_key)
+
+    @property
+    def hfspace_configured(self) -> bool:
+        return bool(self.hfspace_url)
+
+    @property
+    def gmi_configured(self) -> bool:
+        return bool(self.gmi_api_key)
 
     @property
     def resolved_engine3d_still_script(self) -> str:
@@ -448,6 +475,12 @@ def get_settings() -> Settings:
         lemonade_timeout = 600.0
     lemonade_timeout = max(30.0, min(3600.0, lemonade_timeout))
     lemonade_api_key = (os.getenv("LEMONADE_API_KEY") or "").strip() or None
+    skip_local_sd = (os.getenv("GENBLAZE_SKIP_LOCAL_SD") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     # Default OFF: explicit opt-in so a blank/504 NVIDIA still falls back to the
     # deterministic RT4D render instead of surfacing the failure.
     image_fallback_to_rt4d = (
@@ -534,11 +567,55 @@ def get_settings() -> Settings:
     except ValueError:
         polish_strength = 0.45
     polish_strength = max(0.0, min(1.0, polish_strength))
+    hfspace_url = (
+        os.getenv("GENBLAZE_HFSPACE_URL")
+        or "https://m3st3rj4k3l-flux-2-klein-multi-lora.hf.space"
+    ).strip().rstrip("/")
+    try:
+        hfspace_timeout = float(
+            (os.getenv("GENBLAZE_HFSPACE_TIMEOUT") or "180").strip() or "180"
+        )
+    except ValueError:
+        hfspace_timeout = 180.0
+    hfspace_timeout = max(30.0, min(600.0, hfspace_timeout))
     polish_backend_raw = (os.getenv("GENBLAZE_POLISH_BACKEND") or "auto").strip().lower()
-    if polish_backend_raw in ("fal", "nvidia"):
-        polish_backend = polish_backend_raw
+    if polish_backend_raw in ("fal", "nvidia", "hfspace", "gmi", "cascade", "failover"):
+        polish_backend = (
+            "auto" if polish_backend_raw in ("cascade", "failover") else polish_backend_raw
+        )
     else:
         polish_backend = "auto"
+
+    gmi_api_key = (os.getenv("GMI_API_KEY") or "").strip() or None
+    gmi_base_url = (os.getenv("GMI_BASE_URL") or "").strip() or None
+    gmi_image_model = (
+        os.getenv("GENBLAZE_GMI_IMAGE_MODEL") or "seedream-5.0-lite"
+    ).strip() or "seedream-5.0-lite"
+
+    demo_cache_enabled = (os.getenv("GENBLAZE_DEMO_CACHE") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    demo_cache_shot_id = (os.getenv("GENBLAZE_DEMO_CACHE_SHOT") or "").strip() or None
+    try:
+        demo_cache_default_frame = int(
+            (os.getenv("GENBLAZE_DEMO_CACHE_FRAME") or "0").strip() or "0"
+        )
+    except ValueError:
+        demo_cache_default_frame = 0
+    demo_cache_default_frame = max(0, min(9999, demo_cache_default_frame))
+    pre_render_fallback_enabled = (
+        os.getenv("GENBLAZE_PRE_RENDER_FALLBACK") or ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    try:
+        pre_render_shots_per_hour = int(
+            (os.getenv("GENBLAZE_PRE_RENDER_SHOTS_PER_HOUR") or "4").strip() or "4"
+        )
+    except ValueError:
+        pre_render_shots_per_hour = 4
+    pre_render_shots_per_hour = max(1, min(60, pre_render_shots_per_hour))
     # Media look lane — anime is partial (prompt steer), not Full Photoreal.
     from app.style_steer import normalize_style
 
@@ -714,6 +791,7 @@ def get_settings() -> Settings:
         lemonade_steps=lemonade_steps,
         lemonade_timeout_seconds=lemonade_timeout,
         lemonade_api_key=lemonade_api_key,
+        skip_local_sd=skip_local_sd,
         rt4d_node_path=rt4d_node_path,
         rt4d_script_path=rt4d_script_override,
         scene_spec_script_path=scene_spec_script_override,
@@ -737,6 +815,16 @@ def get_settings() -> Settings:
         polish_model=polish_model,
         polish_default_strength=polish_strength,
         polish_backend=polish_backend,
+        hfspace_url=hfspace_url,
+        hfspace_timeout_seconds=hfspace_timeout,
+        gmi_api_key=gmi_api_key,
+        gmi_base_url=gmi_base_url,
+        gmi_image_model=gmi_image_model,
+        demo_cache_enabled=demo_cache_enabled,
+        demo_cache_shot_id=demo_cache_shot_id,
+        demo_cache_default_frame=demo_cache_default_frame,
+        pre_render_fallback_enabled=pre_render_fallback_enabled,
+        pre_render_shots_per_hour=pre_render_shots_per_hour,
         media_style=media_style,
         prompt_scene_bridge_enabled=prompt_scene_bridge_enabled,
         prompt_scene_bridge_script_path=prompt_scene_bridge_script_override,
