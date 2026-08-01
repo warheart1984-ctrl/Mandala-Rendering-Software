@@ -110,14 +110,22 @@ Promotion of Projector4D to **enforced** anime-structure default: **declared** o
 
 **Biggest win** of this work is formalizing the **decision process**, not crowning Projector4D over drop_w.
 
+Promotion package (docs):
+
+- [`PROMOTION_GATE.v1.md`](./PROMOTION_GATE.v1.md) — criteria; status **Not ready**
+- [`PROMOTION_READINESS_CHECKLIST.md`](./PROMOTION_READINESS_CHECKLIST.md) — ~70% readiness
+- [`POLE_STRESS_MITIGATION.md`](./POLE_STRESS_MITIGATION.md) — **Option C** auto-fallback for v1 (**partial** in runner); Option D hybrid = future
+- [`PROMOTION_DECISION_MATRIX.v1.md`](./PROMOTION_DECISION_MATRIX.v1.md)
+
 | Binding | Statement |
 | --- | --- |
 | Lane conclusion | **Projector4D** → 4D story / explanation; **drop_w** → literal geometry / debug. Different objectives, different lanes — not competitors for one “correct” projector. |
-| Pole-stress evidence | Pole-stress already ran (`tmp/rt4d-project-compare/pole-stress/`; §9): Print SoT raw non-finite=1, structure-lane rejected=3, drop_w accepted=13 of 13. Exposing a real boundary is **good** evidence that shapes the structure-lane reject policy — not a reason to collapse lanes. |
-| Default promotion | Remains **declared** until richer ink/cel + viewer-comprehension studies complete; promote only if evidence shows better understanding **without** compromising replay. |
+| Pole-stress evidence | Pole-stress already ran (`tmp/rt4d-project-compare/pole-stress/`; §9): Print SoT raw non-finite=1, structure-lane rejected=3 (reject-mode diag), drop_w accepted=13 of 13. Exposing a real boundary is **good** evidence that shapes the structure-lane policy — not a reason to collapse lanes. |
+| v1 mitigation | **Option C** thresholds (\(\varepsilon=0.15\), \(S_{\max}=6\), \(S_{\min}=0.05\), \(R_{\max}=0.45\), reject_ratio \(0.20\)) wired **partial** in `rt4d-project-compare.mjs` — reject/non-finite/scale → `drop_w` fallback with provenance. |
+| Default promotion | Remains **declared / not ready** until richer ink/cel + viewer-comprehension studies + CI provenance validator; promote only if evidence shows better understanding **without** compromising replay. |
 | Pattern slogan | **experiment → provenance → contract → promotion** — not promote-first, validate-later. |
 
-Status tags unchanged: contract **declared / partial**; default promotion **declared**.
+Status tags unchanged: contract **declared / partial**; default promotion **declared / not ready**.
 
 ---
 
@@ -160,15 +168,15 @@ JSON Schema: `schemas/4d-engine/v1/StructurePlateProjectionProvenance.v1.schema.
 | 2 | **Richer ink/cel scene** | User comprehension beyond sparse points | **skeleton / partial** — denser scaffold ran (`--scene rich` → `scene-rich/`, 194 hits, fallback soft-raster); full ink-cel pipeline still **declared** |
 | 3 | Default promotion | If evidence still favors Projector4D for understanding → default anime-structure projection; keep drop_w for debug | promotion **declared** until richer evidence |
 
-### Pole policy (structure-lane compare — **declared**)
+### Pole policy (structure-lane compare — **partial** Option C)
 
 | Layer | Behavior near \(w=-d_4\) |
 | --- | --- |
 | Print SoT `Projector4D` | No reject today — scale \(d_4/(d_4+w)\) may become non-finite |
 | `math/project.js` (sign-variant) | near-clip reject → `visible: false` |
-| Structure-lane compare wrapper | **Reject** (skip) hits with \(\lvert d_4+w\rvert < \varepsilon\), \(\varepsilon = 0.05\,d_4\) by default; record counts — do **not** silently clamp for storytelling honesty |
+| Structure-lane compare wrapper | **Option C auto-fallback** to `drop_w` when \(\lvert d_4+w\rvert < \varepsilon\) (\(\varepsilon=0.15\)), scale outside \([0.05, 6]\), or non-finite — with provenance note. Reject-mode retained for diagnostics. Hybrid (Option D) **future**. |
 
-Print SoT remains unchanged by this wrapper policy.
+Print SoT remains unchanged by this wrapper policy. See [`POLE_STRESS_MITIGATION.md`](./POLE_STRESS_MITIGATION.md).
 
 ---
 
@@ -186,6 +194,9 @@ Print SoT remains unchanged by this wrapper policy.
 
 - [`USER_4D_TO_3D_MATH_VERIFY.md`](./USER_4D_TO_3D_MATH_VERIFY.md) — formula ↔ repo mapping
 - [`W_AS_STORY_VS_FLAT_AXIS.md`](./W_AS_STORY_VS_FLAT_AXIS.md) — readable design note
+- [`PROMOTION_GATE.v1.md`](./PROMOTION_GATE.v1.md) — promotion gate (v1, **not ready**)
+- [`PROMOTION_READINESS_CHECKLIST.md`](./PROMOTION_READINESS_CHECKLIST.md)
+- [`POLE_STRESS_MITIGATION.md`](./POLE_STRESS_MITIGATION.md) — Option C
 - [`PROJECTION_CONTINUITY_CONTRACT.md`](./PROJECTION_CONTINUITY_CONTRACT.md) — ProjCC (observation aperture)
 - [`INTEGRATION_NOTES.md`](./INTEGRATION_NOTES.md) — ProjCC wiring
 - [`../QUALITY_PROGRESS_LOG.md`](../QUALITY_PROGRESS_LOG.md) — quality trail entry

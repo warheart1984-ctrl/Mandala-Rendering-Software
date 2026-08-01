@@ -38,8 +38,17 @@ const ALPHA = 1 / D4;
 const WIDTH = 320;
 const HEIGHT = 240;
 const SEED = 7;
-/** Structure-lane reject ε near pole w=-d4 (does not mutate Print SoT). */
-const POLE_EPS = D4 * 0.05;
+/**
+ * Structure-lane Option C thresholds (**partial**). Does not mutate Print SoT.
+ * Table: docs/4d-engine/projection/POLE_STRESS_MITIGATION.md
+ */
+const POLE_EPS = 0.15; // |d4+w| < ε → fallback
+const POLE_SCALE_ABS_MAX = 6.0; // S_max
+const POLE_SCALE_ABS_MIN = 0.05; // S_min
+const POLE_R_VAR_MAX = 0.45; // R_max (set-level mark)
+const POLE_REJECT_RATIO_MAX = 0.2; // scene pole-stressed mark
+/** Option C v1: mitigate → drop_w with provenance note. */
+const OPTION_C_AUTO_FALLBACK = true;
 
 const PROVENANCE_SCHEMA = "rt4d-project-compare/1.0";
 const EVALUATION_STANCE = [
@@ -225,52 +234,94 @@ function dumpHits(scene, centers, radii, grid = 8) {
 }
 
 /**
- * Project hits. For projector4d-sot, structure-lane policy rejects near pole
- * (|d4+w| < POLE_EPS) — does not mutate Print SoT Projector4D.
- * @returns {{ projected: object[], rejected: number, non_finite: number, accepted: number }}
+ * Project hits. Structure-lane Option C (**declared / partial**): near pole,
+ * non-finite, or |scale| > POLE_SCALE_ABS_MAX → drop_w fallback with provenance
+ * note. Reject mode kept for diagnostics. Does not mutate Print SoT Projector4D.
+ * @returns {{ projected: object[], rejected: number, fallbacks: number, non_finite: number, accepted: number }}
  */
-function projectHitSet(hits, method, projector, { rejectNearPole = false } = {}) {
+function projectHitSet(
+  hits,
+  method,
+  projector,
+  { rejectNearPole = false, autoFallbackDropW = OPTION_C_AUTO_FALLBACK } = {},
+) {
   const projected = [];
   let rejected = 0;
+  let fallbacks = 0;
   let non_finite = 0;
   for (const h of hits) {
     const p = h.position;
-    if (method === "projector4d-sot" && rejectNearPole) {
-      const denom = D4 + p.w;
-      if (!Number.isFinite(denom) || Math.abs(denom) < POLE_EPS) {
-        rejected += 1;
-        continue;
-      }
+    if (method !== "projector4d-sot") {
+      const p3 = projectDropW(p);
+      projected.push({
+        id: h.id,
+        xyzw: [p.x, p.y, p.z, p.w],
+        xyz: [p3.x, p3.y, p3.z],
+        w_scale: 1,
+        materialId: h.materialId,
+        finite: true,
+        fallback_to: null,
+        fallback_reason: null,
+      });
+      continue;
     }
-    const p3 =
-      method === "projector4d-sot"
-        ? projectProjector4D(p, projector)
-        : projectDropW(p);
-    const scale = method === "projector4d-sot" ? D4 / (D4 + p.w) : 1;
-    const finite =
+
+    const denom = D4 + p.w;
+    const nearPole = !Number.isFinite(denom) || Math.abs(denom) < POLE_EPS;
+    const scale = denom === 0 ? Infinity : D4 / denom;
+    const scaleHigh = !Number.isFinite(scale) || scale > POLE_SCALE_ABS_MAX;
+    const scaleLow = Number.isFinite(scale) && scale < POLE_SCALE_ABS_MIN;
+    let p3 = projectProjector4D(p, projector);
+    let usedScale = scale;
+    let finite =
       Number.isFinite(p3.x) &&
       Number.isFinite(p3.y) &&
       Number.isFinite(p3.z) &&
-      Number.isFinite(scale);
-    if (!finite) {
-      non_finite += 1;
-      if (rejectNearPole) {
+      Number.isFinite(usedScale);
+    /** @type {string|null} */
+    let fallback_to = null;
+    /** @type {string|null} */
+    let fallback_reason = null;
+
+    const shouldMitigate = nearPole || !finite || scaleHigh || scaleLow;
+    if (shouldMitigate) {
+      const wasNonFinite = !finite;
+      if (wasNonFinite || scaleHigh) non_finite += 1;
+      if (autoFallbackDropW) {
+        p3 = projectDropW(p);
+        usedScale = 1;
+        finite = true;
+        fallback_to = "drop_w";
+        if (nearPole) {
+          fallback_reason = `option_c_near_pole_|d4+w|<${POLE_EPS}`;
+        } else if (wasNonFinite || scaleHigh) {
+          fallback_reason = `option_c_scale>${POLE_SCALE_ABS_MAX}_or_non_finite`;
+        } else {
+          fallback_reason = `option_c_scale<${POLE_SCALE_ABS_MIN}`;
+        }
+        fallbacks += 1;
+      } else if (rejectNearPole) {
         rejected += 1;
         continue;
       }
     }
+
     projected.push({
       id: h.id,
       xyzw: [p.x, p.y, p.z, p.w],
       xyz: [p3.x, p3.y, p3.z],
-      w_scale: scale,
+      w_scale: usedScale,
       materialId: h.materialId,
       finite,
+      fallback_to,
+      fallback_reason,
+      projector_requested: "projector4d-sot",
     });
   }
   return {
     projected,
     rejected,
+    fallbacks,
     non_finite,
     accepted: projected.length,
   };
@@ -614,10 +665,29 @@ async function runOnce(outDir, runTag, sceneKind = "sparse") {
   const dump = dumpHits(scene, centers, radii, grid);
   const projector = new Projector4D({ d4: D4, d3: 4, width: WIDTH, height: HEIGHT });
 
-  const sotRes = projectHitSet(dump.hits, "projector4d-sot", projector);
+  const sotRes = projectHitSet(dump.hits, "projector4d-sot", projector, {
+    autoFallbackDropW: OPTION_C_AUTO_FALLBACK,
+  });
   const dropRes = projectHitSet(dump.hits, "drop_w", projector);
   const projectedSot = sotRes.projected;
   const projectedDrop = dropRes.projected;
+  const sotMetrics = metrics(projectedSot);
+  const fallback_ratio = dump.hits.length ? sotRes.fallbacks / dump.hits.length : 0;
+  const optionCMeta = {
+    mitigation: "option_c_auto_fallback",
+    status: "partial",
+    pole_eps: POLE_EPS,
+    s_max: POLE_SCALE_ABS_MAX,
+    s_min: POLE_SCALE_ABS_MIN,
+    r_max: POLE_R_VAR_MAX,
+    fallbacks: sotRes.fallbacks,
+    fallback_ratio,
+    radial_variance: sotMetrics.radius_variance,
+    radial_variance_spike: sotMetrics.radius_variance > POLE_R_VAR_MAX,
+    scene_pole_stressed:
+      fallback_ratio > POLE_REJECT_RATIO_MAX ||
+      sotMetrics.radius_variance > POLE_R_VAR_MAX,
+  };
 
   const hitPath = join(outDir, "hits.json");
   const sotPts = join(outDir, "projected-projector4d-sot.json");
@@ -642,9 +712,13 @@ async function runOnce(outDir, runTag, sceneKind = "sparse") {
   writeFileSync(hitPath, JSON.stringify(hitDoc, null, 2) + "\n");
 
   const sotDoc = {
-    provenance: provenance("projector4d-sot", { run_tag: runTag, scene_kind: sceneKind }),
+    provenance: provenance("projector4d-sot", {
+      run_tag: runTag,
+      scene_kind: sceneKind,
+      option_c: optionCMeta,
+    }),
     points: projectedSot,
-    metrics: metrics(projectedSot),
+    metrics: sotMetrics,
   };
   const dropDoc = {
     provenance: provenance("drop_w", { run_tag: runTag, scene_kind: sceneKind }),
@@ -711,7 +785,7 @@ async function runOnce(outDir, runTag, sceneKind = "sparse") {
 
 /**
  * Pole stress: synthetic hits with w ≈ −d4.
- * Documents Print SoT raw (may be non-finite) vs structure-lane reject wrapper.
+ * Documents Print SoT raw vs structure-lane Option C auto-fallback (**partial**).
  */
 function runPoleStress(outDir) {
   mkdirSync(outDir, { recursive: true });
@@ -723,7 +797,8 @@ function runPoleStress(outDir) {
   /** @type {Array<Record<string, unknown>>} */
   const rows = [];
   let raw_non_finite = 0;
-  let lane_rejected = 0;
+  let lane_fallbacks = 0;
+  let lane_rejected_diag = 0;
   let drop_ok = 0;
 
   for (let i = 0; i < offsets.length; i++) {
@@ -734,10 +809,15 @@ function runPoleStress(outDir) {
     if (!raw.finite) raw_non_finite += 1;
     const hit = { id: i, position: p, materialId: null };
     const sotLane = projectHitSet([hit], "projector4d-sot", projector, {
+      autoFallbackDropW: true,
+    });
+    const sotRejectDiag = projectHitSet([hit], "projector4d-sot", projector, {
       rejectNearPole: true,
+      autoFallbackDropW: false,
     });
     const dropLane = projectHitSet([hit], "drop_w", projector);
-    if (sotLane.rejected > 0) lane_rejected += 1;
+    if (sotLane.fallbacks > 0) lane_fallbacks += 1;
+    if (sotRejectDiag.rejected > 0) lane_rejected_diag += 1;
     if (dropLane.accepted > 0) drop_ok += 1;
     rows.push({
       w,
@@ -747,11 +827,14 @@ function runPoleStress(outDir) {
       projector4d_raw_finite: raw.finite,
       projector4d_raw_xyz: raw.xyz,
       projector4d_raw_scale: raw.w_scale,
-      structure_lane_reject: sotLane.rejected > 0,
+      option_c_fallback: sotLane.fallbacks > 0,
+      fallback_reason: sotLane.projected[0]?.fallback_reason ?? null,
+      structure_lane_reject_diag: sotRejectDiag.rejected > 0,
       drop_w_xyz: dropLane.projected[0]?.xyz ?? null,
     });
   }
 
+  const fallback_ratio = rows.length ? lane_fallbacks / rows.length : 0;
   const report = {
     provenance: {
       schema: PROVENANCE_SCHEMA,
@@ -760,16 +843,25 @@ function runPoleStress(outDir) {
       print_sot_touched: false,
       digital_printer_touched: false,
       d4: D4,
+      mitigation: "option_c_auto_fallback",
+      status: "partial",
       pole_eps: POLE_EPS,
+      s_max: POLE_SCALE_ABS_MAX,
+      s_min: POLE_SCALE_ABS_MIN,
+      r_max: POLE_R_VAR_MAX,
+      reject_ratio_max: POLE_REJECT_RATIO_MAX,
       pole_at_w: -D4,
       policy:
-        "Structure-lane compare rejects |d4+w| < pole_eps. Print SoT Projector4D unchanged (may yield non-finite).",
+        "Option C: near-pole / non-finite / scale outside [S_min,S_max] → drop_w fallback with provenance. Print SoT unchanged.",
     },
     evaluation_stance: EVALUATION_STANCE,
     counts: {
       samples: rows.length,
       raw_non_finite,
-      structure_lane_rejected: lane_rejected,
+      option_c_fallbacks: lane_fallbacks,
+      fallback_ratio,
+      scene_pole_stressed: fallback_ratio > POLE_REJECT_RATIO_MAX,
+      structure_lane_rejected_diag: lane_rejected_diag,
       drop_w_always_finite_accepted: drop_ok,
     },
     rows,
@@ -781,24 +873,36 @@ function runPoleStress(outDir) {
     "",
     "| Field | Value |",
     "| --- | --- |",
-    "| Status | **partial** evidence |",
+    "| Status | **partial** evidence (Option C) |",
     "| d4 | " + D4 + " |",
     "| Pole | w = −d4 = " + -D4 + " |",
-    "| Structure-lane ε | " + POLE_EPS + " (|d4+w| < ε ⇒ reject) |",
+    "| ε (POLE_EPS) | " + POLE_EPS + " |",
+    "| S_max | " + POLE_SCALE_ABS_MAX + " |",
+    "| S_min | " + POLE_SCALE_ABS_MIN + " |",
+    "| R_max | " + POLE_R_VAR_MAX + " (set-level mark) |",
+    "| reject_ratio max | " + POLE_REJECT_RATIO_MAX + " |",
     "| Print SoT touched | false |",
     "",
-    "## Policy",
+    "## Verdict lock",
     "",
-    "- **Print SoT `Projector4D`:** no reject — raw scale may be non-finite near the pole.",
-    "- **Structure-lane wrapper:** reject (skip) when `|d4+w| < ε` (ε = 0.05·d4).",
-    "- **drop_w:** always finite (identity on xyz).",
-    "- No silent clamp for storytelling honesty.",
+    "- No universal winner — Projector4D for 4D story; drop_w for literal debug.",
+    "- Pattern: **experiment → provenance → contract → promotion** (promotion remains **declared**).",
+    "",
+    "## Policy (Option C — **partial**)",
+    "",
+    "- **Print SoT `Projector4D`:** unchanged — raw scale may be non-finite near the pole.",
+    "- **Structure-lane Option C:** auto-fallback to `drop_w` when `|d4+w| < ε` or scale outside `[S_min, S_max]` or non-finite.",
+    "- Provenance notes `fallback_to` / `fallback_reason` on mitigated hits.",
+    "- Hybrid β blend (Option D) is **future** — not wired.",
     "",
     "## Counts",
     "",
     "- samples: " + rows.length,
     "- Print SoT raw non-finite: " + raw_non_finite,
-    "- Structure-lane rejected: " + lane_rejected,
+    "- Option C fallbacks: " + lane_fallbacks,
+    "- fallback_ratio: " + fallback_ratio.toFixed(3),
+    "- scene_pole_stressed: " + (fallback_ratio > POLE_REJECT_RATIO_MAX),
+    "- reject-mode diagnostic rejects: " + lane_rejected_diag,
     "- drop_w accepted: " + drop_ok,
     "",
     "## Evaluation stance",
@@ -806,6 +910,7 @@ function runPoleStress(outDir) {
     ...EVALUATION_STANCE.map((s) => "- " + s),
     "",
     "See `pole-stress.json` for per-sample rows.",
+    "Thresholds: `docs/4d-engine/projection/POLE_STRESS_MITIGATION.md`.",
     "",
   ].join("\n");
   writeFileSync(join(outDir, "README.md"), readme);
