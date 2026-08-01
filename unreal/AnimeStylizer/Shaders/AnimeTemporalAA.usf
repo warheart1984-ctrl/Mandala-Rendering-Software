@@ -1,0 +1,100 @@
+// Copyright 2026 MRS. All Rights Reserved.
+// Status: partial — velocity reproject + neighborhood clamp sketch.
+// RDG wiring: skeleton (AnimeTemporalAAPass). Zero diffusion.
+
+#include "/Engine/Public/Platform.ush"
+
+#define THREADS_X 8
+#define THREADS_Y 8
+
+RWTexture2D<float4> OutputTexture;
+
+SamplerState AnimeLinearClampSampler;
+
+Texture2D<float4> CurrentFrameTexture;
+Texture2D<float4> PreviousFrameTexture;
+Texture2D<float2> VelocityTexture;
+
+cbuffer TemporalAAParameters : register(b0)
+{
+    float JitterScale;
+    float SampleCount;
+    float2 InvResolution;
+}
+
+[numthreads(THREADS_X, THREADS_Y, 1)]
+void MainCS(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    uint Width = 0;
+    uint Height = 0;
+    OutputTexture.GetDimensions(Width, Height);
+    uint2 Resolution = uint2(Width, Height);
+    uint2 PixelPos = DispatchThreadID.xy;
+    
+    if (PixelPos.x >= Width || PixelPos.y >= Height)
+    {
+        return;
+    }
+    
+    float2 UV = (float2(PixelPos) + 0.5f) * InvResolution;
+    
+    // Sample current frame
+    float4 CurrentColor = CurrentFrameTexture.Load(uint3(PixelPos, 0));
+    
+    // Sample velocity for motion vector
+    float2 Velocity = VelocityTexture.Load(uint3(PixelPos, 0)).xy;
+    
+    // Reproject previous frame using velocity
+    float2 PrevUV = UV - Velocity * JitterScale;
+    PrevUV = saturate(PrevUV);
+    
+    float4 PrevColor = PreviousFrameTexture.SampleLevel(AnimeLinearClampSampler, PrevUV, 0);
+    
+    // Calculate color difference for history rejection
+    float3 Diff = abs(CurrentColor.rgb - PrevColor.rgb);
+    float MaxDiff = max(Diff.r, max(Diff.g, Diff.b));
+    
+    // History rejection threshold
+    float RejectionThreshold = 0.1f;
+    float HistoryWeight = 1.0f - saturate(MaxDiff / RejectionThreshold);
+    
+    // Neighborhood clamping (YCoCg neighborhood)
+    float3 CurrentYCoCg = float3(
+        CurrentColor.r - CurrentColor.b,
+        CurrentColor.r + CurrentColor.g + CurrentColor.b,
+        CurrentColor.r - CurrentColor.g
+    );
+    
+    // Sample 3x3 neighborhood for clamping
+    float3 MinColor = CurrentColor.rgb;
+    float3 MaxColor = CurrentColor.rgb;
+    
+    for (int dy = -1; dy <= 1; ++dy)
+    {
+        for (int dx = -1; dx <= 1; ++dx)
+        {
+            if (dx == 0 && dy == 0) continue;
+            
+            int2 NeighborPos = int2(int2(PixelPos) + int2(dx, dy));
+            NeighborPos = clamp(NeighborPos, int2(0, 0), int2(Resolution - 1));
+            
+            float3 NeighborColor = CurrentFrameTexture.Load(uint3(NeighborPos, 0)).rgb;
+            MinColor = min(MinColor, NeighborColor);
+            MaxColor = max(MaxColor, NeighborColor);
+        }
+    }
+    
+    // Clamp history to neighborhood
+    float3 ClampedPrevColor = clamp(PrevColor.rgb, MinColor, MaxColor);
+    
+    // Temporal blend
+    float3 FinalColor = lerp(CurrentColor.rgb, ClampedPrevColor, HistoryWeight);
+    
+    // Variance-based blending for additional stability
+    float3 Variance = abs(CurrentColor.rgb - ClampedPrevColor);
+    float VarianceWeight = saturate(1.0f - Variance.r * 4.0f);
+    
+    FinalColor = lerp(FinalColor, CurrentColor.rgb, 1.0f - VarianceWeight);
+    
+    OutputTexture[PixelPos] = float4(saturate(FinalColor), 1.0f);
+}
