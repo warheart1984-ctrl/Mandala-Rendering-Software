@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://4dce.local/schemas/4d-engine/v1/StructurePlateProjectionProvenance.v1.schema.json",
+  "title": "StructurePlateProjectionProvenance",
+  "description": "Provenance required on anime-structure plate / projected point-set artifacts. Status: declared schema (not a runtime CKL gate). Print SoT must remain untouched (print_sot_touched=false).",
+  "type": "object",
+  "required": [
+    "projector_id",
+    "projection_method",
+    "reference_model",
+    "lane",
+    "print_sot_touched"
+  ],
+  "properties": {
+    "schema": { "type": "string" },
+    "projector_id": {
+      "type": "string",
+      "description": "e.g. projector4d-sot | drop_w"
+    },
+    "projection_method": {
+      "type": "string",
+      "description": "Same vocabulary as projector_id for this contract"
+    },
+    "reference_model": {
+      "type": "string",
+      "description": "Closed-form description of the reference model"
+    },
+    "alpha": {
+      "type": ["number", "null"],
+      "description": "Perspective α; null for drop_w"
+    },
+    "d4": {
+      "type": ["number", "null"],
+      "description": "d4 > 0 for Projector4D; null for drop_w",
+      "exclusiveMinimum": 0
+    },
+    "lane": {
+      "type": "string",
+      "description": "e.g. anime-structure"
+    },
+    "print_sot_touched": {
+      "type": "boolean",
+      "const": false
+    },
+    "digital_printer_touched": {
+      "type": "boolean",
+      "const": false
+    },
+    "asset_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Required when the artifact is a plate PNG"
+    }
+  },
+  "anyOf": [
+    { "required": ["alpha"] },
+    { "required": ["d4"] },
+    {
+      "properties": {
+        "projection_method": { "const": "drop_w" }
+      },
+      "required": ["projection_method"]
+    }
+  ],
+  "additionalProperties": true
+}

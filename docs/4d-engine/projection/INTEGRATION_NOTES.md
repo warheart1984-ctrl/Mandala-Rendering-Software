@@ -46,3 +46,12 @@ pnpm run test:projection
 ## CECP trail
 
 `docs/governance/cecp/trails/pcc-projection-2026-07/`
+
+## Anime structure plate (separate lane)
+
+Structure-lane plate projection (Engine3D soft-raster / ink-cel consumer) is **not** ProjCC aperture and **not** Print SoT. See:
+
+- [`ANIME_STRUCTURE_PLATE_PROJECTOR_CONTRACT.v1.md`](./ANIME_STRUCTURE_PLATE_PROJECTOR_CONTRACT.v1.md) — **declared / partial**
+- [`W_AS_STORY_VS_FLAT_AXIS.md`](./W_AS_STORY_VS_FLAT_AXIS.md)
+- [`USER_4D_TO_3D_MATH_VERIFY.md`](./USER_4D_TO_3D_MATH_VERIFY.md)
+- Runner: `mrs/packages/renderer-core/scripts/rt4d-project-compare.mjs` → `tmp/rt4d-project-compare/`
