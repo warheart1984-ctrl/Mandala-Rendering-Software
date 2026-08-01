@@ -4,8 +4,8 @@
 | --- | --- |
 | Status | **Declared, not promoted** |
 | Branch | `feat/anime-structure-plate-projector` |
-| PR | #95 |
-| Commit tip | `fbc50a2` / HEAD `6ea63a4` (follow-up after merged #95) |
+| PR | #95 (contract), #96 (promotion package on `main`) |
+| Commit tip | `8f2012b` (#96); land `fbc50a2` / parallel `a8f6e57` |
 
 ## Overview
 
