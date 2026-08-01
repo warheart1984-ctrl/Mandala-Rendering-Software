@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { after, before, describe, it } from "node:test";
 
 import { handleRender4dTo3d } from "./render-4d-to-3d.js";
+import { handleRenderGovernedAnime } from "./render-governed-anime.js";
 
 const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -98,6 +99,39 @@ before(async () => {
       });
       return;
     }
+    if (url.pathname === "/api/anime") {
+      json(res, {
+        lane: "anime",
+        style: "anime",
+        style_forced: true,
+        status: "partial",
+        kind: "anime-ue-handoff",
+        run_id: "55555555-5555-5555-5555-555555555555",
+        dry_run: body.dry_run,
+        prompt: body.prompt,
+        anime_world_profile_id: "anime.mandala-cel.v1",
+        projection_method: body.projection_method,
+        anime_lane: {
+          contract_version: "1.0",
+          status: "declared",
+          maturity: "partial",
+          promoted: false,
+        },
+        provenance: {
+          lane: "anime",
+          style_forced: true,
+          structure_plate_used: false,
+        },
+        structure: null,
+        capability_tags: {
+          genblaze_api_anime: "partial",
+          ue_anime_stylizer: "skeleton/partial",
+          promotion: "not_promoted",
+        },
+        non_claims: ["Not a verified UE 5.3+ compile in this repo"],
+      });
+      return;
+    }
 
     res.writeHead(404).end("not found");
   });
@@ -158,5 +192,37 @@ describe("native 4D to 3D ChatGPT pipeline", () => {
     );
     assert.equal(engineRequest.body.polish, false);
     assert.equal(engineRequest.body.path_trace, false);
+  });
+
+  it("calls the governed anime handoff without claiming UE promotion", async () => {
+    const result = await handleRenderGovernedAnime({
+      prompt: "mandala oracle anime structure plate",
+      dry_run: true,
+      render_structure: false,
+      projection_method: "projector4d-sot",
+      width: 256,
+      height: 256,
+    });
+
+    assert.equal(result.anime.status, "partial");
+    assert.equal(result.anime.lane, "anime");
+    assert.equal(result.anime.styleForced, true);
+    assert.equal(result.anime.dryRun, true);
+    assert.equal(result.anime.animeWorldProfileId, "anime.mandala-cel.v1");
+    assert.equal(result.anime.structurePreviewUrl, null);
+    assert.match(result.content[1].text, /No structure PNG/);
+    assert.match(result.content[0].text, /skeleton\/partial/);
+    assert.equal(
+      result.content.filter((item) => item.type === "image").length,
+      0
+    );
+
+    const animeRequest = requests.find(
+      (request) => request.path === "/api/anime"
+    );
+    assert.equal(animeRequest.body.prompt, "mandala oracle anime structure plate");
+    assert.equal(animeRequest.body.dry_run, true);
+    assert.equal(animeRequest.body.render_structure, false);
+    assert.equal(animeRequest.body.projection_method, "projector4d-sot");
   });
 });

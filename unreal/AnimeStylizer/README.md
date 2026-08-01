@@ -7,7 +7,12 @@
 | Path in MRS | `unreal/AnimeStylizer/` |
 | Unreal host | **skeleton** (per `AGENTS.md`) — not a full UE product |
 | Plugin status | **skeleton / partial** — file tree + BP API + shader sketches; RDG not hooked into engine PP |
+| Hackathon readiness | [`HACKATHON_READINESS.md`](./HACKATHON_READINESS.md) — evidence-bound matrix |
+| Reliable demo (no UE) | `python scripts/hackathon-governed-anime-demo.py` |
+| Genblaze handoff | `POST /api/anime` (**partial**) |
 | License | MIT (same as MRS) |
+
+> **Set to render?** Genblaze/structure→ffmpeg: **yes**. Full UE stylize: **no** (compile unknown; RDG skeleton).
 
 ## Status by feature
 
@@ -102,6 +107,23 @@ UTextureRenderTarget2D* StyledRT = UAnimeStylizerBlueprintLibrary::CaptureSceneA
 | `AnimePalette_Cyberpunk` | Neon |
 | `AnimePalette_Monochrome` | Manga gray |
 
+PNGs may already exist under `Content/LUTs/`; re-run the generator anytime. There are **not** six named `FAnimeStylizerConfig` stylization preset packs — only these LUT palettes + default config fields.
+
+## Verification checklist (aspirational claims)
+
+| Claim | Result | Notes |
+| --- | --- | --- |
+| Fully scaffolded + install→export docs | **pass** | This README + readiness matrix |
+| Compiles UE 5.3+ | **unknown** | No repo UE build evidence |
+| PP material applies without errors | **unknown** | Node notes only (`.txt`, not `.uasset`) |
+| LUTs generate/import | **pass** / **unknown** | Generate **pass**; UE import **unknown** |
+| BP nodes expose all config | **partial** | Struct exposed; Apply is skeleton |
+| Structure plate blend Engine3D/RT4D | **fail** (skeleton) | Load + config only |
+| ffmpeg clean H.264 | **unknown** until demo run | Operator recipe; demo script when ffmpeg present |
+| Preset pack: 6 LUTs + 6 stylization presets | **partial** | 6 LUTs **pass**; 6 stylization packs **fail** |
+| Cross-engine Genblaze→UE→ffmpeg full provenance | **partial** | Genblaze→ffmpeg **yes**; UE optional |
+| “You’re set to render” (full UE) | **fail** | Use Genblaze path instead |
+
 ## Export (ffmpeg)
 
 ```bash
@@ -126,9 +148,10 @@ ffmpeg -y -framerate 30 -i "Saved/VideoCaptures/frame_%04d.png" \
 AnimeStylizer/
 ├── AnimeStylizer.uplugin
 ├── README.md
+├── HACKATHON_READINESS.md
 ├── Config/DefaultEngine.ini
 ├── Content/
-│   ├── LUTs/GeneratePaletteLUTs.py
+│   ├── LUTs/GeneratePaletteLUTs.py + AnimePalette_*.png (6)
 │   └── Materials/AnimeStylizerMaterialNodes.txt
 ├── Shaders/
 │   ├── AnimeOutline.usf

@@ -12,6 +12,7 @@ import { replaySceneInputShape } from "./replay-scene.js";
 import { validateSceneSpecInputShape } from "./validate-scene-spec.js";
 import { renderSceneSpecInputShape } from "./render-scene-spec.js";
 import { render4dTo3dInputShape } from "./render-4d-to-3d.js";
+import { renderGovernedAnimeInputShape } from "./render-governed-anime.js";
 import {
   deleteJarvisMemoryInputShape,
   fetchJarvisMemoryInputShape,
@@ -82,6 +83,7 @@ describe("OpenAI-compatible MCP tool schemas", () => {
       validateSceneSpecInputShape,
       renderSceneSpecInputShape,
       render4dTo3dInputShape,
+      renderGovernedAnimeInputShape,
       searchJarvisMemoryInputShape,
       fetchJarvisMemoryInputShape,
       writeJarvisMemoryInputShape,

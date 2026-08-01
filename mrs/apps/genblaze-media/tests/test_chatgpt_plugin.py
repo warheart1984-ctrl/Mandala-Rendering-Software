@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import hashlib
 
 import pytest
 from fastapi.testclient import TestClient
@@ -91,6 +92,7 @@ def test_manifest_builder_none_auth():
     assert m["name_for_model"] == "engine3d_renderer"
     assert m["auth"]["type"] == "none"
     assert m["api"]["url"].endswith("/plugin/openapi.json")
+    assert m["logo_url"].endswith("/assets/mrs-logo.png")
     assert "RT4D as background" in m["description_for_model"]
     assert "1024" in m["description_for_model"]
 
@@ -125,14 +127,24 @@ def test_well_known_and_plugin_openapi_routes(tmp_path, monkeypatch):
     assert r.status_code == 200
     body = r.json()
     assert body["api"]["url"] == "https://tunnel.example/plugin/openapi.json"
+    assert body["logo_url"] == "https://tunnel.example/assets/mrs-logo.png"
     assert body["auth"]["type"] == "none"
 
     o = client.get("/plugin/openapi.json")
     assert o.status_code == 200
     assert "/api/engine3d-still" in o.json()["paths"]
 
-    logo = client.get("/assets/engine3d-logo.svg")
+    logo = client.get("/assets/mrs-logo.png")
     assert logo.status_code == 200
+    assert logo.headers["content-type"].startswith("image/png")
+    brand = client.get("/brand/mrs.json")
+    assert brand.status_code == 200
+    brand_body = brand.json()
+    assert brand_body["brandId"] == "mrs"
+    assert brand_body["logo"]["publicUrl"] == "/assets/mrs-logo.png"
+    assert brand_body["logo"]["sha256"] == hashlib.sha256(logo.content).hexdigest()
+    old_logo = client.get("/assets/engine3d-logo.svg")
+    assert old_logo.status_code == 200
     legal = client.get("/legal")
     assert legal.status_code == 200
 

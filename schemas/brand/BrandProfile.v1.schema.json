@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/schemas/brand/BrandProfile.v1.schema.json",
+  "title": "MRS BrandProfile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "brandId",
+    "displayName",
+    "themeProfileVersion",
+    "logo",
+    "lastVerified"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "brand-profile/1.0"
+    },
+    "brandId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]*$"
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "themeProfileVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "logo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId",
+        "version",
+        "path",
+        "publicUrl",
+        "mimeType",
+        "width",
+        "height",
+        "sha256"
+      ],
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]*$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publicUrl": {
+          "type": "string",
+          "pattern": "^/.*"
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": ["image/png", "image/svg+xml", "image/jpeg"]
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "usage": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lastVerified": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["enforced", "partial", "declared"]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

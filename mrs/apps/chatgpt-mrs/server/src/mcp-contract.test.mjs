@@ -82,18 +82,22 @@ describe("ChatGPT-facing Streamable HTTP MCP contract", () => {
 
     const renderPrompt = byName.get("render_4d_prompt");
     const fullPipeline = byName.get("render_4d_to_3d_pipeline");
+    const animePipeline = byName.get("render_governed_anime_pipeline");
     const createScene = byName.get("create_4d_scene");
     assert.ok(renderPrompt);
     assert.ok(fullPipeline);
+    assert.ok(animePipeline);
     assert.ok(createScene);
     assert.equal(renderPrompt._meta?.ui, undefined);
     assert.equal(fullPipeline._meta?.ui, undefined);
+    assert.equal(animePipeline._meta?.ui, undefined);
     assert.equal(
       createScene._meta?.ui?.resourceUri,
       "ui://mrs-viewport/v1.html"
     );
     assert.equal(renderPrompt.annotations?.readOnlyHint, true);
     assert.equal(fullPipeline.annotations?.openWorldHint, true);
+    assert.equal(animePipeline.annotations?.openWorldHint, true);
   });
 
   it("returns a real RT4D PNG as native MCP image content", async () => {

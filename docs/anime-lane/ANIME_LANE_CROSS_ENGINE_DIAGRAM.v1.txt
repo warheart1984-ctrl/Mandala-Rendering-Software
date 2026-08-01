@@ -1,0 +1,48 @@
+Anime Lane Cross-Engine Diagram (v1)
+Status: declared (diagram is illustrative; UE leg optional / skeleton)
+
+ASCII overview (reliable demo may skip UE):
+
+  Genblaze / MRS                Unreal Engine (optional)
+  /api/anime (governed)  --->   AnimeStylizer Plugin
+                                Outline -> Toon -> Grade -> TAA
+                                Structure Plate Blend
+                                         |
+                                         v
+                                    PNG Frames
+                                         |
+                                         v
+                              ffmpeg -> anime_demo.mp4
+
+SVG-style markup (for docs/renderers that accept SVG):
+
+<svg width="900" height="600">
+  <!-- Backend -->
+  <rect x="50" y="50" width="250" height="120" fill="#222" stroke="#fff"/>
+  <text x="70" y="90" fill="#fff">Genblaze / MRS</text>
+  <text x="70" y="120" fill="#fff">/api/anime (governed)</text>
+  <!-- Arrow -->
+  <line x1="300" y1="110" x2="400" y2="110" stroke="#fff" marker-end="url(#arrow)"/>
+  <!-- UE -->
+  <rect x="400" y="50" width="300" height="200" fill="#333" stroke="#fff"/>
+  <text x="420" y="90" fill="#fff">Unreal Engine</text>
+  <text x="420" y="120" fill="#fff">AnimeStylizer Plugin</text>
+  <text x="420" y="150" fill="#fff">Outline → Toon → Grade → TAA</text>
+  <text x="420" y="180" fill="#fff">Structure Plate Blend</text>
+  <!-- Arrow -->
+  <line x1="550" y1="250" x2="550" y2="330" stroke="#fff" marker-end="url(#arrow)"/>
+  <!-- PNG Frames -->
+  <rect x="450" y="330" width="200" height="100" fill="#444" stroke="#fff"/>
+  <text x="470" y="370" fill="#fff">PNG Frames</text>
+  <!-- Arrow -->
+  <line x1="550" y1="430" x2="550" y2="500" stroke="#fff" marker-end="url(#arrow)"/>
+  <!-- ffmpeg -->
+  <rect x="450" y="500" width="200" height="80" fill="#555" stroke="#fff"/>
+  <text x="470" y="540" fill="#fff">ffmpeg → anime_demo.mp4</text>
+  <!-- Arrow definition -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#fff"/>
+    </marker>
+  </defs>
+</svg>

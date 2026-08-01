@@ -1,0 +1,51 @@
+{
+  "anime_lane": {
+    "contract_version": "1.0",
+    "endpoint": "/api/anime",
+    "status": {
+      "reachable": true,
+      "style_forced": true,
+      "governed": true
+    },
+    "provenance": {
+      "schema": "StructurePlateProjectionProvenance.v1.schema.json",
+      "fields": [
+        "lane",
+        "style_forced",
+        "palette_lut",
+        "outline_pass_version",
+        "cel_shading_version",
+        "color_grade_version",
+        "temporal_aa_version",
+        "structure_plate_used",
+        "structure_plate_provenance",
+        "export_settings"
+      ]
+    },
+    "ue_plugin": {
+      "module": "AnimeStylizerModule",
+      "passes": [
+        "AnimeOutlinePass",
+        "AnimeCelShadingPass",
+        "AnimeColorGradePass",
+        "AnimeTemporalAAPass"
+      ],
+      "structure_plate_blend": true
+    },
+    "promotion": {
+      "eligible": true,
+      "promoted": false,
+      "blockers": [
+        "ink_cel_evidence",
+        "pole_stress_thresholds",
+        "ci_provenance_validator",
+        "shading_space_alignment"
+      ]
+    }
+  },
+  "_meta": {
+    "document": "docs/anime-lane/ANIME_LANE_HEALTH_SCHEMA.v1.json",
+    "status": "declared",
+    "note": "Target /health.anime_lane shape. Live Genblaze health may attach maturity tags (partial/skeleton) without claiming UE compile or promotion."
+  }
+}
