@@ -28,6 +28,7 @@ PLUGIN_PROTECTED_PREFIXES = (
     "/api/engine3d-still",
     "/api/engine3d-sequence",
     "/api/polish-still",
+    "/api/anime",
 )
 
 
@@ -81,7 +82,7 @@ def build_ai_plugin_manifest(base_url: str, *, require_bearer: bool) -> dict[str
             "url": f"{base}{PLUGIN_OPENAPI_PATH}",
             "has_user_authentication": False,
         },
-        "logo_url": f"{base}/assets/engine3d-logo.svg",
+        "logo_url": f"{base}/assets/mrs-logo.png",
         "contact_email": "support@localhost",
         "legal_info_url": f"{base}/legal",
     }
@@ -166,6 +167,42 @@ def build_plugin_openapi(base_url: str, *, require_bearer: bool) -> dict[str, An
                     "note": {"type": "string"},
                 },
             },
+            "AnimeLaneRequest": {
+                "type": "object",
+                "properties": {
+                    "dry_run": {
+                        "type": "boolean",
+                        "default": True,
+                        "description": "Handoff JSON only when true (default).",
+                    },
+                    "render_structure": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": "Optional structure plate render (partial).",
+                    },
+                    "prompt": {"type": "string", "maxLength": 2000},
+                    "projection_method": {
+                        "type": "string",
+                        "default": "projector4d-sot",
+                        "description": "projector4d-sot | drop_w",
+                    },
+                    "width": {"type": "integer", "minimum": 16, "maximum": 1024, "default": 256},
+                    "height": {"type": "integer", "minimum": 16, "maximum": 1024, "default": 256},
+                },
+            },
+            "AnimeLaneResponse": {
+                "type": "object",
+                "properties": {
+                    "lane": {"type": "string", "example": "anime"},
+                    "style": {"type": "string", "example": "anime"},
+                    "style_forced": {"type": "boolean"},
+                    "status": {"type": "string", "example": "partial"},
+                    "anime_lane": {"type": "object"},
+                    "provenance": {"type": "object"},
+                    "structure": {"type": "object"},
+                    "note": {"type": "string"},
+                },
+            },
         }
     }
     if require_bearer:
@@ -223,7 +260,42 @@ def build_plugin_openapi(base_url: str, *, require_bearer: bool) -> dict[str, An
                         "503": {"description": "Engine3D or polish not available."},
                     },
                 }
-            }
+            },
+            "/api/anime": {
+                "post": {
+                    "operationId": "animeLaneHandoff",
+                    "summary": "Anime Lane handoff (style forced to anime).",
+                    "description": (
+                        "Governed Anime Lane handoff: forces style=anime, returns lane + "
+                        "anime_lane.contract_version + provenance. Status: partial / declared. "
+                        "UE AnimeStylizer is optional. See docs/anime-lane/."
+                    ),
+                    "security": security,
+                    "requestBody": {
+                        "required": False,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/AnimeLaneRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Anime Lane handoff package.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/AnimeLaneResponse"
+                                    }
+                                }
+                            },
+                        },
+                        "400": {"description": "Invalid AnimeWorldProfile or request."},
+                        "401": {"description": "Missing/invalid bearer token (when configured)."},
+                        "503": {"description": "Structure render unavailable."},
+                    },
+                }
+            },
         },
         "components": components,
     }

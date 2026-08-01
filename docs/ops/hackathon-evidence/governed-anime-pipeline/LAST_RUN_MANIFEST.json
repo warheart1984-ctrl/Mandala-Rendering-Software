@@ -1,0 +1,39 @@
+{
+  "title": "Governed Creative Anime Pipeline \u2014 Hackathon Demo Evidence",
+  "status": "partial",
+  "story": "Intent \u2192 Genblaze /api/anime \u2192 structure plate \u2192 (optional UE) \u2192 ffmpeg \u2192 Evidence \u2192 Replay",
+  "set_to_render": {
+    "genblaze_structure_ffmpeg": true,
+    "full_ue_anime_stylizer": false,
+    "note": "Yes for offline/Genblaze structure\u2192ffmpeg path. No for full UE AnimeStylizer (skeleton/partial; compile unknown)."
+  },
+  "created_at": "2026-08-01T19:01:08.164700Z",
+  "timing": {
+    "status": "timed",
+    "end_to_end_seconds": 37.831,
+    "note": "Local offline assemble time (not UE; not live Genblaze render)."
+  },
+  "profile_id": "anime.mandala-cel.v1",
+  "projection_method": "projector4d-sot",
+  "ue_optional_leg": {
+    "path": "unreal/AnimeStylizer/",
+    "status": "skeleton/partial",
+    "readiness": "unreal/AnimeStylizer/HACKATHON_READINESS.md"
+  },
+  "ffmpeg_status": "ok",
+  "ffmpeg_sha256": "768941f7c606ae597448c215e7249adcc3795fae6ca0435c454b683b8e75b732",
+  "structure_plate_sha256": "3cbcbbdfee2abd08b26c273d5a9e7216de29f503a0505abcfe1b8399b82c0b84",
+  "local_demo_dir": "tmp/hackathon-governed-anime-demo",
+  "demo_command": "python scripts/hackathon-governed-anime-demo.py --frames 24 --out tmp/hackathon-governed-anime-demo",
+  "run_receipt_sha256": "5d1780ff1e38cc4abb073b2babfcaf4b4c6a3da3baca6049fd2eed46b209537a",
+  "evidence_bundle_sha256": "1bee74119b83d7f08a9fbdb6ea55e2c69063b2782c72d92cc6697d0299813335",
+  "evidence_bundle_contents": [
+    "anime_demo.mp4",
+    "structure_plate.png",
+    "api_anime_handoff.json",
+    "provenance.json",
+    "replay_metadata.json",
+    "manifest.json",
+    "RUN_RECEIPT.md"
+  ]
+}

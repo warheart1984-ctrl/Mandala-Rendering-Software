@@ -67,6 +67,10 @@ import {
   render4dTo3dInputShape,
   handleRender4dTo3d,
 } from "./tools/render-4d-to-3d.js";
+import {
+  renderGovernedAnimeInputShape,
+  handleRenderGovernedAnime,
+} from "./tools/render-governed-anime.js";
 import { handleDescribeCapabilities } from "./tools/describe-capabilities.js";
 import {
   deleteJarvisMemoryInputShape,
@@ -149,7 +153,7 @@ function createMrsServer(): McpServer {
     },
     {
       instructions:
-        "Use render_4d_to_3d_pipeline for a complete native prompt→RT4D→governed scene→Engine3D result. Use render_4d_prompt for a single deterministic 4D still. These render tools return native image content and do not require the viewport. Treat returned image blocks as primary visual evidence: present them with their stage labels and reason from visible content instead of summarizing only metadata. Use create_4d_scene only when the user asks for an interactive wireframe scene. Never describe RT4D or Engine3D output as diffusion-generated.",
+        "Use render_4d_to_3d_pipeline for a complete native prompt→RT4D→governed scene→Engine3D result. Use render_governed_anime_pipeline when the user asks for the governed anime lane, AnimeWorldProfile, /api/anime handoff, structure/cel plate provenance, or UE AnimeStylizer boundary. Use render_4d_prompt for a single deterministic 4D still. These render tools return native image content and do not require the viewport. Treat returned image blocks as primary visual evidence: present them with their stage labels and reason from visible content instead of summarizing only metadata. Use create_4d_scene only when the user asks for an interactive wireframe scene. Never describe RT4D, Engine3D, or the anime handoff as diffusion-generated unless a downstream polish provider is explicitly reported by Genblaze.",
     }
   );
 
@@ -448,6 +452,46 @@ function createMrsServer(): McpServer {
             {
               type: "text" as const,
               text: `Native 4D to 3D pipeline failed: ${message}`,
+            },
+          ],
+          structuredContent: { error: message },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "render_governed_anime_pipeline",
+    {
+      title: "Render Governed Anime Pipeline Handoff",
+      description:
+        "Call Genblaze POST /api/anime for the governed Anime Lane: forces style=anime, returns AnimeWorldProfile/provenance/capability tags, and optionally embeds a structure/cel plate when render_structure=true. UE AnimeStylizer is optional skeleton/partial; do not claim verified UE compile or full photoreal.",
+      inputSchema: renderGovernedAnimeInputShape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
+      _meta: toolStatusMeta(
+        "Preparing governed anime handoff",
+        "Anime handoff ready"
+      ),
+    },
+    async (args) => {
+      try {
+        const { text, content, anime } = await handleRenderGovernedAnime(args);
+        return {
+          content: [{ type: "text" as const, text }, ...content],
+          structuredContent: { anime },
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Governed anime handoff failed: ${message}`,
             },
           ],
           structuredContent: { error: message },
@@ -852,6 +896,7 @@ const httpServer = createServer(async (req, res) => {
         },
         tools: [
           "render_4d_to_3d_pipeline",
+          "render_governed_anime_pipeline",
           "render_4d_prompt",
           "render_scene_spec_rt4d",
           "validate_scene_spec",
@@ -923,7 +968,7 @@ httpServer.listen(PORT, () => {
   );
   console.log(`  Health: GET http://127.0.0.1:${PORT}/health`);
   console.log(
-    `  Primary tools: render_4d_to_3d_pipeline, render_4d_prompt, render_scene_spec_rt4d`
+    `  Primary tools: render_4d_to_3d_pipeline, render_governed_anime_pipeline, render_4d_prompt, render_scene_spec_rt4d`
   );
   console.log(`  LiveLink default: ${resolveLiveLinkUrl()}`);
   console.log(`  Assets: ${ASSETS_DIR}`);

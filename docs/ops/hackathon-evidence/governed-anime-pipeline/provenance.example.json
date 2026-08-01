@@ -1,0 +1,23 @@
+{
+  "schema": "schemas/4d-engine/v1/StructurePlateProjectionProvenance.v1.schema.json",
+  "intentId": "hackathon-governed-anime-20260801",
+  "worldId": "world.hackathon-governed-anime.demo",
+  "timelineId": "timeline.hackathon-governed-anime.demo",
+  "anime_world_profile_id": "anime.mandala-cel.v1",
+  "anime_world_profile_path": "schemas/anime/examples/mandala-cel-v1.example.json",
+  "projection_method": "projector4d-sot",
+  "projector_id": "projector4d-sot",
+  "lane": "anime-structure",
+  "print_sot_touched": false,
+  "digital_printer_touched": false,
+  "structure_plate_sha256": "3cbcbbdfee2abd08b26c273d5a9e7216de29f503a0505abcfe1b8399b82c0b84",
+  "contract": "docs/4d-engine/projection/ANIME_STRUCTURE_PLATE_PROJECTOR_CONTRACT.v1.md",
+  "created_at": "2026-08-01T19:01:08.114701Z",
+  "capability_tags": {
+    "genblaze_api_anime": "partial",
+    "structure_plate_offline": "partial",
+    "ue_anime_stylizer": "skeleton/partial",
+    "ffmpeg_export": "partial",
+    "replay": "declared"
+  }
+}

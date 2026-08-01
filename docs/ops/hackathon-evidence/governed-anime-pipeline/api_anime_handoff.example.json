@@ -1,0 +1,68 @@
+{
+  "status": "partial",
+  "kind": "anime-ue-handoff",
+  "run_id": "946077f4-0a61-4dbe-9131-571cb6fb9d07",
+  "created_at": "2026-08-01T19:01:03.608795Z",
+  "dry_run": true,
+  "prompt": "hackathon governed anime demo",
+  "anime_world_profile_id": "anime.mandala-cel.v1",
+  "anime_world_profile_version": "1.0.0",
+  "anime_world_profile_path": "G:/Mandala Rendering Software/schemas/anime/examples/mandala-cel-v1.example.json",
+  "anime_world_profile_status": "partial",
+  "projection_method": "projector4d-sot",
+  "provenance": {
+    "schema": "schemas/4d-engine/v1/StructurePlateProjectionProvenance.v1.schema.json",
+    "projector_id": "projector4d-sot",
+    "projection_method": "projector4d-sot",
+    "reference_model": "Projector4D (d4/(d4+w)) \u00b7 Print SoT closed form (structure-lane candidate)",
+    "lane": "anime-structure",
+    "print_sot_touched": false,
+    "digital_printer_touched": false,
+    "anime_world_profile_id": "anime.mandala-cel.v1",
+    "contract": "docs/4d-engine/projection/ANIME_STRUCTURE_PLATE_PROJECTOR_CONTRACT.v1.md",
+    "status": "declared",
+    "d4": 1.0,
+    "alpha": 1.0,
+    "asset_sha256": "3cbcbbdfee2abd08b26c273d5a9e7216de29f503a0505abcfe1b8399b82c0b84"
+  },
+  "structure": {
+    "path": "structure_plate.png",
+    "asset_sha256": "3cbcbbdfee2abd08b26c273d5a9e7216de29f503a0505abcfe1b8399b82c0b84",
+    "width": 256,
+    "height": 256,
+    "source": "offline-deterministic-cel"
+  },
+  "capability_tags": {
+    "genblaze_api_anime": "partial",
+    "structure_plate": "declared",
+    "ue_anime_stylizer": "skeleton/partial",
+    "ffmpeg_export": "declared",
+    "replay": "declared",
+    "print_sot": "untouched"
+  },
+  "ue_consumer": {
+    "plugin_path": "unreal/AnimeStylizer",
+    "plugin_status": "skeleton/partial",
+    "load_api": "UAnimeStylizerBlueprintLibrary::LoadStructurePlate",
+    "config_api": "FAnimeStylizerConfig (bUseStructurePlate, StructureBlend)",
+    "contract": "docs/4d-engine/projection/ANIME_STRUCTURE_PLATE_PROJECTOR_CONTRACT.v1.md",
+    "note": "Optional leg. Reliable hackathon demo does not require UE compile \u2014 use Genblaze structure plate \u2192 ffmpeg."
+  },
+  "pipeline_story": [
+    "intent",
+    "genblaze:/api/anime",
+    "structure_plate+provenance",
+    "ue:AnimeStylizer (optional)",
+    "ffmpeg",
+    "evidence",
+    "replay (declared)"
+  ],
+  "non_claims": [
+    "Not Full Photoreal / Digital Printer SoT",
+    "Not a verified UE 5.3+ compile in this repo",
+    "Not CKL-enforced provenance (declared schema only)",
+    "Not a measured R9 380 / 1.1 ms profile",
+    "ffmpeg H.264 cleanliness is operator-side (declared unless artifact hashed)"
+  ],
+  "note": "Governed creative pipeline handoff. Structure/cel plate + AnimeWorldProfile + projection_method provenance for UE or ffmpeg consumers."
+}

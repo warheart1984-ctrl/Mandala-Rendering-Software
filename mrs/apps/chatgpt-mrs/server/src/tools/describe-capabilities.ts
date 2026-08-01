@@ -39,6 +39,28 @@ export function handleDescribeCapabilities(): {
           ],
         },
       },
+      governed_anime_lane: {
+        status: "partial",
+        primary: true,
+        tools: ["render_governed_anime_pipeline"],
+        endpoint: "Genblaze POST /api/anime",
+        stages: [
+          "intent",
+          "style-forced anime lane handoff",
+          "AnimeWorldProfile validation",
+          "structure/cel plate provenance",
+          "optional UE AnimeStylizer consumer boundary",
+          "ffmpeg/evidence/replay metadata boundary",
+        ],
+        honesty:
+          "Forces style=anime and returns provenance/capability tags. UE AnimeStylizer is skeleton/partial unless separately compiled; do not claim full photoreal or verified UE render.",
+        constraints: {
+          style_forced: "anime",
+          default_dry_run: true,
+          ue_anime_stylizer: "skeleton/partial",
+          promoted: false,
+        },
+      },
       rt4d_png_renderer: {
         status: "enforced",
         primary: true,
@@ -85,12 +107,13 @@ export function handleDescribeCapabilities(): {
       "photogrammetry / image-to-mesh",
       "headless WebGPU wavefront (mock-tested only)",
       "video / MP4 encode",
+      "verified UE AnimeStylizer compile/render",
       "OAuth",
     ],
   };
 
   return {
-    text: "MRS plugin: native RT4D PNG tools plus a Genblaze-backed RT4D→SceneSpecification→Engine3D pipeline. Results are MCP images with run IDs and provenance; no diffusion polish.",
+    text: "MRS plugin: native RT4D PNG tools, a Genblaze-backed RT4D→SceneSpecification→Engine3D pipeline, and a governed /api/anime handoff tool. Results are MCP images/metadata with run IDs and provenance; no diffusion polish unless Genblaze explicitly reports that provider path.",
     capabilities,
   };
 }

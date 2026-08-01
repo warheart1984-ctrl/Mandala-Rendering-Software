@@ -2,6 +2,12 @@
 
 Evidence-bound copy for the Backblaze Generative AI Media Hackathon. Paste only what the live App URL actually does.
 
+> **Governed creative anime pipeline (2026-08):** Prefer the story in
+> [`DEVPOST_GOVERNED_ANIME_PIPELINE.md`](./DEVPOST_GOVERNED_ANIME_PIPELINE.md) —
+> Intent → `POST /api/anime` → structure plate + provenance → ffmpeg → evidence.
+> UE AnimeStylizer is an optional scaffold leg. Clean-checkout demo:
+> `python scripts/hackathon-governed-anime-demo.py`.
+
 ## Judge-facing pitch (2026-08)
 
 - **B2 + provenance:** every demo frame lands under `genblaze-media/demo-cache/{shot}/fNNNN/` with SHA-256 sidecars (`intentId` / `worldId` / `timelineId` / provider / hash).

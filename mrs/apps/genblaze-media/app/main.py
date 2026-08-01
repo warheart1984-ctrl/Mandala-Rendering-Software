@@ -83,6 +83,12 @@ from app.style_steer import (
     resolve_style,
     style_health_payload,
 )
+from app.anime_ue_handoff import (
+    ANIME_UE_ENDPOINT,
+    anime_lane_health,
+    anime_ue_availability,
+    build_anime_ue_handoff,
+)
 from app.face_creation_assist_provider import (
     FaceCreationAssistError,
     face_creation_assist_availability,
@@ -202,6 +208,8 @@ STATIC_UI = STATIC_DIR / "index.html"
 STATIC_CROS = STATIC_DIR / "cros.html"
 STATIC_LEGAL = STATIC_DIR / "legal.html"
 STATIC_LOGO = STATIC_DIR / "assets" / "engine3d-logo.svg"
+STATIC_MRS_LOGO = STATIC_DIR / "assets" / "mrs-logo.png"
+STATIC_MRS_BRAND = STATIC_DIR / "assets" / "mrs-brand.json"
 
 # Last startup warmup probe result (no secrets) — exposed on /health.
 _nvidia_warmup_state: dict[str, Any] | None = None
@@ -697,6 +705,35 @@ class Engine3dTileStillRequest(BaseModel):
     aov_normal: bool = Field(default=True)
     crop_region: CropRegionModel
     tile_index: int | None = Field(default=None, ge=0)
+
+
+class AnimeUeHandoffRequest(BaseModel):
+    """Governed anime pipeline handoff for UE AnimeStylizer / ffmpeg (partial)."""
+
+    dry_run: bool = Field(
+        default=True,
+        description="When true, return handoff JSON only (no structure render).",
+    )
+    render_structure: bool = Field(
+        default=False,
+        description=(
+            "When true (and dry_run=false), run constitutional structure-only plate "
+            "via AnimeWorldProfile (offline-safe tiny plate if Engine3D unavailable)."
+        ),
+    )
+    prompt: str | None = Field(default=None, max_length=2000)
+    anime_world_profile_path: str | None = Field(
+        default=None,
+        max_length=512,
+        description="Optional AnimeWorldProfile JSON path (default: mandala-cel-v1 example).",
+    )
+    projection_method: str = Field(
+        default="projector4d-sot",
+        max_length=64,
+        description="projector4d-sot | drop_w (structure-lane; Print SoT untouched).",
+    )
+    width: int = Field(default=256, ge=16, le=1024)
+    height: int = Field(default=256, ge=16, le=1024)
     path_trace: bool = Field(default=False)
 
 
@@ -963,6 +1000,14 @@ def health(request: Request) -> dict:
             "SceneSpecification → RT4D. Infinity narrative lane is out-of-process only."
         ),
         "chatgpt_plugin": plugin_availability(settings),
+        "anime_lane": anime_lane_health(),
+        "anime_ue": anime_ue_availability(),
+        "anime_ue_note": (
+            f"POST {ANIME_UE_ENDPOINT} — Anime Lane handoff (declared/partial). "
+            "Forces style=anime; returns lane + anime_lane.contract_version + provenance. "
+            "Contract: docs/anime-lane/ANIME_LANE_CROSS_ENGINE_CONTRACT.v1.md. "
+            "UE optional; reliable demo Genblaze→structure→ffmpeg. Not promoted."
+        ),
         "sx_kernel": {
             "active": True,
             "version": "1.0",
@@ -2115,6 +2160,81 @@ def api_face_creation_assist(body: FaceCreationAssistRequest, request: Request) 
     return payload
 
 
+@app.post("/api/anime")
+def api_anime(body: AnimeUeHandoffRequest) -> dict:
+    """Governed creative pipeline handoff (partial).
+
+    Intent → structure/cel plate + AnimeWorldProfile + projection_method
+    provenance for UE AnimeStylizer (optional) or ffmpeg. Not Full Photoreal;
+    Print SoT untouched. See docs/ops/DEVPOST_GOVERNED_ANIME_PIPELINE.md.
+    """
+    import tempfile
+    import uuid as _uuid
+
+    from app.pre_render import _render_structure_only
+
+    structure_png: bytes | None = None
+    structure_run_id: str | None = None
+    preview_url: str | None = None
+    dry = bool(body.dry_run)
+
+    if body.render_structure and not dry:
+        settings = get_settings()
+        with tempfile.TemporaryDirectory(prefix="anime-ue-") as tmp:
+            try:
+                structure_png, man = _render_structure_only(
+                    settings=settings,
+                    structure_profile_path=body.anime_world_profile_path,
+                    out_dir=Path(tmp),
+                )
+            except FileNotFoundError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            except Exception as exc:  # noqa: BLE001 — surface pipeline failures honestly
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            structure_run_id = str(
+                man.get("run_id") or man.get("intentId") or _uuid.uuid4()
+            )
+            put_preview(APP_DIR, structure_run_id, structure_png)
+            preview_url = f"/api/preview/{structure_run_id}"
+
+    try:
+        payload = build_anime_ue_handoff(
+            projection_method=body.projection_method,
+            anime_world_profile_path=body.anime_world_profile_path,
+            prompt=body.prompt,
+            dry_run=dry or not body.render_structure,
+            structure_png=structure_png,
+            structure_preview_url=preview_url,
+            structure_run_id=structure_run_id,
+            width=body.width,
+            height=body.height,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if structure_png is not None and structure_run_id:
+        entry = {
+            "run_id": structure_run_id,
+            "prompt": body.prompt or "anime-ue-structure",
+            "model": "mrs-genblaze/anime-structure",
+            "provider": "constitutional-anime-structure",
+            "status": "ok",
+            "asset_sha256": payload.get("provenance", {}).get("asset_sha256"),
+            "preview_url": preview_url,
+            "created_at": payload.get("created_at"),
+            "modality": "image",
+            "kind": "anime-structure-plate",
+            "anime_world_profile_id": payload.get("anime_world_profile_id"),
+            "projection_method": payload.get("projection_method"),
+            "provenance": payload.get("provenance"),
+        }
+        _index.prepend(entry)
+
+    return payload
+
+
 @app.post("/api/engine3d-still")
 def api_engine3d_still(body: Engine3dStillRequest) -> dict:
     """Engine3D structure still → optional RT4D composite → optional polish.
@@ -3050,6 +3170,20 @@ def engine3d_logo() -> FileResponse:
     if not STATIC_LOGO.is_file():
         raise HTTPException(status_code=404, detail="logo missing")
     return FileResponse(STATIC_LOGO, media_type="image/svg+xml")
+
+
+@app.get("/assets/mrs-logo.png")
+def mrs_logo() -> FileResponse:
+    if not STATIC_MRS_LOGO.is_file():
+        raise HTTPException(status_code=404, detail="MRS logo missing")
+    return FileResponse(STATIC_MRS_LOGO, media_type="image/png")
+
+
+@app.get("/brand/mrs.json")
+def mrs_brand_profile() -> FileResponse:
+    if not STATIC_MRS_BRAND.is_file():
+        raise HTTPException(status_code=404, detail="MRS brand profile missing")
+    return FileResponse(STATIC_MRS_BRAND, media_type="application/json")
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "brand-profile/1.0",
+  "brandId": "mrs",
+  "displayName": "Mandala Rendering System",
+  "themeProfileVersion": "mrs-brand/1.0",
+  "logo": {
+    "assetId": "mrs.logo.primary",
+    "version": "1.0.0",
+    "path": "app/static/assets/mrs-logo.png",
+    "publicUrl": "/assets/mrs-logo.png",
+    "mimeType": "image/png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "01505bb9b95775dc15077ec269bf8215358aafe8b06b94ea7fbff10e7c9b801c"
+  },
+  "theme": {
+    "accent": "#7ce0b1",
+    "accentStrong": "#d9fff0",
+    "gold": "#f4c76a",
+    "background": "#091018"
+  },
+  "usage": [
+    "Genblaze/MRS landing hero",
+    "ChatGPT Custom GPT plugin manifest logo",
+    "MRS governed media demo identity"
+  ],
+  "lastVerified": "2026-08-01T00:00:00Z",
+  "status": "partial",
+  "provenance": {
+    "source": "operator-provided logo image",
+    "verification": "sha256 + dimensions checked locally",
+    "schema": "schemas/brand/BrandProfile.v1.schema.json"
+  }
+}
