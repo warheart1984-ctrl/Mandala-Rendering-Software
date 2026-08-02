@@ -39,6 +39,10 @@ It provides a unified anime rendering experience across still-image generation, 
 
 ## Contract Documents
 
+- [`ANIME_LANE_CROSS_ENGINE_CONTRACT.v1.md`](./ANIME_LANE_CROSS_ENGINE_CONTRACT.v1.md) — **SoT**
+- [`ANIME_LANE_HEALTH_SCHEMA.v1.json`](./ANIME_LANE_HEALTH_SCHEMA.v1.json)
+- [`ANIME_LANE_PROMOTION_PROPOSAL.v1.md`](./ANIME_LANE_PROMOTION_PROPOSAL.v1.md)
+- [`ANIME_LANE_CROSS_ENGINE_DIAGRAM.v1.txt`](./ANIME_LANE_CROSS_ENGINE_DIAGRAM.v1.txt)
 - [`RT4D_ANIME_LANE_DEFENSIBLE_ARCHITECTURE.v1.md`](./RT4D_ANIME_LANE_DEFENSIBLE_ARCHITECTURE.v1.md) — **product doctrine** (seven-layer moat, lanes, milestone)
 - [`RT3D_RT4D_HYBRID_PRODUCTION_LANE.v1.md`](./RT3D_RT4D_HYBRID_PRODUCTION_LANE.v1.md) — hybrid ADR + ChatGPT modes
 - [`SHOT_EVIDENCE_ENVELOPE.v1.schema.json`](./SHOT_EVIDENCE_ENVELOPE.v1.schema.json)
