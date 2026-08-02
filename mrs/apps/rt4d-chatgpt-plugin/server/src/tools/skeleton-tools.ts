@@ -2,11 +2,6 @@ import { z } from "zod";
 
 /** Declared / skeleton tools — clear NotImplemented envelopes. */
 
-export const updateRt4dSceneInputShape = {
-  sceneId: z.string().min(1),
-  patch: z.record(z.unknown()).optional(),
-};
-
 export const exportRt4dAssetInputShape = {
   sceneId: z.string().min(1),
   format: z.enum(["png", "json", "unity", "unreal"]).optional(),
@@ -42,14 +37,6 @@ function declaredStub(tool: string, note: string) {
     architectureSoT:
       "docs/anime-lane/RT4D_ANIME_LANE_DEFENSIBLE_ARCHITECTURE.v1.md",
   };
-}
-
-export function handleUpdateRt4dScene(args: unknown) {
-  z.object(updateRt4dSceneInputShape).parse(args ?? {});
-  return declaredStub(
-    "update_rt4d_scene",
-    "Skeleton — scene mutation API not wired. Use create_rt4d_scene for Phase 1."
-  );
 }
 
 export function handleExportRt4dAsset(args: unknown) {

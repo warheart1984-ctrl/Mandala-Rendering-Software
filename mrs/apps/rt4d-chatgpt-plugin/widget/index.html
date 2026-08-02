@@ -3,53 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RT4D Viewer (skeleton)</title>
-    <style>
-      :root {
-        --bg0: #0e1418;
-        --bg1: #1a2830;
-        --ink: #e8eef2;
-        --muted: #8aa0ad;
-        --accent: #3d9e8f;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Segoe UI", system-ui, sans-serif;
-        color: var(--ink);
-        background:
-          radial-gradient(120% 80% at 10% 0%, #243840 0%, transparent 55%),
-          linear-gradient(160deg, var(--bg0), var(--bg1));
-        padding: 1.25rem;
-      }
-      h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.35rem; }
-      p { margin: 0.35rem 0; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
-      .frame {
-        margin-top: 1rem;
-        border: 1px solid rgba(61, 158, 143, 0.35);
-        min-height: 220px;
-        display: grid;
-        place-items: center;
-        background: rgba(0, 0, 0, 0.25);
-      }
-      .frame span { color: var(--accent); font-size: 0.85rem; letter-spacing: 0.04em; }
-      code { color: var(--ink); }
-    </style>
+    <title>RT4D Dimensional Preview</title>
   </head>
   <body>
-    <h1>RT4D interactive viewer</h1>
-    <p>
-      Status: <strong>skeleton</strong>. Phase 1 serves this HTML resource for ChatGPT widget wiring.
-      Interactive projection / provenance inspect UI is not implemented here yet —
-      use MCP tool <code>inspect_rt4d_provenance</code>.
-    </p>
-    <div class="frame" id="preview">
-      <span>Preview plane — awaiting scene bind</span>
-    </div>
-    <p>
-      Pipeline reminder: RT3D anime scene (declared) → RT4D dimensional pass (partial) →
-      composite (declared).
-    </p>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

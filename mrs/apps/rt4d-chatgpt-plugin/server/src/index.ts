@@ -1,7 +1,8 @@
 /**
- * RT4D Hybrid Anime Production — ChatGPT MCP server (Phase 1 vertical slice).
+ * RT4D Hybrid Anime Production — ChatGPT MCP server (Phase 2 interactive viewer).
  *
- * Status: MCP bridge partial; widget skeleton; public directory submission declared.
+ * Status: MCP bridge partial; widget partial (local dimensional preview);
+ * ChatGPT embedded UI depends on platform support — not directory-ready.
  * Does not embed RT4D math — calls RT4D_ENGINE_URL when set.
  */
 import fs from "node:fs";
@@ -36,12 +37,14 @@ import {
 } from "./tools/inspect-rt4d-provenance.js";
 import {
   updateRt4dSceneInputShape,
+  handleUpdateRt4dScene,
+} from "./tools/update-rt4d-scene.js";
+import {
   exportRt4dAssetInputShape,
   validateCharacterContinuityInputShape,
   replayAnimeShotInputShape,
   compareRenderVersionsInputShape,
   approveCanonicalShotInputShape,
-  handleUpdateRt4dScene,
   handleExportRt4dAsset,
   handleValidateCharacterContinuity,
   handleReplayAnimeShot,
@@ -50,15 +53,22 @@ import {
 } from "./tools/skeleton-tools.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const WIDGET_PATH = path.resolve(__dirname, "../../widget/index.html");
-const RESOURCE_URI = "ui://rt4d-viewer/v1.html";
+const ASSETS_DIR = path.resolve(__dirname, "../../assets");
+const WIDGET_DIR = path.resolve(__dirname, "../../widget");
+const WIDGET_BUILT = path.join(ASSETS_DIR, "rt4d-viewer.html");
+const WIDGET_FALLBACK = path.join(WIDGET_DIR, "index.html");
+/** MCP Apps UI resource — MIME text/html;profile=mcp-app via RESOURCE_MIME_TYPE */
+const RESOURCE_URI = "ui://rt4d/viewer-v1";
 const PORT = Number(process.env.PORT ?? process.env.RT4D_PLUGIN_PORT ?? 8010);
 
 function readWidgetHtml(): string {
-  if (fs.existsSync(WIDGET_PATH)) {
-    return fs.readFileSync(WIDGET_PATH, "utf8");
+  if (fs.existsSync(WIDGET_BUILT)) {
+    return fs.readFileSync(WIDGET_BUILT, "utf8");
   }
-  return `<!doctype html><html><body><p>RT4D viewer skeleton missing at ${WIDGET_PATH}</p></body></html>`;
+  if (fs.existsSync(WIDGET_FALLBACK)) {
+    return fs.readFileSync(WIDGET_FALLBACK, "utf8");
+  }
+  return `<!doctype html><html><body><p>RT4D viewer missing. Run <code>npm run build</code> in widget/ (expected ${WIDGET_BUILT}).</p></body></html>`;
 }
 
 function toolStatusMeta(invoking: string, invoked: string) {
@@ -85,11 +95,11 @@ function createRt4dPluginServer(): McpServer {
   const server = new McpServer(
     {
       name: "rt4d-hybrid-anime-production",
-      version: "0.1.0",
+      version: "0.2.0",
     },
     {
       instructions:
-        "RT4D Anime Lane product plugin (partial). Prefer create_rt4d_scene → render_rt4d_preview → inspect_rt4d_provenance. Modes map to product lanes (portrait/manga/anime_scene/film). Emit/inspect Shot Evidence Envelope + ContinuityState. Do not claim diffusion-as-anime, ChatGPT directory listing, persistent RT3D, 5s film, or Unity/Unreal export as enforced. Genblaze Actions are a companion onboarding tool. No claim without evidence. Architecture SoT: docs/anime-lane/RT4D_ANIME_LANE_DEFENSIBLE_ARCHITECTURE.v1.md",
+        "RT4D Anime Lane product plugin (partial). Prefer create_rt4d_scene → render_rt4d_preview → inspect_rt4d_provenance. Interactive viewer (ui://rt4d/viewer-v1) can call update_rt4d_scene for XW/YW/ZW + projection (partial dimensional preview — not AnimeStylizer). Modes map to product lanes. Do not claim diffusion-as-anime, ChatGPT directory listing, persistent RT3D, 5s film, or Unity/Unreal export as enforced. Genblaze Actions are a companion onboarding tool. No claim without evidence. Architecture SoT: docs/anime-lane/RT4D_ANIME_LANE_DEFENSIBLE_ARCHITECTURE.v1.md",
     }
   );
 
@@ -97,11 +107,12 @@ function createRt4dPluginServer(): McpServer {
 
   registerAppResource(
     server,
-    "RT4D Viewer (skeleton)",
+    "RT4D Viewer v1",
     RESOURCE_URI,
     {
       mimeType: RESOURCE_MIME_TYPE,
-      description: "Skeleton interactive viewer — provenance inspect via MCP tools",
+      description:
+        "Interactive RT4D dimensional preview (Three.js tesseract / engine PNG). Phase 2 partial — not photoreal anime.",
     },
     async () => ({
       contents: [
@@ -112,7 +123,7 @@ function createRt4dPluginServer(): McpServer {
           _meta: {
             ui: { prefersBorder: true },
             "openai/widgetDescription":
-              "Skeleton RT4D viewer. Status: skeleton.",
+              "RT4D dimensional preview viewer. Status: partial. Not AnimeStylizer.",
           },
         },
       ],
@@ -125,32 +136,32 @@ function createRt4dPluginServer(): McpServer {
     {
       title: "Create RT4D Scene",
       description:
-        "Create deterministic scene JSON with mode/product lane, ContinuityState, provenance, and Shot Evidence Envelope (partial).",
+        "Create deterministic scene JSON with mode/product lane, ContinuityState, provenance, and Shot Evidence Envelope (partial). Opens interactive viewer when host supports MCP Apps UI.",
       inputSchema: createRt4dSceneInputShape,
       _meta: widgetMeta("Creating RT4D scene…", "Scene created"),
     },
     async (args) => {
       const result = handleCreateRt4dScene(args);
+      const structuredContent = {
+        sceneId: result.sceneId,
+        provenance: result.provenance,
+        continuityState: result.continuityState,
+        shotEvidence: result.shotEvidence,
+        scene: result.scene,
+        rotations: (result.scene as { rotations?: unknown }).rotations,
+        projection: (result.scene as { projection?: unknown }).projection,
+        statusTag: result.statusTag,
+        visualKind: "dimensional_preview" as const,
+      };
       return {
         content: [
           { type: "text", text: result.text },
           {
             type: "text",
-            text: JSON.stringify(
-              {
-                sceneId: result.sceneId,
-                provenance: result.provenance,
-                continuityState: result.continuityState,
-                shotEvidence: result.shotEvidence,
-                scene: result.scene,
-                statusTag: result.statusTag,
-              },
-              null,
-              2
-            ),
+            text: JSON.stringify(structuredContent, null, 2),
           },
         ],
-        structuredContent: result,
+        structuredContent,
       };
     }
   );
@@ -161,33 +172,34 @@ function createRt4dPluginServer(): McpServer {
     {
       title: "Render RT4D Preview",
       description:
-        "Preview via RT4D_ENGINE_URL (Genblaze /api/generate) or deterministic placeholder. Updates Shot Evidence Envelope outputHash.",
+        "Preview via RT4D_ENGINE_URL (Genblaze /api/generate) or deterministic placeholder. Updates Shot Evidence Envelope outputHash. Binds to viewer widget.",
       inputSchema: renderRt4dPreviewInputShape,
-      _meta: toolStatusMeta("Rendering RT4D preview…", "Preview ready"),
+      _meta: widgetMeta("Rendering RT4D preview…", "Preview ready"),
     },
     async (args) => {
       const result = await handleRenderRt4dPreview(args);
+      const structuredContent = {
+        sceneId: result.sceneId,
+        previewUrl: result.previewUrl,
+        sha256: result.sha256,
+        source: result.source,
+        width: result.width,
+        height: result.height,
+        shotEvidence: result.shotEvidence,
+        provenance: result.provenance,
+        continuityState: result.continuityState,
+        statusTag: result.statusTag,
+        visualKind: "dimensional_preview" as const,
+      };
       return {
         content: [
           { type: "text", text: result.text },
           {
             type: "text",
-            text: JSON.stringify(
-              {
-                sceneId: result.sceneId,
-                previewUrl: result.previewUrl,
-                sha256: result.sha256,
-                source: result.source,
-                shotEvidence: result.shotEvidence,
-                provenance: result.provenance,
-                statusTag: result.statusTag,
-              },
-              null,
-              2
-            ),
+            text: JSON.stringify(structuredContent, null, 2),
           },
         ],
-        structuredContent: result,
+        structuredContent,
       };
     }
   );
@@ -200,7 +212,7 @@ function createRt4dPluginServer(): McpServer {
       description:
         "Return provenance, ContinuityState, and Shot Evidence Envelope from in-memory store.",
       inputSchema: inspectRt4dProvenanceInputShape,
-      _meta: toolStatusMeta("Inspecting provenance…", "Provenance ready"),
+      _meta: widgetMeta("Inspecting provenance…", "Provenance ready"),
     },
     async (args) => {
       const result = handleInspectRt4dProvenance(args);
@@ -219,17 +231,23 @@ function createRt4dPluginServer(): McpServer {
     "update_rt4d_scene",
     {
       title: "Update RT4D Scene",
-      description: "Skeleton — NotImplemented (declared).",
+      description:
+        "Phase 2 partial — update XW/YW/ZW rotations and/or projection distance; optional rePreview. Id-stable in-memory mutation. Not RT3D persistence / export.",
       inputSchema: updateRt4dSceneInputShape,
-      _meta: toolStatusMeta("Update not implemented…", "Declared stub"),
+      _meta: widgetMeta("Updating RT4D scene…", "Scene updated"),
     },
-    async (args) => ({
-      content: [
-        { type: "text", text: JSON.stringify(handleUpdateRt4dScene(args)) },
-      ],
-      structuredContent: handleUpdateRt4dScene(args),
-      isError: true,
-    })
+    async (args) => {
+      const result = await handleUpdateRt4dScene(args);
+      const isError = "error" in result && Boolean(result.error);
+      return {
+        content: [
+          { type: "text", text: result.text },
+          { type: "text", text: JSON.stringify(result, null, 2) },
+        ],
+        structuredContent: result,
+        isError,
+      };
+    }
   );
 
   registerAppTool(
@@ -340,20 +358,26 @@ async function main(): Promise<void> {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
 
     if (req.method === "GET" && url.pathname === "/health") {
+      const widgetBuilt = fs.existsSync(WIDGET_BUILT);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
           ok: true,
           name: "rt4d-hybrid-anime-production",
+          version: "0.2.0",
           status: {
             mcp_bridge: "partial",
-            widget: "skeleton",
+            widget: widgetBuilt ? "partial" : "skeleton",
+            phase: 2,
             public_directory_submission: "declared",
             first_milestone: "declared",
+            chatgpt_embedded_ui: "partial",
           },
+          resourceUri: RESOURCE_URI,
           architectureSoT:
             "docs/anime-lane/RT4D_ANIME_LANE_DEFENSIBLE_ARCHITECTURE.v1.md",
           engineUrlConfigured: Boolean(process.env.RT4D_ENGINE_URL?.trim()),
+          widgetBuilt,
         })
       );
       return;
@@ -395,7 +419,7 @@ async function main(): Promise<void> {
 
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(
-      `[rt4d-chatgpt-plugin] listening on http://0.0.0.0:${PORT}  MCP=/mcp  health=/health  status=partial`
+      `[rt4d-chatgpt-plugin] listening on http://0.0.0.0:${PORT}  MCP=/mcp  health=/health  ui=${RESOURCE_URI}  status=partial`
     );
   });
 }
