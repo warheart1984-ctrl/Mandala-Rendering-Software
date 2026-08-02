@@ -1,0 +1,24 @@
+# Docker context for apps/rt4d-engine/Dockerfile (context = mrs/)
+**/node_modules
+**/.pnpm-store
+**/dist
+**/coverage
+**/.git
+**/.turbo
+**/.cache
+**/cdk.out
+**/*.md
+!packages/renderer-core/README.md
+
+# Keep only packages needed for rt4d-engine image
+apps/*
+!apps/rt4d-engine
+packages/*
+!packages/renderer-core
+
+# Large / unrelated trees
+tmp
+docs
+test-results
+**/.codex-plugin
+**/widget/node_modules

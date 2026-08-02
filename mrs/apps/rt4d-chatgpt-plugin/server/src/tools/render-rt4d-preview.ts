@@ -62,6 +62,8 @@ export async function handleRenderRt4dPreview(args: unknown) {
     prompt: scene.prompt,
     sceneId: scene.sceneId,
     sceneSha256: scene.provenance.hashes.sceneSha256,
+    rotations: scene.rotations,
+    projection: scene.projection,
     width: parsed.width,
     height: parsed.height,
   });
@@ -75,7 +77,13 @@ export async function handleRenderRt4dPreview(args: unknown) {
   });
 
   return {
-    text: `Preview for ${updated.sceneId} via ${engine.source}. ${engine.note}`,
+    text:
+      `Preview for ${updated.sceneId} via ${engine.source}. ${engine.note}` +
+      (engine.renderBundle
+        ? ` renderId=${engine.renderBundle.renderId} evidence=${engine.renderBundle.evidenceStatus} promotion=${engine.renderBundle.promotionStatus} replayToken=${engine.evidence?.replayToken?.slice(0, 16)}…`
+        : engine.evidence
+          ? ` replayToken=${engine.evidence.replayToken.slice(0, 16)}… conformance=${engine.evidence.conformance?.ok ?? "n/a"}`
+          : ""),
     sceneId: updated.sceneId,
     previewUrl: engine.previewUrl,
     sha256: engine.sha256,
@@ -83,6 +91,8 @@ export async function handleRenderRt4dPreview(args: unknown) {
     width: engine.width,
     height: engine.height,
     runId: engine.runId,
+    evidence: engine.evidence,
+    renderBundle: engine.renderBundle,
     provenance: updated.provenance,
     continuityState: updated.continuityState,
     shotEvidence: updated.shotEvidence,
