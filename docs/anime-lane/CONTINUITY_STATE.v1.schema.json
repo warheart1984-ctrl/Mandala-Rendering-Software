@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandala.local/schemas/anime-lane/CONTINUITY_STATE.v1.schema.json",
+  "title": "ContinuityState",
+  "description": "Persistent state inherited by the next shot instead of regenerating the world. Status: declared schema; MCP Phase 1 accepts/stores in-memory (partial). Character persistence across sessions is declared until built.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "characterState",
+    "worldState",
+    "cameraState",
+    "emotionState",
+    "rt4dState",
+    "continuityVersion"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "ContinuityState.v1"
+    },
+    "statusTag": {
+      "type": "string",
+      "enum": ["declared", "skeleton", "partial", "enforced"],
+      "default": "partial"
+    },
+    "characterState": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Identity, outfit, equipment, damage, proportions locks."
+    },
+    "worldState": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Scene geography, light direction, prior-shot consequences."
+    },
+    "cameraState": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Camera continuity parameters."
+    },
+    "emotionState": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Emotional / performance state."
+    },
+    "rt4dState": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Dimensional phase, spell progression, active effect graph params."
+    },
+    "continuityVersion": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonic continuity generation counter."
+    }
+  }
+}

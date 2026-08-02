@@ -2,6 +2,7 @@ packages:
   - "packages/*"
   - "apps/chatgpt-mrs/server"
   - "apps/chatgpt-mrs/web"
+  - "apps/rt4d-chatgpt-plugin/server"
 
 # pnpm 10: allow native postinstall for these deps (also mirrored in package.json pnpm.onlyBuiltDependencies).
 onlyBuiltDependencies:
