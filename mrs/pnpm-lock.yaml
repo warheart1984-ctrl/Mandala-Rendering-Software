@@ -143,6 +143,9 @@ importers:
       '@mrs/renderer-core':
         specifier: workspace:*
         version: link:../../packages/renderer-core
+      '@mrs/rt4d-metering':
+        specifier: workspace:*
+        version: link:../../packages/rt4d-metering
     devDependencies:
       '@types/node':
         specifier: ^24.3.0
@@ -199,6 +202,12 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
+
+  packages/rt4d-metering:
+    dependencies:
+      zod:
+        specifier: ^3.24.4
+        version: 3.25.76
 
   packages/scene-schema:
     devDependencies:

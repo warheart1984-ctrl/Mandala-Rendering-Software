@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandala.local/schemas/rt4d-metering/credit-ledger-entry.schema.json",
+  "title": "Rt4dCreditLedgerEntry",
+  "description": "Append-only credit ledger entry keyed by renderId. Status: partial scaffold.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "entryId",
+    "userId",
+    "planId",
+    "renderId",
+    "creditsDelta",
+    "kind",
+    "recordedAt"
+  ],
+  "properties": {
+    "entryId": { "type": "string", "minLength": 1 },
+    "userId": { "type": "string", "minLength": 1 },
+    "planId": {
+      "type": "string",
+      "enum": ["free", "creator", "pro", "studio"]
+    },
+    "renderId": { "type": "string", "minLength": 1 },
+    "creditsDelta": { "type": "integer" },
+    "kind": {
+      "type": "string",
+      "enum": ["usage", "grant", "refund", "adjustment"]
+    },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "usageStatus": {
+      "type": "string",
+      "enum": ["completed", "failed", "denied"]
+    },
+    "idempotentReplay": { "type": "boolean" }
+  }
+}

@@ -164,6 +164,10 @@ npm run typecheck
 - No AnimeStylizer / photoreal character persistence
 - ChatGPT public directory + stable production HTTPS **declared**
 
+### Debt — portrait lighting API (**declared**)
+
+`createPortraitLightingRig` returns a portrait **object**; `Scene4D.setLightRig` expects a light **array**. Do not wire without an adapter. Current engine/plugin path uses audited `render-still.mjs` lights. See CECP implementor note: `docs/governance/cecp/trails/rt4d-chatgpt-plugin-phase2-2026-08/03-implementor-notes.md`.
+
 ---
 
 ## Package layout

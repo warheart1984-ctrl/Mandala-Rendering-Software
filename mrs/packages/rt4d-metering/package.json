@@ -1,0 +1,26 @@
+{
+  "name": "@mrs/rt4d-metering",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "RT4D usage metering + credit ledger scaffold — consumes verified engine receipts only (partial)",
+  "license": "MIT",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./deriveCredits": "./src/deriveCredits.js",
+    "./ledger": "./src/ledger.js",
+    "./planGate": "./src/planGate.js",
+    "./softEmit": "./src/softEmit.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start:stub": "node src/httpStub.js"
+  },
+  "dependencies": {
+    "zod": "^3.24.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

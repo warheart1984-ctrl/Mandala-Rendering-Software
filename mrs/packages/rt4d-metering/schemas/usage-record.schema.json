@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandala.local/schemas/rt4d-metering/usage-record.schema.json",
+  "title": "Rt4dUsageRecord",
+  "description": "Authoritative usage record derived from a verified engine render receipt. Status: partial scaffold.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "planId",
+    "renderId",
+    "creditsUsed",
+    "computeSeconds",
+    "storageBytes",
+    "status"
+  ],
+  "properties": {
+    "userId": { "type": "string", "minLength": 1 },
+    "planId": {
+      "type": "string",
+      "enum": ["free", "creator", "pro", "studio"]
+    },
+    "renderId": { "type": "string", "minLength": 1 },
+    "creditsUsed": { "type": "integer", "minimum": 0 },
+    "computeSeconds": { "type": "number", "minimum": 0 },
+    "storageBytes": { "type": "integer", "minimum": 0 },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "failed", "denied"]
+    },
+    "pixelHash": { "type": "string" },
+    "pngHash": { "type": "string" },
+    "projectionHash": { "type": "string" },
+    "runtimeFingerprint": { "type": "object" },
+    "evidenceStatus": { "type": "string" },
+    "recordedAt": { "type": "string", "format": "date-time" }
+  }
+}
