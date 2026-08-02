@@ -3,17 +3,18 @@
   "name_for_human": "RT4D Hybrid Anime Production",
   "name_for_model": "rt4d_hybrid_anime_production",
   "description_for_human": "Governed hybrid 3D–4D anime production lane: RT3D scenes, RT4D dimensional pass, provenance-backed previews. Not diffusion-as-anime.",
-  "description_for_model": "Product MCP for Mandala RT4D. Prefer create_rt4d_scene then render_rt4d_preview then inspect_rt4d_provenance. Modes: create_anime_character, create_anime_scene, add_rt4d_powers, animate_dimensional_transformation, render_manga_panel, render_cinematic_sequence. Pipeline: Anime Prompt → RT3D Anime Scene (declared until Engine3D/UE) → RT4D Dimensional Pass → Composite (declared) → Image/Manga/Animation/Movie. Do not re-derive RT4D math; engine is RT4D_ENGINE_URL. Genblaze Actions are a companion onboarding tool, not this product. Phase 1: create+preview+provenance are partial; update/export are skeleton. Never claim ChatGPT directory listing or full RT3D/composite as enforced.",
+  "description_for_model": "Product MCP for Mandala RT4D. Prefer create_rt4d_scene then render_rt4d_preview then update_rt4d_scene (viewer XW/YW/ZW) then inspect_rt4d_provenance. UI resource ui://rt4d/viewer-v1 is a dimensional preview (Three.js tesseract), not AnimeStylizer. Modes: create_anime_character, create_anime_scene, add_rt4d_powers, animate_dimensional_transformation, render_manga_panel, render_cinematic_sequence. Do not re-derive RT4D math; engine is RT4D_ENGINE_URL. Phase 2: create+preview+update+viewer are partial; export/governance are skeleton/declared. Never claim ChatGPT directory listing or full RT3D/composite as enforced.",
   "author": {
     "name": "Jon Halstead",
     "email": "support@localhost",
     "url": "https://github.com/warheart1984-ctrl"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "status": {
     "mcp_bridge": "partial",
-    "widget": "skeleton",
+    "widget": "partial",
+    "chatgpt_embedded_ui": "partial",
     "public_directory_submission": "declared"
   },
   "mcp": {

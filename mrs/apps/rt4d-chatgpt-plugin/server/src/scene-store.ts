@@ -233,3 +233,88 @@ export function attachPreview(
   sceneStore.set(sceneId, scene);
   return scene;
 }
+
+export type SceneUpdatePatch = {
+  rotations?: Array<{ plane: RotationPlane; speed: number }>;
+  projection?: Partial<{
+    type: "perspective" | "orthographic";
+    distance4d: number;
+    distance3d: number;
+  }>;
+  prompt?: string;
+  continuityVersionBump?: boolean;
+};
+
+/**
+ * Phase 2 partial: mutate rotation / projection (id-stable) and refresh hashes.
+ * Does not persist RT3D character state — that remains declared.
+ */
+export function updateRt4dSceneRecord(
+  sceneId: string,
+  patch: SceneUpdatePatch
+): Rt4dSceneRecord {
+  const scene = getSceneOrThrow(sceneId);
+  const now = new Date().toISOString();
+
+  if (patch.rotations) {
+    scene.rotations = patch.rotations;
+  }
+  if (patch.projection) {
+    scene.projection = {
+      ...scene.projection,
+      ...patch.projection,
+    };
+  }
+  if (typeof patch.prompt === "string" && patch.prompt.trim()) {
+    scene.prompt = patch.prompt.trim();
+  }
+
+  const bump =
+    patch.continuityVersionBump !== false &&
+    Boolean(patch.rotations || patch.projection || patch.prompt);
+
+  scene.continuityState = {
+    ...scene.continuityState,
+    rt4dState: {
+      ...scene.continuityState.rt4dState,
+      rotations: scene.rotations,
+      projection: scene.projection,
+    },
+    continuityVersion: bump
+      ? scene.continuityState.continuityVersion + 1
+      : scene.continuityState.continuityVersion,
+  };
+
+  scene.provenance = {
+    ...scene.provenance,
+    projector: {
+      ...scene.projection,
+      planes: scene.rotations.map((r) => r.plane),
+    },
+    updatedAt: now,
+  };
+
+  const sceneJson: Record<string, unknown> = {
+    ...scene.sceneJson,
+    prompt: scene.prompt,
+    rotations: scene.rotations,
+    projection: scene.projection,
+    continuityState: scene.continuityState,
+    provenance: scene.provenance,
+    note:
+      "Phase 2: interactive rotation/projection updates are partial; RT3D persistence, AnimeStylizer, Unity/Unreal export remain declared. Dimensional preview ≠ photoreal anime.",
+  };
+  const sceneSha256 = sha256Hex(JSON.stringify(sceneJson));
+  scene.provenance.hashes.sceneSha256 = sceneSha256;
+  scene.shotEvidence = buildShotEvidenceEnvelope(scene, {
+    parentShotId: scene.shotEvidence?.parentShotId ?? null,
+    outputHash: scene.provenance.hashes.previewSha256,
+  });
+  scene.sceneJson = {
+    ...sceneJson,
+    provenance: scene.provenance,
+    shotEvidence: scene.shotEvidence,
+  };
+  sceneStore.set(sceneId, scene);
+  return scene;
+}

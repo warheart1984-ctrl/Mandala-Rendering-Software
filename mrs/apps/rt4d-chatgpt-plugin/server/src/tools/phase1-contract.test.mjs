@@ -3,9 +3,10 @@ import { describe, it } from "node:test";
 import { handleCreateRt4dScene } from "./create-rt4d-scene.ts";
 import { handleRenderRt4dPreview } from "./render-rt4d-preview.ts";
 import { handleInspectRt4dProvenance } from "./inspect-rt4d-provenance.ts";
+import { handleUpdateRt4dScene } from "./update-rt4d-scene.ts";
 import { handleExportRt4dAsset } from "./skeleton-tools.ts";
 
-describe("rt4d-chatgpt-plugin phase1", () => {
+describe("rt4d-chatgpt-plugin phase1+2", () => {
   it("create_rt4d_scene emits continuity + shot evidence", () => {
     const result = handleCreateRt4dScene({
       prompt: "golden 4D dragon XW YW dimensional awakening",
@@ -66,5 +67,37 @@ describe("rt4d-chatgpt-plugin phase1", () => {
     });
     assert.equal(exported.statusTag, "declared");
     assert.equal(exported.implemented, false);
+  });
+
+  it("update_rt4d_scene patches rotations/projection and bumps continuity", async () => {
+    const created = handleCreateRt4dScene({
+      prompt: "interactive tesseract",
+      mode: "add_rt4d_powers",
+      rotationPlanes: [
+        { plane: "XW", speed: 0.2 },
+        { plane: "YW", speed: 0.2 },
+      ],
+      continuityState: { continuityVersion: 1 },
+    });
+    // Store mutates in place — snapshot hash before update.
+    const priorSceneHash = created.provenance.hashes.sceneSha256;
+    const updated = await handleUpdateRt4dScene({
+      sceneId: created.sceneId,
+      rotations: [
+        { plane: "XW", speed: 0.9 },
+        { plane: "YW", speed: 0.4 },
+        { plane: "ZW", speed: 0.1 },
+      ],
+      projection: { distance4d: 5.5 },
+      rePreview: false,
+    });
+    assert.equal(updated.statusTag, "partial");
+    assert.equal(updated.implemented, true);
+    assert.equal(updated.visualKind, "dimensional_preview");
+    assert.equal(updated.projection.distance4d, 5.5);
+    assert.equal(updated.rotations.length, 3);
+    assert.equal(updated.continuityState.continuityVersion, 2);
+    assert.ok(updated.provenance.hashes.sceneSha256);
+    assert.notEqual(updated.provenance.hashes.sceneSha256, priorSceneHash);
   });
 });

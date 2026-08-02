@@ -1,25 +1,44 @@
-# RT4D ChatGPT / MCP Plugin (Phase 1)
+# RT4D ChatGPT / MCP Plugin (Phase 2 partial)
 
 **Product plugin** for the RT4D Anime Lane hybrid production surface.
 
 | Tag | Value |
 | --- | --- |
 | MCP bridge | **partial** (Streamable HTTP `/mcp` works today) |
-| Widget | **skeleton** |
+| Widget | **partial** (local interactive dimensional preview) |
+| ChatGPT embedded UI | **partial** — depends on MCP Apps / Dev Mode host support; **not** directory-ready |
 | Public ChatGPT directory submission | **declared** (not claimed) |
 | First technical milestone (persistent RT3D + RT4D effect + 5s timeline + replay receipt) | **declared** as a whole |
+| Photoreal / AnimeStylizer character persistence | **declared** |
 
-> **No claim without evidence.** Do not describe RT3D persistence, 5s film, Unity/Unreal export, or directory listing as shipped.
+> **No claim without evidence.** The Three.js tesseract is a **dimensional preview**, not AnimeStylizer / photoreal anime. Do not describe RT3D persistence, 5s film, Unity/Unreal export, or directory listing as shipped.
 
 Architecture SoT: [`docs/anime-lane/RT4D_ANIME_LANE_DEFENSIBLE_ARCHITECTURE.v1.md`](../../../docs/anime-lane/RT4D_ANIME_LANE_DEFENSIBLE_ARCHITECTURE.v1.md)
 
+UI resource: `ui://rt4d/viewer-v1` (`text/html;profile=mcp-app` via MCP Apps SDK `RESOURCE_MIME_TYPE`).
+
 ---
 
-## Hook up to ChatGPT today (operator how-to)
+## Hook up today (operator how-to)
 
-Honest scope: ChatGPT Dev Mode can call the **working** tools (`create_rt4d_scene`, `render_rt4d_preview`, `inspect_rt4d_provenance`). Previews are engine-backed when `RT4D_ENGINE_URL` is set, otherwise a **deterministic placeholder**. Widget is skeleton. Governance/export tools return declared NotImplemented stubs.
+Honest scope: MCP Inspector and ChatGPT Dev Mode can call working tools. Previews are engine-backed when `RT4D_ENGINE_URL` is set, otherwise a **deterministic placeholder**. Widget is a **partial** local dimensional viewer; ChatGPT embedding quality varies by platform.
 
-### 1. Install + start MCP locally
+### 1. Build the widget
+
+```powershell
+cd "G:\Mandala Rendering Software\mrs\apps\rt4d-chatgpt-plugin\widget"
+npm install
+npm run build
+```
+
+Produces single-file `assets/rt4d-viewer.html` (served by the MCP server). Local preview without MCP:
+
+```powershell
+npm run preview
+# or: npm run dev
+```
+
+### 2. Install + start MCP
 
 ```powershell
 cd "G:\Mandala Rendering Software\mrs\apps\rt4d-chatgpt-plugin\server"
@@ -33,12 +52,12 @@ Health check:
 curl.exe http://127.0.0.1:8010/health
 ```
 
-Expect `"ok": true`, `"mcp_bridge": "partial"`.
+Expect `"ok": true`, `"mcp_bridge": "partial"`, `"widget": "partial"` when the widget build exists.
 
-Optional engine (Genblaze or compatible — no local RT4D math in this process):
+Optional engine (prefer when set — no local RT4D math in this process):
 
 ```powershell
-$env:RT4D_ENGINE_URL = "http://127.0.0.1:8080"   # your Genblaze base
+$env:RT4D_ENGINE_URL = "http://127.0.0.1:8080"   # Genblaze or compatible base
 # $env:RT4D_API_KEY = "..."   # only if that host requires bearer
 npm start
 ```
@@ -49,108 +68,61 @@ npm start
 | `http://127.0.0.1:8010/mcp` | **Streamable HTTP MCP** (ChatGPT Dev Mode) |
 | `http://127.0.0.1:8010/sse` | Legacy SSE (MCP Inspector) |
 
-### 2. Expose HTTPS with cloudflared (preferred)
-
-ngrok is broken on this host — use **cloudflared** quick tunnel:
+### 3. Expose HTTPS with cloudflared (preferred)
 
 ```powershell
 cloudflared tunnel --url http://127.0.0.1:8010
 ```
 
-Copy the printed HTTPS origin, e.g. `https://random-words.trycloudflare.com`.
-
-**Public MCP URL pattern (what ChatGPT needs):**
+Public MCP URL:
 
 ```text
 https://<cloudflare-subdomain>.trycloudflare.com/mcp
 ```
 
-Keep both `npm start` and `cloudflared` running. Tunnel URLs are temporary — fine for Dev Mode; directory submission needs stable HTTPS (**declared**).
-
-### 3. MCP Inspector smoke (before ChatGPT)
+### 4. MCP Inspector smoke
 
 ```powershell
 npx @modelcontextprotocol/inspector
 ```
 
-- Transport: **Streamable HTTP** → URL `http://127.0.0.1:8010/mcp`  
-  (or SSE `http://127.0.0.1:8010/sse`)
-- Call in order: `create_rt4d_scene` → `render_rt4d_preview` → `inspect_rt4d_provenance`
-- Confirm `shotEvidence` + provenance fields come back
+- Transport: **Streamable HTTP** → `http://127.0.0.1:8010/mcp`
+- Resources: confirm `ui://rt4d/viewer-v1`
+- Tools order: `create_rt4d_scene` → `render_rt4d_preview` → `update_rt4d_scene` (XW/YW/ZW + `projection.distance4d`) → `inspect_rt4d_provenance`
+- Widget HTML loads from the resource; host may show App UI if MCP Apps supported
 
-Also: `npm test` in `server/` (Phase 1 contract tests).
+Also: `npm test` in `server/`.
 
-### 4. ChatGPT UI clicks
+### 5. What works where
 
-1. Open [ChatGPT](https://chatgpt.com) (account with **Developer Mode** / MCP connectors enabled).
-2. **Settings** → **Apps & Connectors** / **Developer** (wording varies by rollout) → enable **Developer Mode** if needed.
-3. **Add MCP server** / **Connect** → paste:
+| Surface | What works |
+| --- | --- |
+| **MCP Inspector** | Tools + resource fetch; structuredContent; update/re-preview. Interactive iframe depends on Inspector MCP Apps support. |
+| **Widget `npm run dev` / `preview`** | Full Three.js controls, play/pause, provenance panel (local demo). `callTool` no-ops outside host. |
+| **ChatGPT Dev Mode** | Tool calls work over Streamable HTTP. Embedded widget **partial** — requires host MCP Apps UI; do not claim directory listing. |
 
-   ```text
-   https://<your-cloudflared-host>/mcp
-   ```
+### 6. Tools
 
-4. Auth: **None** for local Phase 1 (do not commit secrets).
-5. Save. Paste the assigned connection ID into [`.app.json`](./.app.json) when you get one (optional bookkeeping).
-6. Start a new chat and ensure the connector/server is selected / available to the model.
+| Tool | Status |
+| --- | --- |
+| `create_rt4d_scene` | **partial** + opens viewer meta |
+| `render_rt4d_preview` | **partial** (placeholder without `RT4D_ENGINE_URL`) |
+| `inspect_rt4d_provenance` | **partial** |
+| `update_rt4d_scene` | **partial** (rotations / projection / optional `rePreview`) |
+| `export_rt4d_asset` | **skeleton** |
+| Governance tools | **declared** stubs |
 
-If ChatGPT cannot reach the URL: confirm `/health` via the **public** HTTPS host, and that cloudflared is still up.
+### 7. First test prompt
 
-### 5. Tools that appear
+> Using the RT4D MCP tools: create a golden 4D dragon with XW and YW plane rotations, mode `add_rt4d_powers`, continuityState characterState name `golden-dragon`. Then `render_rt4d_preview`, then use the viewer (or `update_rt4d_scene`) to adjust ZW and projection distance. Inspect provenance. Do not claim persistent RT3D or AnimeStylizer — dimensional preview only.
 
-| Tool | In ChatGPT today | Status |
-| --- | --- | --- |
-| `create_rt4d_scene` | Yes | **partial** |
-| `render_rt4d_preview` | Yes | **partial** (placeholder without `RT4D_ENGINE_URL`) |
-| `inspect_rt4d_provenance` | Yes | **partial** |
-| `update_rt4d_scene` | Listed | **skeleton** (NotImplemented) |
-| `export_rt4d_asset` | Listed | **skeleton** |
-| `validate_character_continuity` | Listed | **declared** stub |
-| `replay_anime_shot` | Listed | **declared** stub |
-| `compare_render_versions` | Listed | **declared** stub |
-| `approve_canonical_shot` | Listed | **declared** stub |
-
-Widget HTML resource is **skeleton** — do not expect a polished interactive viewer.
-
-### 6. First test prompt (paste into ChatGPT)
-
-> Using the RT4D MCP tools: create a golden 4D dragon with XW and YW plane rotations, mode `add_rt4d_powers`, continuityState characterState name `golden-dragon`. Then `render_rt4d_preview`, then `inspect_rt4d_provenance`. Show sceneId, intentId, timelineId, worldId, projector planes, and the Shot Evidence Envelope hashes.
-
-Dimensional Awakening lite (same Phase 1 path, richer prompt):
-
-> Create an anime mage in a ruined temple, mode `add_rt4d_powers`, with a tesseract sigil rotating on XW and YW. Render preview and inspect the Shot Evidence Envelope. Do not claim persistent RT3D character or verified 5s film replay — those are declared.
-
-### 7. Genblaze Actions vs this MCP plugin
+### 8. Genblaze Actions vs this MCP plugin
 
 | | **RT4D MCP plugin** (this package) | **Genblaze Custom GPT Actions** |
 | --- | --- | --- |
 | Path | `mrs/apps/rt4d-chatgpt-plugin` | `mrs/apps/genblaze-media` |
-| Wire | MCP Streamable HTTP `/mcp` | OpenAPI Actions (`/plugin/openapi.json`, `/.well-known/ai-plugin.json`) |
-| Role | **Product** — hybrid Anime Lane modes, ContinuityState, Shot Evidence Envelope | **Companion side tool** — Engine3D stills / anime HTTP onboarding |
-| ChatGPT setup | Developer Mode → Add **MCP server** | Custom GPT → **Actions** → import OpenAPI URL |
-
-Do not confuse them: Actions ≠ MCP. Use this plugin for RT4D product tools; use Genblaze Actions when you want Engine3D still HTTP from a Custom GPT.
-
----
-
-## Public demonstration narrative
-
-Not “anime generated with AI.” A governed **production lane**:
-
-**Anime Prompt → RT3D Anime Scene → RT4D Dimensional Pass → Composite → Image / Manga / Animation / Movie**
-
-Clearest early structure demo: **golden 4D dragon** with **XW/YW** rotations. Category demo: **Dimensional Awakening** (architecture §7) — end-to-end **declared** until persistent RT3D + 5s timeline + verified replay ship.
-
-### ChatGPT modes
-
-| Mode | Product lane |
-| --- | --- |
-| `create_anime_character` | Portrait |
-| `create_anime_scene` | Anime Scene (MVP) |
-| `add_rt4d_powers` | Anime Scene |
-| `animate_dimensional_transformation` | Anime Scene |
-| `render_manga_panel` | Manga |
-| `render_cinematic_sequence` | Film |
+| Wire | MCP Streamable HTTP `/mcp` | OpenAPI Actions |
+| Role | **Product** — hybrid Anime Lane + interactive viewer | **Companion** — Engine3D stills onboarding |
 
 ---
 
@@ -159,26 +131,38 @@ Clearest early structure demo: **golden 4D dragon** with **XW/YW** rotations. Ca
 | Var | Meaning |
 | --- | --- |
 | `PORT` / `RT4D_PLUGIN_PORT` | Default `8010` |
-| `RT4D_ENGINE_URL` | Genblaze (or compatible) base — **no local RT4D math** |
+| `RT4D_ENGINE_URL` | Genblaze (or compatible) base — **preferred when set** |
 | `RT4D_API_KEY` | Optional bearer |
 | `RT4D_ENGINE_TIMEOUT_MS` | Default `120000` |
 
 ```powershell
+# server
 npm test
+npm run typecheck
+
+# widget
+cd ../widget
+npm run build
 npm run typecheck
 ```
 
 ---
 
-## Phases 1–5
+## Phases
 
 | Phase | Scope | Status |
 | --- | --- | --- |
-| 1 | MCP create → preview → provenance + modes + ContinuityState + Shot Evidence Envelope + skeleton viewer | **partial** |
-| 2 | Wire RT3D anime scene / persistent character via Engine3D | **declared** |
-| 3 | Dimensional animation timelines + Direction tools | **declared** |
-| 4 | Composite → manga / cinematic / game asset exports | **declared** |
-| 5 | Stable HTTPS + optional directory submission | **declared** |
+| 1 | MCP create → preview → provenance + modes + ContinuityState + Shot Evidence Envelope | **partial** |
+| 2 | Interactive viewer (XW/YW/ZW, projection, play/pause, provenance panel) + `update_rt4d_scene` | **partial** (local viewer); ChatGPT embed host-dependent |
+| 3 | Export / persistent RT3D character / manga·film composites / directory readiness | **declared** |
+
+### Phase 3 export gaps (honest)
+
+- `export_rt4d_asset` still NotImplemented (Unity / Unreal / game packs)
+- No durable scene store across process restarts
+- No verified continuity compare / replay / canonical approval
+- No AnimeStylizer / photoreal character persistence
+- ChatGPT public directory + stable production HTTPS **declared**
 
 ---
 
@@ -190,7 +174,8 @@ mrs/apps/rt4d-chatgpt-plugin/
 ├── skills/rt4d/SKILL.md
 ├── .app.json
 ├── server/          TypeScript MCP + Zod tools
-├── widget/          Skeleton HTML viewer
-├── assets/
+├── widget/          React + Vite + Three.js source
+├── assets/          Built rt4d-viewer.html (+ logo notes)
 └── README.md
 ```
+

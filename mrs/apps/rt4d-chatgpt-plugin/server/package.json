@@ -1,9 +1,9 @@
 {
   "name": "@mrs/rt4d-chatgpt-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "RT4D hybrid anime production MCP plugin — Phase 1 create/preview/provenance (partial)",
+  "description": "RT4D hybrid anime production MCP plugin — Phase 2 interactive viewer + update (partial)",
   "scripts": {
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",

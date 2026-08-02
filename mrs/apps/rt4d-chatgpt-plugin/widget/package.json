@@ -1,0 +1,27 @@
+{
+  "name": "@mrs/rt4d-chatgpt-plugin-widget",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "RT4D MCP Apps interactive dimensional preview widget (Phase 2 partial)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "three": "^0.179.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@types/three": "^0.179.0",
+    "@vitejs/plugin-react": "^4.5.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.1",
+    "vite-plugin-singlefile": "^2.2.0"
+  }
+}
