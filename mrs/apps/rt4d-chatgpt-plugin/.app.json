@@ -1,0 +1,16 @@
+{
+  "name": "RT4D Hybrid Anime Production",
+  "status": "skeleton",
+  "notes": [
+    "ChatGPT Developer Mode connection ID is assigned after you connect the MCP URL in Dev Mode — paste it here once obtained.",
+    "connection_id: <pending after ChatGPT Dev Mode connect>",
+    "MCP URL shape: https://<tunnel-or-stable-host>/mcp",
+    "Temporary tunnels (ngrok/cloudflared) are OK for local Dev Mode; public directory submission requires stable HTTPS (declared, not claimed).",
+    "Do not commit secrets. Use RT4D_ENGINE_URL and optional RT4D_API_KEY in the environment."
+  ],
+  "related": {
+    "adr": "docs/anime-lane/RT3D_RT4D_HYBRID_PRODUCTION_LANE.v1.md",
+    "companion_genblaze": "mrs/apps/genblaze-media (/.well-known/ai-plugin.json)",
+    "broader_mrs_mcp": "mrs/apps/chatgpt-mrs"
+  }
+}

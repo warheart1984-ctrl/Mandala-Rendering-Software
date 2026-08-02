@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "name_for_human": "RT4D Hybrid Anime Production",
+  "name_for_model": "rt4d_hybrid_anime_production",
+  "description_for_human": "Governed hybrid 3D–4D anime production lane: RT3D scenes, RT4D dimensional pass, provenance-backed previews. Not diffusion-as-anime.",
+  "description_for_model": "Product MCP for Mandala RT4D. Prefer create_rt4d_scene then render_rt4d_preview then inspect_rt4d_provenance. Modes: create_anime_character, create_anime_scene, add_rt4d_powers, animate_dimensional_transformation, render_manga_panel, render_cinematic_sequence. Pipeline: Anime Prompt → RT3D Anime Scene (declared until Engine3D/UE) → RT4D Dimensional Pass → Composite (declared) → Image/Manga/Animation/Movie. Do not re-derive RT4D math; engine is RT4D_ENGINE_URL. Genblaze Actions are a companion onboarding tool, not this product. Phase 1: create+preview+provenance are partial; update/export are skeleton. Never claim ChatGPT directory listing or full RT3D/composite as enforced.",
+  "author": {
+    "name": "Jon Halstead",
+    "email": "support@localhost",
+    "url": "https://github.com/warheart1984-ctrl"
+  },
+  "version": "0.1.0",
+  "license": "MIT",
+  "status": {
+    "mcp_bridge": "partial",
+    "widget": "skeleton",
+    "public_directory_submission": "declared"
+  },
+  "mcp": {
+    "transport": "streamable_http",
+    "path": "/mcp",
+    "legacy_sse_path": "/sse"
+  },
+  "legal_info_url": "https://localhost/legal",
+  "logo_url": "./assets/logo-notes.md",
+  "contact_email": "support@localhost",
+  "skills": ["skills/rt4d/SKILL.md"],
+  "companion_tools": {
+    "genblaze_actions": {
+      "role": "companion_onboarding",
+      "note": "Engine3D stills / anime HTTP handoff via Genblaze Custom GPT Actions — not this RT4D product plugin."
+    }
+  }
+}

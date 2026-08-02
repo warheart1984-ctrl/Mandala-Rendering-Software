@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandala.local/schemas/anime-lane/SHOT_EVIDENCE_ENVELOPE.v1.schema.json",
+  "title": "ShotEvidenceEnvelope",
+  "description": "Per-shot provenance for RT4D Anime Lane. Status: declared schema; MCP Phase 1 emits a partial in-memory envelope. Drive-G-1: presence of fields is not proof of verified replay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "shotId",
+    "characterModelHash",
+    "worldStateHash",
+    "rt3dSceneHash",
+    "rt4dTransformHash",
+    "timelineHash",
+    "rendererVersion",
+    "seed",
+    "cameraParameters",
+    "projectionParameters",
+    "outputHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "ShotEvidenceEnvelope.v1"
+    },
+    "statusTag": {
+      "type": "string",
+      "enum": ["declared", "skeleton", "partial", "enforced"],
+      "description": "Honest maturity of this envelope instance."
+    },
+    "shotId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable shot id, e.g. RTANIME-S01-SH0042"
+    },
+    "characterModelHash": {
+      "type": "string",
+      "description": "Hash of persistent character model identity. May be placeholder until RT3D persistence is built."
+    },
+    "worldStateHash": {
+      "type": "string",
+      "description": "Hash of world/continuity world slice."
+    },
+    "rt3dSceneHash": {
+      "type": "string",
+      "description": "Hash of RT3D scene assembly. Declared until Engine3D/UE wired."
+    },
+    "rt4dTransformHash": {
+      "type": "string",
+      "description": "Hash of RT4D transform / effect graph parameters."
+    },
+    "timelineHash": {
+      "type": "string",
+      "description": "Hash of governed animation/camera timeline."
+    },
+    "rendererVersion": {
+      "type": "string",
+      "description": "Renderer / bridge version string."
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Deterministic seed for replay."
+    },
+    "cameraParameters": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "projectionParameters": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputHash": {
+      "type": "string",
+      "description": "SHA-256 (or equivalent) of output artifact when present."
+    },
+    "parentShotId": {
+      "type": ["string", "null"],
+      "description": "Prior shot in continuity chain, if any."
+    },
+    "intentId": { "type": "string" },
+    "timelineId": { "type": "string" },
+    "worldId": { "type": "string" },
+    "productLane": {
+      "type": "string",
+      "enum": [
+        "portrait",
+        "manga",
+        "anime_scene",
+        "film",
+        "game_asset",
+        "unknown"
+      ]
+    },
+    "mode": { "type": "string" },
+    "notes": { "type": "string" }
+  }
+}
