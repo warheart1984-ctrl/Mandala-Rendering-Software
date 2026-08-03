@@ -221,7 +221,7 @@ function buildScene(spec: SceneSpec, timeSeconds: number) {
   });
 
   scene.addTriangleMesh(
-    { kind: "triangle-mesh", vertices: verts, indices: mesh.faces },
+    { kind: "triangle-mesh", vertices: verts, indices: mesh.faces.flat(), surfaceId: spec.surface, geometryHash: mesh.geometryHash },
     "surf",
   );
   scene.addPrimitive(new Hyperplane(vec4(0, 1, 0, 0), -1.4), "ground");

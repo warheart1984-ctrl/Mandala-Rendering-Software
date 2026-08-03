@@ -199,6 +199,8 @@ export class SkinnedMeshIntersector {
       triangleIndex: tri.triangleIndex,
       materialId,
       primitiveKind: this.primitive.kind ?? "skinned-mesh",
+      surfaceId: this.primitive.surfaceId ?? "unknown",
+      geometryHash: this.primitive.geometryHash ?? "",
     };
   }
 
