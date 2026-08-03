@@ -207,6 +207,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 STATIC_UI = STATIC_DIR / "index.html"
 STATIC_CROS = STATIC_DIR / "cros.html"
 STATIC_LEGAL = STATIC_DIR / "legal.html"
+STATIC_PRIVACY = STATIC_DIR / "rt4d-privacy-policy.html"
 STATIC_LOGO = STATIC_DIR / "assets" / "engine3d-logo.svg"
 STATIC_MRS_LOGO = STATIC_DIR / "assets" / "mrs-logo.png"
 STATIC_MRS_BRAND = STATIC_DIR / "assets" / "mrs-brand.json"
@@ -3687,3 +3688,11 @@ def legal_page() -> HTMLResponse:
     if STATIC_LEGAL.is_file():
         return HTMLResponse(STATIC_LEGAL.read_text(encoding="utf-8"))
     return HTMLResponse("<h1>Legal</h1><p>Page missing.</p>", status_code=500)
+
+
+@app.get("/privacy-policy", response_class=HTMLResponse)
+def privacy_policy_page() -> HTMLResponse:
+    """Public RT4D privacy policy for ChatGPT GPT Action Privacy Policy URL."""
+    if STATIC_PRIVACY.is_file():
+        return HTMLResponse(STATIC_PRIVACY.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>Privacy Policy</h1><p>Page missing.</p>", status_code=404)
