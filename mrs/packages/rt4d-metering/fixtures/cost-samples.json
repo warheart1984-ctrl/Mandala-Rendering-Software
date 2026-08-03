@@ -1,0 +1,26 @@
+{
+  "description": "Labeled cost fixtures for calibration tests — NOT live AWS CUR",
+  "samples": [
+    {
+      "renderId": "rt4d-render-fixture00000001",
+      "computeSeconds": 8.0,
+      "storageBytes": 4281192,
+      "awsCostUsd": 0.012,
+      "source": "fixture"
+    },
+    {
+      "renderId": "rt4d-render-fixture00000002",
+      "computeSeconds": 2.0,
+      "storageBytes": 262144,
+      "awsCostUsd": 0.003,
+      "source": "declared_estimate"
+    },
+    {
+      "renderId": "rt4d-render-fixture00000003",
+      "computeSeconds": 30.0,
+      "storageBytes": 16777216,
+      "awsCostUsd": 0.048,
+      "source": "fixture"
+    }
+  ]
+}

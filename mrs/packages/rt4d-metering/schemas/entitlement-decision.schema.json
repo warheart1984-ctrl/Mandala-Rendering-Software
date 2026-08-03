@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/schemas/rt4d/entitlement-decision.schema.json",
+  "title": "EntitlementDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "tenantId",
+    "planId",
+    "renderId",
+    "allowed",
+    "reason",
+    "creditsUsed",
+    "at"
+  ],
+  "properties": {
+    "userId": { "type": "string", "minLength": 1 },
+    "tenantId": { "type": "string", "minLength": 1 },
+    "planId": {
+      "type": "string",
+      "enum": ["free", "creator", "pro", "studio"]
+    },
+    "renderId": { "type": "string", "minLength": 1 },
+    "allowed": { "type": "boolean" },
+    "reason": { "type": "string", "minLength": 1 },
+    "creditsUsed": { "type": "integer", "minimum": 0 },
+    "at": { "type": "string", "minLength": 1 }
+  }
+}

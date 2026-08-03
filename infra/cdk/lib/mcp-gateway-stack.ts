@@ -99,11 +99,12 @@ export class McpGatewayStack extends cdk.Stack {
     this.handlerFunctionName = `${prefix}-mcp-handler`;
     const mcpHandlerFn = new lambdaNode.NodejsFunction(this, 'McpHandler', {
       functionName: this.handlerFunctionName,
-      entry: path.join(__dirname, '..', 'lambda', 'mcp-handler', 'index.ts'),
+      entry: path.join(__dirname, '..', 'lambda', 'mcp-handler', 'index.mts'),
       handler: 'handler',
       runtime: lambda.Runtime.NODEJS_22_X,
       timeout: cdk.Duration.seconds(120),
-      memorySize: 1024,
+      // Account 450753703992 us-east-2 Lambda memory ceiling is 512 MiB.
+      memorySize: 512,
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       securityGroups: [lambdaSg],
@@ -121,6 +122,9 @@ export class McpGatewayStack extends cdk.Stack {
         sourceMap: true,
         target: 'node20',
         forceDockerBundling: false,
+        // SDK ships via node_modules (dynamic imports); do not rely on a missing layer.
+        externalModules: ['@modelcontextprotocol/sdk'],
+        nodeModules: ['@modelcontextprotocol/sdk'],
       },
       logRetention: logs.RetentionDays.ONE_MONTH,
       tracing: lambda.Tracing.ACTIVE,
