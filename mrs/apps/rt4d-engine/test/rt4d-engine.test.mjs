@@ -284,4 +284,67 @@ describe("rt4d-engine acceptance criteria", () => {
     assert.equal(ev.pngHash, r.sha256);
     assert.equal(ev.evidenceStatus, "substrate_verified");
   });
+
+  it("AC-R8 different timeSeconds produces different vertex buffers (geometry is time-dependent)", async () => {
+    const spec = { ...SPEC, rotations: [{ plane: "xy", speed: 1.0 }] };
+    const created = await post("/v1/scenes", spec);
+    const { data } = await created.json();
+    const geo0 = await get(`/v1/scenes/${data.sceneId}/geometry?timeSeconds=0`);
+    const geo1 = await get(`/v1/scenes/${data.sceneId}/geometry?timeSeconds=5`);
+    assert.equal(geo0.status, 200);
+    assert.equal(geo1.status, 200);
+    const g0 = await geo0.json();
+    const g1 = await geo1.json();
+    const v0 = g0.data.geometry.vertices;
+    const v1 = g1.data.geometry.vertices;
+    assert.ok(v0.length > 0, "geometry must have vertices");
+    assert.ok(v1.length > 0, "geometry must have vertices");
+    let anyDifferent = false;
+    for (let i = 0; i < Math.min(v0.length, v1.length); i++) {
+      if (v0[i].x !== v1[i].x || v0[i].y !== v1[i].y || v0[i].z !== v1[i].z || v0[i].w !== v1[i].w) {
+        anyDifferent = true;
+        break;
+      }
+    }
+    assert.ok(anyDifferent, "timeSeconds=0 and timeSeconds=5 must produce different vertex positions when rotations are present");
+  });
+
+  it("AC-R9 different surface IDs produce different vertex buffers", async () => {
+    const clifford = { ...SPEC, surface: "clifford-torus", rotations: [] };
+    const trefoil = { ...SPEC, surface: "trefoil-4d", rotations: [] };
+    const c = await post("/v1/scenes", clifford);
+    const t = await post("/v1/scenes", trefoil);
+    const { data: cd } = await c.json();
+    const { data: td } = await t.json();
+    const cg = await get(`/v1/scenes/${cd.sceneId}/geometry`);
+    const tg = await get(`/v1/scenes/${td.sceneId}/geometry`);
+    const g0 = await cg.json();
+    const g1 = await tg.json();
+    const v0 = g0.data.geometry.vertices;
+    const v1 = g1.data.geometry.vertices;
+    assert.ok(v0.length > 0, "clifford-torus must produce vertices");
+    assert.ok(v1.length > 0, "trefoil-4d must produce vertices");
+    let anyDifferent = false;
+    for (let i = 0; i < Math.min(v0.length, v1.length); i++) {
+      if (v0[i].x !== v1[i].x || v0[i].y !== v1[i].y || v0[i].z !== v1[i].z || v0[i].w !== v1[i].w) {
+        anyDifferent = true;
+        break;
+      }
+    }
+    assert.ok(anyDifferent, "clifford-torus and trefoil-4d must produce different vertex buffers");
+  });
+
+  it("AC-R10 different surface IDs produce different render hashes (regression for engine bug)", async () => {
+    const clifford = { ...SPEC, surface: "clifford-torus", rotations: [] };
+    const trefoil = { ...SPEC, surface: "trefoil-4d", rotations: [] };
+    const c = await post("/v1/scenes", clifford);
+    const t = await post("/v1/scenes", trefoil);
+    const { data: cd } = await c.json();
+    const { data: td } = await t.json();
+    const r1 = await post(`/v1/scenes/${cd.sceneId}/render`, { seed: 42, width: 64, height: 64 });
+    const r2 = await post(`/v1/scenes/${td.sceneId}/render`, { seed: 42, width: 64, height: 64 });
+    const e1 = await r1.json();
+    const e2 = await r2.json();
+    assert.notEqual(e1.data.renderReceipt.sha256, e2.data.renderReceipt.sha256, "different surfaces must produce different render hashes");
+  });
 });
