@@ -38,6 +38,7 @@ export type Rt4dEvidenceEnvelope = {
   pixelHash: string;
   pngHash: string;
   pngSha256: string;
+  renderHash: string;
   rendererVersion: string;
   runtimeFingerprint: {
     node: string;
@@ -51,12 +52,32 @@ export type Rt4dEvidenceEnvelope = {
   replayToken: string;
   evidenceStatus: "substrate_verified";
   promotionStatus: "not_promoted_to_ciems";
+  requestId?: string;
+  traceId?: string;
+  principalId?: string;
+  entitlementDecisionId?: string;
+  /** Where the scene spec came from for this render (durable rehydration metadata). */
+  scenePersistence?: ScenePersistenceInfo;
+};
+
+export type ScenePersistenceInfo = {
+  source: "memory" | "dynamodb";
+  rehydrated: boolean;
+  sceneSpecHash?: string;
+  replayToken?: string;
 };
 
 export type SceneProvenanceIds = {
   intentId: string;
   timelineId: string;
   worldId: string;
+};
+
+export type TraceContextIds = {
+  requestId?: string;
+  traceId?: string;
+  principalId?: string;
+  entitlementDecisionId?: string;
 };
 
 /**
@@ -85,6 +106,8 @@ export function createRt4dEvidenceEnvelope(
   },
   receipt: RenderReceipt,
   params: RenderParamsForEvidence = {},
+  trace: TraceContextIds = {},
+  scenePersistence?: ScenePersistenceInfo,
 ): Rt4dEvidenceEnvelope {
   const sceneSpecHash = sha256Hex(canonicalRt4dJson(scene.spec));
   const parameters = {
@@ -118,6 +141,7 @@ export function createRt4dEvidenceEnvelope(
     pixelHash: receipt.pixelHash ?? "",
     pngHash: receipt.sha256,
     pngSha256: receipt.sha256,
+    renderHash: receipt.sha256,
     rendererVersion: "@mrs/renderer-core/rt4d@1.0.0",
     runtimeFingerprint: receipt.runtimeFingerprint ?? {
       node: "unknown",
@@ -131,6 +155,11 @@ export function createRt4dEvidenceEnvelope(
     replayToken,
     evidenceStatus: "substrate_verified",
     promotionStatus: "not_promoted_to_ciems",
+    requestId: trace.requestId,
+    traceId: trace.traceId,
+    principalId: trace.principalId,
+    entitlementDecisionId: trace.entitlementDecisionId,
+    scenePersistence,
   };
 }
 

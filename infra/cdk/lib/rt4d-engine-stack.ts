@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecs_patterns from 'aws-cdk-lib/aws-ecs-patterns';
@@ -40,6 +41,7 @@ export class Rt4dEngineStack extends cdk.Stack {
   public readonly logGroupName: string;
   public readonly clusterName: string;
   public readonly serviceName: string;
+  public readonly scenesTableName: string;
 
   constructor(scope: Construct, id: string, props: Rt4dEngineStackProps) {
     super(scope, id, props);
@@ -186,6 +188,19 @@ export class Rt4dEngineStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    // Durable SceneSpec store: content-addressed sceneId → canonical SceneSpec, so
+    // ECS task replacement is invisible to callers (engine restores on miss).
+    const scenesTable = new dynamodb.Table(this, 'ScenesTable', {
+      tableName: `${prefix}-scenes`,
+      partitionKey: { name: 'sceneId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      pointInTimeRecovery: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+    scenesTable.grantReadWriteData(this.taskRole);
+    this.scenesTableName = scenesTable.tableName;
+
     // Monorepo Docker context: mrs/ with Dockerfile at apps/rt4d-engine/Dockerfile
     const mrsRoot = path.join(__dirname, '..', '..', '..', 'mrs');
 
@@ -208,6 +223,9 @@ export class Rt4dEngineStack extends cdk.Stack {
           REDIS_PORT: '6379',
           RENDERS_BUCKET: rendersBucketName,
           EVIDENCE_BUCKET: evidenceBucketName,
+          SCENE_TABLE: scenesTable.tableName,
+          SCENE_DURABILITY_REQUIRED: 'true',
+          RT4D_ENGINE_VERSION: '0.2.0',
           AWS_REGION: cdk.Stack.of(this).region,
           RUNTIME_FINGERPRINT_NODE: 'aws-ecs-fargate',
           RUNTIME_FINGERPRINT_ZLIB: 'builtin',
@@ -299,6 +317,10 @@ export class Rt4dEngineStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'TaskRoleArn', {
       value: this.taskRole.roleArn,
       exportName: `${prefix}-engine-task-role-arn`,
+    });
+    new cdk.CfnOutput(this, 'ScenesTableName', {
+      value: scenesTable.tableName,
+      exportName: `${prefix}-scenes-table-name`,
     });
     new cdk.CfnOutput(this, 'ExecutionRoleArn', {
       value: this.executionRole.roleArn,

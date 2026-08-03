@@ -26,6 +26,16 @@ function denyUnauthorized(): never {
   throw new Error('Unauthorized');
 }
 
+function stageWildcardResource(methodArn: string): string {
+  // arn:aws:execute-api:<region>:<acct>:<api>/<stage>/<METHOD>/<path...>
+  // → arn:aws:execute-api:<region>:<acct>:<api>/<stage>/*/*
+  // Scoped to this API+stage so cached policies cover every method/route
+  // under the 5-minute resultsCacheTtl without per-route re-authorization.
+  const arnParts = methodArn.split('/');
+  const base = arnParts.slice(0, 2).join('/');
+  return `${base}/*/*`;
+}
+
 function allowPolicy(
   principalId: string,
   methodArn: string,
@@ -37,7 +47,7 @@ function allowPolicy(
       {
         Action: 'execute-api:Invoke',
         Effect: 'Allow',
-        Resource: methodArn,
+        Resource: stageWildcardResource(methodArn),
       },
     ],
   };

@@ -175,7 +175,7 @@ export class ObservabilityStack extends cdk.Stack {
     // X-Ray group — tracing hooks enabled on API GW + Lambda; ECS daemon wiring declared/partial
     new xray.CfnGroup(this, 'XrayGroup', {
       groupName: `${prefix}-rt4d`,
-      filterExpression: 'service("mrs-rt4d") OR annotation.renderId EXISTS',
+      filterExpression: 'service("mrs-rt4d") OR annotation.renderId',
     });
 
     // Declared custom-metric alarms (will stay INSUFFICIENT_DATA until app emits MRS/RT4D metrics)

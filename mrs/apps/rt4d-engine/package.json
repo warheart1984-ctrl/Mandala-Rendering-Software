@@ -1,15 +1,17 @@
 {
   "name": "@mrs/rt4d-engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "RT4D engine HTTP service — scene store + math boundary (scaffold; skeleton)",
+  "description": "RT4D engine HTTP service — scene store + math boundary + durable scene persistence",
   "scripts": {
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test test/rt4d-engine.test.mjs test/rt3d-ledger.test.mjs test/rt3d-evidence-bridge.test.mjs"
+    "test": "tsx --test test/rt4d-engine.test.mjs test/rt3d-ledger.test.mjs test/rt3d-evidence-bridge.test.mjs test/durable-scene-store.test.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1101.0",
+    "@aws-sdk/lib-dynamodb": "^3.1101.0",
     "@mrs/renderer-core": "workspace:*",
     "@mrs/rt4d-metering": "workspace:*"
   },

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mrs://schemas/rt4d/temporal-evidence-envelope.schema.json",
+  "title": "TemporalEvidenceEnvelope",
+  "description": "Evidence envelope for governed temporal operations. Phase-2A may bind toy_model evolutionLaw. Not physical time travel.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "operationId",
+    "operationType",
+    "sourceTimelineId",
+    "resultTimelineId",
+    "metric",
+    "parentStateHash",
+    "resultStateHash",
+    "replayToken",
+    "evidenceStatus"
+  ],
+  "properties": {
+    "operationId": { "type": "string", "minLength": 1 },
+    "operationType": {
+      "type": "string",
+      "enum": [
+        "slice_view",
+        "rewind",
+        "fork",
+        "fast_forward",
+        "simulate",
+        "compare",
+        "prune",
+        "merge"
+      ]
+    },
+    "sourceTimelineId": { "type": "string" },
+    "sourceEventId": { "type": ["string", "null"] },
+    "resultTimelineId": { "type": "string" },
+    "parentTimelineIds": {
+      "type": ["array", "null"],
+      "items": { "type": "string" }
+    },
+    "observerFrame": {
+      "type": ["object", "null"],
+      "properties": {
+        "type": { "type": "string" },
+        "velocity": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "units": { "type": "string" }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "signature": { "type": "string" }
+      }
+    },
+    "transform": { "type": ["object", "null"] },
+    "causalValidation": {
+      "type": "object",
+      "properties": {
+        "passed": { "type": "boolean" },
+        "violations": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "parentStateHash": { "type": "string" },
+    "resultStateHash": { "type": "string" },
+    "simulationLawHash": { "type": "string" },
+    "replayToken": { "type": "string", "minLength": 1 },
+    "evidenceStatus": {
+      "type": "string",
+      "enum": ["draft", "substrate_verified", "declared"]
+    },
+    "evolutionLaw": {
+      "type": ["object", "null"],
+      "required": ["lawId", "lawHash", "classification", "fixedDelta"],
+      "properties": {
+        "lawId": { "type": "string" },
+        "lawHash": { "type": "string" },
+        "classification": { "type": "string", "const": "toy_model" },
+        "fixedDelta": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "initialStateHash": { "type": ["string", "null"] },
+    "finalStateHash": { "type": ["string", "null"] },
+    "trajectoryRoot": { "type": ["string", "null"] },
+    "stepCount": { "type": ["integer", "null"], "minimum": 0 },
+    "replayStatus": {
+      "type": ["string", "null"],
+      "enum": ["verified", "failed", "declared", null]
+    }
+  }
+}
