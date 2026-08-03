@@ -14,11 +14,17 @@
  * (defaults used only when receipt omits dimension fields — still deterministic)
  */
 import { EngineReceiptSchema, METERABLE_EVIDENCE_STATUSES } from "./types.js";
+import { getCreditSchedule } from "./creditSchedule.js";
 
 /** @typedef {import("zod").infer<typeof EngineReceiptSchema>} EngineReceipt */
 
+/** @deprecated Prefer getCreditSchedule().status — kept for P6 callers. */
 export const CREDIT_FORMULA_STATUS = "declared";
 
+/**
+ * Snapshot of default coefficients (immutable baseline).
+ * Runtime derivation reads getCreditSchedule() so calibration can retarget.
+ */
 export const CREDIT_FORMULA = Object.freeze({
   WORK_UNITS_PER_CREDIT: 250_000,
   CREDITS_PER_COMPUTE_SECOND: 0.5,
@@ -31,10 +37,17 @@ export const CREDIT_FORMULA = Object.freeze({
 
 /**
  * @param {unknown} engineReceipt
- * @returns {{ creditsUsed: number; computeSeconds: number; storageBytes: number; formulaStatus: string }}
+ * @returns {{
+ *   creditsUsed: number;
+ *   computeSeconds: number;
+ *   storageBytes: number;
+ *   formulaStatus: string;
+ *   scheduleVersion: string;
+ * }}
  */
 export function deriveCreditsFromReceipt(engineReceipt) {
   const receipt = EngineReceiptSchema.parse(engineReceipt);
+  const schedule = getCreditSchedule();
 
   if (!METERABLE_EVIDENCE_STATUSES.includes(receipt.evidenceStatus)) {
     const err = new Error(
@@ -44,18 +57,18 @@ export function deriveCreditsFromReceipt(engineReceipt) {
     throw err;
   }
 
-  const width = receipt.width ?? CREDIT_FORMULA.DEFAULT_WIDTH;
-  const height = receipt.height ?? CREDIT_FORMULA.DEFAULT_HEIGHT;
-  const spp = receipt.samplesPerPixel ?? CREDIT_FORMULA.DEFAULT_SPP;
-  const maxDepth = receipt.maxDepth ?? CREDIT_FORMULA.DEFAULT_MAX_DEPTH;
+  const width = receipt.width ?? schedule.DEFAULT_WIDTH;
+  const height = receipt.height ?? schedule.DEFAULT_HEIGHT;
+  const spp = receipt.samplesPerPixel ?? schedule.DEFAULT_SPP;
+  const maxDepth = receipt.maxDepth ?? schedule.DEFAULT_MAX_DEPTH;
   const computeSeconds = receipt.computeSeconds ?? 0;
   const storageBytes = receipt.storageBytes ?? 0;
 
   const workUnits = width * height * spp * maxDepth;
   const raw =
-    workUnits / CREDIT_FORMULA.WORK_UNITS_PER_CREDIT +
-    computeSeconds * CREDIT_FORMULA.CREDITS_PER_COMPUTE_SECOND +
-    storageBytes / CREDIT_FORMULA.BYTES_PER_CREDIT;
+    workUnits / schedule.WORK_UNITS_PER_CREDIT +
+    computeSeconds * schedule.CREDITS_PER_COMPUTE_SECOND +
+    storageBytes / schedule.BYTES_PER_CREDIT;
 
   const creditsUsed = Math.max(1, Math.ceil(raw));
 
@@ -63,6 +76,7 @@ export function deriveCreditsFromReceipt(engineReceipt) {
     creditsUsed,
     computeSeconds,
     storageBytes,
-    formulaStatus: CREDIT_FORMULA_STATUS,
+    formulaStatus: schedule.status,
+    scheduleVersion: schedule.version,
   };
 }

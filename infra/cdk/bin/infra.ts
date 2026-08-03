@@ -9,6 +9,7 @@ import { ArtifactStorageStack } from '../lib/artifact-storage-stack';
 import { Rt4dEngineStack } from '../lib/rt4d-engine-stack';
 import { McpGatewayStack } from '../lib/mcp-gateway-stack';
 import { ObservabilityStack } from '../lib/observability-stack';
+import { UsageLedgerStack } from '../lib/usage-ledger-stack';
 
 const app = new cdk.App();
 
@@ -62,6 +63,14 @@ new ObservabilityStack(app, `${projectName}-observability-${stage}`, {
   engineLogGroupName: engineStack.logGroupName,
   engineClusterName: engineStack.clusterName,
   engineServiceName: engineStack.serviceName,
+});
+
+// Priority #7 — durable commercial ledger (DynamoDB). Status: declared until deploy.
+new UsageLedgerStack(app, `${projectName}-usage-ledger-${stage}`, {
+  env,
+  projectName,
+  stage,
+  description: 'DynamoDB usage + entitlement decision ledger (declared until deploy)',
 });
 
 app.synth();

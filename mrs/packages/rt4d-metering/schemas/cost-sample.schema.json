@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/schemas/rt4d/cost-sample.schema.json",
+  "title": "CostSample",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["renderId", "computeSeconds", "storageBytes", "source"],
+  "properties": {
+    "renderId": { "type": "string", "minLength": 1 },
+    "computeSeconds": { "type": "number", "minimum": 0 },
+    "storageBytes": { "type": "integer", "minimum": 0 },
+    "awsCostUsd": { "type": "number", "minimum": 0 },
+    "source": {
+      "type": "string",
+      "enum": ["fixture", "declared_estimate", "aws_cur"]
+    }
+  }
+}

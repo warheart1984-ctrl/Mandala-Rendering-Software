@@ -40,12 +40,14 @@ export const EngineReceiptSchema = z.object({
 
 export const UsageRecordSchema = z.object({
   userId: z.string().min(1),
+  tenantId: z.string().min(1).optional(),
   planId: PlanIdSchema,
   renderId: z.string().min(1),
   creditsUsed: z.number().int().nonnegative(),
   computeSeconds: z.number().nonnegative(),
   storageBytes: z.number().int().nonnegative(),
   status: UsageStatusSchema,
+  scheduleVersion: z.string().optional(),
   pixelHash: z.string().optional(),
   pngHash: z.string().optional(),
   projectionHash: z.string().optional(),
@@ -57,6 +59,7 @@ export const UsageRecordSchema = z.object({
 export const CreditLedgerEntrySchema = z.object({
   entryId: z.string().min(1),
   userId: z.string().min(1),
+  tenantId: z.string().min(1).optional(),
   planId: PlanIdSchema,
   renderId: z.string().min(1),
   creditsDelta: z.number().int(),
@@ -64,6 +67,48 @@ export const CreditLedgerEntrySchema = z.object({
   recordedAt: z.string().min(1),
   usageStatus: UsageStatusSchema.optional(),
   idempotentReplay: z.boolean().optional(),
+  scheduleVersion: z.string().optional(),
+});
+
+/** Labeled cost sample — never invent source=aws_cur without real CUR data. */
+export const CostSampleSchema = z.object({
+  renderId: z.string().min(1),
+  computeSeconds: z.number().nonnegative(),
+  storageBytes: z.number().int().nonnegative(),
+  awsCostUsd: z.number().nonnegative().optional(),
+  source: z.enum(["fixture", "declared_estimate", "aws_cur"]),
+});
+
+/** Plan-gate outcome for durable audit (partial — no live IdP). */
+export const EntitlementDecisionSchema = z.object({
+  userId: z.string().min(1),
+  tenantId: z.string().min(1),
+  planId: PlanIdSchema,
+  renderId: z.string().min(1),
+  allowed: z.boolean(),
+  reason: z.string().min(1),
+  creditsUsed: z.number().int().nonnegative(),
+  at: z.string().min(1),
+});
+
+/** Join receipt ↔ usage ↔ entitlement for later audit. */
+export const AuditChainSchema = z.object({
+  renderId: z.string().min(1),
+  tenantId: z.string().min(1).optional(),
+  receiptRef: z
+    .object({
+      renderId: z.string().min(1),
+      pixelHash: z.string().optional(),
+      pngHash: z.string().optional(),
+      projectionHash: z.string().optional(),
+      runtimeFingerprint: RuntimeFingerprintSchema.optional(),
+      evidenceStatus: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
+  usage: UsageRecordSchema.optional(),
+  decisions: z.array(EntitlementDecisionSchema).default([]),
+  ledgerEntries: z.array(CreditLedgerEntrySchema).default([]),
 });
 
 /**
