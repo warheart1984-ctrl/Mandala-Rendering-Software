@@ -46,6 +46,8 @@ services:
         sync: false
       - key: GENBLAZE_IMAGE_MODEL
         value: black-forest-labs/flux.1-schnell
+      - key: GENBLAZE_ALLOW_BYOK
+        value: "1"
       - key: GENBLAZE_STORAGE_PREFIX
         value: genblaze-media
       - key: GENBLAZE_HTTP_TIMEOUT
