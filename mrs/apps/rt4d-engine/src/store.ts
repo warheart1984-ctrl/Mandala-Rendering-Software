@@ -10,6 +10,9 @@ export type SceneSpec = {
   intentId?: string;
   timelineId?: string;
   worldId?: string;
+  /** Non-canonical provenance metadata: sha256 of the natural-language request that
+   * produced this spec. Excluded from canonicalSceneJson so it never affects sceneId. */
+  promptHash?: string;
 };
 
 export type RenderReceipt = {
@@ -32,7 +35,10 @@ export type RenderReceipt = {
 };
 
 export type SceneRecord = {
+  /** Content-addressed identity (rt4d-scene-<16hex>) — stable across id-stable patches. */
+  sceneId: string;
   spec: SceneSpec;
+  /** Hash of the CURRENT spec (canonicalSceneJson) — changes after an id-stable patch. */
   sceneHash: string;
   provenance: {
     intentId: string;
@@ -41,6 +47,8 @@ export type SceneRecord = {
     hashes: { sceneSha256: string };
   };
   receipts: Map<string, RenderReceipt>;
+  createdAt: string;
+  updatedAt: string;
 };
 
 const scenes = new Map<string, SceneRecord>();
@@ -81,11 +89,13 @@ export function canonicalSceneJson(spec: SceneSpec): string {
   return JSON.stringify(canonical);
 }
 
-export function upsertScene(spec: SceneSpec): { sceneId: string; sceneHash: string } {
+export function upsertScene(spec: SceneSpec): SceneRecord {
   const sceneHash = sha256Hex(canonicalSceneJson(spec));
   const sceneId = `rt4d-scene-${sceneHash.slice(0, 16)}`;
   const existing = scenes.get(sceneId);
-  scenes.set(sceneId, {
+  const now = new Date().toISOString();
+  const record: SceneRecord = {
+    sceneId,
     spec,
     sceneHash,
     provenance: {
@@ -95,8 +105,11 @@ export function upsertScene(spec: SceneSpec): { sceneId: string; sceneHash: stri
       hashes: { sceneSha256: sceneHash },
     },
     receipts: existing?.receipts ?? new Map(),
-  });
-  return { sceneId, sceneHash };
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: existing?.updatedAt ?? now,
+  };
+  scenes.set(sceneId, record);
+  return record;
 }
 
 export function getScene(sceneId: string): SceneRecord | null {
@@ -119,7 +132,44 @@ export function patchScene(sceneId: string, patch: Partial<SceneSpec>): SceneRec
   const sceneHash = sha256Hex(canonicalSceneJson(spec));
   record.spec = spec;
   record.sceneHash = sceneHash;
+  record.updatedAt = new Date().toISOString();
   return record;
+}
+
+/**
+ * Restore a durable record into the in-memory cache WITHOUT re-deriving sceneId.
+ * This is what makes id-stable patches survive ECS task replacement: the durable
+ * sceneSpecHash may differ from the original content address (identityHash), but
+ * the sceneId stays bound to the ORIGINAL creation spec.
+ */
+export function restoreScene(record: {
+  sceneId: string;
+  spec: SceneSpec;
+  createdAt: string;
+  updatedAt: string;
+}): SceneRecord {
+  const sceneHash = sha256Hex(canonicalSceneJson(record.spec));
+  const restored: SceneRecord = {
+    sceneId: record.sceneId,
+    spec: structuredClone(record.spec),
+    sceneHash,
+    provenance: {
+      intentId: record.spec.intentId ?? "",
+      timelineId: record.spec.timelineId ?? "",
+      worldId: record.spec.worldId ?? "",
+      hashes: { sceneSha256: sceneHash },
+    },
+    receipts: scenes.get(record.sceneId)?.receipts ?? new Map(),
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  };
+  scenes.set(restored.sceneId, restored);
+  return restored;
+}
+
+/** Test-only cache clear so route tests can force a memory miss (rehydrate path). */
+export function clearSceneCache(): void {
+  scenes.clear();
 }
 
 export function getReceipt(sceneId: string, renderKey: string): RenderReceipt | null {

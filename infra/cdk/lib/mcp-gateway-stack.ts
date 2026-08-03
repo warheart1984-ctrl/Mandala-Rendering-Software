@@ -4,6 +4,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
@@ -20,6 +21,8 @@ export interface McpGatewayStackProps extends cdk.StackProps {
   rendersBucketName: string;
   evidenceBucketArn: string;
   evidenceBucketName: string;
+  usageTable: dynamodb.Table;
+  decisionsTable: dynamodb.Table;
 }
 
 /**
@@ -48,6 +51,8 @@ export class McpGatewayStack extends cdk.Stack {
       rendersBucketName,
       evidenceBucketArn,
       evidenceBucketName,
+      usageTable,
+      decisionsTable,
     } = props;
     const prefix = `${projectName}-${stage}`;
 
@@ -112,10 +117,12 @@ export class McpGatewayStack extends cdk.Stack {
         STAGE: stage,
         PROJECT_NAME: projectName,
         ENGINE_ALB_DNS: engineAlbDns,
-        ENGINE_PORT: '8020',
+        ENGINE_PORT: '80',
         RENDERS_BUCKET: rendersBucketName,
         EVIDENCE_BUCKET: evidenceBucketName,
         REDIS_ENDPOINT: redisEndpoint,
+        USAGE_TABLE: usageTable.tableName,
+        DECISIONS_TABLE: decisionsTable.tableName,
       },
       bundling: {
         minify: true,
@@ -142,6 +149,9 @@ export class McpGatewayStack extends cdk.Stack {
         ],
       }),
     );
+
+    usageTable.grantWriteData(mcpHandlerFn);
+    decisionsTable.grantWriteData(mcpHandlerFn);
 
     this.api = new apigateway.RestApi(this, 'McpApi', {
       restApiName: `${prefix}-mcp-api`,
@@ -186,18 +196,33 @@ export class McpGatewayStack extends cdk.Stack {
       authorizationType: apigateway.AuthorizationType.NONE,
     });
 
+    // GPT Action / OpenAPI façade — importable at <mcpUrl>openapi.json.
+    const openApiResource = this.api.root.addResource('openapi.json');
+    openApiResource.addMethod('GET', proxyIntegration, {
+      authorizationType: apigateway.AuthorizationType.NONE,
+    });
+
     const v1 = this.api.root.addResource('v1');
-    const renders = v1.addResource('renders');
-    const renderId = renders.addResource('{renderId}');
-    renderId.addResource('evidence').addMethod('GET', proxyIntegration, {
+    const scenes = v1.addResource('scenes');
+    scenes.addMethod('POST', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
     });
-    renderId.addResource('png').addMethod('GET', proxyIntegration, {
+    const scene = scenes.addResource('{sceneId}');
+    scene.addMethod('GET', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
     });
-    renders.addMethod('POST', proxyIntegration, {
+    scene.addMethod('PATCH', proxyIntegration, {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+    scene.addResource('render').addMethod('POST', proxyIntegration, {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+    const renderPrompt = v1.addResource('render-prompt');
+    renderPrompt.addMethod('POST', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
     });
@@ -227,6 +252,11 @@ export class McpGatewayStack extends cdk.Stack {
       value: `${this.mcpUrl}mcp`,
       description: 'POST target for hosted MCP path',
       exportName: `${prefix}-mcp-post-url`,
+    });
+    new cdk.CfnOutput(this, 'OpenApiUrl', {
+      value: `${this.mcpUrl}openapi.json`,
+      description: 'OpenAPI schema for ChatGPT GPT Action import',
+      exportName: `${prefix}-openapi-url`,
     });
     new cdk.CfnOutput(this, 'ApiId', {
       value: this.api.restApiId,

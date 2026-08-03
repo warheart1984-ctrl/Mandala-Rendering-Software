@@ -76,5 +76,5 @@ CMD ["pnpm", "exec", "tsx", "src/index.ts"]
 
 LABEL org.opencontainers.image.title="@mrs/rt4d-engine"
 LABEL org.opencontainers.image.description="Deterministic RT4D dimensional preview render service"
-LABEL org.opencontainers.image.version="0.1.0"
+LABEL org.opencontainers.image.version="0.2.0"
 LABEL org.opencontainers.image.source="https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-"

@@ -39,6 +39,14 @@ const engineStack = new Rt4dEngineStack(app, `${projectName}-engine-${stage}`, {
   evidenceBucketName: artifacts.evidenceBucket.bucketName,
 });
 
+// Priority #7 — durable commercial ledger (DynamoDB). Status: deployed dev.
+const usageLedger = new UsageLedgerStack(app, `${projectName}-usage-ledger-${stage}`, {
+  env,
+  projectName,
+  stage,
+  description: 'DynamoDB usage + entitlement decision ledger (deployed dev)',
+});
+
 const mcpStack = new McpGatewayStack(app, `${projectName}-mcp-${stage}`, {
   env,
   projectName,
@@ -52,6 +60,8 @@ const mcpStack = new McpGatewayStack(app, `${projectName}-mcp-${stage}`, {
   rendersBucketName: artifacts.rendersBucket.bucketName,
   evidenceBucketArn: artifacts.evidenceBucket.bucketArn,
   evidenceBucketName: artifacts.evidenceBucket.bucketName,
+  usageTable: usageLedger.usageTable,
+  decisionsTable: usageLedger.decisionsTable,
 });
 
 new ObservabilityStack(app, `${projectName}-observability-${stage}`, {
