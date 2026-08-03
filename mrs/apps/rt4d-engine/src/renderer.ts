@@ -48,6 +48,7 @@ export type RenderResult = {
 
 export type GeometryOptions = {
   resolution?: number;
+  timeSeconds?: number;
 };
 
 export type GeometryResult = {
@@ -333,7 +334,7 @@ export function computeGeometry(spec: SceneSpec, opts: GeometryOptions): Geometr
   const surface = getSurface(spec.surface);
   const resolution = opts.resolution ?? spec.resolution;
   const mesh = sampleSurface(surface, resolution);
-  const verts = bakeVertices(mesh.vertices, spec.rotations ?? [], 0);
+  const verts = bakeVertices(mesh.vertices, spec.rotations ?? [], opts.timeSeconds ?? 0);
   return {
     vertices: verts.map((v) => ({ x: v[0], y: v[1], z: v[2], w: v[3] })),
     indices: mesh.faces,

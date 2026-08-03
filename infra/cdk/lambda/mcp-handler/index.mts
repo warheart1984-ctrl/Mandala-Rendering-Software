@@ -23,7 +23,25 @@ import openApiSpec from './openapi.json';
 const s3 = new S3Client({});
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
-const ENGINE_ALB_DNS = process.env.ENGINE_ALB_DNS || '';
+const MAX_PROMPT_LENGTH = 2000;
+const MIN_DIMENSION = 16;
+const MAX_DIMENSION = 1024;
+const MAX_RENDER_WIDTH = 2048;
+const MAX_RENDER_HEIGHT = 2048;
+const MIN_RENDER_WIDTH = 64;
+const MIN_RENDER_HEIGHT = 64;
+const MAX_REQUEST_BODY_BYTES = 1 << 20; // 1 MiB
+
+function sanitizeDimension(value: number | undefined, min: number, max: number, fallback: number): number {
+  if (typeof value !== 'number' || isNaN(value)) return fallback;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+function logCER(entry: Record<string, unknown>): void {
+  console.log(`CER: ${JSON.stringify(entry)}`);
+}
 const ENGINE_PORT = process.env.ENGINE_PORT || '8020';
 const STAGE = process.env.STAGE || 'dev';
 const PROJECT_NAME = process.env.PROJECT_NAME || 'mrs-rt4d';
@@ -516,6 +534,8 @@ async function performRender(
 async function applySceneUpdate(
   sceneId: string,
   updates: Record<string, unknown>,
+  trace?: TraceContext,
+  requestId?: string,
 ): Promise<{ payload: Record<string, unknown>; preview: EngineRenderResponse | undefined }> {
   const rotations = asRecord(updates.rotations);
   const projection = asRecord(updates.projection);
@@ -544,8 +564,54 @@ async function applySceneUpdate(
   const payload = { sceneId, ...env.data };
   const rePreview = updates.rePreview === true;
   let preview: EngineRenderResponse | undefined;
-  if (rePreview) {
-    const renderResult = await forwardToEngine('POST', `/v1/scenes/${encodeURIComponent(sceneId)}/render`, { sceneSpec: payload.spec, seed: 42, width: updates.width, height: updates.height });
+    if (rePreview) {
+      const origWidth = typeof updates.width === 'number' ? updates.width : undefined;
+      const origHeight = typeof updates.height === 'number' ? updates.height : undefined;
+      const renderWidth = sanitizeDimension(origWidth, MIN_RENDER_WIDTH, MAX_RENDER_WIDTH, 512);
+      const renderHeight = sanitizeDimension(origHeight, MIN_RENDER_HEIGHT, MAX_RENDER_HEIGHT, 512);
+      if (origWidth !== undefined && (origWidth > MAX_RENDER_WIDTH || origWidth < MIN_RENDER_WIDTH)) {
+       logCER({
+         cer_id: crypto.randomUUID(),
+         attempt: 1,
+         actor: 'scene_update',
+         operation: 'scene_render',
+         decision: 'violation',
+         evidence: { originalWidth: origWidth, clampedWidth: renderWidth },
+         hardware: { engine: 'rt4d-engine', stage: STAGE },
+         ledger: { requestId: requestId ?? 'unknown', traceId: trace?.traceId ?? '' },
+         replay: { sceneId, width: renderWidth, height: renderHeight },
+         timestamp: new Date().toISOString(),
+       });
+       throw new Error(`width must be between ${MIN_RENDER_WIDTH} and ${MAX_RENDER_WIDTH}`);
+     }
+     if (origHeight !== undefined && (origHeight > MAX_RENDER_HEIGHT || origHeight < MIN_RENDER_HEIGHT)) {
+       logCER({
+         cer_id: crypto.randomUUID(),
+         attempt: 1,
+         actor: 'scene_update',
+         operation: 'scene_render',
+         decision: 'violation',
+         evidence: { originalHeight: origHeight, clampedHeight: renderHeight },
+         hardware: { engine: 'rt4d-engine', stage: STAGE },
+         ledger: { requestId: requestId ?? 'unknown', traceId: trace?.traceId ?? '' },
+         replay: { sceneId, width: renderWidth, height: renderHeight },
+         timestamp: new Date().toISOString(),
+       });
+       throw new Error(`height must be between ${MIN_RENDER_HEIGHT} and ${MAX_RENDER_HEIGHT}`);
+     }
+     logCER({
+       cer_id: crypto.randomUUID(),
+       attempt: 1,
+       actor: 'scene_update',
+       operation: 'scene_render',
+       decision: 'sanitized',
+       evidence: { originalWidth: origWidth, originalHeight: origHeight, width: renderWidth, height: renderHeight },
+       hardware: { engine: 'rt4d-engine', stage: STAGE },
+       ledger: { requestId: requestId ?? 'unknown', traceId: trace?.traceId ?? '' },
+       replay: { sceneId, width: renderWidth, height: renderHeight },
+       timestamp: new Date().toISOString(),
+     });
+     const renderResult = await forwardToEngine('POST', `/v1/scenes/${encodeURIComponent(sceneId)}/render`, { sceneSpec: payload.spec, seed: 42, width: renderWidth, height: renderHeight });
     if (renderResult.status < 400) {
       const renv = unwrapEnvelope(renderResult.json);
       preview = renv.data as unknown as EngineRenderResponse;
@@ -688,7 +754,7 @@ function createMcpServer(): McpServer {
     },
     async (args) => {
       const { sceneId, ...updates } = args;
-      const { payload, preview } = await applySceneUpdate(sceneId, updates);
+      const { payload, preview } = await applySceneUpdate(sceneId, updates, undefined, undefined);
       return {
         content: [
           { type: 'text', text: `Updated scene ${sceneId}` + (preview ? ` + re-preview via rt4d-engine` : '') },
@@ -1015,11 +1081,57 @@ async function handleSceneRest(event: APIGatewayProxyEvent): Promise<APIGatewayP
       if (!prompt) {
         return restError(400, 'BAD_REQUEST', 'prompt is required');
       }
+      const origWidth = typeof body.width === 'number' ? body.width : undefined;
+      const origHeight = typeof body.height === 'number' ? body.height : undefined;
+      const width = sanitizeDimension(origWidth, MIN_RENDER_WIDTH, MAX_RENDER_WIDTH, 512);
+      const height = sanitizeDimension(origHeight, MIN_RENDER_HEIGHT, MAX_RENDER_HEIGHT, 512);
+      if (origWidth !== undefined && (origWidth > MAX_RENDER_WIDTH || origWidth < MIN_RENDER_WIDTH)) {
+        logCER({
+          cer_id: crypto.randomUUID(),
+          attempt: 1,
+          actor: trace.principalId,
+          operation: 'scene_create',
+          decision: 'violation',
+          evidence: { originalWidth: origWidth, clampedWidth: width },
+          hardware: { engine: 'rt4d-engine', stage: STAGE },
+          ledger: { requestId, traceId: trace.traceId },
+          replay: { prompt, width, height },
+          timestamp: new Date().toISOString(),
+        });
+        return restError(400, 'CONSTITUTIONAL_VIOLATION', `width must be between ${MIN_RENDER_WIDTH} and ${MAX_RENDER_WIDTH}`);
+      }
+      if (origHeight !== undefined && (origHeight > MAX_RENDER_HEIGHT || origHeight < MIN_RENDER_HEIGHT)) {
+        logCER({
+          cer_id: crypto.randomUUID(),
+          attempt: 1,
+          actor: trace.principalId,
+          operation: 'scene_create',
+          decision: 'violation',
+          evidence: { originalHeight: origHeight, clampedHeight: height },
+          hardware: { engine: 'rt4d-engine', stage: STAGE },
+          ledger: { requestId, traceId: trace.traceId },
+          replay: { prompt, width, height },
+          timestamp: new Date().toISOString(),
+        });
+        return restError(400, 'CONSTITUTIONAL_VIOLATION', `height must be between ${MIN_RENDER_HEIGHT} and ${MAX_RENDER_HEIGHT}`);
+      }
+      logCER({
+        cer_id: crypto.randomUUID(),
+        attempt: 1,
+        actor: trace.principalId,
+        operation: 'scene_create',
+        decision: 'sanitized',
+        evidence: { originalWidth: origWidth, originalHeight: origHeight, width, height },
+        hardware: { engine: 'rt4d-engine', stage: STAGE },
+        ledger: { requestId, traceId: trace.traceId },
+        replay: { prompt, width, height },
+        timestamp: new Date().toISOString(),
+      });
       const payload = await createScene({
         prompt,
         mode: typeof body.mode === 'string' ? body.mode : undefined,
-        width: typeof body.width === 'number' ? body.width : undefined,
-        height: typeof body.height === 'number' ? body.height : undefined,
+        width,
+        height,
       });
       return restOk(201, payload);
     }
@@ -1035,13 +1147,59 @@ async function handleSceneRest(event: APIGatewayProxyEvent): Promise<APIGatewayP
 
     if (httpMethod === 'PATCH' && !sub) {
       const body = asRecord(parseJsonBody(event)) ?? {};
-      const { payload, preview } = await applySceneUpdate(sceneId, body);
+      const { payload, preview } = await applySceneUpdate(sceneId, body, trace, requestId);
       return restOk(200, preview ? { ...payload, preview } : payload);
     }
 
     if (httpMethod === 'POST' && sub === 'render') {
       const body = asRecord(parseJsonBody(event)) ?? {};
-      const { structured } = await performRender(sceneId, body, trace);
+      const origWidth = typeof body.width === 'number' ? body.width : undefined;
+      const origHeight = typeof body.height === 'number' ? body.height : undefined;
+      const width = sanitizeDimension(origWidth, MIN_RENDER_WIDTH, MAX_RENDER_WIDTH, 512);
+      const height = sanitizeDimension(origHeight, MIN_RENDER_HEIGHT, MAX_RENDER_HEIGHT, 512);
+      if (origWidth !== undefined && (origWidth > MAX_RENDER_WIDTH || origWidth < MIN_RENDER_WIDTH)) {
+        logCER({
+          cer_id: crypto.randomUUID(),
+          attempt: 1,
+          actor: trace.principalId,
+          operation: 'scene_render',
+          decision: 'violation',
+          evidence: { originalWidth: origWidth, clampedWidth: width },
+          hardware: { engine: 'rt4d-engine', stage: STAGE },
+          ledger: { requestId, traceId: trace.traceId },
+          replay: { sceneId, width, height },
+          timestamp: new Date().toISOString(),
+        });
+        return restError(400, 'CONSTITUTIONAL_VIOLATION', `width must be between ${MIN_RENDER_WIDTH} and ${MAX_RENDER_WIDTH}`);
+      }
+      if (origHeight !== undefined && (origHeight > MAX_RENDER_HEIGHT || origHeight < MIN_RENDER_HEIGHT)) {
+        logCER({
+          cer_id: crypto.randomUUID(),
+          attempt: 1,
+          actor: trace.principalId,
+          operation: 'scene_render',
+          decision: 'violation',
+          evidence: { originalHeight: origHeight, clampedHeight: height },
+          hardware: { engine: 'rt4d-engine', stage: STAGE },
+          ledger: { requestId, traceId: trace.traceId },
+          replay: { sceneId, width, height },
+          timestamp: new Date().toISOString(),
+        });
+        return restError(400, 'CONSTITUTIONAL_VIOLATION', `height must be between ${MIN_RENDER_HEIGHT} and ${MAX_RENDER_HEIGHT}`);
+      }
+      logCER({
+        cer_id: crypto.randomUUID(),
+        attempt: 1,
+        actor: trace.principalId,
+        operation: 'scene_render',
+        decision: 'sanitized',
+        evidence: { originalWidth: origWidth, originalHeight: origHeight, width, height },
+        hardware: { engine: 'rt4d-engine', stage: STAGE },
+        ledger: { requestId, traceId: trace.traceId },
+        replay: { sceneId, width, height },
+        timestamp: new Date().toISOString(),
+      });
+      const { structured } = await performRender(sceneId, { ...body, width, height }, trace);
       return restOk(200, structured);
     }
 
@@ -1069,13 +1227,60 @@ async function handleRenderPrompt(event: APIGatewayProxyEvent): Promise<APIGatew
     if (!prompt) {
       return restError(400, 'BAD_REQUEST', 'prompt is required');
     }
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+      return restError(400, 'BAD_REQUEST', `prompt exceeds ${MAX_PROMPT_LENGTH} characters`);
+    }
     const mode = typeof body.mode === 'string' ? body.mode : undefined;
-    const width = typeof body.width === 'number' ? body.width : 512;
-    const height = typeof body.height === 'number' ? body.height : 512;
+    const origWidth = typeof body.width === 'number' ? body.width : undefined;
+    const origHeight = typeof body.height === 'number' ? body.height : undefined;
+    const width = sanitizeDimension(origWidth, MIN_RENDER_WIDTH, MAX_RENDER_WIDTH, 512);
+    const height = sanitizeDimension(origHeight, MIN_RENDER_HEIGHT, MAX_RENDER_HEIGHT, 512);
+    if (origWidth !== undefined && (origWidth > MAX_RENDER_WIDTH || origWidth < MIN_RENDER_WIDTH)) {
+      logCER({
+        cer_id: crypto.randomUUID(),
+        attempt: 1,
+        actor: trace.principalId,
+        operation: 'render_prompt',
+        decision: 'violation',
+        evidence: { originalWidth: origWidth, clampedWidth: width },
+        hardware: { engine: 'rt4d-engine', stage: STAGE },
+        ledger: { requestId, traceId: trace.traceId },
+        replay: { prompt, mode, width, height },
+        timestamp: new Date().toISOString(),
+      });
+      return restError(400, 'CONSTITUTIONAL_VIOLATION', `width must be between ${MIN_RENDER_WIDTH} and ${MAX_RENDER_WIDTH}`);
+    }
+    if (origHeight !== undefined && (origHeight > MAX_RENDER_HEIGHT || origHeight < MIN_RENDER_HEIGHT)) {
+      logCER({
+        cer_id: crypto.randomUUID(),
+        attempt: 1,
+        actor: trace.principalId,
+        operation: 'render_prompt',
+        decision: 'violation',
+        evidence: { originalHeight: origHeight, clampedHeight: height },
+        hardware: { engine: 'rt4d-engine', stage: STAGE },
+        ledger: { requestId, traceId: trace.traceId },
+        replay: { prompt, mode, width, height },
+        timestamp: new Date().toISOString(),
+      });
+      return restError(400, 'CONSTITUTIONAL_VIOLATION', `height must be between ${MIN_RENDER_HEIGHT} and ${MAX_RENDER_HEIGHT}`);
+    }
+    logCER({
+      cer_id: crypto.randomUUID(),
+      attempt: 1,
+      actor: trace.principalId,
+      operation: 'render_prompt',
+      decision: 'sanitized',
+      evidence: { originalWidth: origWidth, originalHeight: origHeight, width, height },
+      hardware: { engine: 'rt4d-engine', stage: STAGE },
+      ledger: { requestId, traceId: trace.traceId },
+      replay: { prompt, mode, width, height },
+      timestamp: new Date().toISOString(),
+    });
     const created = await createScene({ prompt, mode, width, height });
     const sceneId = typeof created.sceneId === 'string' ? created.sceneId : '';
     if (!sceneId) {
-      return restError(502, 'ENGINE_ERROR', 'engine did not return a sceneId');
+      return restError(502, 'ENGINE_ERROR', 'scene creation failed');
     }
     const continuityState = asRecord(body.continuityState);
     const { structured } = await performRender(
@@ -1085,9 +1290,6 @@ async function handleRenderPrompt(event: APIGatewayProxyEvent): Promise<APIGatew
     );
     return restOk(200, structured);
   } catch (err) {
-    const code = (err as { code?: string })?.code ?? 'ERROR';
-    const message = err instanceof Error ? err.message : String(err);
-    const status = /not found/i.test(message) ? 404 : /SCENE_/.test(code) ? 409 : 400;
-    return restError(status, code, message);
+    return restError(500, 'INTERNAL_ERROR', 'request failed');
   }
 }

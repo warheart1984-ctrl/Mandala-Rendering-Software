@@ -583,7 +583,7 @@ export function createEngineServer(options: { durableStore?: DurableSceneStore }
           sendJson(res, 404, envelope({ statusTag: "declared", error: { code: "SCENE_NOT_FOUND", message: `no scene ${sceneId}` } }, trace));
           return;
         }
-        const geometry = computeGeometry(resolved.scene.spec, {});
+        const geometry = computeGeometry(resolved.scene.spec, { timeSeconds: 0 });
         sendJson(res, 200, envelope<{ sceneId: string; geometry: unknown }>({ statusTag: "live", data: { sceneId, geometry } }, trace));
         return;
       }
