@@ -8,6 +8,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { getSurface, sampleSurface } from "../../src/surfaces/index.js";
+import {
+  renderIdentityHash,
+  deriveGeometryEvidenceId,
+  assertRenderIdentityBoundary,
+  RenderIdentityViolation,
+} from "../../src/render/rt4d/identity/RenderIdentity.js";
 
 describe("AC-R10' — Renderer-core surface dispatch constitutional check", () => {
   const RESOLUTION = 32;
@@ -97,5 +103,95 @@ describe("AC-R10' — Renderer-core surface dispatch constitutional check", () =
     // Verify surface ID is attached
     assert.equal(cliffordMesh.surfaceId, "clifford-torus");
     assert.equal(trefoilMesh.surfaceId, "trefoil-4d");
+  });
+
+  it("AC-R10'f: surface cache is keyed by render identity — different surfaces must not share entries", () => {
+    const clifford = getSurface("clifford-torus");
+    const trefoil = getSurface("trefoil-4d");
+
+    const c = sampleSurface(clifford, RESOLUTION);
+    const t = sampleSurface(trefoil, RESOLUTION);
+
+    assert.ok(c.renderIdentityKey, "clifford sample must carry renderIdentityKey");
+    assert.ok(t.renderIdentityKey, "trefoil sample must carry renderIdentityKey");
+    assert.notEqual(c.renderIdentityKey, t.renderIdentityKey, "identity keys must differ across surfaces");
+
+    assert.ok(c.geometryEvidenceId, "clifford sample must carry geometryEvidenceId");
+    assert.notEqual(c.geometryEvidenceId, t.geometryEvidenceId, "geometry evidence ids must differ across surfaces");
+  });
+
+  it("AC-R10'g: same identity returns the cached entry (deterministic, shared)", () => {
+    const clifford = getSurface("clifford-torus");
+    const a = sampleSurface(clifford, RESOLUTION);
+    const b = sampleSurface(clifford, RESOLUTION);
+    assert.equal(a, b, "identical render identity must return the same cached mesh object");
+  });
+
+  it("AC-R10'h: discrete surface (tesseract) hashes and carries evidence identity", () => {
+    const tesseract = getSurface("tesseract");
+    const mesh = sampleSurface(tesseract, RESOLUTION);
+    assert.ok(mesh.geometryHash && mesh.geometryHash.length === 64, "tesseract must hash its geometry");
+    assert.ok(mesh.geometryEvidenceId, "tesseract must carry geometryEvidenceId");
+    assert.ok(mesh.surfaceHash, "tesseract must carry surfaceHash");
+  });
+
+  it("AC-R10'i: fail-fast boundary throws on evidence mismatch and passes on match", () => {
+    const identity = {
+      surfaceId: "clifford-torus",
+      geometryEvidenceId: deriveGeometryEvidenceId({ surfaceId: "clifford-torus", resolution: 16, timeSeconds: 0, surfaceHash: "abc" }),
+      geometryHash: "g1",
+      metricId: "euclidean",
+      metricVersion: "1.0.0",
+      timeSeconds: 0,
+      projectionId: "perspective:4:4",
+    };
+    const matching = {
+      id: identity.geometryEvidenceId,
+      surfaceId: identity.surfaceId,
+      geometryHash: identity.geometryHash,
+    };
+    const scene = { metric: { id: "euclidean" } };
+    const mesh = { geometryHash: "g1" };
+    const intersector = { geometryHash: "g1" };
+
+    assertRenderIdentityBoundary(identity, matching, mesh, scene, intersector);
+
+    const badMesh = { geometryHash: "g2" };
+    assert.throws(
+      () => assertRenderIdentityBoundary(identity, matching, badMesh, scene, intersector),
+      RenderIdentityViolation,
+      "geometry hash mismatch must throw",
+    );
+
+    const badScene = { metric: { id: "minkowski:-+++" } };
+    assert.throws(
+      () => assertRenderIdentityBoundary(identity, matching, mesh, badScene, intersector),
+      RenderIdentityViolation,
+      "metric id mismatch must throw",
+    );
+
+    assert.throws(
+      () => assertRenderIdentityBoundary({ surfaceId: identity.surfaceId }, matching, mesh, scene, intersector),
+      RenderIdentityViolation,
+      "missing geometryEvidenceId must throw",
+    );
+  });
+
+  it("AC-R10'j: render identity hash is canonical and identity-sensitive", () => {
+    const base = {
+      surfaceId: "clifford-torus",
+      geometryEvidenceId: "ev1",
+      geometryHash: "g1",
+      metricId: "euclidean",
+      metricVersion: "1.0.0",
+      timeSeconds: 0,
+      projectionId: "perspective:4:4",
+    };
+    const h1 = renderIdentityHash(base);
+    assert.equal(h1, renderIdentityHash({ ...base }), "same identity must hash identically");
+    assert.notEqual(h1, renderIdentityHash({ ...base, surfaceId: "trefoil-4d" }), "surfaceId must change the hash");
+    assert.notEqual(h1, renderIdentityHash({ ...base, geometryHash: "g2" }), "geometryHash must change the hash");
+    assert.notEqual(h1, renderIdentityHash({ ...base, metricId: "minkowski:-+++" }), "metricId must change the hash");
+    assert.notEqual(h1, renderIdentityHash({ ...base, timeSeconds: 1 }), "timeSeconds must change the hash");
   });
 });

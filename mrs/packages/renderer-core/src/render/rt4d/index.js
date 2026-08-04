@@ -106,6 +106,26 @@ export {
 } from "./projection/index.js";
 
 export { Scene4D } from "./scene/Scene4D.js";
+export {
+  canonicalIdentityJson,
+  renderIdentityHash,
+  deriveGeometryEvidenceId,
+  assertRenderIdentityBoundary,
+  RenderIdentityViolation,
+  DEFAULT_METRIC_ID,
+  DEFAULT_METRIC_VERSION,
+} from "./identity/RenderIdentity.js";
+export {
+  METRIC_IDS,
+  INTERVAL_TOL,
+  signClass,
+  EuclideanMetric4D,
+  EUCLIDEAN_METRIC_4D,
+  MinkowskiMetric,
+  MINKOWSKI_METRIC,
+  CustomDiagonalMetric,
+  CurvedMetricField,
+} from "./metric/index.js";
 export { createHyperCausticLens } from "./scene/TestHyperCausticLens.js";
 
 export { renderRT4DFrame, renderRT4DFrameGPU, renderRT4DFrameWavefront } from "./RT4DRenderer.js";

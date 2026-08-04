@@ -60,6 +60,9 @@ export class TriangleMesh4D {
     this.localBvhKey = options.localBvhKey ?? null;
     this.surfaceId = options.surfaceId ?? "unknown";
     this.geometryHash = options.geometryHash ?? "";
+    this.geometryEvidenceId = options.geometryEvidenceId ?? "";
+    this.surfaceHash = options.surfaceHash ?? options.geometryHash ?? "";
+    this.identity = options.identity ?? null;
 
     // Build the SkinnedMeshIntersector (handles per-mesh BVH + intersection).
     this._intersector = new SkinnedMeshIntersector(this);
