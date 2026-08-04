@@ -1,0 +1,210 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MRS RT4D Engine",
+    "description": "Deterministic procedural 4D rendering engine (REST). Create a governed scene from a SceneSpecification, then render it to a PNG with a full hash-chain (sceneSpec -> projection -> pixel -> PNG) and an evidence envelope. This is NOT diffusion: frames are produced by the CPU RT4D path tracer from the scene spec. Every response is wrapped in an envelope: { ok, statusTag, data, error, requestId, at }.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://ferrari-golden-pressure-shadows.trycloudflare.com"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Check the engine is live",
+        "description": "Returns the service name and live status tag when the engine is up.",
+        "tags": ["system"],
+        "responses": {
+          "200": {
+            "description": "Service is live",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "statusTag": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": { "service": { "type": "string" } }
+                    },
+                    "error": { "type": ["object", "null"] },
+                    "requestId": { "type": "string" },
+                    "at": { "type": "string", "description": "ISO timestamp" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scenes": {
+      "post": {
+        "operationId": "createScene",
+        "summary": "Create a governed 4D scene from a SceneSpecification",
+        "description": "Accepts a SceneSpecification object directly (or { sceneSpec, promptHash }). Returns a sceneId and sceneHash (sha256 of the spec) plus persistence info. Deterministic and replayable.",
+        "tags": ["render"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "SceneSpecification. Example: { \"surface\": \"trefoil-4d\", \"resolution\": 12, \"rotations\": [], \"projection\": { \"type\": \"perspective\", \"distance4d\": 4, \"distance3d\": 4 }, \"camera\": { \"fovX\": 52, \"fovY\": 52, \"fovZ\": 8, \"fovW\": 8, \"lensRadius\": 0 } }",
+                "properties": {
+                  "surface": { "type": "string", "description": "Surface identifier, e.g. trefoil-4d, tesseract" },
+                  "resolution": { "type": "integer" },
+                  "rotations": { "type": "array", "items": { "type": "object" } },
+                  "projection": { "type": "object" },
+                  "camera": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scene created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ok", "statusTag", "data", "error", "requestId", "at"],
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "statusTag": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "required": ["sceneId", "sceneHash"],
+                      "properties": {
+                        "sceneId": { "type": "string", "description": "Opaque scene identifier, e.g. rt4d-scene-<hex>" },
+                        "sceneHash": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "sha256 hex of the scene spec" },
+                        "persistence": {
+                          "type": "object",
+                          "properties": {
+                            "durable": { "type": "boolean" },
+                            "source": { "type": "string", "enum": ["memory", "dynamodb"] },
+                            "rehydrated": { "type": "boolean" },
+                            "sceneSpecHash": { "type": "string" },
+                            "replayToken": { "type": ["string", "null"] }
+                          }
+                        }
+                      }
+                    },
+                    "error": { "type": ["object", "null"] },
+                    "requestId": { "type": "string" },
+                    "at": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid scene spec or unsupported surface"
+          }
+        }
+      }
+    },
+    "/v1/scenes/{sceneId}/render": {
+      "post": {
+        "operationId": "renderScene",
+        "summary": "Render a created scene to a deterministic RT4D PNG with evidence",
+        "description": "Renders the scene referenced by sceneId. The body MUST include a numeric seed for deterministic replay. Returns a real PNG (pngBase64) plus the hash chain (projectionHash, pixelHash, pngHash) and a full evidence envelope. Same scene + same seed always produces the same PNG.",
+        "tags": ["render"],
+        "parameters": [
+          {
+            "name": "sceneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["seed"],
+                "properties": {
+                  "seed": { "type": "integer", "description": "Required deterministic seed for the render" },
+                  "maxDepth": { "type": "integer", "minimum": 1, "maximum": 12, "description": "Ray depth; default 5" },
+                  "samplesPerPixel": { "type": "integer", "description": "Samples per pixel; default engine value" },
+                  "width": { "type": "integer", "description": "Output width in pixels" },
+                  "height": { "type": "integer", "description": "Output height in pixels" },
+                  "timeSeconds": { "type": "number", "description": "Timeline time in seconds" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Render receipt with PNG and evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ok", "statusTag", "data", "error", "requestId", "at"],
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "statusTag": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "required": ["sceneId", "renderId", "pngBase64", "projectionHash", "pixelHash", "pngHash"],
+                      "properties": {
+                        "sceneId": { "type": "string" },
+                        "renderKey": { "type": "string" },
+                        "renderId": { "type": "string", "pattern": "^rt4d-render-[a-f0-9]{16}$" },
+                        "projectionHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                        "pixelHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                        "pngHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                        "runtimeFingerprint": {
+                          "type": "object",
+                          "properties": {
+                            "node": { "type": "string" },
+                            "zlib": { "type": "string" },
+                            "platform": { "type": "string" },
+                            "arch": { "type": "string" }
+                          }
+                        },
+                        "renderReceipt": {
+                          "type": "object",
+                          "description": "Full render receipt with runId, sha256, renderParameters, cached flag, timestamp"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "description": "Constitutional evidence envelope: report, conformance, provenance"
+                        },
+                        "scenePersistence": { "type": "object" },
+                        "pngBase64": {
+                          "type": "string",
+                          "description": "PNG image bytes as base64. Decode and save to a .png file to view the render."
+                        }
+                      }
+                    },
+                    "error": { "type": ["object", "null"] },
+                    "requestId": { "type": "string" },
+                    "at": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing seed or invalid params"
+          },
+          "404": {
+            "description": "Scene not found"
+          }
+        }
+      }
+    }
+  }
+}

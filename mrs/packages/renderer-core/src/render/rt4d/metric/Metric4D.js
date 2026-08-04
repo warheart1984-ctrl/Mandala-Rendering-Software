@@ -14,9 +14,11 @@
 /**
  * @typedef {object} Metric4D
  * @property {string} id
+ * @property {string} version  - semantic version of the metric implementation
  * @property {string} [signature]
  * @property {(a: import("../math/vec4.js").Vec4Like, b: import("../math/vec4.js").Vec4Like) => number} innerProduct
- * @property {(a: import("../math/vec4.js").Vec4Like, b: import("../math/vec4.js").Vec4Like) => number} interval
+ * @property {(a: import("../math/vec4.js").Vec4Like, b: import("../math/vec4.js").Vec4Like) => number} intervalSquared - ds², not ds
+ * @property {(a: import("../math/vec4.js").Vec4Like, b: import("../math/vec4.js").Vec4Like) => number} interval - alias of intervalSquared
  * @property {(a: import("../math/vec4.js").Vec4Like, b: import("../math/vec4.js").Vec4Like) => IntervalClass} classifyInterval
  */
 

@@ -16,6 +16,7 @@ export class MinkowskiMetric {
    */
   constructor(opts = {}) {
     this.id = METRIC_IDS.MINKOWSKI_MINUS_PLUS;
+    this.version = "1.0.0";
     this.signature = "-+++";
     this.c = opts.c ?? 1;
     this.tol = opts.tol ?? INTERVAL_TOL;
@@ -32,10 +33,11 @@ export class MinkowskiMetric {
   }
 
   /**
+   * ds² = -c²(Δt)² + Δx² + Δy² + Δz² — can be negative, zero, or positive.
    * @param {{x:number,y:number,z:number,w:number}} a
    * @param {{x:number,y:number,z:number,w:number}} b
    */
-  interval(a, b) {
+  intervalSquared(a, b) {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
     const dz = b.z - a.z;
@@ -44,13 +46,18 @@ export class MinkowskiMetric {
     return -c2 * dt * dt + dx * dx + dy * dy + dz * dz;
   }
 
+  /** Alias retained for backward compatibility; returns ds² (not ds). */
+  interval(a, b) {
+    return this.intervalSquared(a, b);
+  }
+
   /**
    * @param {{x:number,y:number,z:number,w:number}} a
    * @param {{x:number,y:number,z:number,w:number}} b
    * @returns {"timelike"|"spacelike"|"lightlike"}
    */
   classifyInterval(a, b) {
-    const s = signClass(this.interval(a, b), this.tol);
+    const s = signClass(this.intervalSquared(a, b), this.tol);
     if (s === "zero") return "lightlike";
     if (s === "negative") return "timelike";
     return "spacelike";

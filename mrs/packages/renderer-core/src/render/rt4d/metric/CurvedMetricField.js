@@ -7,6 +7,7 @@ import { METRIC_IDS } from "./Metric4D.js";
 export class CurvedMetricField {
   constructor() {
     this.id = METRIC_IDS.CURVED_FIELD;
+    this.version = "0.0.1";
     this.signature = "declared";
     this.status = "skeleton";
     this.note =
