@@ -8,6 +8,11 @@ import {
   Hyperplane,
   PathTracer4D,
   vec4,
+  EUCLIDEAN_METRIC_4D,
+  DEFAULT_METRIC_ID,
+  DEFAULT_METRIC_VERSION,
+  renderIdentityHash,
+  deriveGeometryEvidenceId,
 } from "@mrs/renderer-core/rt4d";
 import { getSurface, listSurfaces, sampleSurface } from "@mrs/renderer-core/surfaces";
 import { composeRotations } from "@mrs/renderer-core/math";
@@ -43,11 +48,23 @@ export type RenderResult = {
   height: number;
   sampleCount: number;
   renderId: string;
+  renderIdentityHash: string;
   runtimeFingerprint: RuntimeFingerprint;
+};
+
+export type RenderIdentity = {
+  surfaceId: string;
+  geometryEvidenceId: string;
+  geometryHash: string;
+  metricId: string;
+  metricVersion: string;
+  timeSeconds: number;
+  projectionId: string;
 };
 
 export type GeometryOptions = {
   resolution?: number;
+  timeSeconds?: number;
 };
 
 export type GeometryResult = {
@@ -201,13 +218,43 @@ function bakeVertices(
   });
 }
 
+/** Baked (rotation-applied) vertex buffer hash — the geometry actually rendered. */
+function bakeGeometryHash(verts: Array<[number, number, number, number]>): string {
+  const data = verts.map((v) => v.join(",")).join("|");
+  return createHash("sha256").update(data).digest("hex");
+}
+
+/** Canonical projection identity consumed by the render cache key. */
+function projectionIdOf(spec: SceneSpec): string {
+  return `${spec.projection?.type ?? "perspective"}:${Number(spec.projection?.distance4d ?? 0)}:${Number(spec.projection?.distance3d ?? 0)}`;
+}
+
 function buildScene(spec: SceneSpec, timeSeconds: number) {
   validateSceneSpec(spec);
   const surface = getSurface(spec.surface);
   const mesh = sampleSurface(surface, spec.resolution);
   const verts = bakeVertices(mesh.vertices, spec.rotations ?? [], timeSeconds);
+  const geometryHash = bakeGeometryHash(verts);
+  const surfaceHash = mesh.surfaceHash ?? mesh.geometryHash ?? "";
+  const projectionId = projectionIdOf(spec);
+  const geometryEvidenceId = deriveGeometryEvidenceId({
+    surfaceId: spec.surface,
+    resolution: spec.resolution,
+    timeSeconds,
+    surfaceHash,
+    projectionId,
+  });
+  const identity: RenderIdentity = {
+    surfaceId: spec.surface,
+    geometryEvidenceId,
+    geometryHash,
+    metricId: DEFAULT_METRIC_ID,
+    metricVersion: DEFAULT_METRIC_VERSION,
+    timeSeconds,
+    projectionId,
+  };
 
-  const scene = new Scene4D();
+  const scene = new Scene4D({ metric: EUCLIDEAN_METRIC_4D });
   scene.materials.createMaterial("surf", "lambertian", { albedo: vec4(0.72, 0.85, 0.98, 1) });
   scene.materials.createMaterial("ground", "lambertian", { albedo: vec4(0.16, 0.17, 0.22, 1) });
   scene.materials.createMaterial("keylight", "light", {
@@ -220,14 +267,32 @@ function buildScene(spec: SceneSpec, timeSeconds: number) {
   });
 
   scene.addTriangleMesh(
-    { kind: "triangle-mesh", vertices: verts, indices: mesh.faces },
+    {
+      kind: "triangle-mesh",
+      vertices: verts,
+      indices: mesh.faces.flat(),
+      surfaceId: spec.surface,
+      surfaceHash,
+      geometryHash,
+      geometryEvidenceId,
+    },
     "surf",
   );
   scene.addPrimitive(new Hyperplane(vec4(0, 1, 0, 0), -1.4), "ground");
   scene.addLight(new Hypersphere(vec4(4.2, 7.2, -3.8, 0), 0.7), "keylight");
   scene.addLight(new Hypersphere(vec4(-5.0, 5.8, 4.2, 0), 0.55), "filllight");
+  scene.setRenderIdentity(identity);
   scene.build();
-  return { scene, mesh, verts };
+
+  // Fail-fast boundary (AC-R10 / RendererSurfaceDispatch): the scene's bound
+  // geometry evidence must match the render intent before any ray is traced.
+  scene.verifyRenderIdentity({
+    surfaceId: spec.surface,
+    geometryEvidenceId,
+    metricId: DEFAULT_METRIC_ID,
+  });
+
+  return { scene, mesh, verts, identity };
 }
 
 function toByte(c: number, exposure: number): number {
@@ -265,7 +330,7 @@ export async function renderScene(
   const projectionHash = computeProjectionHash(spec, params, orderedParams);
   const renderId = computeRenderId(sceneSpecHash, seed, projectionHash);
 
-  const { scene } = buildScene(spec, timeSeconds);
+  const { scene, identity } = buildScene(spec, timeSeconds);
   const cam = spec.camera;
   const camera = new Camera4D({
     x: 0,
@@ -285,6 +350,18 @@ export async function renderScene(
     lensRadius: 0,
   });
 
+  // Constitutional tracing context — the render identity drives evidence
+  // binding at every boundary (surface → mesh → BVH → intersector → trace).
+  const constitutionalContext = {
+    geometryHash: identity.geometryHash,
+    sceneHash: sceneSpecHash,
+    surfaceId: identity.surfaceId,
+    geometryEvidenceId: identity.geometryEvidenceId,
+    metricId: identity.metricId,
+    rngSeed: params.seed,
+    prevSceneHash: "", // would be set from previous render if chaining
+  };
+
   const rng = mulberry32(seed);
   const tracer = new PathTracer4D({ maxDepth, samplesPerPixel: samples, rng });
 
@@ -300,7 +377,7 @@ export async function renderScene(
         // Fix the hyperplane sample at the central 4D slice (render-still audited
         // fix) — randomizing u3/u4 sprays finite hyperspheres into speckle.
         const ray = camera.generateRay(x, y, u1, u2, 0.5, 0.5);
-        const L = tracer.trace(ray, scene);
+        const L = tracer.trace(ray, scene, 0, constitutionalContext);
         r += L.x;
         g += L.y;
         b += L.z;
@@ -325,6 +402,7 @@ export async function renderScene(
     height,
     sampleCount: samples,
     renderId,
+    renderIdentityHash: renderIdentityHash(identity),
     runtimeFingerprint: runtimeFingerprint(),
   };
 }
@@ -333,7 +411,7 @@ export function computeGeometry(spec: SceneSpec, opts: GeometryOptions): Geometr
   const surface = getSurface(spec.surface);
   const resolution = opts.resolution ?? spec.resolution;
   const mesh = sampleSurface(surface, resolution);
-  const verts = bakeVertices(mesh.vertices, spec.rotations ?? [], 0);
+  const verts = bakeVertices(mesh.vertices, spec.rotations ?? [], opts.timeSeconds ?? 0);
   return {
     vertices: verts.map((v) => ({ x: v[0], y: v[1], z: v[2], w: v[3] })),
     indices: mesh.faces,

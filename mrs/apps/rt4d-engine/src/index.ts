@@ -95,6 +95,15 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
+function sendHtml(res: ServerResponse, status: number, html: string): void {
+  res.writeHead(status, { "content-type": "text/html; charset=utf-8" });
+  res.end(html);
+}
+
+const PRIVACY_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Privacy Policy — MRS RT4D Engine</title></head><body><h1>Privacy Policy</h1><p>The MRS RT4D rendering engine does not use cookies, does not track users, and does not retain personal data. Scene specifications and render requests are processed in memory for the duration of the request and are not stored unless the operator explicitly enables durable persistence.</p><p>No analytics, advertising, or third-party data sharing occurs.</p><p><a href="/">Back to API</a></p></body></html>`;
+
+const LEGAL_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Terms of Use — MRS RT4D Engine</title></head><body><h1>Terms of Use</h1><p>This service is provided under the MIT License. Use of this API is at your own risk; the service is provided "as is" without warranty of any kind.</p><p><a href="/">Back to API</a></p></body></html>`;
+
 function readJsonBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -262,6 +271,21 @@ export function createEngineServer(options: { durableStore?: DurableSceneStore }
 
       if (method === "GET" && url.pathname === "/health") {
         sendJson(res, 200, envelope({ statusTag: "live", data: { service: "@mrs/rt4d-engine" } }, trace));
+        return;
+      }
+
+      if (method === "GET" && url.pathname === "/") {
+        sendJson(res, 200, envelope({ statusTag: "live", data: { service: "@mrs/rt4d-engine", endpoints: ["/health", "/v1/scenes", "/v1/scenes/{id}/render", "/v1/scenes/{id}/provenance", "/v1/scenes/{id}/geometry", "/privacy", "/legal"] } }, trace));
+        return;
+      }
+
+      if (method === "GET" && url.pathname === "/privacy") {
+        sendHtml(res, 200, PRIVACY_PAGE);
+        return;
+      }
+
+      if (method === "GET" && url.pathname === "/legal") {
+        sendHtml(res, 200, LEGAL_PAGE);
         return;
       }
 
@@ -501,6 +525,7 @@ export function createEngineServer(options: { durableStore?: DurableSceneStore }
           sha256: result.sha256,
           pixelHash: result.pixelHash,
           renderId: result.renderId,
+          renderIdentityHash: result.renderIdentityHash,
           projectionHash,
           runtimeFingerprint: result.runtimeFingerprint,
           renderParameters: orderedParams,
@@ -583,7 +608,8 @@ export function createEngineServer(options: { durableStore?: DurableSceneStore }
           sendJson(res, 404, envelope({ statusTag: "declared", error: { code: "SCENE_NOT_FOUND", message: `no scene ${sceneId}` } }, trace));
           return;
         }
-        const geometry = computeGeometry(resolved.scene.spec, {});
+const timeSeconds = Number(url.searchParams.get("timeSeconds") ?? 0);
+        const geometry = computeGeometry(resolved.scene.spec, { timeSeconds });
         sendJson(res, 200, envelope<{ sceneId: string; geometry: unknown }>({ statusTag: "live", data: { sceneId, geometry } }, trace));
         return;
       }
@@ -603,7 +629,7 @@ export function createEngineServer(options: { durableStore?: DurableSceneStore }
 
 export function main(): void {
   durableSceneStore.assertReady();
-  const port = Number(process.env.RT4D_ENGINE_PORT ?? DEFAULT_PORT);
+  const port = Number(process.env.RT4D_ENGINE_PORT ?? process.env.PORT ?? DEFAULT_PORT);
   const server = createEngineServer();
   server.listen(port, () => {
     console.log(`@mrs/rt4d-engine listening on http://localhost:${port}`);

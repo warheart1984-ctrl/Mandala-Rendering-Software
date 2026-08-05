@@ -18,6 +18,7 @@ export class CustomDiagonalMetric {
     }
     this.diag = Object.freeze([...diag]);
     this.id = opts.id ?? METRIC_IDS.CUSTOM_DIAGONAL;
+    this.version = "1.0.0";
     this.signature = opts.signature ?? "custom";
     this.tol = opts.tol ?? INTERVAL_TOL;
     this.status = "partial";
@@ -33,16 +34,22 @@ export class CustomDiagonalMetric {
   }
 
   /**
+   * ds² = Σ gᵢᵢ(Δxᵢ)² — can be negative, zero, or positive.
    * @param {{x:number,y:number,z:number,w:number}} a
    * @param {{x:number,y:number,z:number,w:number}} b
    */
-  interval(a, b) {
+  intervalSquared(a, b) {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
     const dz = b.z - a.z;
     const dw = b.w - a.w;
     const [gx, gy, gz, gw] = this.diag;
     return gx * dx * dx + gy * dy * dy + gz * dz * dz + gw * dw * dw;
+  }
+
+  /** Alias retained for backward compatibility; returns ds² (not ds). */
+  interval(a, b) {
+    return this.intervalSquared(a, b);
   }
 
   /**
@@ -53,7 +60,7 @@ export class CustomDiagonalMetric {
     const signs = this.diag.map((g) => Math.sign(g));
     const indefinite = signs.some((s) => s < 0) && signs.some((s) => s > 0);
     if (!indefinite) return "euclidean";
-    const s = signClass(this.interval(a, b), this.tol);
+    const s = signClass(this.intervalSquared(a, b), this.tol);
     if (s === "zero") return "lightlike";
     // For mostly-plus custom metrics with negative time-like gw: match Minkowski sign
     if (this.diag[3] < 0) {

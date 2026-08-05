@@ -6,6 +6,11 @@ const sharedBvhCache = new Map();
 function bvhCacheKey(primitive) {
   return primitive.localBvhKey
     ?? primitive.bvhKey
+    // AC-R10 identity: the shared BVH cache must never collide across
+    // render identities. geometryEvidenceId distinguishes every rendered
+    // geometry instance; geometryHash distinguishes baked vertex buffers.
+    ?? primitive.geometryEvidenceId
+    ?? primitive.geometryHash
     ?? primitive.evidence?.bakedGeometryHash
     ?? primitive.evidence?.meshDeformationHash
     ?? null;
@@ -97,6 +102,9 @@ export class SkinnedMeshIntersector {
     this.usesLocalInstanceTraversal = Boolean(primitive.localVertices && primitive.instanceMatrix && primitive.inverseInstanceMatrix);
     this.materialSlots = primitive.materialSlots ?? null;
     this.defaultMaterialId = primitive.materialId ?? primitive.material?.id ?? "default";
+    this.surfaceId = primitive.surfaceId ?? "unknown";
+    this.geometryHash = primitive.geometryHash ?? "";
+    this.geometryEvidenceId = primitive.geometryEvidenceId ?? "";
     this.bvhKey = bvhCacheKey(primitive);
     this.bvhCache = options.bvhCache ?? sharedBvhCache;
     this.bvh = this._buildOrReuseBvh(options);
@@ -106,6 +114,9 @@ export class SkinnedMeshIntersector {
     this.primitive = primitive;
     this.vertices = primitive.localVertices ?? primitive.vertices ?? [];
     this.indices = primitive.localIndices ?? primitive.indices ?? [];
+    this.surfaceId = primitive.surfaceId ?? this.surfaceId ?? "unknown";
+    this.geometryHash = primitive.geometryHash ?? this.geometryHash ?? "";
+    this.geometryEvidenceId = primitive.geometryEvidenceId ?? this.geometryEvidenceId ?? "";
     this.bvhKey = bvhCacheKey(primitive);
     this.bvh = this._buildOrReuseBvh();
     return this;
@@ -199,6 +210,9 @@ export class SkinnedMeshIntersector {
       triangleIndex: tri.triangleIndex,
       materialId,
       primitiveKind: this.primitive.kind ?? "skinned-mesh",
+      surfaceId: this.surfaceId ?? this.primitive.surfaceId ?? "unknown",
+      geometryHash: this.geometryHash,
+      geometryEvidenceId: this.geometryEvidenceId,
     };
   }
 

@@ -21,6 +21,7 @@ export type RenderReceipt = {
   sha256: string;
   pixelHash: string;
   renderId: string;
+  renderIdentityHash: string;
   projectionHash: string;
   runtimeFingerprint: {
     node: string;

@@ -1,26 +1,13 @@
-# Render Blueprint — Genblaze media (hackathon App URL)
-# https://render.com/docs/blueprint-spec
-#
-# Canonical judge/demo deploy path:
-#   Use this repo-root blueprint when the service must include the bundled
-#   RT4D renderer, prompt-scene bridge, Engine3D still/sequence, and the
-#   shared build-time smoke gates proven by the local image rebuild.
-#   Keep mrs/apps/genblaze-media/render.yaml only for the smaller
-#   app-local NVIDIA-only path.
-#
-# Dashboard equivalent:
-#   Dockerfile Path: ./Dockerfile
-#   Root Directory: (empty — repo root)
-#   Health Check: /health
 services:
   - type: web
-    name: mandala-rendering-system-mrs
-    runtime: docker
-    plan: free
-    branch: main
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    name: mrs-rt4d-engine
+    runtime: node
+    rootDir: mrs
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @mrs/rt4d-engine start
     healthCheckPath: /health
+    plan: free
+    autoDeploy: true
     envVars:
       - key: NVIDIA_API_KEY
         sync: false
@@ -46,6 +33,8 @@ services:
         sync: false
       - key: GENBLAZE_IMAGE_MODEL
         value: black-forest-labs/flux.1-schnell
+      - key: GENBLAZE_ALLOW_BYOK
+        value: "1"
       - key: GENBLAZE_STORAGE_PREFIX
         value: genblaze-media
       - key: GENBLAZE_HTTP_TIMEOUT

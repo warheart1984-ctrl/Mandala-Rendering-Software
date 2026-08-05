@@ -3,11 +3,14 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as lambdaTargets from 'aws-cdk-lib/aws-events-targets';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import { Construct } from 'constructs';
 
 export interface McpGatewayStackProps extends cdk.StackProps {
@@ -153,6 +156,8 @@ export class McpGatewayStack extends cdk.Stack {
     usageTable.grantWriteData(mcpHandlerFn);
     decisionsTable.grantWriteData(mcpHandlerFn);
 
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'https://chat.openai.com').split(',').map((o) => o.trim()).filter(Boolean);
+
     this.api = new apigateway.RestApi(this, 'McpApi', {
       restApiName: `${prefix}-mcp-api`,
       description:
@@ -161,18 +166,17 @@ export class McpGatewayStack extends cdk.Stack {
         stageName: stage,
         tracingEnabled: true,
         loggingLevel: apigateway.MethodLoggingLevel.INFO,
-        dataTraceEnabled: true,
+        dataTraceEnabled: false,
         metricsEnabled: true,
         cacheClusterEnabled: false,
-        // Stage-level throttle (primary rate limit surface)
         throttlingRateLimit: 50,
         throttlingBurstLimit: 100,
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowOrigins: allowedOrigins,
+        allowMethods: ['POST', 'GET', 'OPTIONS'],
         allowHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
-        maxAge: cdk.Duration.hours(1),
+        maxAge: cdk.Duration.minutes(5),
       },
       endpointConfiguration: {
         types: [apigateway.EndpointType.REGIONAL],
@@ -189,17 +193,20 @@ export class McpGatewayStack extends cdk.Stack {
     mcpResource.addMethod('POST', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
+      apiKeyRequired: true,
     });
 
     const healthResource = this.api.root.addResource('health');
     healthResource.addMethod('GET', proxyIntegration, {
       authorizationType: apigateway.AuthorizationType.NONE,
+      apiKeyRequired: false,
     });
 
     // GPT Action / OpenAPI façade — importable at <mcpUrl>openapi.json.
     const openApiResource = this.api.root.addResource('openapi.json');
     openApiResource.addMethod('GET', proxyIntegration, {
       authorizationType: apigateway.AuthorizationType.NONE,
+      apiKeyRequired: false,
     });
 
     const v1 = this.api.root.addResource('v1');
@@ -207,27 +214,32 @@ export class McpGatewayStack extends cdk.Stack {
     scenes.addMethod('POST', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
+      apiKeyRequired: true,
     });
     const scene = scenes.addResource('{sceneId}');
     scene.addMethod('GET', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
+      apiKeyRequired: true,
     });
     scene.addMethod('PATCH', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
+      apiKeyRequired: true,
     });
     scene.addResource('render').addMethod('POST', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
+      apiKeyRequired: true,
     });
     const renderPrompt = v1.addResource('render-prompt');
     renderPrompt.addMethod('POST', proxyIntegration, {
       authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
+      apiKeyRequired: true,
     });
 
-    // Usage plan / quota — supporting rate-limit surface (partial: methods do not require x-api-key)
+    // Usage plan / quota — supporting rate-limit surface with API key enforcement.
     const plan = this.api.addUsagePlan('McpUsagePlan', {
       name: `${prefix}-mcp-usage-plan`,
       throttle: {
@@ -241,7 +253,137 @@ export class McpGatewayStack extends cdk.Stack {
     });
     plan.addApiStage({ stage: this.api.deploymentStage });
 
+    // API key rotation Lambda — generates new keys and stores them in Secrets Manager.
+    const keyRotatorFn = new lambdaNode.NodejsFunction(this, 'ApiKeyRotator', {
+      functionName: `${prefix}-api-key-rotator`,
+      entry: path.join(__dirname, '..', 'lambda', 'api-key-rotator', 'index.ts'),
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+      environment: {
+        STAGE: stage,
+        PROJECT_NAME: projectName,
+        API_KEYS_SECRET: `${prefix}/api-keys`,
+        USAGE_PLAN_ID: plan.usagePlanId,
+      },
+      bundling: {
+        minify: true,
+        sourceMap: true,
+        target: 'node20',
+        forceDockerBundling: false,
+      },
+      logRetention: logs.RetentionDays.ONE_WEEK,
+    });
+
+    keyRotatorFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'apigateway:CreateApiKey',
+          'apigateway:CreateUsagePlanKey',
+          'apigateway:DeleteApiKey',
+          'apigateway:GetUsagePlan',
+          'apigateway:UpdateApiKey',
+        ],
+        resources: ['*'],
+      }),
+    );
+
+    new events.Rule(this, 'KeyRotationSchedule', {
+      schedule: events.Schedule.rate(cdk.Duration.days(30)),
+      targets: [new lambdaTargets.LambdaFunction(keyRotatorFn)],
+    });
+
     this.mcpUrl = this.api.url;
+
+    const webAcl = new wafv2.CfnWebACL(this, 'McpWebAcl', {
+      name: `${prefix}-mcp-web-acl`,
+      scope: 'REGIONAL',
+      defaultAction: { allow: {} },
+      visibilityConfig: {
+        sampledRequestsEnabled: true,
+        cloudWatchMetricsEnabled: true,
+        metricName: `${prefix}-mcp-waf`,
+      },
+      rules: [
+        {
+          name: 'AwsManagedRulesCommonRuleSet',
+          priority: 1,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesCommonRuleSet',
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${prefix}-waf-common`,
+          },
+          overrideAction: { none: {} },
+        },
+        {
+          name: 'AwsManagedRulesSQLiRuleSet',
+          priority: 2,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesSQLiRuleSet',
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${prefix}-waf-sqli`,
+          },
+          overrideAction: { none: {} },
+        },
+        {
+          name: 'AwsManagedRulesLinuxRuleSet',
+          priority: 3,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesLinuxRuleSet',
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${prefix}-waf-linux`,
+          },
+          overrideAction: { none: {} },
+        },
+        {
+          name: 'RateLimitRule',
+          priority: 4,
+          action: { block: {} },
+          statement: {
+            rateBasedStatement: {
+              limit: 200,
+              aggregateKeyType: 'IP',
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${prefix}-waf-rate`,
+          },
+        },
+      ],
+    });
+
+    new wafv2.CfnWebACLAssociation(this, 'McpWebAclAssociation', {
+      resourceArn: this.api.arnForExecuteApi(stage, '*', '/*'),
+      webAclArn: webAcl.attrArn,
+    });
+
+    new cdk.CfnOutput(this, 'WebAclArn', {
+      value: webAcl.attrArn,
+      description: 'WAF Web ACL ARN for the MCP gateway',
+      exportName: `${prefix}-waf-acl-arn`,
+    });
 
     new cdk.CfnOutput(this, 'McpUrl', {
       value: this.mcpUrl,
@@ -269,6 +411,11 @@ export class McpGatewayStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'HandlerFunctionArn', {
       value: mcpHandlerFn.functionArn,
       exportName: `${prefix}-mcp-handler-arn`,
+    });
+    new cdk.CfnOutput(this, 'KeyRotatorFunctionArn', {
+      value: keyRotatorFn.functionArn,
+      description: 'API key rotation Lambda function ARN',
+      exportName: `${prefix}-key-rotator-arn`,
     });
   }
 }

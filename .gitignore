@@ -96,3 +96,14 @@ operator-assets/**/*.gltf
 operator-assets/**/*.bin
 !operator-assets/**/README.md
 !operator-assets/**/.gitkeep
+
+# Mandala Lattice v1.0 runtime — source of truth lives under sme/dist
+# (dist/ is the deployed distribution layout for the desktop build)
+!sme/dist/
+!sme/dist/lattice/
+!sme/dist/lattice/**
+
+# Mandala desktop app — binaries, weights, and secrets are never tracked
+mandala-app/models/
+mandala-app/config/api-keys.json
+**/api-keys.json
