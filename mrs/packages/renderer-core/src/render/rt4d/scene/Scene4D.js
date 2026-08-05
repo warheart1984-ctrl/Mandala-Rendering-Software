@@ -7,9 +7,11 @@ import { wrapPrimitiveIntersector } from "../geometry/PrimitiveIntersectors.js";
 import { environmentToEmission, normalizeRt4dLight } from "../lighting/Rt4dLightAdapter.js";
 import { vec4, dot, normalize, sub, length } from "../math/vec4.js";
 import { TriangleMesh4D } from "../geometry/TriangleMesh4D.js";
+import { EUCLIDEAN_METRIC_4D } from "../metric/EuclideanMetric4D.js";
+import { assertRenderIdentityBoundary } from "../identity/RenderIdentity.js";
 
 export class Scene4D {
-  constructor() {
+  constructor(options = {}) {
     this.primitives = [];
     this.volumes = [];
     this.lights = [];
@@ -19,6 +21,18 @@ export class Scene4D {
     this.bvh = null;
     this.envLight = null;
     this.environment = null;
+    // Metric that gives the fourth coordinate meaning. The engine defaults to
+    // Euclidean (w = 4th spatial axis); a Lorentzian metric is a config swap.
+    this.metric = options.metric ?? EUCLIDEAN_METRIC_4D;
+    // Render identity chain (AC-R10): surfaceId, geometryEvidenceId,
+    // geometryHash describe the geometry evidence actually bound to this scene.
+    this.surfaceId = options.surfaceId ?? null;
+    this.geometryEvidenceId = options.geometryEvidenceId ?? null;
+    this.geometryHash = options.geometryHash ?? null;
+    this.identity = options.identity ?? null;
+    // The intersector bound to the surface mesh — the exact mesh instance that
+    // the path tracer must intersect (RendererSurfaceDispatch contract).
+    this.geometryIntersector = null;
   }
 
   addPrimitive(prim, materialId) {
@@ -39,6 +53,9 @@ export class Scene4D {
     mesh.materialId = materialId;
     const intersector = new SkinnedMeshIntersector(mesh);
     mesh.intersect = (ray) => intersector.intersect(ray);
+    // Bind the exact intersector (and its geometry evidence) so the path
+    // tracer's identity boundary can assert it against the render intent.
+    this.geometryIntersector = intersector;
     wrapPrimitiveIntersector(mesh, materialId);
     this.primitives.push(mesh);
     if (mesh.materialSlots) {
@@ -48,6 +65,38 @@ export class Scene4D {
         }
       }
     }
+    return this;
+  }
+
+  /** Attach the render identity that produced this scene's geometry. */
+  setRenderIdentity(identity) {
+    this.identity = identity;
+    if (identity) {
+      this.surfaceId = identity.surfaceId;
+      this.geometryEvidenceId = identity.geometryEvidenceId;
+      this.geometryHash = identity.geometryHash;
+    }
+    return this;
+  }
+
+  /**
+   * Fail-fast boundary (AC-R10 / RendererSurfaceDispatch).
+   * Asserts the scene's bound geometry evidence matches the render intent.
+   * @param {object} intent - { surfaceId, geometryEvidenceId, metricId }
+   */
+  verifyRenderIdentity(intent) {
+    const evidence = {
+      id: this.geometryEvidenceId,
+      surfaceId: this.surfaceId,
+      geometryHash: this.geometryHash,
+    };
+    assertRenderIdentityBoundary(
+      intent,
+      evidence,
+      { geometryHash: this.geometryHash },
+      this,
+      this.geometryIntersector ?? { geometryHash: "" },
+    );
     return this;
   }
 

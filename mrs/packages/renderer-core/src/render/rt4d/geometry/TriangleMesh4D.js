@@ -19,15 +19,15 @@ import { SkinnedMeshIntersector } from "../intersection/SkinnedMeshIntersector.j
 
 /**
  * Read a vertex from a flat or nested array.
- * Supports: [[x,y,z,w], ...]  or  [x,y,z, x,y,z, ...]  or  [x,y,z, ...] (w=0).
+ * Supports: [[x,y,z,w], ...]  or  [x,y,z,w, x,y,z,w, ...]  or  [x,y,z, ...] (w=0).
  */
 function readVertex(vertices, index) {
   if (Array.isArray(vertices[index])) {
     const v = vertices[index];
     return vec4(v[0] ?? 0, v[1] ?? 0, v[2] ?? 0, v[3] ?? 0);
   }
-  const o = index * 3;
-  return vec4(vertices[o] ?? 0, vertices[o + 1] ?? 0, vertices[o + 2] ?? 0, 0);
+  const o = index * 4;
+  return vec4(vertices[o] ?? 0, vertices[o + 1] ?? 0, vertices[o + 2] ?? 0, vertices[o + 3] ?? 0);
 }
 
 export class TriangleMesh4D {
@@ -58,6 +58,11 @@ export class TriangleMesh4D {
     this.instanceMatrix = options.instanceMatrix ?? null;
     this.inverseInstanceMatrix = options.inverseInstanceMatrix ?? null;
     this.localBvhKey = options.localBvhKey ?? null;
+    this.surfaceId = options.surfaceId ?? "unknown";
+    this.geometryHash = options.geometryHash ?? "";
+    this.geometryEvidenceId = options.geometryEvidenceId ?? "";
+    this.surfaceHash = options.surfaceHash ?? options.geometryHash ?? "";
+    this.identity = options.identity ?? null;
 
     // Build the SkinnedMeshIntersector (handles per-mesh BVH + intersection).
     this._intersector = new SkinnedMeshIntersector(this);

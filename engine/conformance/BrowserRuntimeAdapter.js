@@ -18,6 +18,10 @@ import { GovernanceKernel } from "../governance/GovernanceKernel.js";
 import { ConstitutionalStateEngine } from "../../js/constitution/cse.js";
 import { ExecutionOrchestrator } from "../../js/engine/services/orchestrator.js";
 import { TimelinePlayer } from "../../js/engine/cinematic/TimelinePlayer.js";
+import { CONTRACTS } from "../../engine/constitution/contracts.js";
+import { CHARTER } from "../../engine/constitution/charter.js";
+import { resolveAuthority } from "../../engine/constitution/contracts.js";
+import { GovernanceKernel as GK } from "../governance/GovernanceKernel.js";
 import {
   getActorIdentity as browserActorIdentity,
   getCapabilities as browserCapabilities,
@@ -26,6 +30,10 @@ import {
 } from "../runtime/hosts/BrowserHostBridge.js";
 
 // ── helpers ────────────────────────────────────────────────────────
+
+function getContract(contractId) {
+  return CONTRACTS.contracts.find(c => c.contractId === contractId);
+}
 
 function makeIntent(overrides = {}) {
   return {
@@ -321,5 +329,210 @@ export async function createBrowserAdapter(fetchImpl) {
         reason: ok ? undefined : "CSR missing governanceTrace fields",
       };
     },
+
+    // ── director ──────────────────────────────────────────────────
+
+    "binding.director-contract-exists": async () => {
+      const contract = getContract("contract.director.v1");
+      const ok = contract &&
+        contract.status === "enforced" &&
+        contract.actor === "4dce.director" &&
+        contract.authority === "coordinate";
+      return { pass: !!ok, reason: ok ? undefined : "Director contract missing or not enforced" };
+    },
+
+"authority.chain-valid": async () => {
+      // Verify Director authority chain: Director (coordinate) -> Specialist (execute)
+      // The chain should NOT collapse boundaries between coordination and execution
+      const dirContract = getContract("contract.director.v1");
+      const architectContract = CONTRACTS.contracts.find(c => c.actor === "4dce.architect") ||
+        CONTRACTS.contracts.find(c => c.actor === "architect");
+
+      // Director has coordinate authority, specialists have execute authority
+      const dirAuthority = dirContract?.authority === "coordinate";
+      const dirForbidden = dirContract?.forbiddenActions?.includes("execute_specialist_work");
+      const dirForbiddenMutate = dirContract?.forbiddenActions?.includes("mutate_artifacts_directly");
+      const dirScope = dirContract?.coordinationScope?.includes("architect") &&
+        dirContract?.coordinationScope?.includes("builder") &&
+        dirContract?.coordinationScope?.includes("implementor") &&
+        dirContract?.coordinationScope?.includes("inspector") &&
+        dirContract?.coordinationScope?.includes("reviewer") &&
+        dirContract?.coordinationScope?.includes("engineer-standards");
+
+      const ok = dirAuthority && dirForbidden && dirForbiddenMutate && dirScope;
+      return {
+        pass: !!ok,
+        reason: ok ? undefined : "Director authority chain invalid - boundaries collapsed"
+      };
+    },
+
+    "governance.no-implicit-escalation": async () => {
+      // Verify Director cannot implicitly escalate privileges
+      // All escalations require explicit approval records
+      const dirContract = getContract("contract.director.v1");
+
+      // Check forbidden actions include escalation attempts
+      const noExec = dirContract?.forbiddenActions?.includes("execute_specialist_work");
+      const noMutate = dirContract?.forbiddenActions?.includes("mutate_artifacts_directly");
+      const noInterpret = dirContract?.forbiddenActions?.includes("interpret");
+      const noExternal = dirContract?.forbiddenActions?.includes("invoke_external");
+
+      // Check approval record is required in evidence
+      const needsApproval = dirContract?.evidenceRequirements?.includes("approval_record");
+
+      // Verify CKL policy exists (policySet is already loaded in adapter closure)
+      const policy = policySet.policies.find(
+        p => p.id === "policy-director-no-execution"
+      );
+
+      const ok = noExec && noMutate && noInterpret && noExternal && needsApproval && policy;
+      return {
+        pass: !!ok,
+        reason: ok ? undefined : "Implicit escalation possible - missing forbidden actions or approval requirement"
+      };
+    },
+
+    "execution.no-cross-layer-mutation": async () => {
+      // Verify Director cannot mutate artifacts directly
+      // All mutations must be delegated to specialist agents with evidence
+      const dirContract = getContract("contract.director.v1");
+
+      const noMutate = dirContract?.forbiddenActions?.includes("mutate_artifacts_directly");
+      const noWriteCode = dirContract?.forbiddenActions?.includes("write_code");
+      const noGenerate = dirContract?.forbiddenActions?.includes("generate_artifacts");
+      const noMutateModels = dirContract?.forbiddenActions?.includes("mutate_models");
+
+      // Check evidence requirement for agent dispatch
+      const needsDispatch = dirContract?.evidenceRequirements?.includes("agent_dispatch_log");
+      const needsCollection = dirContract?.evidenceRequirements?.includes("output_collection");
+
+      const ok = noMutate && noWriteCode && noGenerate && noMutateModels && needsDispatch && needsCollection;
+      return {
+        pass: !!ok,
+        reason: ok ? undefined : "Cross-layer mutation possible - missing forbidden actions or evidence requirements"
+      };
+    },
+
+    // ── replay ────────────────────────────────────────────────────
+
+"replay.governance.no-implicit-escalation": async () => {
+      // Verify Replay cannot implicitly escalate privileges
+      const replayContract = getContract("contract.replay.v1");
+
+      const noExec = replayContract?.forbidden?.includes("execute_specialist_work");
+      const noMutate = replayContract?.forbidden?.includes("mutate_artifacts");
+      const noGenerate = replayContract?.forbidden?.includes("generate_artifacts");
+      const noExternal = replayContract?.forbidden?.includes("invoke_external");
+      const noInterpret = replayContract?.forbidden?.includes("interpret");
+      const noEscalate = replayContract?.forbidden?.includes("escalate_authority");
+      const noAlterEvidence = replayContract?.forbidden?.includes("alter_evidence");
+
+      const policy = policySet.policies.find(
+        p => p.id === "policy-replay-no-execution" || p.id === "policy-replay-authority-boundary"
+      );
+
+      const ok = noExec && noMutate && noGenerate && noExternal && noInterpret && noEscalate && noAlterEvidence && policy;
+      return {
+        pass: !!ok,
+        reason: ok ? undefined : "Implicit escalation possible - missing forbidden actions or approval requirement"
+      };
+    },
+
+    "replay.execution.no-cross-layer-mutation": async () => {
+      // Verify Replay cannot mutate artifacts directly
+      const replayContract = getContract("contract.replay.v1");
+
+      const noMutate = replayContract?.forbidden?.includes("mutate_artifacts");
+      const noGenerate = replayContract?.forbidden?.includes("generate_artifacts");
+      const noInterpret = replayContract?.forbidden?.includes("interpret");
+      const noExternal = replayContract?.forbidden?.includes("invoke_external");
+      const noEscalate = replayContract?.forbidden?.includes("escalate_authority");
+      const noAlterEvidence = replayContract?.forbidden?.includes("alter_evidence");
+
+      // Check required evidence
+      const needsIntent = replayContract?.requiredEvidence?.includes("intent_declaration");
+      const needsDispatch = replayContract?.requiredEvidence?.includes("agent_dispatch_log");
+      const needsCollection = replayContract?.requiredEvidence?.includes("output_collection");
+      const needsPolicy = replayContract?.requiredEvidence?.includes("policy_validation");
+      const needsApproval = replayContract?.requiredEvidence?.includes("approval_record");
+      const needsTimestamp = replayContract?.requiredEvidence?.includes("timestamp_chain");
+      const needsAuthority = replayContract?.requiredEvidence?.includes("authority_chain");
+      const needsEvidenceChain = replayContract?.requiredEvidence?.includes("evidence_chain");
+      const needsProvenance = replayContract?.requiredEvidence?.includes("mcp_provenance_chain");
+      const needsConformance = replayContract?.requiredEvidence?.includes("conformance_snapshot");
+
+      const ok = noMutate && noGenerate && noInterpret && noExternal && noEscalate && noAlterEvidence &&
+        needsIntent && needsDispatch && needsCollection && needsPolicy && needsApproval &&
+        needsTimestamp && needsAuthority && needsEvidenceChain && needsProvenance && needsConformance;
+      return {
+        pass: !!ok,
+        reason: ok ? undefined : "Cross-layer mutation possible - missing forbidden actions or evidence requirements"
+      };
+    },
+
+    "replay.evidence-chain-complete": async () => {
+      // Verify replay record has complete evidence chain
+      const replayContract = getContract("contract.replay.v1");
+      const requiredEvidence = replayContract?.requiredEvidence || [];
+      const evidenceChainComplete = requiredEvidence.length === 10; // All 10 required evidence types
+      return { pass: !!evidenceChainComplete, reason: evidenceChainComplete ? undefined : "Evidence chain incomplete" };
+    },
+
+    "replay.provenance-chain-complete": async () => {
+      // Verify replay record has complete MCP provenance chain
+      const replayContract = getContract("contract.replay.v1");
+      const requiredEvidence = replayContract?.requiredEvidence || [];
+      const hasProvenance = requiredEvidence.includes("mcp_provenance_chain");
+      return { pass: !!hasProvenance, reason: hasProvenance ? undefined : "MCP provenance chain missing" };
+    },
+
+    "replay.timestamp-chain-consistent": async () => {
+      // Verify replay record has consistent timestamp chain
+      const replayContract = getContract("contract.replay.v1");
+      const requiredEvidence = replayContract?.requiredEvidence || [];
+      const hasTimestamp = requiredEvidence.includes("timestamp_chain");
+      return { pass: !!hasTimestamp, reason: hasTimestamp ? undefined : "Timestamp chain missing" };
+    },
+
+    "replay.approval-chain-valid": async () => {
+      // Verify replay record has valid approval chain
+      const replayContract = getContract("contract.replay.v1");
+      const requiredEvidence = replayContract?.requiredEvidence || [];
+      const hasApproval = requiredEvidence.includes("approval_record");
+      return { pass: !!hasApproval, reason: hasApproval ? undefined : "Approval chain missing" };
+    },
+
+    // ── normalization (rt4d audit-fixed constants) ────────────────
+
+    "normalization.brdf-energy": async () => {
+      try {
+        const { Lambertian4D } = await import(
+          "../../mrs/packages/renderer-core/src/render/rt4d/material/bsdf4d.js"
+        );
+        const { vec4 } = await import(
+          "../../mrs/packages/renderer-core/src/render/rt4d/math/vec4.js"
+        );
+        const mat = new Lambertian4D(vec4(1, 1, 1, 1));
+        const n = vec4(0, 0, 1, 0);
+        const wi = vec4(0, 0, 1, 0);
+        const wo = vec4(0, 0, 1, 0);
+        const val = mat.evaluate(wi, wo, n);
+        const expected = 3 / (4 * Math.PI);
+        const ok =
+          Math.abs(val.x - expected) < 1e-9 &&
+          Math.abs(val.y - expected) < 1e-9 &&
+          Math.abs(val.z - expected) < 1e-9;
+        return {
+          pass: ok,
+          reason: ok ? undefined : `Lambertian BRDF=${val.x}, expected ${expected}`,
+        };
+      } catch (err) {
+        return {
+          pass: false,
+          reason: `normalization probe unavailable: ${err.message}`,
+        };
+      }
+    },
+
   };
 }

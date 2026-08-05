@@ -4,19 +4,32 @@ import { vec4 } from "./math/vec4.js";
 import { RT4DGPURenderer } from "./gpu/RT4DGPURenderer.js";
 import { renderWavefrontFrame } from "./pipeline/WavefrontPipelineAdapter.js";
 import { runLiveSceneEiGate } from "./pipeline/LiveSceneEiGate.js";
+import { createHash } from "node:crypto";
+
+function computeSceneHash(scene4D) {
+  const meshCount = scene4D.meshes?.length ?? 0;
+  const vertexCount = scene4D.meshes?.reduce((sum, m) => sum + (m.vertices?.length ?? 0), 0) ?? 0;
+  const materialCount = scene4D.materials?.size ?? 0;
+  const lightCount = scene4D.lights?.length ?? 0;
+  return createHash("sha256").update(`${meshCount}|${vertexCount}|${materialCount}|${lightCount}`).digest("hex").slice(0, 16);
+}
 
 export async function renderRT4DFrame(scene4D, camera4D, options = {}) {
   if (options.engineMode === "wavefront") {
     return renderRT4DFrameWavefront(scene4D, camera4D, options);
   }
 
-  const eiGate = runLiveSceneEiGate(scene4D, options);
-
   const width = options.width ?? camera4D.width;
   const height = options.height ?? camera4D.height;
   const samples = options.samples ?? 64;
   const maxDepth = options.maxDepth ?? 8;
   const seed = options.seed ?? Date.now();
+
+  // Log render intent for constitutional invariant checking
+  const sceneHash = computeSceneHash(scene4D);
+  console.debug(`[RenderDispatch] Render intent: sceneHash=${sceneHash}, seed=${seed}, width=${width}, height=${height}, samples=${samples}, maxDepth=${maxDepth}, camera=${JSON.stringify({width: camera4D.width, height: camera4D.height, fovX: camera4D.fovX, fovY: camera4D.fovY, fovZ: camera4D.fovZ, fovW: camera4D.fovW})}`);
+
+  const eiGate = runLiveSceneEiGate(scene4D, options);
 
   const tracer = new PathTracer4D({ maxDepth, samplesPerPixel: samples });
   const accumulator = new SampleAccumulator(width, height);

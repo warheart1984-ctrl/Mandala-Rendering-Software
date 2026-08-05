@@ -9,6 +9,7 @@
     ".": "./src/index.js",
     "./registry": "./src/registry.js",
     "./dispatch": "./src/dispatch.js",
+    "./gatewayRouter": "./src/gatewayRouter.js",
     "./GpuDispatchContract": "./src/GpuDispatchContract.js",
     "./GpuAssistModule": "./src/GpuAssistModule.js",
     "./lookdev": "./src/lookdev/SovereignLookDevEngine.js",
