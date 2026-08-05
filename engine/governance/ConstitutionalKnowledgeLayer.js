@@ -98,6 +98,30 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
     "artifact.movie",
     "render.session",
   ]);
+  const getContract = (contractId) =>
+    (CONTRACTS?.contracts ?? []).find((c) => c.contractId === contractId) ?? null;
+  const timelineId =
+    intent.timeline ??
+    intent.timelineId ??
+    intent.payload?.timelineId ??
+    (typeof intent.params?.timeline === "string"
+      ? intent.params.timeline
+      : null) ??
+    "";
+  const driftScore =
+    typeof evidence?.driftScore === "number"
+      ? evidence.driftScore
+      : typeof intent.params?.driftScore === "number"
+        ? intent.params.driftScore
+        : 0;
+  const isDirectorIntent =
+    intent.actor === "4dce.director" ||
+    intent.type === "director" ||
+    intent.kind === "director";
+  const isReplayIntent =
+    intent.actor === "4dce.replay" ||
+    intent.type === "replay" ||
+    intent.kind === "replay";
 
   for (const policy of policies) {
     if (policy.condition === "intent != null") {
@@ -140,7 +164,7 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
             violations.push(policy.id);
           }
         } else {
-          const hasContract = Object.values(CONTRACTS).some(
+          const hasContract = CONTRACTS.contracts.some(
             (c) => c.actor === intent.actor && c.status === "enforced",
           );
           if (!hasContract) {
@@ -156,6 +180,105 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
         if (!world) {
           violations.push(policy.id);
         }
+      }
+    }
+    if (policy.condition === "play_timeline") {
+      if (intent.type === "play_timeline" || intent.kind === "play_timeline") {
+        const world =
+          intent.world ?? intent.constraints?.worldId ?? null;
+        if (!world) {
+          violations.push(policy.id);
+        }
+      }
+    }
+    if (policy.condition === "evidence != null") {
+      if (mutationTypes.has(intent.type) || mutationTypes.has(intent.kind)) {
+        if (!evidence) {
+          violations.push(policy.id);
+        }
+      }
+    }
+    if (policy.condition === "actor.contract != null") {
+      // No authority without contract. When an action is claimed, enforce the
+      // contract allow-list; otherwise the intent must at least name an actor.
+      if (!intent.actor) {
+        violations.push(policy.id);
+      } else {
+        const action = intent.action ?? intent.authorizedAction ?? null;
+        if (action) {
+          const auth = resolveAuthority(intent.actor, action);
+          if (!auth.ok) {
+            violations.push(policy.id);
+          }
+        }
+      }
+    }
+    if (policy.condition === "always") {
+      if (policy.action === "attach_provenance") {
+        attachProvenance = true;
+        requirements.push("provenance");
+      }
+    }
+    if (policy.condition === "director.contract != null") {
+      const dir = getContract("contract.director.v1");
+      if (!dir || dir.status !== "enforced") {
+        violations.push(policy.id);
+      }
+    }
+    if (policy.condition === "director.action in forbidden") {
+      const dir = getContract("contract.director.v1");
+      const action = intent.action ?? intent.authorizedAction ?? null;
+      const forbidden = [...(dir?.forbiddenActions ?? []), ...(dir?.forbidden ?? [])];
+      if (isDirectorIntent && action && forbidden.includes(action)) {
+        violations.push(policy.id);
+      }
+    }
+    if (policy.condition === "director.mcp_invocation") {
+      const dir = getContract("contract.director.v1");
+      const action = intent.action ?? intent.authorizedAction ?? null;
+      const isMcpAction = (dir?.mcpToolAccess ?? []).includes(action);
+      if (isDirectorIntent && isMcpAction && policy.action === "attach_provenance") {
+        attachProvenance = true;
+        requirements.push("mcp_provenance");
+      }
+    }
+    if (policy.condition === "replay.contract != null") {
+      const replay = getContract("contract.replay.v1");
+      if (!replay || replay.status !== "enforced") {
+        violations.push(policy.id);
+      }
+    }
+    if (policy.condition === "replay.action in forbidden") {
+      const replay = getContract("contract.replay.v1");
+      const action = intent.action ?? intent.authorizedAction ?? null;
+      const forbidden = replay?.forbidden ?? [];
+      if (isReplayIntent && action && forbidden.includes(action)) {
+        violations.push(policy.id);
+      }
+    }
+    if (policy.condition === "replay.evidence_complete") {
+      const replay = getContract("contract.replay.v1");
+      const required = replay?.requiredEvidence ?? [];
+      const missing = required.filter(
+        (r) => !(evidence?.[r]) && !(evidence?.items?.some((i) => i?.id === r)),
+      );
+      if (isReplayIntent && (!evidence || missing.length)) {
+        violations.push(policy.id);
+      }
+    }
+    if (policy.condition === "replay.provenance_complete") {
+      const hasProvenance =
+        evidence?.mcp_provenance_chain ||
+        evidence?.provenanceChain ||
+        evidence?.provenance;
+      if (isReplayIntent && !hasProvenance) {
+        violations.push(policy.id);
+      }
+    }
+    if (policy.condition === "replay.authority == replay-only") {
+      const replay = getContract("contract.replay.v1");
+      if (!replay || replay.authority !== "replay-only") {
+        violations.push(policy.id);
       }
     }
 
@@ -220,21 +343,6 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
     }
 
     // Expression-lite: intent.timeline == '...' [&& drift_score > N]
-    const timelineId =
-      intent.timeline ??
-      intent.timelineId ??
-      intent.payload?.timelineId ??
-      (typeof intent.params?.timeline === "string"
-        ? intent.params.timeline
-        : null) ??
-      "";
-    const driftScore =
-      typeof evidence?.driftScore === "number"
-        ? evidence.driftScore
-        : typeof intent.params?.driftScore === "number"
-          ? intent.params.driftScore
-          : 0;
-
     if (
       typeof policy.condition === "string" &&
       policy.condition.includes("intent.timeline ==")
@@ -271,8 +379,54 @@ export function resolveDecision(intent, evidence, policySet, precedents = []) {
             ...(paramAdjust || {}),
             [policy.param]: modified,
             policy: policy.id,
-            reason: policy.message,
+            reason: policy.message ?? policy.description,
           };
+        }
+      }
+    }
+
+    // SME v1.0 shorthand conditions
+    if (policy.condition === "drift > 0.7") {
+      if (
+        policy.action === "modify_param" &&
+        policy.param &&
+        policy.modifier &&
+        driftScore > 0.7
+      ) {
+        const current =
+          typeof evidence?.params?.[policy.param] === "number"
+            ? evidence.params[policy.param]
+            : typeof intent.params?.[policy.param] === "number"
+              ? intent.params[policy.param]
+              : 1;
+        const modified = evalModifier(policy.modifier, {
+          self: current,
+          [policy.param]: current,
+          speed: current,
+        });
+        paramAdjust = {
+          ...(paramAdjust || {}),
+          [policy.param]: modified,
+          policy: policy.id,
+          reason: policy.message ?? policy.description,
+        };
+      }
+    }
+    if (policy.condition === "dual_evidence") {
+      const isAscension =
+        timelineId === "mythar_ascension" ||
+        intent.kind === "mythar_ascension" ||
+        intent.type === "mythar_ascension";
+      if (isAscension) {
+        const required =
+          Array.isArray(policy.require) && policy.require.length
+            ? policy.require
+            : ["ev-ascension-001", "ev-ascension-002"];
+        const ids = collectEvidenceIds(evidence);
+        const missing = required.filter((r) => !ids.has(r));
+        if (missing.length) {
+          violations.push(policy.id);
+          requirements.push(...missing.map((m) => `evidence:${m}`));
         }
       }
     }

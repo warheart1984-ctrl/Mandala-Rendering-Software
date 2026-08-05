@@ -2,12 +2,12 @@
   "openapi": "3.1.0",
   "info": {
     "title": "MRS RT4D Engine",
-    "description": "Deterministic procedural 4D rendering engine (REST). Create a governed scene from a SceneSpecification, then render it to a PNG with a full hash-chain (sceneSpec -> projection -> pixel -> PNG) and an evidence envelope. This is NOT diffusion: frames are produced by the CPU RT4D path tracer from the scene spec. Every response is wrapped in an envelope: { ok, statusTag, data, error, requestId, at }.",
+    "description": "Deterministic procedural 4D rendering engine (REST). Create a governed scene, then render it to a PNG with a full hash-chain and evidence envelope. This is NOT diffusion: frames come from the CPU RT4D path tracer. Every response is an envelope: { ok, statusTag, data, error, requestId, at }.",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "https://ferrari-golden-pressure-shadows.trycloudflare.com"
+      "url": "https://mrs-rt4d-engine.onrender.com"
     }
   ],
   "paths": {
@@ -45,8 +45,8 @@
     "/v1/scenes": {
       "post": {
         "operationId": "createScene",
-        "summary": "Create a governed 4D scene from a SceneSpecification",
-        "description": "Accepts a SceneSpecification object directly (or { sceneSpec, promptHash }). Returns a sceneId and sceneHash (sha256 of the spec) plus persistence info. Deterministic and replayable.",
+        "summary": "STEP 1 of 2 — create a governed 4D scene, then render it",
+        "description": "STEP 1 of 2. Always call this first. Send the five required fields (surface, resolution, rotations, projection, camera) directly — no wrapper. Returns data.sceneId; pass it as {sceneId} to renderScene.",
         "tags": ["render"],
         "requestBody": {
           "required": true,
@@ -54,13 +54,21 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "description": "SceneSpecification. Example: { \"surface\": \"trefoil-4d\", \"resolution\": 12, \"rotations\": [], \"projection\": { \"type\": \"perspective\", \"distance4d\": 4, \"distance3d\": 4 }, \"camera\": { \"fovX\": 52, \"fovY\": 52, \"fovZ\": 8, \"fovW\": 8, \"lensRadius\": 0 } }",
+                "description": "SceneSpecification — send these five fields directly (no wrapper).",
+                "required": ["surface", "resolution", "rotations", "projection", "camera"],
                 "properties": {
-                  "surface": { "type": "string", "description": "Surface identifier, e.g. trefoil-4d, tesseract" },
-                  "resolution": { "type": "integer" },
-                  "rotations": { "type": "array", "items": { "type": "object" } },
-                  "projection": { "type": "object" },
-                  "camera": { "type": "object" }
+                  "surface": { "type": "string", "enum": ["clifford-torus", "hopf-surface", "tesseract", "torus-3d", "trefoil-4d"] },
+                  "resolution": { "type": "integer", "minimum": 4, "maximum": 64, "description": "Mesh grid resolution; 12 is a good default." },
+                  "rotations": { "type": "array", "items": { "type": "object" }, "description": "4D rotations; send [] for a static still." },
+                  "projection": { "type": "object", "description": "Example: { \"type\": \"perspective\", \"distance4d\": 4, \"distance3d\": 4 }" },
+                  "camera": { "type": "object", "description": "Example: { \"fovX\": 52, \"fovY\": 52, \"fovZ\": 8, \"fovW\": 8, \"lensRadius\": 0 }" }
+                },
+                "example": {
+                  "surface": "trefoil-4d",
+                  "resolution": 12,
+                  "rotations": [],
+                  "projection": { "type": "perspective", "distance4d": 4, "distance3d": 4 },
+                  "camera": { "fovX": 52, "fovY": 52, "fovZ": 8, "fovW": 8, "lensRadius": 0 }
                 }
               }
             }
@@ -112,8 +120,8 @@
     "/v1/scenes/{sceneId}/render": {
       "post": {
         "operationId": "renderScene",
-        "summary": "Render a created scene to a deterministic RT4D PNG with evidence",
-        "description": "Renders the scene referenced by sceneId. The body MUST include a numeric seed for deterministic replay. Returns a real PNG (pngBase64) plus the hash chain (projectionHash, pixelHash, pngHash) and a full evidence envelope. Same scene + same seed always produces the same PNG.",
+        "summary": "STEP 2 of 2 — render a created scene to a deterministic RT4D PNG with evidence",
+        "description": "STEP 2 of 2. Requires {sceneId} from createScene (rt4d-scene-<hex>), never a surface name. Body must include a numeric seed. Use small quality: width 64, height 64, samplesPerPixel 1, maxDepth 1. Returns a real PNG (pngBase64), hash chain and evidence. Same scene + seed = same PNG.",
         "tags": ["render"],
         "parameters": [
           {

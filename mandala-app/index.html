@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mandala Renderer — Local AI + 4D</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #0d0d1a; color: #e0e0e8; display: flex; height: 100vh; }
+    .sidebar { width: 300px; background: #141428; border-right: 1px solid #2a2a4a; padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+    .main { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 16px; overflow-y: auto; }
+    .panel { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 16px; }
+    .panel h3 { margin: 0 0 12px; color: #00d4aa; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    label { display: block; margin-bottom: 4px; font-size: 12px; color: #888; }
+    select, input, textarea { width: 100%; background: #0d0d1a; border: 1px solid #333; color: #e0e0e8; padding: 8px 10px; border-radius: 4px; font-size: 13px; margin-bottom: 10px; }
+    button { background: #00d4aa; color: #0d0d1a; border: none; padding: 10px 16px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 13px; }
+    button:hover { background: #00ffcc; }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; }
+    button.secondary { background: #2a2a4a; color: #e0e0e8; }
+    button.secondary:hover { background: #3a3a5a; }
+    button.danger { background: #aa3333; color: #fff; }
+    button.danger:hover { background: #cc4444; }
+    .chat-log { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 4px; padding: 12px; height: 300px; overflow-y: auto; margin-bottom: 12px; font-family: monospace; font-size: 13px; line-height: 1.5; }
+    .msg { margin-bottom: 10px; }
+    .msg.user { color: #00d4aa; }
+    .msg.assistant { color: #ffd700; }
+    .msg.system { color: #666; font-size: 11px; }
+    .render-preview { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 4px; min-height: 256px; display: flex; align-items: center; justify-content: center; color: #666; }
+    .render-preview img { max-width: 100%; max-height: 400px; border-radius: 4px; }
+    .status { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 8px; background: #0d0d1a; border-radius: 4px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; }
+    .status-dot.ok { background: #00d4aa; }
+    .status-dot.warn { background: #ffaa00; }
+    .row { display: flex; gap: 12px; }
+    .row > * { flex: 1; }
+    audio { width: 100%; margin-top: 8px; }
+    .model-tag { display: inline-block; background: #2a2a4a; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin: 2px; }
+    .provider-card { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 4px; padding: 10px; margin-bottom: 8px; }
+    .provider-card.connected { border-color: #00d4aa; }
+    .provider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .provider-name { font-weight: 600; color: #00d4aa; }
+    .provider-status { font-size: 11px; padding: 2px 6px; border-radius: 10px; background: #2a2a4a; }
+    .provider-status.ok { background: #00d4aa; color: #0d0d1a; }
+    .provider-models { font-size: 11px; color: #888; margin-top: 4px; }
+    .token-input { display: flex; gap: 4px; }
+    .token-input input { flex: 1; margin-bottom: 0; }
+    .log-panel { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 4px; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #aaa; }
+    .log-line { margin: 2px 0; }
+    .log-line.info { color: #00d4aa; }
+    .log-line.warn { color: #ffaa00; }
+    .log-line.error { color: #ff6666; }
+    .progress-bar { height: 4px; background: #2a2a4a; border-radius: 2px; overflow: hidden; margin: 8px 0; }
+    .progress-fill { height: 100%; background: #00d4aa; width: 0%; transition: width 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="panel">
+      <h3>Lemonade Server</h3>
+      <div class="status">
+        <div class="status-dot" id="serverStatus"></div>
+        <span id="serverText">Checking...</span>
+      </div>
+      <div id="modelList"></div>
+    </div>
+    <div class="panel">
+      <h3>MRS 4D Render</h3>
+      <div class="row">
+        <div>
+          <label>Surface</label>
+          <select id="surfaceSelect">
+            <option value="tesseract">Tesseract</option>
+            <option value="clifford-torus">Clifford Torus</option>
+            <option value="hopf">Hopf Fibration</option>
+            <option value="gyroid">Gyroid</option>
+            <option value="hypertorus">Hypertorus</option>
+          </select>
+        </div>
+        <div>
+          <label>Mode</label>
+          <select id="modeSelect">
+            <option value="wireframe">Wireframe</option>
+            <option value="solid">Solid</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Width</label>
+          <input type="number" id="renderWidth" value="512" min="128" max="2048" step="64">
+        </div>
+        <div>
+          <label>Height</label>
+          <input type="number" id="renderHeight" value="512" min="128" max="2048" step="64">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Frames (anim)</label>
+          <input type="number" id="renderFrames" value="1" min="1" max="60">
+        </div>
+      </div>
+      <button id="btnRender" onclick="doRender()">Render</button>
+      <button class="secondary" onclick="api.app.openOutput()">Open Output Folder</button>
+    </div>
+    <div class="panel">
+      <h3>Cloud AI Providers</h3>
+      <div id="providerList"></div>
+      <div id="tokenPanel" style="display:none;">
+        <label>Provider</label>
+        <select id="tokenProvider"></select>
+        <div class="token-input">
+          <input type="password" id="tokenInput" placeholder="API token">
+          <button onclick="saveToken()">Save</button>
+        </div>
+      </div>
+      <button class="secondary" onclick="document.getElementById('tokenPanel').style.display='block'">Add Token</button>
+    </div>
+    <div class="panel">
+      <h3>⚙️ DEP Workflow</h3>
+      <label>Intent</label>
+      <textarea id="depIntent" rows="3" placeholder="Describe the scene: 'cyberpunk tesseract city at night, volumetric fog, neon reflections'"></textarea>
+      <div class="row">
+        <div>
+          <label>Template</label>
+          <select id="depTemplate"></select>
+        </div>
+        <div>
+          <label>Min Score</label>
+          <input type="number" id="depMinScore" value="7" min="1" max="10">
+        </div>
+      </div>
+      <div class="row">
+        <button onclick="runDEP()">🚀 Run DEP Workflow</button>
+        <button class="secondary" onclick="compileDEP()">📋 Compile Only</button>
+      </div>
+      <div class="progress-bar" id="depProgress" style="display:none;"><div class="progress-fill" id="depProgressFill"></div></div>
+      <div class="log-panel" id="depLog"></div>
+      <h4 style="margin-top: 12px;">Saved Scenes</h4>
+      <div class="log-panel" id="sceneLibrary" style="height:150px;"></div>
+      <button class="secondary" onclick="loadSceneLibrary()">📚 Refresh Library</button>
+    </div>
+    <div class="panel">
+      <h3>🧠 SME Engine</h3>
+      <div class="panel">
+        <h4>Capability Planner</h4>
+        <label>Intent</label>
+        <textarea id="smeIntent" rows="2" placeholder="Describe task: 'render 4D tesseract, enhance with AI, output video'"></textarea>
+        <div class="row">
+          <div>
+            <label>Constraints</label>
+            <select id="smeConstraints">
+              <option value="">None</option>
+              <option value='{"localOnly":true}'>Local Only</option>
+              <option value='{"maxLatencyMs":5000}'>Max 5s Latency</option>
+              <option value='{"localOnly":true,"maxLatencyMs":10000}'>Local, Max 10s</option>
+            </select>
+          </div>
+          <div>
+            <label>Privacy</label>
+            <select id="smePrivacy">
+              <option value="public">Public</option>
+              <option value="internal">Internal</option>
+              <option value="confidential">Confidential</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="runSMEPlan()">📋 Generate Plan</button>
+        <button class="secondary" onclick="executeSMEPlan()">🚀 Execute Plan</button>
+        <div class="progress-bar" id="smeProgress" style="display:none;"><div class="progress-fill" id="smeProgressFill"></div></div>
+        <div class="log-panel" id="smePlanLog" style="height:150px;"></div>
+      </div>
+      <div class="panel">
+        <h4>Hardware Profile</h4>
+        <div class="row">
+          <div>
+            <label>Profile</label>
+            <select id="smeHardwareProfile"></select>
+          </div>
+          <div>
+            <label>Status</label>
+            <span id="smeHardwareStatus" style="padding:8px;background:#0d0d1a;border-radius:4px;color:#00d4aa;">Auto-detecting...</span>
+          </div>
+        </div>
+        <button onclick="refreshHardwareProfile()">🔄 Refresh</button>
+        <div class="log-panel" id="smeHardwareLog" style="height:100px;"></div>
+      </div>
+      <div class="panel">
+        <h4>SME Core</h4>
+        <button onclick="runSMECore()">🚀 Execute SME Core</button>
+        <button class="secondary" onclick="checkSMEHealth()">🏥 Health Check</button>
+        <div class="log-panel" id="smeCoreLog" style="height:150px;"></div>
+      </div>
+      <div class="panel">
+        <h4>Evidence & Audit</h4>
+        <button onclick="loadAuditLog()">📋 Load Audit Log</button>
+        <button class="secondary" onclick="loadEvidenceList()">🔍 Browse Evidence</button>
+        <div class="log-panel" id="smeAuditLog" style="height:150px;"></div>
+      </div>
+      <div class="panel">
+        <h4>SME Text Generation</h4>
+        <label>Prompt</label>
+        <textarea id="smeTxtPrompt" rows="3" placeholder="Enter text generation prompt..."></textarea>
+        <div class="row">
+          <div>
+            <label>Max Tokens</label>
+            <input type="number" id="smeTxtMaxTokens" value="512" min="1" max="4096">
+          </div>
+          <div>
+            <label>Temperature</label>
+            <input type="number" id="smeTxtTemp" value="0.7" min="0" max="2" step="0.1">
+          </div>
+        </div>
+        <button onclick="runSMETxtGenerate()">🚀 Generate Text</button>
+        <div class="log-panel" id="smeTxtLog" style="height:150px;"></div>
+      </div>
+      <div class="panel">
+        <h4>SME Vision Encode</h4>
+        <label>Image (Base64)</label>
+        <textarea id="smeVisImage" rows="3" placeholder="Paste base64 image data..."></textarea>
+        <div class="row">
+          <div>
+            <label>MIME Type</label>
+            <select id="smeVisMime">
+              <option value="image/png">image/png</option>
+              <option value="image/jpeg">image/jpeg</option>
+              <option value="image/webp">image/webp</option>
+            </select>
+          </div>
+          <div>
+            <label>Extract Features</label>
+            <select id="smeVisFeatures">
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="runSMEVisEncode()">🔍 Encode Image</button>
+        <div class="log-panel" id="smeVisLog" style="height:150px;"></div>
+      </div>
+      <div class="panel">
+        <h4>SME Audio Transcribe</h4>
+        <label>Audio (Base64)</label>
+        <textarea id="smeAudAudio" rows="2" placeholder="Paste base64 audio data..."></textarea>
+        <div class="row">
+          <div>
+            <label>MIME Type</label>
+            <select id="smeAudMime">
+              <option value="audio/wav">audio/wav</option>
+              <option value="audio/mp3">audio/mp3</option>
+              <option value="audio/ogg">audio/ogg</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="runSMEAudTranscribe()">🎤 Transcribe Audio</button>
+        <div class="log-panel" id="smeAudLog" style="height:150px;"></div>
+      </div>
+      <div class="panel">
+        <h4>SME Video Process</h4>
+        <label>Preset</label>
+        <select id="smeVidPreset">
+          <option value="uniform">Uniform Sampling</option>
+          <option value="keyframe">Keyframe Extraction</option>
+          <option value="segment">Segmentation</option>
+        </select>
+        <div class="row">
+          <div>
+            <label>Input Path</label>
+            <input type="text" id="smeVidInput" placeholder="/path/to/input.mp4">
+          </div>
+          <div>
+            <label>Output Path</label>
+            <input type="text" id="smeVidOutput" placeholder="/path/to/output.mp4">
+          </div>
+        </div>
+        <button onclick="runSMEVidProcess()">🎬 Process Video</button>
+        <div class="log-panel" id="smeVidLog" style="height:150px;"></div>
+      </div>
+      <div class="panel">
+        <h4>SME Image Generation</h4>
+        <label>Prompt</label>
+        <textarea id="smeGenPrompt" rows="2" placeholder="Describe the image to generate..."></textarea>
+        <div class="row">
+          <div>
+            <label>Width</label>
+            <input type="number" id="smeGenWidth" value="512" min="64" max="1024" step="64">
+          </div>
+          <div>
+            <label>Height</label>
+            <input type="number" id="smeGenHeight" value="512" min="64" max="1024" step="64">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Steps</label>
+            <input type="number" id="smeGenSteps" value="20" min="1" max="100">
+          </div>
+          <div>
+            <label>Guidance</label>
+            <input type="number" id="smeGenGuidance" value="7.5" min="1" max="20" step="0.5">
+          </div>
+        </div>
+        <button onclick="runSMEGenImage()">🎨 Generate Image</button>
+        <div class="progress-bar" id="smeGenProgress" style="display:none;"><div class="progress-fill" id="smeGenProgressFill"></div></div>
+        <div class="log-panel" id="smeGenLog" style="height:150px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
+      <h3>Chat (Llama-3.2-1B Local)</h3>
+      <div class="chat-log" id="chatLog"></div>
+      <div class="row">
+        <div style="flex: 1;">
+          <textarea id="chatInput" rows="3" placeholder="Ask about 4D geometry, request a render prompt, or just chat..."></textarea>
+        </div>
+      </div>
+      <div class="row">
+        <button onclick="sendChat()">Send</button>
+        <button class="secondary" onclick="clearChat()">Clear</button>
+      </div>
+    </div>
+
+    <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
+      <h3>Render Preview</h3>
+      <div class="render-preview" id="renderPreview">No render yet</div>
+      <h3 style="margin-top: 16px;">Cloud Enhance</h3>
+      <div class="row">
+        <div>
+          <label>Provider</label>
+          <select id="enhanceProvider"></select>
+        </div>
+        <div>
+          <label>Vision Model</label>
+          <select id="visionModel"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Text Model</label>
+          <select id="textModel"></select>
+        </div>
+        <div>
+          <label>Image Model</label>
+          <select id="imageModel"></select>
+        </div>
+      </div>
+      <label>Enhancement Prompt</label>
+      <textarea id="enhancePrompt" rows="2" placeholder="Describe how to enhance the 4D render...">Transform this 4D geometry into a photorealistic sci-fi structure with volumetric lighting, intricate materials, atmospheric depth, and cinematic composition</textarea>
+      <div class="row">
+        <button onclick="enhanceRender()">🚀 Enhance with Cloud AI</button>
+        <button class="secondary" onclick="generateImageOnly()">Generate New</button>
+      </div>
+      <div class="progress-bar" id="enhanceProgress" style="display:none;"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="log-panel" id="enhanceLog"></div>
+      <h3 style="margin-top: 16px;">TTS Output</h3>
+      <audio id="ttsAudio" controls style="display:none;"></audio>
+    </div>
+  </div>
+
+  <script>
+    const chatLog = document.getElementById('chatLog');
+    const chatInput = document.getElementById('chatInput');
+    const renderPreview = document.getElementById('renderPreview');
+    const ttsAudio = document.getElementById('ttsAudio');
+    const serverStatus = document.getElementById('serverStatus');
+    const serverText = document.getElementById('serverText');
+    const modelList = document.getElementById('modelList');
+    const providerList = document.getElementById('providerList');
+    const tokenPanel = document.getElementById('tokenPanel');
+    const tokenProvider = document.getElementById('tokenProvider');
+    const tokenInput = document.getElementById('tokenInput');
+    const enhanceProvider = document.getElementById('enhanceProvider');
+    const visionModel = document.getElementById('visionModel');
+    const textModel = document.getElementById('textModel');
+    const imageModel = document.getElementById('imageModel');
+    const enhancePrompt = document.getElementById('enhancePrompt');
+    const enhanceProgress = document.getElementById('enhanceProgress');
+    const progressFill = document.getElementById('progressFill');
+    const enhanceLog = document.getElementById('enhanceLog');
+
+    let chatHistory = [];
+    let lastRenderPath = null;
+    let providerModels = {};
+
+    function logEnhance(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      enhanceLog.appendChild(div);
+      enhanceLog.scrollTop = enhanceLog.scrollHeight;
+    }
+
+    function setProgress(pct) {
+      enhanceProgress.style.display = 'block';
+      progressFill.style.width = `${pct}%`;
+    }
+
+    async function checkServer() {
+      try {
+        const res = await api.lemonade.models();
+        if (res.ok) {
+          serverStatus.className = 'status-dot ok';
+          serverText.textContent = 'Connected';
+          modelList.innerHTML = res.models
+            .filter(m => m.downloaded)
+            .map(m => `<span class="model-tag">${m.id} (${m.recipe})</span>`)
+            .join(' ') || 'No models downloaded';
+        } else {
+          throw new Error(res.error);
+        }
+      } catch (e) {
+        serverStatus.className = 'status-dot warn';
+        serverText.textContent = 'Offline';
+        modelList.innerHTML = '<span style="color:#ffaa00;">Start lemonade server</span>';
+      }
+    }
+
+    async function loadCloudProviders() {
+      try {
+        const res = await api.cloud.providers();
+        if (res.ok) {
+          providerList.innerHTML = res.providers.map(p => `
+            <div class="provider-card connected">
+              <div class="provider-header">
+                <span class="provider-name">${p.name}</span>
+                <span class="provider-status ok">Connected</span>
+              </div>
+              <div class="provider-models">${p.models.join(', ')}</div>
+            </div>
+          `).join('') || '<div style="color:#888;">No providers configured. Add tokens below.</div>';
+          
+          // Populate token provider dropdown
+          const allProviders = [
+            { id: 'huggingface', name: 'Hugging Face (HF_TOKEN)' },
+            { id: 'github', name: 'GitHub Models (GITHUB_TOKEN)' },
+            { id: 'openrouter', name: 'OpenRouter (OPENROUTER_KEY)' },
+            { id: 'nvidia', name: 'NVIDIA API Catalog (NVIDIA_API_KEY)' },
+            { id: 'replicate', name: 'Replicate (REPLICATE_TOKEN)' },
+            { id: 'fal', name: 'Fal.ai (FAL_KEY)' },
+          ];
+          tokenProvider.innerHTML = allProviders.map(p => 
+            `<option value="${p.id}">${p.name}</option>`
+          ).join('');
+          
+          // Populate enhance dropdowns
+          enhanceProvider.innerHTML = res.providers.map(p => 
+            `<option value="${p.id}">${p.name}</option>`
+          ).join('');
+          
+          // Load models for each provider
+          for (const p of res.providers) {
+            providerModels[p.id] = p.models;
+          }
+          updateModelDropdowns(res.providers[0]?.id || 'openrouter');
+        } else {
+          providerList.innerHTML = '<div style="color:#ffaa00;">No cloud providers configured</div>';
+        }
+      } catch (e) {
+        providerList.innerHTML = `<div style="color:#ff6666;">Error: ${e.message}</div>`;
+      }
+    }
+
+    function updateModelDropdowns(providerId) {
+      const models = providerModels[providerId] || [];
+      const visionModels = models.filter(m => m.includes('vl') || m.includes('vision') || m.includes('llava') || m.includes('qwen-vl'));
+      const textModels = models.filter(m => !m.includes('vision') && !m.includes('vl') && !m.includes('llava') && !m.includes('img') && !m.includes('flux') && !m.includes('dalle') && !m.includes('sdxl'));
+      const imageModels = models.filter(m => m.includes('flux') || m.includes('dalle') || m.includes('sdxl') || m.includes('img'));
+      
+      visionModel.innerHTML = (visionModels.length ? visionModels : models.slice(0,3)).map(m => `<option value="${m}">${m}</option>`).join('');
+      textModel.innerHTML = (textModels.length ? textModels : models.slice(0,3)).map(m => `<option value="${m}">${m}</option>`).join('');
+      imageModel.innerHTML = (imageModels.length ? imageModels : models.filter(m => !m.includes('vision') && !m.includes('vl')).slice(0,3)).map(m => `<option value="${m}">${m}</option>`).join('');
+    }
+
+    enhanceProvider.addEventListener('change', (e) => {
+      updateModelDropdowns(e.target.value);
+    });
+
+    async function saveToken() {
+      const provider = tokenProvider.value;
+      const token = tokenInput.value.trim();
+      if (!token) return alert('Enter a token');
+      
+      try {
+        const res = await api.cloud.setToken(provider, token);
+        if (res.ok) {
+          tokenInput.value = '';
+          tokenPanel.style.display = 'none';
+          loadCloudProviders();
+          logEnhance(`Token saved for ${provider}`, 'info');
+        } else {
+          alert('Error: ' + res.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    function addMsg(role, content) {
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.textContent = content;
+      chatLog.appendChild(div);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function sendChat() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+      chatInput.value = '';
+      addMsg('user', text);
+      chatHistory.push({ role: 'user', content: text });
+
+      addMsg('system', 'Thinking...');
+      try {
+        const res = await api.lemonade.chat('Llama-3.2-1B-Instruct-GGUF', chatHistory, 512);
+        if (res.ok) {
+          chatLog.lastChild.remove();
+          addMsg('assistant', res.content);
+          chatHistory.push({ role: 'assistant', content: res.content });
+          
+          const tts = await api.lemonade.tts('kokoro-v1', res.content, 'shimmer');
+          if (tts.ok) {
+            ttsAudio.src = `data:audio/mp3;base64,${tts.audioBase64}`;
+            ttsAudio.style.display = 'block';
+            ttsAudio.play();
+          }
+        } else {
+          chatLog.lastChild.textContent = `Error: ${res.error}`;
+        }
+      } catch (e) {
+        chatLog.lastChild.textContent = `Error: ${e.message}`;
+      }
+    }
+
+    function clearChat() {
+      chatHistory = [];
+      chatLog.innerHTML = '';
+    }
+
+    async function doRender() {
+      const args = {
+        surface: document.getElementById('surfaceSelect').value,
+        mode: document.getElementById('modeSelect').value,
+        width: parseInt(document.getElementById('renderWidth').value),
+        height: parseInt(document.getElementById('renderHeight').value),
+        frames: parseInt(document.getElementById('renderFrames').value)
+      };
+
+      renderPreview.innerHTML = '<div style="color:#00d4aa;">Rendering...</div>';
+      try {
+        const res = await api.mrs.render(args);
+        if (res.ok) {
+          renderPreview.innerHTML = `<img src="file://${res.output}" alt="Render output">`;
+          lastRenderPath = res.output;
+          addMsg('system', `Render saved: ${res.output}`);
+          logEnhance(`Base render ready: ${res.output}`, 'info');
+        } else {
+          renderPreview.innerHTML = `<div style="color:#ff6666;">Error: ${res.error}</div>`;
+        }
+      } catch (e) {
+        renderPreview.innerHTML = `<div style="color:#ff6666;">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function enhanceRender() {
+      if (!lastRenderPath) return alert('Render a 4D image first!');
+      
+      const provider = enhanceProvider.value;
+      const options = {
+        visionModel: visionModel.value,
+        textModel: textModel.value,
+        imageModel: imageModel.value,
+        prompt: enhancePrompt.value,
+      };
+      
+      setProgress(10);
+      logEnhance(`Starting enhancement via ${provider}...`, 'info');
+      
+      try {
+        setProgress(30);
+        logEnhance('Analyzing 4D render with vision model...', 'info');
+        
+        setProgress(50);
+        logEnhance('Generating enhanced prompt...', 'info');
+        
+        setProgress(70);
+        logEnhance('Generating enhanced image...', 'info');
+        
+        const res = await api.cloud.enhanceRender(lastRenderPath, options);
+        
+        setProgress(90);
+        if (res.ok) {
+          logEnhance('Enhancement complete!', 'info');
+          logEnhance(`Analysis: ${res.analysis.substring(0,100)}...`, 'info');
+          logEnhance(`Prompt: ${res.enhancedPrompt.substring(0,100)}...`, 'info');
+          
+          renderPreview.innerHTML = `<img src="data:image/png;base64,${res.enhancedImageBase64}" alt="Enhanced render">`;
+          
+          // Save enhanced image
+          const fs = require('fs');
+          const outputDir = require('path').join(require('electron').remote.app.getAppPath(), '..', 'output');
+          fs.mkdirSync(outputDir, { recursive: true });
+          const outPath = require('path').join(outputDir, `enhanced-${Date.now()}.png`);
+          fs.writeFileSync(outPath, Buffer.from(res.enhancedImageBase64, 'base64'));
+          logEnhance(`Saved: ${outPath}`, 'info');
+          
+          addMsg('system', `Cloud enhanced render saved!`);
+        } else {
+          logEnhance(`Error: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logEnhance(`Error: ${e.message}`, 'error');
+      } finally {
+        setProgress(100);
+        setTimeout(() => enhanceProgress.style.display = 'none', 1000);
+      }
+    }
+
+    async function generateImageOnly() {
+      const provider = enhanceProvider.value;
+      const prompt = enhancePrompt.value || 'A beautiful 4D tesseract, cyberpunk, volumetric lighting';
+      
+      try {
+        logEnhance(`Generating new image via ${provider}...`, 'info');
+        const res = await api.cloud.generateImage(provider, imageModel.value, prompt, { width: 1024, height: 1024 });
+        if (res.ok) {
+          renderPreview.innerHTML = `<img src="data:image/png;base64,${res.imageBase64}" alt="Generated image">`;
+          logEnhance('Image generated!', 'info');
+        } else {
+          logEnhance(`Error: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logEnhance(`Error: ${e.message}`, 'error');
+      }
+    }
+
+    chatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+
+    checkServer();
+    loadCloudProviders();
+    loadDepTemplates();
+    loadSceneLibrary();
+    setInterval(checkServer, 30000);
+    setInterval(loadCloudProviders, 60000);
+
+    // ===== DEP Workflow Functions =====
+    const depLog = document.getElementById('depLog');
+    const depProgress = document.getElementById('depProgress');
+    const depProgressFill = document.getElementById('depProgressFill');
+    const depIntent = document.getElementById('depIntent');
+    const depTemplate = document.getElementById('depTemplate');
+    const depMinScore = document.getElementById('depMinScore');
+    const sceneLibrary = document.getElementById('sceneLibrary');
+
+    function logDep(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      depLog.appendChild(div);
+      depLog.scrollTop = depLog.scrollHeight;
+    }
+
+    function setDepProgress(pct) {
+      depProgress.style.display = 'block';
+      depProgressFill.style.width = `${pct}%`;
+    }
+
+    async function loadDepTemplates() {
+      try {
+        const res = await api.dep.templates();
+        if (res.ok) {
+          depTemplate.innerHTML = res.templates.map(t => `<option value="${t}">${t}</option>`).join('');
+        }
+      } catch (e) {
+        logDep(`Failed to load templates: ${e.message}`, 'error');
+      }
+    }
+
+    async function compileDEP() {
+      const intent = depIntent.value.trim();
+      if (!intent) return alert('Enter an intent');
+      
+      const template = depTemplate.value || 'mrs-4d-scene';
+      const minScore = parseInt(depMinScore.value);
+      
+      logDep(`Compiling DEP for: "${intent}"`, 'info');
+      setDepProgress(20);
+      
+      try {
+        const res = await api.dep.compile(intent, { template, minScore });
+        if (res.ok) {
+          logDep(`DEP compiled: ${res.dep.workflowId}`, 'info');
+          logDep(`Agents: ${res.dep.agents.map(a => a.agentId).join(', ')}`, 'info');
+          logDep(`Nodes: ${res.dep.executionGraph.nodes.length}`, 'info');
+          setDepProgress(100);
+        } else {
+          logDep(`Compile failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logDep(`Error: ${e.message}`, 'error');
+      } finally {
+        setTimeout(() => depProgress.style.display = 'none', 1000);
+      }
+    }
+
+    async function runDEP() {
+      const intent = depIntent.value.trim();
+      if (!intent) return alert('Enter an intent');
+      
+      const template = depTemplate.value || 'mrs-4d-scene';
+      const minScore = parseInt(depMinScore.value);
+      
+      logDep(`🚀 Starting DEP workflow: "${intent}"`, 'info');
+      setDepProgress(10);
+      
+      try {
+        const res = await api.dep.compileAndExecute(intent, { template, minScore });
+        
+        if (res.ok) {
+          setDepProgress(100);
+          logDep(`✅ DEP completed in ${res.duration}ms`, 'info');
+          logDep(`Score: ${res.completion?.checks?.minScore ? 'PASS' : 'FAIL'}`, res.completion?.checks?.minScore ? 'info' : 'warn');
+          logDep(`Nodes: ${res.result?.completed?.join(', ')}`, 'info');
+          
+          if (res.result?.finalImage || res.result?.enhancedImage) {
+            const img = res.result.finalImage || res.result.enhancedImage;
+            renderPreview.innerHTML = `<img src="file://${img}" alt="DEP result">`;
+            lastRenderPath = img;
+          }
+          
+          if (res.result?.sceneSpec) {
+            logDep(`SceneSpec: ${res.result.sceneSpec}`, 'info');
+          }
+        } else {
+          logDep(`❌ DEP failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logDep(`❌ Error: ${e.message}`, 'error');
+      } finally {
+        setTimeout(() => depProgress.style.display = 'none', 1000);
+      }
+    }
+
+    async function loadSceneLibrary() {
+      try {
+        const res = await api.director.listScenes();
+        if (res.ok) {
+          if (res.scenes.length === 0) {
+            sceneLibrary.innerHTML = '<div style="color:#888;">No saved scenes</div>';
+            return;
+          }
+          sceneLibrary.innerHTML = res.scenes.slice(0, 10).map(s => `
+            <div style="padding:8px;border-bottom:1px solid #2a2a4a;cursor:pointer;" onclick="loadScene('${s.file}')">
+              <div style="font-weight:600;color:#00d4aa;">${s.intent.substring(0,50)}...</div>
+              <div style="font-size:11px;color:#888;">Score: ${s.score} | Iters: ${s.iterations} | ${new Date(s.createdAt).toLocaleDateString()}</div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        logDep(`Failed to load scenes: ${e.message}`, 'error');
+      }
+    }
+
+    async function loadScene(filename) {
+      try {
+        logDep(`Loading scene: ${filename}`, 'info');
+        const res = await api.director.replicate(`scenes/${filename}`, {});
+        if (res.ok) {
+          renderPreview.innerHTML = `<img src="file://${res.finalImage}" alt="Loaded scene">`;
+          lastRenderPath = res.finalImage;
+          logDep(`Loaded: ${res.finalImage}`, 'info');
+        } else {
+          logDep(`Error: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logDep(`Error: ${e.message}`, 'error');
+      }
+    }
+
+    // ===== SME Engine Functions =====
+    const smePlanLog = document.getElementById('smePlanLog');
+    const smeProgress = document.getElementById('smeProgress');
+    const smeProgressFill = document.getElementById('smeProgressFill');
+    const smeHardwareLog = document.getElementById('smeHardwareLog');
+    const smeCoreLog = document.getElementById('smeCoreLog');
+    const smeAuditLog = document.getElementById('smeAuditLog');
+    const smeIntent = document.getElementById('smeIntent');
+    const smeConstraints = document.getElementById('smeConstraints');
+    const smePrivacy = document.getElementById('smePrivacy');
+    const smeHardwareProfile = document.getElementById('smeHardwareProfile');
+    const smeHardwareStatus = document.getElementById('smeHardwareStatus');
+
+    function logSmePlan(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smePlanLog.appendChild(div);
+      smePlanLog.scrollTop = smePlanLog.scrollHeight;
+    }
+
+    function logSmeHardware(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smeHardwareLog.appendChild(div);
+      smeHardwareLog.scrollTop = smeHardwareLog.scrollHeight;
+    }
+
+    function logSmeCore(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smeCoreLog.appendChild(div);
+      smeCoreLog.scrollTop = smeCoreLog.scrollHeight;
+    }
+
+    function logSmeAudit(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smeAuditLog.appendChild(div);
+      smeAuditLog.scrollTop = smeAuditLog.scrollHeight;
+    }
+
+    function setSmeProgress(pct) {
+      smeProgress.style.display = 'block';
+      smeProgressFill.style.width = `${pct}%`;
+    }
+
+    async function runSMEPlan() {
+      const intent = smeIntent.value.trim();
+      if (!intent) return alert('Enter an intent');
+      
+      const constraints = smeConstraints.value ? JSON.parse(smeConstraints.value) : {};
+      const privacyLevel = smePrivacy.value;
+      
+      setSmeProgress(10);
+      logSmePlan(`Planning: "${intent}"`, 'info');
+      
+      try {
+        const userRequest = {
+          intent,
+          media: {},
+          constraints,
+          privacyLevel,
+          timestamp: Date.now()
+        };
+        
+        setSmeProgress(30);
+        const res = await api.sme.capabilityPlan(userRequest);
+        
+        setSmeProgress(80);
+        if (res.ok) {
+          logSmePlan(`✅ Plan generated: ${res.plan.planId}`, 'info');
+          logSmePlan(`Mode: ${res.plan.executionMode} | Modalities: ${res.plan.requiredModalities.join(', ')}`, 'info');
+          logSmePlan(`FLOPs: ${(res.plan.estimatedFLOPs.total/1e9).toFixed(2)} GFLOPs | RAM: ${res.plan.estimatedRAM.peakGB.toFixed(1)} GB | Latency: ${res.plan.estimatedLatency.totalMs.toFixed(0)}ms`, 'info');
+          logSmePlan(`Substrate hints: ${res.plan.substrateHints.map(h => `${h.primitive}→${h.preferredSubstrate}`).join(', ')}`, 'info');
+          setSmeProgress(100);
+        } else {
+          logSmePlan(`❌ Plan failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmePlan(`❌ Error: ${e.message}`, 'error');
+      } finally {
+        setTimeout(() => smeProgress.style.display = 'none', 1000);
+      }
+    }
+
+    async function executeSMEPlan() {
+      const intent = smeIntent.value.trim();
+      if (!intent) return alert('Enter an intent first, then generate plan');
+      
+      logSmePlan(`Executing SME Core for: "${intent}"`, 'info');
+      setSmeProgress(10);
+      
+      try {
+        const input = {
+          rawMedia: { text: intent },
+          authorityContext: { userId: 'user', role: 'user', permissions: [] }
+        };
+        
+        setSmeProgress(30);
+        logSmePlan('Running SME Core...', 'info');
+        
+        const res = await api.sme.execute(input);
+        
+        setSmeProgress(80);
+        if (res.ok) {
+          logSmePlan(`✅ SME Core completed: ${res.chainId}`, 'info');
+          logSmePlan(`Score: ${res.completion?.checks?.minScore ? 'PASS' : 'FAIL'}`, res.completion?.checks?.minScore ? 'info' : 'warn');
+          
+          if (res.response?.images?.[0]) {
+            renderPreview.innerHTML = `<img src="data:image/png;base64,${arrayBufferToBase64(res.response.images[0])}" alt="SME result">`;
+          }
+          if (res.response?.text) {
+            logSmePlan(`Response: ${res.response.text.substring(0,100)}...`, 'info');
+          }
+        } else {
+          logSmePlan(`❌ Execution failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmePlan(`❌ Error: ${e.message}`, 'error');
+      } finally {
+        setTimeout(() => smeProgress.style.display = 'none', 1000);
+      }
+    }
+
+    function arrayBufferToBase64(buffer) {
+      // Convert ArrayBuffer to base64
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    async function refreshHardwareProfile() {
+      logSmeHardware('Detecting hardware profile...', 'info');
+      smeHardwareStatus.textContent = 'Detecting...';
+      
+      try {
+        const res = await api.sme.hardwareProfile();
+        if (res.ok) {
+          const p = res.profile;
+          smeHardwareStatus.textContent = `${p.profileId} (${p.cpu.cores}C/${p.gpu.count}GPU)`;
+          logSmeHardware(`Profile: ${p.profileId}`, 'info');
+          logSmeHardware(`CPU: ${p.cpu.cores} cores, ${p.cpu.isa}, ${p.cpu.estimatedGFLOPs} GFLOPs`, 'info');
+          logSmeHardware(`GPU: ${p.gpu.count} x ${p.gpu.vramGB}GB, ${p.gpu.api}, ${p.gpu.estimatedGFLOPs} GFLOPs`, 'info');
+          logSmeHardware(`RAM: ${p.memory.ramGB}GB (${p.memory.availableGB}GB avail), ${p.memory.bandwidthGBps} GB/s`, 'info');
+          logSmeHardware(`Storage: ${p.storage.type}, ${p.storage.ioBandwidthMBps} MB/s`, 'info');
+          
+          // Update profile dropdown
+          const profilesRes = await api.sme.hardwareProfiles();
+          if (profilesRes.ok) {
+            smeHardwareProfile.innerHTML = profilesRes.profiles.map(p => 
+              `<option value="${p.profileId}" ${p.profileId === res.profile.profileId ? 'selected' : ''}>${p.profileId}</option>`
+            ).join('');
+          }
+        } else {
+          smeHardwareStatus.textContent = 'Error';
+          logSmeHardware(`Error: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        smeHardwareStatus.textContent = 'Error';
+        logSmeHardware(`Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function runSMECore() {
+      logSmeCore('Executing SME Core...', 'info');
+      setSmeProgress(10);
+      
+      try {
+        const intent = smeIntent.value.trim() || 'Process multimodal input';
+        const input = {
+          rawMedia: { text: intent },
+          authorityContext: { userId: 'user', role: 'user', permissions: [] }
+        };
+        
+        const res = await api.sme.execute(input);
+        
+        if (res.ok) {
+          logSmeCore(`✅ SME Core completed: ${res.chainId}`, 'info');
+          logSmeCore(`Evidence collected: ${res.evidenceBundle?.bundleId}`, 'info');
+          logSmeCore(`Decisions: ${res.evidenceBundle?.decisionRecords?.length || 0}`, 'info');
+        } else {
+          logSmeCore(`❌ Failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeCore(`❌ Error: ${e.message}`, 'error');
+      } finally {
+        setTimeout(() => smeProgress.style.display = 'none', 1000);
+      }
+    }
+
+    async function checkSMEHealth() {
+      logSmeCore('Running health check...', 'info');
+      
+      try {
+        const res = await api.sme.health();
+        if (res.ok) {
+          logSmeCore(`Core: ${res.core.healthy ? '✅' : '❌'}`, res.core.healthy ? 'info' : 'error');
+          for (const [name, health] of Object.entries(res.modules)) {
+            logSmeCore(`${name}: ${health.healthy ? '✅' : '❌'} ${health.modelVersion || ''}`, health.healthy ? 'info' : 'warn');
+          }
+          logSmeCore(`SKI Substrates: ${res.skiSubstrates?.join(', ') || 'none'}`, 'info');
+        } else {
+          logSmeCore(`Health check failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeCore(`Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function loadAuditLog() {
+      logSmeAudit('Loading audit log...', 'info');
+      
+      try {
+        const res = await api.sme.audit({ limit: 20 });
+        if (res.ok) {
+          logSmeAudit(`Found ${res.results.length} audit entries`, 'info');
+          for (const entry of res.results.slice(0, 10)) {
+            logSmeAudit(`${entry.chainId}: ${entry.modalities.join(',')} | ${entry.success ? '✅' : '❌'} | ${entry.executionTimeMs}ms | ${entry.evidenceCount} evidence`, entry.success ? 'info' : 'warn');
+          }
+        } else {
+          logSmeAudit(`Error: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeAudit(`Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function loadEvidenceList() {
+      logSmeAudit('Browsing evidence...', 'info');
+      
+      try {
+        const res = await api.sme.audit({ limit: 50 });
+        if (res.ok) {
+          logSmeAudit(`Evidence entries: ${res.results.length}`, 'info');
+        } else {
+          logSmeAudit(`Error: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeAudit(`Error: ${e.message}`, 'error');
+      }
+    }
+
+    // ===== SME Module Direct Invocation =====
+    const smeTxtLog = document.getElementById('smeTxtLog');
+    const smeVisLog = document.getElementById('smeVisLog');
+    const smeAudLog = document.getElementById('smeAudLog');
+    const smeVidLog = document.getElementById('smeVidLog');
+    const smeGenLog = document.getElementById('smeGenLog');
+    const smeGenProgress = document.getElementById('smeGenProgress');
+    const smeGenProgressFill = document.getElementById('smeGenProgressFill');
+
+    function logSmeTxt(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smeTxtLog.appendChild(div);
+      smeTxtLog.scrollTop = smeTxtLog.scrollHeight;
+    }
+
+    function logSmeVis(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smeVisLog.appendChild(div);
+      smeVisLog.scrollTop = smeVisLog.scrollHeight;
+    }
+
+    function logSmeAud(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smeAudLog.appendChild(div);
+      smeAudLog.scrollTop = smeAudLog.scrollHeight;
+    }
+
+    function logSmeVid(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smeVidLog.appendChild(div);
+      smeVidLog.scrollTop = smeVidLog.scrollHeight;
+    }
+
+    function logSmeGen(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      smeGenLog.appendChild(div);
+      smeGenLog.scrollTop = smeGenLog.scrollHeight;
+    }
+
+    function setSmeGenProgress(pct) {
+      smeGenProgress.style.display = 'block';
+      smeGenProgressFill.style.width = `${pct}%`;
+    }
+
+    async function runSMETxtGenerate() {
+      const prompt = document.getElementById('smeTxtPrompt').value.trim();
+      if (!prompt) return alert('Enter a prompt');
+      
+      const maxTokens = parseInt(document.getElementById('smeTxtMaxTokens').value);
+      const temperature = parseFloat(document.getElementById('smeTxtTemp').value);
+      
+      logSmeTxt(`Generating text: "${prompt.substring(0,50)}..."`, 'info');
+      
+      try {
+        const res = await api.sme.txtGenerate({ prompt, maxTokens, temperature, topP: 0.9 });
+        if (res.ok) {
+          logSmeTxt(`✅ Generated: ${res.text?.substring(0,100)}...`, 'info');
+          logSmeTxt(`Tokens: ${res.usage?.totalTokens || 'N/A'}`, 'info');
+        } else {
+          logSmeTxt(`❌ Failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeTxt(`❌ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function runSMEVisEncode() {
+      const imageBase64 = document.getElementById('smeVisImage').value.trim();
+      if (!imageBase64) return alert('Paste base64 image data');
+      
+      const mimeType = document.getElementById('smeVisMime').value;
+      const extractFeatures = document.getElementById('smeVisFeatures').value === 'true';
+      
+      logSmeVis(`Encoding image (${imageBase64.length} chars)...`, 'info');
+      
+      try {
+        const res = await api.sme.visEncode({ imageBase64, mimeType, extractFeatures });
+        if (res.ok) {
+          logSmeVis(`✅ Encoded: ${res.features?.length || 0} features`, 'info');
+          if (res.embedding) {
+            logSmeVis(`Embedding dim: ${res.embedding.length}`, 'info');
+          }
+        } else {
+          logSmeVis(`❌ Failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeVis(`❌ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function runSMEAudTranscribe() {
+      const audioBase64 = document.getElementById('smeAudAudio').value.trim();
+      if (!audioBase64) return alert('Paste base64 audio data');
+      
+      const mimeType = document.getElementById('smeAudMime').value;
+      
+      logSmeAud(`Transcribing audio (${audioBase64.length} chars)...`, 'info');
+      
+      try {
+        const res = await api.sme.audTranscribe({ audioBase64, mimeType, options: {} });
+        if (res.ok) {
+          logSmeAud(`✅ Transcribed: "${res.text?.substring(0,100)}..."`, 'info');
+          logSmeAud(`Language: ${res.language || 'unknown'}`, 'info');
+        } else {
+          logSmeAud(`❌ Failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeAud(`❌ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function runSMEVidProcess() {
+      const preset = document.getElementById('smeVidPreset').value;
+      const inputPath = document.getElementById('smeVidInput').value.trim();
+      const outputPath = document.getElementById('smeVidOutput').value.trim();
+      
+      if (!inputPath || !outputPath) return alert('Enter input and output paths');
+      
+      logSmeVid(`Processing video: ${preset} preset`, 'info');
+      
+      try {
+        const res = await api.sme.vidProcess({ preset, inputPath, outputPath });
+        if (res.ok) {
+          logSmeVid(`✅ Video processed: ${outputPath}`, 'info');
+          logSmeVid(`Frames: ${res.frames || 'N/A'}`, 'info');
+        } else {
+          logSmeVid(`❌ Failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeVid(`❌ Error: ${e.message}`, 'error');
+      }
+    }
+
+    async function runSMEGenImage() {
+      const prompt = document.getElementById('smeGenPrompt').value.trim();
+      if (!prompt) return alert('Enter a prompt');
+      
+      const width = parseInt(document.getElementById('smeGenWidth').value);
+      const height = parseInt(document.getElementById('smeGenHeight').value);
+      const steps = parseInt(document.getElementById('smeGenSteps').value);
+      const guidanceScale = parseFloat(document.getElementById('smeGenGuidance').value);
+      
+      logSmeGen(`Generating image: "${prompt.substring(0,50)}..."`, 'info');
+      setSmeGenProgress(10);
+      
+      try {
+        const res = await api.sme.genImage({ prompt, width, height, steps, guidanceScale });
+        
+        setSmeGenProgress(90);
+        if (res.ok) {
+          logSmeGen(`✅ Image generated`, 'info');
+          logSmeGen(`Size: ${width}x${height}`, 'info');
+          
+          // Display in render preview
+          renderPreview.innerHTML = `<img src="data:image/png;base64,${res.imageBase64}" alt="Generated image">`;
+          
+          setSmeGenProgress(100);
+        } else {
+          logSmeGen(`❌ Failed: ${res.error}`, 'error');
+        }
+      } catch (e) {
+        logSmeGen(`❌ Error: ${e.message}`, 'error');
+      } finally {
+        setTimeout(() => smeGenProgress.style.display = 'none', 1000);
+      }
+    }
+
+    // Initialize SME on load
+    refreshHardwareProfile();
+    setInterval(refreshHardwareProfile, 60000);
+  </script>
+</body>
+</html>
