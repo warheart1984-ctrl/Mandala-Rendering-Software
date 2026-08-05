@@ -1,0 +1,202 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mandala-rendering-system.org/schemas/dep/v1/director-execution-plan.schema.json",
+  "title": "DirectorExecutionPlan (DEP) v1",
+  "type": "object",
+  "required": [
+    "depVersion",
+    "workflowId",
+    "objective",
+    "agents",
+    "executionGraph",
+    "evidenceRequirements",
+    "approvalGates",
+    "successCriteria",
+    "failureConditions",
+    "outputs",
+    "completionConditions",
+    "auditRequirements",
+    "provenance"
+  ],
+  "properties": {
+    "depVersion": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "DEP schema version"
+    },
+    "workflowId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique workflow execution identifier"
+    },
+    "objective": {
+      "type": "string",
+      "description": "Human-readable objective from user intent"
+    },
+    "intentHash": {
+      "type": "string",
+      "description": "SHA-256 of original user intent for idempotency"
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["agentId", "agentType", "contractId", "capabilities"],
+        "properties": {
+          "agentId": { "type": "string" },
+          "agentType": { "enum": ["director", "architect", "builder", "implementor", "inspector", "reviewer", "engineer-standards", "governed", "explore", "specialist"] },
+          "contractId": { "type": "string" },
+          "capabilities": { "type": "array", "items": { "type": "string" } },
+          "config": { "type": "object" }
+        }
+      }
+    },
+    "executionGraph": {
+      "type": "object",
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["nodeId", "agentId", "action", "inputs", "outputs"],
+            "properties": {
+              "nodeId": { "type": "string" },
+              "agentId": { "type": "string" },
+              "action": { "type": "string" },
+              "inputs": {
+                "type": "object",
+                "properties": {
+                  "required": { "type": "array", "items": { "type": "string" } },
+                  "optional": { "type": "array", "items": { "type": "string" } },
+                  "fromNode": { "type": "string" },
+                  "fromOutput": { "type": "string" }
+                }
+              },
+              "outputs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "retryPolicy": {
+                "type": "object",
+                "properties": {
+                  "maxAttempts": { "type": "integer", "default": 3 },
+                  "backoffMs": { "type": "integer", "default": 1000 }
+                }
+              },
+              "timeoutMs": { "type": "integer", "default": 300000 }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fromNode", "toNode", "condition"],
+            "properties": {
+              "fromNode": { "type": "string" },
+              "toNode": { "type": "string" },
+              "condition": { "enum": ["always", "on-success", "on-failure", "on-approval"] },
+              "transform": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "evidenceRequirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["evidenceId", "type", "requiredBy"],
+        "properties": {
+          "evidenceId": { "type": "string" },
+          "type": { "enum": ["render-output", "test-results", "conformance-check", "provenance-record", "receipt", "audit-log", "model-card", "decision-log"] },
+          "requiredBy": { "type": "array", "items": { "type": "string" } },
+          "validationRules": { "type": "array", "items": { "type": "string" } },
+          "retentionDays": { "type": "integer", "default": 90 }
+        }
+      }
+    },
+    "approvalGates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gateId", "name", "type", "requiredApprovers"],
+        "properties": {
+          "gateId": { "type": "string" },
+          "name": { "type": "string" },
+          "type": { "enum": ["human-review", "automated-check", "policy-validation", "evidence-review", "budget-approval"] },
+          "requiredApprovers": { "type": "array", "items": { "type": "string" } },
+          "criteria": { "type": "array", "items": { "type": "string" } },
+          "autoApproveIf": { "type": "object" },
+          "blocking": { "type": "boolean", "default": true }
+        }
+      }
+    },
+    "successCriteria": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "failureConditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["conditionId", "description", "action"],
+        "properties": {
+          "conditionId": { "type": "string" },
+          "description": { "type": "string" },
+          "action": { "enum": ["retry", "escalate", "abort", "rollback", "compensate"] }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["outputId", "type", "path"],
+        "properties": {
+          "outputId": { "type": "string" },
+          "type": { "enum": ["file", "artifact", "evidence", "report", "model", "scene-spec", "audit-archive"] },
+          "path": { "type": "string" },
+          "contentType": { "type": "string" },
+          "required": { "type": "boolean", "default": true }
+        }
+      }
+    },
+    "completionConditions": {
+      "type": "object",
+      "properties": {
+        "allNodesComplete": { "type": "boolean", "default": true },
+        "allGatesPassed": { "type": "boolean", "default": true },
+        "allEvidenceCollected": { "type": "boolean", "default": true },
+        "minScore": { "type": "number" },
+        "custom": { "type": "string" }
+      }
+    },
+    "auditRequirements": {
+      "type": "object",
+      "required": ["logLevel", "archivePath"],
+      "properties": {
+        "logLevel": { "enum": ["minimal", "standard", "verbose", "full"], "default": "standard" },
+        "archivePath": { "type": "string" },
+        "include": {
+          "type": "array",
+          "items": { "enum": ["dep", "agent-logs", "evidence", "approvals", "timing", "errors", "decisions"] }
+        },
+        "retentionDays": { "type": "integer", "default": 365 }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["createdBy", "createdAt", "version"],
+      "properties": {
+        "createdBy": { "type": "string" },
+        "createdAt": { "format": "date-time", "type": "string" },
+        "version": { "type": "string" },
+        "parentDepId": { "type": "string" },
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "environment": { "type": "object" }
+      }
+    }
+  }
+}
