@@ -1,0 +1,13 @@
+{
+  "$schema": "./contract.schema.json",
+  "module": "sme-vid",
+  "contractId": "contract.sme-vid.v1",
+  "version": "1.0.0",
+  "authority": "implement",
+  "invariants": [
+    { "id": "input_exists",     "description": "input media file exists" },
+    { "id": "ffmpeg_exists",    "description": "ffmpeg.exe found on PATH or explicit path" },
+    { "id": "preset_valid",     "description": "preset is one of transcode-h264/extract-audio/trim" }
+  ],
+  "evidenceChain": ["intent", "authority", "validation", "decision", "output", "verification"]
+}

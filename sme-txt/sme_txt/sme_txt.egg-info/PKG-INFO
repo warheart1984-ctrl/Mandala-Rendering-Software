@@ -1,0 +1,29 @@
+Metadata-Version: 2.4
+Name: sme-txt
+Version: 1.0.0
+Summary: Sovereign Multimodal Engine — Text Reasoning Core (LLM)
+License: MIT
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic>=2.7
+Requires-Dist: pydantic-settings>=2.3
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: numpy>=1.26
+Requires-Dist: tokenizers>=0.19
+Requires-Dist: huggingface-hub>=0.23
+Requires-Dist: safetensors>=0.4
+Requires-Dist: structlog>=24.1
+Requires-Dist: opentelemetry-api>=1.25
+Requires-Dist: opentelemetry-sdk>=1.25
+Provides-Extra: llama-cpp
+Requires-Dist: llama-cpp-python>=0.2.90; extra == "llama-cpp"
+Provides-Extra: ort
+Requires-Dist: onnxruntime>=1.17; extra == "ort"
+Requires-Dist: onnx>=1.15; extra == "ort"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
+Requires-Dist: pytest-cov>=5.0; extra == "dev"
+Requires-Dist: ruff>=0.5; extra == "dev"
+Requires-Dist: mypy>=1.10; extra == "dev"
+Requires-Dist: pre-commit>=3.7; extra == "dev"

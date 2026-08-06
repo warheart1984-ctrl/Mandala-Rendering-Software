@@ -1,0 +1,16 @@
+{
+  "acceptanceCriteria": [
+    "Replay cannot execute specialist work.",
+    "Replay cannot mutate artifacts or models.",
+    "Replay cannot generate artifacts.",
+    "Replay cannot interpret content.",
+    "Replay cannot invoke external systems.",
+    "Replay cannot escalate authority.",
+    "Replay requires complete evidence chain.",
+    "Replay requires complete MCP provenance chain.",
+    "Replay requires consistent timestamp chain.",
+    "Replay requires valid approval chain.",
+    "Replay must pass all 8 conformance checks.",
+    "Replay must produce immutable Replay Transcript and Audit Record."
+  ]
+}

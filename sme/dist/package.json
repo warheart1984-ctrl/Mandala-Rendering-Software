@@ -1,0 +1,23 @@
+{
+  "name": "@sovereignx/sme-dist",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "core/index.cjs",
+  "dependencies": {
+    "onnxruntime-node": "^1.16.0",
+    "@xenova/transformers": "^2.17.0",
+    "llama-node": "^0.1.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "sharp": "^0.33.0",
+    "whisper-node": "^0.1.0"
+  },
+  "allowScripts": {
+    "@llama-node/core@0.1.6": true,
+    "onnxruntime-node@1.14.0": true,
+    "onnxruntime-node@1.27.0": true,
+    "sharp@0.32.6": true,
+    "sharp@0.33.5": true,
+    "protobufjs@6.11.6": true
+  }
+}

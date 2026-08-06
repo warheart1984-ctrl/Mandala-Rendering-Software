@@ -1,0 +1,14 @@
+{
+  "$schema": "./contract.schema.json",
+  "module": "sme-aud",
+  "contractId": "contract.sme-aud.v1",
+  "version": "1.0.0",
+  "authority": "implement",
+  "invariants": [
+    { "id": "model_exists",     "description": "whisper ggml model exists" },
+    { "id": "wav_exists",       "description": "wav input exists" },
+    { "id": "wav_readable",     "description": "wav parses as 16-bit PCM" },
+    { "id": "model_loadable",   "description": "whisper_init_from_file succeeds" }
+  ],
+  "evidenceChain": ["intent", "authority", "validation", "decision", "output", "verification"]
+}

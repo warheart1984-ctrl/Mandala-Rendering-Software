@@ -215,6 +215,44 @@ export const CONTRACTS = {
       ]
     },
     {
+      contractId: "contract.cinematic4d.v1",
+      actor: "4dce.renderer",
+      status: "enforced",
+      authority: "render",
+      allowedActions: [
+        "render.session.start",
+        "render.frame.live",
+        "artifact.picture.export",
+        "artifact.movie.export",
+        "csr.replay.params"
+      ],
+      forbiddenActions: [
+        "bypass_authority",
+        "mutate_governance",
+        "mutate_ledger"
+      ],
+      invariants: {
+        vertexCount: 16,
+        edgeCount: 32,
+        mustProject: true
+      },
+      evidenceRequirements: [
+        "vertexCount",
+        "edgeCount",
+        "theta",
+        "d4",
+        "d3",
+        "speed",
+        "scale"
+      ],
+      conformanceChecks: [
+        "ckl.deny-without-intent",
+        "policy-no-execution-without-intent",
+        "policy-no-state-change-without-evidence",
+        "policy-no-render-without-provenance"
+      ]
+    },
+    {
       contractId: "contract.director.v1",
       actor: "4dce.director",
       status: "enforced",
@@ -230,11 +268,11 @@ export const CONTRACTS = {
         "plan",
         "route",
         "supervise",
-        "enforce_governance"
+        "enforce_governance",
+        "render_4d_tesseract"
       ],
       forbiddenActions: [
         "write_code",
-        "generate_artifacts",
         "mutate_models",
         "interpret",
         "invoke_external",
@@ -322,7 +360,10 @@ export const CONTRACTS = {
         "submit_intent",
         "poll_result",
         "retrieve_evidence",
-        "request_replay"
+        "request_replay",
+        "health_check",
+        "readiness_check",
+        "version_check"
       ],
       forbiddenActions: [
         "bypass_authority",
@@ -334,6 +375,31 @@ export const CONTRACTS = {
         "modality",
         "goal",
         "constraints"
+      ],
+      conformanceChecks: [
+        "ckl.deny-without-intent",
+        "policy-no-execution-without-intent"
+      ]
+    },
+    {
+      contractId: "contract.sovereignx.v1",
+      actor: "sovereignx",
+      status: "enforced",
+      authority: "route",
+      allowedActions: [
+        "route_render",
+        "get_stats",
+        "detect_hip"
+      ],
+      forbiddenActions: [
+        "bypass_authority",
+        "modify_governance",
+        "mutate_ledger"
+      ],
+      evidenceRequirements: [
+        "routing_decision",
+        "efficiency_metrics",
+        "arena_selection_reason"
       ],
       conformanceChecks: [
         "ckl.deny-without-intent",

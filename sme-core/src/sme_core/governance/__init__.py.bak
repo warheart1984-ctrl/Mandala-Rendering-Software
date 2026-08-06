@@ -1,0 +1,448 @@
+"""
+SME Core Governance Module
+Constitutional Knowledge Layer (CKL) and Governance Kernel
+"""
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+import jsonschema
+
+
+@dataclass
+class Policy:
+    """Runtime policy representation"""
+    policy_id: str
+    scope: str
+    severity: str  # "critical", "high", "medium"
+    action: str    # "deny_if_false", "attach_provenance", "modify_param"
+    condition: str
+    description: str = ""
+
+
+@dataclass
+class PolicyEvaluation:
+    """Result of policy evaluation"""
+    policy_id: str
+    decision: str  # "allow", "deny", "modify"
+    reason: str
+    modified_params: Dict[str, Any] = None
+    provenance_required: bool = False
+
+
+@dataclass
+class GovernanceDecision:
+    """Governance decision result."""
+    requires_generation: bool = False
+    generation_approved: bool = False
+    authority_grant_id: Optional[str] = None
+    fallback_to_cpu: bool = False
+    reason: str = "Governance decision based on authority chain"
+    evidence: Dict = field(default_factory=dict)
+    modifications: Dict = field(default_factory=dict)
+    provenance_required: bool = False
+    status: str = "allow"  # "allow", "deny", "modify"
+    violation: Optional[str] = None
+
+
+@dataclass
+class EvaluationContext:
+    """Context for policy evaluation"""
+    intent: Optional[Dict[str, Any]] = None
+    actor: Optional[str] = None
+    action: Optional[str] = None
+    modality: Optional[str] = None
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    evidence: Optional[Dict[str, Any]] = None
+    world_id: Optional[str] = None
+    timeline_id: Optional[str] = None
+    drift: float = 0.0
+    is_render: bool = False
+    is_play_timeline: bool = False
+    director_action: Optional[str] = None
+    director_contract: Optional[str] = None
+    mcp_invocation: bool = False
+
+
+class ConstitutionalKnowledgeLayer:
+    """
+    Constitutional Knowledge Layer (CKL) - Policy Evaluation Engine.
+    Loads policies from default.policies.json and evaluates them against context.
+    """
+
+    def __init__(self, policy_path: Optional[Path] = None):
+        self.policy_path = policy_path or Path("engine/governance/policies/default.policies.json")
+        self.policies: Dict[str, Policy] = {}
+        self._load_policies()
+
+def _load_policies(self) -> None:
+        """Load policies from JSON file"""
+        if not self.policy_path.exists():
+            raise FileNotFoundError(f"Policy file not found: {self.policy_path}")
+
+        with open(self.policy_path) as f:
+            data = json.load(f)
+
+        # Support both list format and object with "policies" key
+        policies_list = data if isinstance(data, list) else data.get("policies", [])
+
+        for p in policies_list:
+            # Support both "id" and "policyId" field names
+            policy_id = p.get("policyId") or p.get("id")
+            if not policy_id:
+                continue  # Skip policies without ID
+
+            policy = Policy(
+                policy_id=policy_id,
+                scope=p["scope"],
+                severity=p["severity"],
+                action=p["action"],
+                condition=p.get("condition", "true"),
+                description=p.get("description", ""),
+            )
+            self.policies[policy.policy_id] = policy
+
+    def evaluate_all(self, context: EvaluationContext) -> List[PolicyEvaluation]:
+        """Evaluate all applicable policies against context"""
+        results = []
+
+        for policy in self.policies.values():
+            if not self._scope_matches(policy.scope, context):
+                continue
+
+            result = self._evaluate_policy(policy, context)
+            results.append(result)
+
+        return results
+
+    def _scope_matches(self, scope: str, context: EvaluationContext) -> bool:
+        """Check if policy scope matches context"""
+        scope_map = {
+            "runtime": True,
+            "state": context.evidence is not None,
+            "render": context.is_render,
+            "authority": context.actor is not None,
+            "timeline": context.is_play_timeline,
+            "execution": context.director_action is not None,
+        }
+        return scope_map.get(scope, False)
+
+    def _evaluate_policy(self, policy: Policy, context: EvaluationContext) -> PolicyEvaluation:
+        """Evaluate a single policy"""
+        try:
+            condition_result = self._eval_condition(policy.condition, context)
+        except Exception as e:
+            if policy.severity in ("critical", "high"):
+                return PolicyEvaluation(
+                    policy_id=policy.policy_id,
+                    decision="deny",
+                    reason=f"Condition evaluation error: {e}",
+                )
+            condition_result = True
+
+        if policy.action == "deny_if_false":
+            if not condition_result:
+                return PolicyEvaluation(
+                    policy_id=policy.policy_id,
+                    decision="deny",
+                    reason=f"Policy {policy.policy_id} denied: {policy.condition} evaluated false",
+                )
+            return PolicyEvaluation(
+                policy_id=policy.policy_id,
+                decision="allow",
+                reason="Condition satisfied",
+            )
+
+        elif policy.action == "attach_provenance":
+            return PolicyEvaluation(
+                policy_id=policy.policy_id,
+                decision="allow",
+                reason="Provenance attachment required",
+                provenance_required=True,
+            )
+
+        elif policy.action == "modify_param":
+            if not condition_result:
+                return PolicyEvaluation(
+                    policy_id=policy.policy_id,
+                    decision="allow",
+                    reason="Condition not met, no modification",
+                )
+            modified = {}
+            if "drift > 0.7" in policy.condition and context.drift > 0.7:
+                modified["speed_factor"] = 0.5
+                modified["reason"] = "Ascension drift throttle"
+            return PolicyEvaluation(
+                policy_id=policy.policy_id,
+                decision="modify",
+                reason="Parameter modification applied",
+                modified_params=modified,
+            )
+
+        return PolicyEvaluation(
+            policy_id=policy.policy_id,
+            decision="allow",
+            reason="Unknown action, default allow",
+        )
+
+    def _eval_condition(self, condition: str, context: EvaluationContext) -> bool:
+        """Safely evaluate condition expression"""
+        condition = condition.strip()
+        namespace = {
+            "intent": context.intent,
+            "actor": context.actor,
+            "action": context.action,
+            "modality": context.modality,
+            "parameters": context.parameters,
+            "evidence": context.evidence,
+            "world_id": context.world_id,
+            "timeline_id": context.timeline_id,
+            "drift": context.drift,
+            "is_render": context.is_render,
+            "is_play_timeline": context.is_play_timeline,
+            "director_action": context.director_action,
+            "director_contract": context.director_contract,
+            "mcp_invocation": context.mcp_invocation,
+            "true": True,
+            "false": False,
+            "null": None,
+        }
+
+        condition = condition.strip()
+
+        # Direct variable checks
+        if condition == "intent != null":
+            return context.intent is not None
+        elif condition == "evidence != null":
+            return context.evidence is not None
+        elif condition == "actor.contract != null":
+            return context.actor is not None
+        elif condition == "director.contract != null":
+            return context.director_contract is not None
+        elif condition == "director.action in forbidden":
+            forbidden = ["write_code", "generate_artifacts", "mutate_models", "interpret", "invoke_external"]
+            return context.director_action in forbidden
+        elif condition == "drift > 0.7":
+            return context.drift > 0.7
+        elif condition == "dual_evidence":
+            return context.evidence is not None and "dual" in str(context.evidence).lower()
+        elif condition == "always":
+            return True
+        elif condition.startswith("play_timeline"):
+            return context.is_play_timeline
+
+        # Default: evaluate as Python expression (restricted)
+        try:
+            return bool(eval(condition, {"__builtins__": {}}, namespace))
+        except Exception:
+            return False
+
+    def check_critical_denials(self, evaluations: List[PolicyEvaluation]) -> Optional[PolicyEvaluation]:
+        """Check if any critical policy denied"""
+        for eval_result in evaluations:
+            if eval_result.decision == "deny":
+                policy = self.policies.get(eval_result.policy_id)
+                if policy and policy.severity == "critical":
+                    return eval_result
+        return None
+
+    def collect_modifications(self, evaluations: List[PolicyEvaluation]) -> Dict[str, Any]:
+        """Collect all parameter modifications"""
+        modifications = {}
+        for eval_result in evaluations:
+            if eval_result.decision == "modify":
+                modifications.update(eval_result.modified_params)
+        return modifications
+
+    def requires_provenance(self, evaluations: List[PolicyEvaluation]) -> bool:
+        """Check if any policy requires provenance attachment"""
+        return any(e.provenance_required for e in evaluations)
+
+    def load_policies_from_file(self, path: Path) -> None:
+        """Reload policies from file"""
+        self.policy_path = path
+        self._load_policies()
+
+
+class GovernanceDecision:
+    """Governance decision result."""
+    def __init__(self, 
+                 requires_generation: bool = False,
+                 generation_approved: bool = False,
+                 authority_grant_id: Optional[str] = None,
+                 fallback_to_cpu: bool = False,
+                 reason: str = "Governance decision based on authority chain",
+                 evidence: Dict = None,
+                 modifications: Dict = None,
+                 provenance_required: bool = False,
+                 status: str = "allow",
+                 violation: Optional[str] = None):
+        self.requires_generation = requires_generation
+        self.generation_approved = generation_approved
+        self.authority_grant_id = authority_grant_id
+        self.fallback_to_cpu = fallback_to_cpu
+        self.reason = reason
+        self.evidence = evidence or {}
+        self.modifications = modifications or {}
+        self.provenance_required = provenance_required
+        self.status = status
+        self.violation = violation
+
+
+class EvaluationContext:
+    """Context for policy evaluation"""
+    def __init__(self, intent: Dict = None, actor: str = None, action: str = None,
+                 modality: str = None, parameters: Dict = None, evidence: Dict = None,
+                 world_id: str = None, timeline_id: str = None, drift: float = 0.0,
+                 is_render: bool = False, is_play_timeline: bool = False,
+                 director_action: str = None, director_contract: str = None,
+                 mcp_invocation: bool = False):
+        self.intent = intent
+        self.actor = actor
+        self.action = action
+        self.modality = modality
+        self.parameters = parameters or {}
+        self.evidence = evidence
+        self.world_id = world_id
+        self.timeline_id = timeline_id
+        self.drift = drift
+        self.is_render = is_render
+        self.is_play_timeline = is_play_timeline
+        self.director_action = director_action
+        self.director_contract = director_contract
+        self.mcp_invocation = mcp_invocation
+
+
+class PolicyEngine:
+    """Policy evaluation engine - alias for ConstitutionalKnowledgeLayer"""
+
+    def __init__(self, policy_path: str = None):
+        self.ckl = ConstitutionalKnowledgeLayer(policy_path)
+
+    def evaluate(self, context: EvaluationContext) -> List:
+        return self.ckl.evaluate_all(context)
+
+    def evaluate_all(self, context: EvaluationContext):
+        return self.ckl.evaluate_all(context)
+
+
+class ContractEngine:
+    """Contract Engine for validation, decision, and verification rules."""
+
+    def __init__(self, contracts_path: str = "engine/governance/contracts"):
+        self.contracts_path = Path(contracts_path)
+        self.validation_rules: Dict[str, List[Callable[[Dict[str, Any], str], bool]]] = {}
+        self.decision_rules: Dict[str, Callable[[Dict[str, Any], str], bool]] = {}
+        self.verification_rules: Dict[str, Callable[[Dict[str, Any], str], bool]] = {}
+        self._register_default_rules()
+
+    def _register_default_rules(self) -> None:
+        # Authority validation
+        self.add_validation_rule("authority", lambda facts, err: (
+            (facts.get("intent") is not None) or (setattr(err, "error", "intent is required") or False)) and
+            (facts.get("actor") is not None or (setattr(err, "error", "actor required") or False)) and
+            (facts.get("action") is not None or (setattr(err, "error", "action required") or False))
+        )
+
+        self.add_validation_rule("resource_quota", lambda facts, err: True)
+
+        # Decision rules
+        self.add_decision_rule("classify", lambda p, e: 
+            (p.get("image_path") is not None) or (setattr(err, "error", "classify requires image_path") or False))
+
+        self.add_decision_rule("transcribe", lambda p, e: 
+            (p.get("audio_path") is not None) or (setattr(err, "error", "transcribe requires audio_path") or False))
+
+        self.add_decision_rule("complete", lambda p, e: 
+            (p.get("prompt") is not None) or (setattr(err, "error", "complete requires prompt") or False))
+
+        self.add_decision_rule("generate", lambda p, e: 
+            (p.get("prompt") is not None) or (setattr(err, "error", "generate requires prompt") or False))
+
+        # Verification rules
+        self.add_verification_rule("output_consistency", lambda b, e: True)
+        self.add_verification_rule("determinism", lambda b, e: True)
+
+    def validate(self, contract_type: str, facts: Dict[str, Any], error_out: str) -> bool:
+        rules = self.validation_rules.get(contract_type, [])
+        for validator in rules:
+            error = ""
+            if not validator(facts, error):
+                return False
+        return True
+
+    def decide(self, action: str, payload: Dict[str, Any], error_out: str) -> bool:
+        rule = self.decision_rules.get(action)
+        if not rule:
+            return False
+        return rule(payload, "")
+
+    def verify(self, evidence_bundle: Dict[str, Any], error_out: str) -> bool:
+        for name, verifier in self.verification_rules.items():
+            if not verifier(evidence_bundle, ""):
+                return False
+        return True
+
+    def add_validation_rule(self, contract_type: str, validator: Callable[[Dict[str, Any], str], bool]) -> None:
+        if contract_type not in self.validation_rules:
+            self.validation_rules[contract_type] = []
+        self.validation_rules[contract_type].append(validator)
+
+    def add_decision_rule(self, action: str, decider: Callable[[Dict[str, Any], str], bool]) -> None:
+        self.decision_rules[action] = decider
+
+    def add_verification_rule(self, name: str, verifier: Callable[[Dict[str, Any], str], bool]) -> None:
+        self.verification_rules[name] = verifier
+
+
+class GovernanceKernel:
+    """Governance decision pipeline."""
+
+    def __init__(self):
+        self.contract_engine = ContractEngine()
+
+    def decide(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Make governance decision."""
+        return {
+            "requires_generation": False,
+            "generation_approved": False,
+            "authority_grant_id": None,
+            "fallback_to_cpu": False,
+            "reason": "Governance decision based on authority chain",
+        }
+
+    def decide_with_context(self, context: EvaluationContext) -> Dict[str, Any]:
+        """Make governance decision with full context."""
+        return self.decide(context.__dict__)
+
+
+# Alias for compatibility
+ConstitutionalKnowledgeLayer = ConstitutionalKnowledgeLayer
+GovernanceContext = EvaluationContext
+PolicyEvaluationResult = PolicyEvaluation
+PolicyEngine = PolicyEngine
+ContractEngine = ContractEngine
+GovernanceKernel = GovernanceKernel
+GovernanceContext = EvaluationContext
+
+__all__ = [
+    "Policy",
+    "PolicyEvaluation",
+    "EvaluationContext",
+    "GovernanceContext",
+    "PolicyEvaluationResult",
+    "PolicyEvaluation",
+    "ConstitutionalKnowledgeLayer",
+    "PolicyEngine",
+    "ContractEngine",
+    "GovernanceKernel",
+    "GovernanceContext",
+    "PolicyEvaluationResult",
+    "GovernanceDecision",
+    "EvaluationContext",
+    "GovernanceDecision",
+]

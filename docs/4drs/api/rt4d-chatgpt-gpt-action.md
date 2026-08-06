@@ -2,7 +2,7 @@
 
 > Status: **partial** — dimensional previews, not photoreal anime. Provenance and
 > determinism are enforced; preview fidelity is not.
-> Commit: `e828864` (branch `feat/rt4d-chatgpt-plugin`)
+> **Setup pack:** [`chatgpt-actions-setup-pack.md`](chatgpt-actions-setup-pack.md)
 
 ## What this is
 
@@ -105,10 +105,14 @@ Response envelope: { ok, statusTag, data, error }. statusTag is "partial":
 previews are dimensional renderings, not photoreal anime.
 ```
 
-## Verified behavior (2026-08-03, live)
+## Verified behavior (2026-08-05, live)
 
-- `GET /openapi.json` → 200, OpenAPI 3.1.0 (schema version 0.3.0) with four
-  paths, including the one-shot `render_rt4d_from_prompt`.
+- `GET /openapi.json` → 200, OpenAPI 3.1.0 (schema version 0.3.0) with five
+  operations, including the one-shot `render_rt4d_from_prompt`.
+- `GET /health` → 200, `rt4d-hybrid-anime-production` v0.2.0, engine configured.
+- Unauthenticated `POST /v1/render-prompt` and `POST /mcp` → 401 (fail-closed).
+- Operator setup pack: `docs/4drs/api/chatgpt-actions-setup-pack.md`
+- Smoke script: `infra/scripts/chatgpt-actions-smoke.ps1` (requires `MRS_API_KEY`).
 - `POST /v1/render-prompt` → single call returns `data.sceneId` and
   `data.previewUrl` (pre-signed S3 PNG) in ~8s at 512×512; `data.sha256` is
   deterministic (identical image bytes across equivalent scenes).

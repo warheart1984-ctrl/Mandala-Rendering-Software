@@ -1,0 +1,9 @@
+pyproject.toml
+src/encoder/onnx_encoder.py
+src/ifc/vis_ifc.py
+src/preprocess/pipeline.py
+src/sme_vis.egg-info/PKG-INFO
+src/sme_vis.egg-info/SOURCES.txt
+src/sme_vis.egg-info/dependency_links.txt
+src/sme_vis.egg-info/requires.txt
+src/sme_vis.egg-info/top_level.txt

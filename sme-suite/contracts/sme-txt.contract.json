@@ -1,0 +1,13 @@
+{
+  "$schema": "./contract.schema.json",
+  "module": "sme-txt",
+  "contractId": "contract.sme-txt.v1",
+  "version": "1.0.0",
+  "authority": "implement",
+  "invariants": [
+    { "id": "model_exists",              "description": "model file exists on disk" },
+    { "id": "model_extension_known",     "description": "extension is .gguf/.onnx/.bin" },
+    { "id": "backend_loadable",          "description": "llama.cpp or ONNX Runtime loads the model" }
+  ],
+  "evidenceChain": ["intent", "authority", "validation", "decision", "output", "verification"]
+}

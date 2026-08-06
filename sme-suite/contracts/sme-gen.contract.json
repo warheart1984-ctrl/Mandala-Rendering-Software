@@ -1,0 +1,12 @@
+{
+  "$schema": "./contract.schema.json",
+  "module": "sme-gen",
+  "contractId": "contract.sme-gen.v1",
+  "version": "1.0.0",
+  "authority": "implement",
+  "invariants": [
+    { "id": "config_loadable",  "description": "config.json parses (defaults allowed)" },
+    { "id": "prompt_present",   "description": "prompt is non-empty" }
+  ],
+  "evidenceChain": ["intent", "authority", "validation", "decision", "output", "verification"]
+}

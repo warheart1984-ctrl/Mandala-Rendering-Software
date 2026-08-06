@@ -1,0 +1,12 @@
+pyproject.toml
+src/__init__.py
+src/diffusion/onnx_pipeline.py
+src/ffmpeg/stitch.py
+src/gpu_connector/authority.py
+src/ifc/gen_ifc.py
+src/sme_gen.egg-info/PKG-INFO
+src/sme_gen.egg-info/SOURCES.txt
+src/sme_gen.egg-info/dependency_links.txt
+src/sme_gen.egg-info/requires.txt
+src/sme_gen.egg-info/top_level.txt
+src/tts/piper.py

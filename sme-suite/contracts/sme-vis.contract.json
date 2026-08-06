@@ -1,0 +1,19 @@
+{
+  "$schema": "./contract.schema.json",
+  "module": "sme-vis",
+  "contractId": "contract.sme-vis.v1",
+  "version": "1.0.0",
+  "authority": "implement",
+  "invariants": [
+    { "id": "model_exists",              "description": "ONNX model file exists" },
+    { "id": "image_exists",              "description": "input image exists" },
+    { "id": "model_loadable",            "description": "ONNX session creates from path" },
+    { "id": "input_rank_is_4",           "description": "input tensor rank must be 4 (NCHW)" },
+    { "id": "batch_is_1",                "description": "input batch dimension must be 1" },
+    { "id": "channels_is_3",             "description": "input channels must be 3 (RGB)" },
+    { "id": "image_size_matches_config", "description": "input spatial H,W must equal config.image_size" },
+    { "id": "output_is_logits",          "description": "output tensor must be 2-D [1, numClasses]" },
+    { "id": "labels_loaded",             "description": "labels file has entries" }
+  ],
+  "evidenceChain": ["intent", "authority", "validation", "decision", "output", "verification"]
+}

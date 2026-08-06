@@ -1,0 +1,17 @@
+{
+  "$schema": "./contract.schema.json",
+  "module": "sme-router",
+  "contractId": "contract.sme-router.v1",
+  "version": "1.0.0",
+  "authority": "implement",
+  "invariants": [
+    { "id": "request_valid", "description": "Routing request has required fields" },
+    { "id": "hardware_detected", "description": "Hardware registry detects CPU and GPU capabilities" },
+    { "id": "deterministic_routes_to_cpu", "description": "Deterministic requests route to cpu.rt4d.print" },
+    { "id": "gpu_assist_only", "description": "GPU backends marked as assist authority" },
+    { "id": "lrc_envelopes_generated", "description": "LRC envelopes created for each selected backend" },
+    { "id": "constitutional_trace_complete", "description": "All 7 lawbook chain stages traced" },
+    { "id": "evidence_requirements_met", "description": "Evidence requirements specified for each envelope" }
+  ],
+  "evidenceChain": ["intent", "authority", "validation", "decision", "evidence", "verification", "replay", "audit"]
+}

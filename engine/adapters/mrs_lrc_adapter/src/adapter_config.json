@@ -1,0 +1,9 @@
+{
+  "router_path": "G:/Mandala Rendering Software/sme-suite/modules/sme-router/build/sme_router.exe",
+  "modules_root": "G:/Mandala Rendering Software/sme-suite",
+  "evidence_store": "G:/Mandala Rendering Software/data/evidence",
+  "replay_store": "G:/Mandala Rendering Software/data/replay",
+  "ledger_store": "G:/Mandala Rendering Software/data/ledger",
+  "use_http": false,
+  "router_http_url": "http://localhost:8089"
+}

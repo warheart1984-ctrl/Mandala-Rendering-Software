@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sme.mandala.io/contracts/v1/replay-record.json",
+  "title": "ReplayRecord",
+  "version": "1.0.0",
+  "description": "Replay record for deterministic replay verification. Contains all information needed to replay an execution deterministically.",
+  "type": "object",
+  "required": ["record_id", "request_id", "plan", "inputs", "module_results", "evidence_bundle", "seeds", "environment", "deterministic", "merkle_root", "created_at"],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique replay record identifier"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Original request ID"
+    },
+    "plan": {
+      "$ref": "execution-plan.json",
+      "description": "Original execution plan"
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Original inputs (payload, constraints, etc.)",
+      "properties": {
+        "payload": { "type": "object" },
+        "constraints": { "type": "object" },
+        "actor_id": { "type": "string" },
+        "authority_chain": { "type": "array", "items": { "type": "string" } },
+        "lawbook_chain": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "module_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node_id", "action", "output", "evidence", "deterministic"],
+        "properties": {
+          "node_id": { "type": "string" },
+          "action": { "type": "string" },
+          "output": { "type": "object" },
+          "evidence": { "type": "object" },
+          "deterministic": { "type": "boolean" },
+          "seed": { "type": "integer" },
+          "latency_ms": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "evidence_bundle": {
+      "$ref": "evidence-bundle.json"
+    },
+    "seeds": {
+      "type": "object",
+      "additionalProperties": { "type": "integer" },
+      "description": "All RNG seeds used during execution"
+    },
+    "environment": {
+      "type": "object",
+      "required": ["model_versions", "substrate_versions", "library_versions", "os", "cpu_arch", "gpu_device"],
+      "properties": {
+        "model_versions": { "type": "object", "additionalProperties": { "type": "string" } },
+        "substrate_versions": { "type": "object", "additionalProperties": { "type": "string" } },
+        "library_versions": { "type": "object", "additionalProperties": { "type": "string" } },
+        "os": { "type": "string" },
+        "cpu_arch": { "type": "string" },
+        "gpu_device": { "type": "string" }
+      }
+    },
+    "deterministic": {
+      "type": "boolean",
+      "description": "Whether replay was deterministic"
+    },
+    "merkle_root": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Merkle root of the replay record"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Replay record creation timestamp"
+    },
+    "contract_metadata": {
+      "type": "object",
+      "required": ["schema_version", "contract_id", "contract_version", "compatible_versions", "migration_policy", "deterministic_replay_guaranteed", "evidence_requirements"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "1.0.0" },
+        "contract_id": { "type": "string", "const": "replay-record" },
+        "contract_version": { "type": "string", "const": "1.0.0" },
+        "compatible_versions": { "type": "array", "items": { "type": "string" }, "const": ["1.0.0"] },
+        "migration_policy": { "type": "string", "const": "backward_compatible" },
+        "deterministic_replay_guaranteed": { "type": "boolean", "const": true },
+        "evidence_requirements": {
+          "type": "array",
+          "items": { "type": "string" },
+          "const": [
+            "intent_declaration",
+            "agent_dispatch_log",
+            "output_collection",
+            "policy_validation",
+            "approval_record",
+            "timestamp_chain",
+            "authority_chain",
+            "evidence_chain",
+            "mcp_provenance_chain",
+            "conformance_snapshot"
+          ]
+        }
+      }
+    }
+  }
+}

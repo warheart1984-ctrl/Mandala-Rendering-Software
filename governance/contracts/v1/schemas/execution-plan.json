@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sme.mandala.io/contracts/v1/execution-plan.json",
+  "title": "ExecutionPlan",
+  "version": "1.0.0",
+  "description": "Execution plan produced by Sovereign X Router. Contains capability plan, LRC envelopes, and constitutional trace.",
+  "type": "object",
+  "required": ["plan_id", "request_id", "capability_plan", "lrc_envelopes", "constitutional_trace", "evidence_requirements"],
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique execution plan identifier"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Original request ID"
+    },
+    "capability_plan": {
+      "type": "object",
+      "required": ["estimated_flops", "estimated_ram_gb", "estimated_latency_ms", "execution_mode", "substrate_hints"],
+      "properties": {
+        "estimated_flops": { "type": "integer", "minimum": 0 },
+        "estimated_ram_gb": { "type": "number", "minimum": 0 },
+        "estimated_latency_ms": { "type": "integer", "minimum": 0 },
+        "execution_mode": { "type": "string", "enum": ["LOCAL", "HYBRID", "OFFLOAD", "DEFER"] },
+        "substrate_hints": {
+          "type": "object",
+          "properties": {
+            "txt": { "type": "string", "enum": ["CPU_AVX2", "CPU_AVX512", "GPU_CUDA_10", "GPU_CUDA_11"] },
+            "vis": { "type": "string", "enum": ["CPU_AVX2", "CPU_AVX512", "GPU_CUDA_10", "GPU_CUDA_11"] },
+            "aud": { "type": "string", "enum": ["CPU_AVX2", "CPU_AVX512", "GPU_CUDA_10", "GPU_CUDA_11"] },
+            "vid": { "type": "string", "enum": ["CPU_AVX2", "CPU_AVX512", "GPU_CUDA_10", "GPU_CUDA_11"] },
+            "gen": { "type": "string", "enum": ["CPU_AVX2", "CPU_AVX512", "GPU_CUDA_10", "GPU_CUDA_11"] }
+          }
+        },
+        "required": ["estimated_flops", "estimated_ram_gb", "estimated_latency_ms", "execution_mode", "substrate_hints"]
+      },
+    "lrc_envelopes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["envelope_id", "origin_node", "target_node", "actor_id", "action", "lawbook_chain", "payload", "evidence_requirements"],
+        "properties": {
+          "envelope_id": { "type": "string", "format": "uuid" },
+          "origin_node": { "type": "string", "const": "sovereign-x-router" },
+          "target_node": { "type": "string", "enum": ["sme-txt", "sme-vis", "sme-aud", "sme-vid", "sme-gen", "sme-log"] },
+          "actor_id": { "type": "string" },
+          "action": { "type": "string", "enum": ["encode", "transcribe", "complete", "generate", "replay", "audit"] },
+          "lawbook_chain": { "type": "array", "items": { "type": "string", "enum": ["authority", "validation", "decision", "evidence", "verification", "replay", "audit"] }, "const": ["authority", "validation", "decision", "evidence", "verification", "replay", "audit"] },
+          "payload": { "type": "object" },
+          "evidence_requirements": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        },
+        "required": ["envelope_id", "origin_node", "target_node", "actor_id", "action", "lawbook_chain", "payload", "evidence_requirements"]
+      }
+    },
+    "constitutional_trace": {
+      "type": "object",
+      "required": ["authority", "validation", "fusion", "decision", "evidence", "verification", "replay", "audit"],
+      "properties": {
+        "authority": { "type": "object", "required": ["actor", "granted"], "properties": { "actor": { "type": "string" }, "granted": { "type": "boolean" } } },
+        "validation": { "type": "object", "properties": { "checks": { "type": "array", "items": { "type": "object" } } } },
+        "fusion": { "type": "object", "properties": { "modalities": { "type": "array", "items": { "type": "string" } } } },
+        "decision": { "type": "object", "properties": { "action": { "type": "string" } } },
+        "evidence": { "type": "object", "properties": { "bundle_id": { "type": "string" } } },
+        "verification": { "type": "object", "properties": { "passed": { "type": "boolean" } } },
+        "replay": { "type": "object", "properties": { "deterministic": { "type": "boolean" } } },
+        "audit": { "type": "object", "properties": { "logged": { "type": "boolean" } } }
+      }
+    },
+    "evidence_requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Required evidence fields for this execution"
+    },
+    "contract_metadata": {
+      "type": "object",
+      "required": ["schema_version", "contract_id", "contract_version", "compatible_versions", "migration_policy", "deterministic_replay_guaranteed", "evidence_requirements"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "1.0.0" },
+        "contract_id": { "type": "string", "const": "execution-plan" },
+        "contract_version": { "type": "string", "const": "1.0.0" },
+        "compatible_versions": { "type": "array", "items": { "type": "string" }, "const": ["1.0.0"] },
+        "migration_policy": { "type": "string", "const": "backward_compatible" },
+        "deterministic_replay_guaranteed": { "type": "boolean", "const": true },
+        "evidence_requirements": {
+          "type": "array",
+          "items": { "type": "string" },
+          "const": [
+            "intent_declaration",
+            "agent_dispatch_log",
+            "output_collection",
+            "policy_validation",
+            "approval_record",
+            "timestamp_chain",
+            "authority_chain",
+            "evidence_chain",
+            "mcp_provenance_chain",
+            "conformance_snapshot"
+          ]
+        }
+      }
+  }
+}

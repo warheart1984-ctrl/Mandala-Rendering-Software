@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SME Module Contract",
+  "type": "object",
+  "required": ["module", "contractId", "version", "invariants"],
+  "properties": {
+    "module": { "type": "string" },
+    "contractId": { "type": "string" },
+    "version": { "type": "string" },
+    "authority": { "type": "string" },
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "evidenceChain": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

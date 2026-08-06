@@ -1,0 +1,49 @@
+﻿{
+    "permission":  {
+                       "bash":  {
+                                    "*":  "ask"
+                                },
+                       "read":  {
+                                    "*":  "allow"
+                                },
+                       "edit":  {
+                                    "*":  "ask"
+                                }
+                   },
+    "agents":  {
+                   "implementor":  ".opencode/agents/implementor.md",
+                   "governed":  ".opencode/agents/governed.md",
+                   "inspector":  ".opencode/agents/inspector.md",
+                   "architect":  ".opencode/agents/architect.md",
+                   "builder":  ".opencode/agents/builder.md",
+                   "engineer-standards":  ".opencode/agents/engineer-standards.md",
+                   "reviewer":  ".opencode/agents/reviewer.md"
+               },
+    "skills":  [
+                   "aws-blocks",
+                   "aws-cdk",
+                   "aws-cloudformation",
+                   "aws-compute",
+                   "aws-containers",
+                   "aws-deployment",
+                   "aws-messaging-and-streaming",
+                   "aws-observability",
+                   "aws-sdk-js-v3-usage",
+                   "aws-sdk-python-usage",
+                   "aws-serverless",
+                   "launch-with-aws",
+                   "signing-in-to-aws",
+                   "amazon-bedrock",
+                   "rag-blueprint",
+                   "dynamo-troubleshoot",
+                   "hip-rocm",
+                   "rocm-setup",
+                   "nvidia-gpu-assist",
+                   "tao-run-inference-service",
+                   "tao-run-on-docker",
+                   "tao-setup-nvidia-gpu-host",
+                   "tilegym-cutile-python",
+                   "omniverse-usd-performance-tuning",
+                   "aws-billing-and-cost-management"
+               ]
+}
