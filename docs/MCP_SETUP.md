@@ -1,8 +1,11 @@
-# MRS MCP (Model Context Protocol) Setup Guide
+# MRS MCP / REST Setup Guide
 
-> **Source**: Dar-z Morris integration notes  
-> **Branch**: `feat/mcp-001-scaffold` (merge or reference SHA)  
-> **Last Updated**: 2026-08-05
+> **Source**: MRS v1.5 intelligent service — `mrs/mcp/`
+> **Last Updated**: 2026-08-06
+> **Freeze**: [`docs/4drs/api/mrs-v1.5-service-freeze.md`](./4drs/api/mrs-v1.5-service-freeze.md)
+
+The MRS intelligent service is a single **Node.js** entry point (`mrs/mcp/server.js`)
+that serves three surfaces: MCP (port 8080), REST (port 8081), and OpenAPI (port 8082).
 
 ---
 
@@ -10,11 +13,8 @@
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| Python | 3.12+ | Required for MCP server |
-| Node.js | 22+ | For frontend/build tooling |
-| uv | latest | Fast Python package manager |
-| Docker Desktop | latest | For MRS API container |
-| Git | latest | Version control |
+| Node.js | 22+ | Required for MCP/REST server |
+| pnpm | 9+ | Workspace package manager |
 
 ---
 
@@ -23,67 +23,57 @@
 ```bash
 # Clone repository
 git clone <repo-url>
-cd Mandala-Rendering-System-MRS
+cd Mandala-Rendering-Software
 
-# Create and activate virtual environment
-python3 -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate    # Windows PowerShell
-
-# Upgrade pip and install core dependencies
-python -m pip install --upgrade pip
-python -m pip install \
-    "mcp==1.29.0" \
-    fastapi \
-    uvicorn \
-    httpx
-
-# Install MRS as editable package (REQUIRED for MCP)
-python -m pip install -e .
+# Install root + workspace deps
+npm install
+cd mrs && pnpm install
 ```
 
-> **Important**: Do **not** remove `pyproject.toml`. It enables `pip install -e .` which is required for MCP to discover the package.
+`pnpm install` links the internal packages (`@mrs/renderer-core`,
+`@mrs/engine3d-core`, `@mrs/scene-schema`, `@mrs/sovereign-x-router`) into
+`mrs/mcp/node_modules/@mrs/` as workspace junctions. **If smoke fails with
+`Cannot find module '@mrs/...'`, re-run `pnpm install` in `mrs/`.**
 
 ---
 
 ## Project Layout
 
 ```
-Mandala-Rendering-System-MRS/
-├── mrs/
-│   ├── app/              # FastAPI application
-│   ├── adapters/         # Runtime adapters
-│   ├── packages/         # Internal packages
-│   └── mcp/
-│       ├── client.py     # MCP client
-│       └── server.py     # MCP server (FastMCP)
-├── conformance/          # Conformance framework
-├── docs/                 # Documentation (add MCP_SETUP.md here)
-├── scripts/
-│   └── test-conformance.sh
-└── pyproject.toml        # Package config (keep this!)
+mrs/
+├── mcp/
+│   ├── server.js          # MCP (8080) + REST (8081) + OpenAPI (8082)
+│   ├── tool-registry.js   # 9 MCP tools
+│   ├── tools/             # health, ready, version, render, director-dep,
+│   │                      # sme-dispatch, sovereignx-route
+│   └── conformance-adapter.js  # lattice/constitutional gating adapter
+├── packages/              # renderer-core, engine3d-core, scene-schema, ...
+└── pnpm-workspace.yaml    # includes "mcp" as a workspace package
 ```
 
 ---
 
-## Running MRS (Docker)
+## Running the Service
 
 ```bash
-# Build image
-docker build -t mrs:test .
-
-# Run container
-docker run \
-    -p 8000:8000 \
-    mrs:test
+# From repo root — starts MCP (8080), REST (8081), OpenAPI (8082)
+npm run service:mcp
 ```
 
-### Verify MRS Health
+| Port | Surface | URL |
+|------|---------|-----|
+| 8080 | MCP JSON-RPC (POST) | `http://localhost:8080/` |
+| 8081 | REST API | `http://localhost:8081/health` |
+| 8082 | OpenAPI spec | `http://localhost:8082/openapi.json` |
+
+Port overrides: `MRS_MCP_PORT` (default 8080), `MRS_REST_PORT` (default 8081).
+
+### Verify Health
 
 ```bash
-curl http://localhost:8000/health
-curl http://localhost:8000/ready
-curl http://localhost:8000/version
+curl http://localhost:8081/health
+curl http://localhost:8081/ready
+curl http://localhost:8081/version
 ```
 
 **Expected `/ready` response:**
@@ -96,105 +86,70 @@ curl http://localhost:8000/version
 
 ---
 
-## Running MCP Server
+## MCP Tools (9)
+
+| toolId | Description |
+|--------|-------------|
+| `mrs.health` | Basic health check |
+| `mrs.ready` | Readiness (core deps initialized) |
+| `mrs.version` | Version + build metadata |
+| `mrs.render.rt4d` | Constitutionally-governed 4D render |
+| `mrs.director.dep` | Director DEP workflow: Plan → Route → Supervise → Enforce |
+| `mrs.sme.dispatch` | Dispatch to SME modules (txt, vis, aud, vid, gen, log, core) |
+| `mrs.sovereignx.route` | Route render via Sovereign X scheduler |
+| `mrs.sovereignx.stats` | Sovereign X router statistics |
+| `mrs.sovereignx.hip.detect` | HIP/ROCm SDK availability detection |
+
+MCP tool invocation (port 8080):
+
+```json
+POST /
+{ "toolId": "mrs.health", "params": {}, "context": {} }
+```
+
+---
+
+## REST Surface (port 8081)
+
+| Method | Path | Tool equivalent |
+|--------|------|-----------------|
+| `GET` | `/health` | `mrs.health` |
+| `GET` | `/ready` | `mrs.ready` |
+| `GET` | `/version` | `mrs.version` |
+| `POST` | `/render` | `mrs.render.rt4d` |
+| `POST` | `/api/v1/dep/execute` | `mrs.director.dep` |
+| `POST` | `/api/v1/sme/dispatch` | `mrs.sme.dispatch` |
+| `POST` | `/api/v1/sovereignx/route` | `mrs.sovereignx.route` |
+| `GET` | `/api/v1/sovereignx/stats` | `mrs.sovereignx.stats` |
+| `POST` | `/api/v1/sovereignx/hip/detect` | `mrs.sovereignx.hip.detect` |
+| `GET` | `/openapi.json` | OpenAPI 3.1 spec |
+
+---
+
+## Verification
 
 ```bash
-# Activate venv
-source .venv/bin/activate
-
-# Run MCP server (stays running)
-mcp run mrs/mcp/server.py
-```
-
-### Open MCP Inspector
-
-```bash
-# In a separate terminal
-source .venv/bin/activate
-mcp dev \
-    -e . \
-    mrs/mcp/server.py
-```
-
-**Inspector should show:** `Connected`
-
----
-
-## Current MCP Tools
-
-| Tool | Description |
-|------|-------------|
-| `health()` | Check service health |
-| `ready()` | Check readiness |
-| `version()` | Get version info |
-
-These map to the FastAPI endpoints: `/health`, `/ready`, `/version`.
-
----
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MRS_BASE_URL` | `http://localhost:8000` | MRS API base URL |
-| `MRS_BASE_URL` | `https://<cloudflare-url>` | Cloudflare tunnel URL (optional) |
-
-```bash
-export MRS_BASE_URL=http://localhost:8000
-# Or for cloudflare:
-export MRS_BASE_URL=https://xxxxx.trycloudflare.com
+npm run test:conformance   # 17/17 COMPLIANT
+npm run service:mcp:smoke  # pass: true
+npm run test:mcp           # 7/7
+npm run test:lattice       # 34/34
+npm test                   # full suite
 ```
 
 ---
 
-## Cloudflare Tunnel (Optional)
+## Localhost vs. ChatGPT
 
-Expose local MRS to internet for remote MCP clients:
+The local service listens on `localhost` only — **ChatGPT cannot reach
+`localhost:8080/8081/8082`**. For ChatGPT integration, the canonical path is the
+hosted AWS gateway:
 
-```bash
-# Start tunnel
-cloudflared tunnel --url http://localhost:8000
-# Output: https://xxxxx.trycloudflare.com
+- Base URL: `https://zs8hkz982h.execute-api.us-east-2.amazonaws.com/dev`
+- OpenAPI import: `<base>/openapi.json`
+- Auth: fail-closed (unauth requests → 401)
+- Setup: [`docs/4drs/api/chatgpt-actions-setup-pack.md`](./4drs/api/chatgpt-actions-setup-pack.md)
 
-# Set env var
-export MRS_BASE_URL=https://xxxxx.trycloudflare.com
-```
-
----
-
-## ChatGPT MCP Integration
-
-Configure ChatGPT to use MRS via MCP:
-
-**Command:** `uv`  
-**Arguments:**
-```
-run
---with
-mcp
---with-editable
-/path/to/Mandala-Rendering-System-MRS
-mcp
-run
-mrs/mcp/server.py
-```
-
-Replace `/path/to/Mandala-Rendering-System-MRS` with the actual absolute path.
-
----
-
-## Core Files Reference
-
-These are the essential files for understanding/reproducing the integration:
-
-| File | Purpose |
-|------|---------|
-| `pyproject.toml` | Package configuration (editable install) |
-| `mrs/mcp/server.py` | FastMCP server definition |
-| `mrs/mcp/client.py` | MCP client utilities |
-| `mrs/apps/genblaze-media/app/main.py` | Example FastAPI app |
-| `scripts/test-conformance.sh` | Conformance test runner |
-| `conformance/` | Conformance framework |
+Cloudflare tunnels and Docker port 8000 from earlier iterations are **obsolete**.
 
 ---
 
@@ -202,49 +157,20 @@ These are the essential files for understanding/reproducing the integration:
 
 | Issue | Solution |
 |-------|----------|
-| `ModuleNotFoundError: mrs` | Run `pip install -e .` from repo root |
-| MCP Inspector shows disconnected | Ensure `mcp run` is running in another terminal |
-| Docker port 8000 conflict | Stop other services on 8000 or change port |
-| Cloudflare tunnel fails | Check `cloudflared` is installed and authenticated |
-| ChatGPT can't connect | Verify `MRS_BASE_URL` matches running server URL |
-
----
-
-## Current Status (as of 2026-08-05)
-
-- ✅ FastAPI operational contract (`/health`, `/ready`, `/version`)
-- ✅ Docker build & run
-- ✅ Conformance framework
-- ✅ MCP Inspector connected
-- ✅ Python editable package install
-- ✅ FastMCP integration
-
----
-
-## Next Steps
-
-1. **Merge `feat/mcp-001-scaffold`** into main or note commit SHA
-2. **Extend MCP tools** beyond health/ready/version (render, DEP, SME, etc.)
-3. **Add authentication** to MCP server for production
-4. **Document tool schemas** in `docs/MCP_TOOLS.md`
-5. **Wire MCP into desktop app** (chat ingest, render triggers)
+| `Cannot find module '@mrs/...'` | Re-run `pnpm install` in `mrs/` (workspace junctions) |
+| Port 8080/8081 conflict | Set `MRS_MCP_PORT` / `MRS_REST_PORT` |
+| ChatGPT can't connect | Use the AWS gateway URL, not localhost |
 
 ---
 
 ## Quick Reference Card
 
 ```bash
-# One-liner to start everything locally
-cd Mandala-Rendering-System-MRS && \
-docker build -t mrs:test . && \
-docker run -d -p 8000:8000 --name mrs-api mrs:test && \
-sleep 3 && \
-source .venv/bin/activate && \
-mcp run mrs/mcp/server.py
-```
+# Start everything locally
+npm run service:mcp
 
-Then in another terminal:
-```bash
-source .venv/bin/activate
-mcp dev -e . mrs/mcp/server.py
+# Verify
+curl http://localhost:8081/ready
+curl http://localhost:8081/version
+npm run service:mcp:smoke
 ```
