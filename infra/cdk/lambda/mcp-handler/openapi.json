@@ -3,7 +3,7 @@
     "info": {
     "title": "RT4D Scene Studio",
     "version": "0.3.0",
-    "description": "Create deterministic 4D scenes and render dimensional previews through the RT4D engine.\n\nAuthentication: API Key, type Bearer. In ChatGPT set the key value to your MRS API key only (ChatGPT prepends 'Bearer '). Do not embed the key in prompts, instructions, or this schema.\n\nStatus: partial - dimensional previews, not photoreal anime. For a single-call workflow use render_rt4d_from_prompt (creates the scene and returns the preview image in one request). Otherwise: create scene, then render preview, then inspect provenance."
+    "description": "Create deterministic 4D scenes and render dimensional previews via the RT4D engine. Auth: API Key, Bearer — paste the key value only (ChatGPT prepends 'Bearer '); never embed the key in prompts, instructions, or this schema. Status: partial — dimensional previews, not photoreal anime."
   },
   "servers": [
     {
@@ -352,7 +352,7 @@
       "post": {
         "operationId": "render_rt4d_from_prompt",
         "summary": "Create a scene and render a preview in one call",
-        "description": "One-shot RT4D: creates a deterministic scene from a natural-language prompt and immediately renders a dimensional preview. Returns data.sceneId, data.previewUrl (pre-signed HTTPS PNG URL fetchable by any browser), data.sha256, render bundle hashes, and shot evidence. Display the previewUrl as an image. Prefer this over chaining create_rt4d_scene then render_rt4d_preview for a single-call workflow.",
+        "description": "One-shot RT4D: creates a deterministic scene from a prompt and renders a dimensional preview. Returns data.sceneId, data.previewUrl (pre-signed PNG), data.sha256, render bundle hashes, and shot evidence. Display previewUrl as an image. Prefer over chaining create_rt4d_scene + render_rt4d_preview.",
         "requestBody": {
           "required": true,
           "content": {
