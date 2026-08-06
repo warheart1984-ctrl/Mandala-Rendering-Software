@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sme.mandala.io/contracts/v1/routing-request.json",
+  "title": "RoutingRequest",
+  "version": "1.0.0",
+  "description": "Canonical intent entering the constitutional runtime. Submitted by MRS to Sovereign X Router.",
+  "type": "object",
+  "required": ["request_id", "intent", "actor_id", "authority_chain", "lawbook_chain"],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Globally unique request identifier"
+    },
+    "intent": {
+      "type": "object",
+      "required": ["goal", "modality", "constraints"],
+      "properties": {
+        "goal": { "type": "string", "description": "Natural language goal" },
+        "modality": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["text", "image", "audio", "video", "generation"] },
+          "minItems": 1
+        },
+        "constraints": {
+          "type": "object",
+          "properties": {
+            "max_latency_ms": { "type": "integer", "minimum": 1, "default": 5000 },
+            "max_cost_usd": { "type": "number", "minimum": 0, "default": 0.01 },
+            "privacy": { "type": "string", "enum": ["local", "private", "public"], "default": "local" },
+            "deterministic": { "type": "boolean", "default": true },
+            "evidence_level": { "type": "string", "enum": ["full", "summary", "none"], "default": "full" }
+          },
+          "required": ["max_latency_ms", "max_cost_usd", "privacy", "deterministic", "evidence_level"]
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "description": "Modality-specific payload (text, image base64, audio base64, video base64)"
+    },
+    "actor_id": {
+      "type": "string",
+      "description": "Actor identity (e.g., mrs-user-123)"
+    },
+    "authority_chain": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Authority chain from requester to router"
+    },
+    "lawbook_chain": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["authority", "validation", "decision", "evidence", "verification", "replay", "audit"] },
+      "description": "Constitutional lawbook chain to enforce"
+    }
+  },
+  "contract_metadata": {
+    "schema_version": "1.0.0",
+    "contract_id": "routing-request",
+    "contract_version": "1.0.0",
+    "compatible_versions": ["1.0.0"],
+    "migration_policy": "backward_compatible",
+    "deterministic_replay_guaranteed": true,
+    "evidence_requirements": [
+      "intent_declaration",
+      "agent_dispatch_log",
+      "output_collection",
+      "policy_validation",
+      "approval_record"
+    ]
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sme.mandala.io/contracts/v1/constitutional-maturity-manifest.json",
+  "title": "Constitutional Maturity Manifest (CMM)",
+  "version": "1.0.0",
+  "description": "Constitutional Maturity Manifest - certifies the constitutional maturity of an implementation",
+  "type": "object",
+  "required": ["manifest_id", "subject_id", "subject_type", "maturity_gate", "certification_timestamp", "certified_by", "gate_evidence", "lineage_chain", "governance_lifecycle", "evidence_requirements", "replay_guarantees"],
+  "properties": {
+    "manifest_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique manifest identifier"
+    },
+    "subject_id": {
+      "type": "string",
+      "description": "ID of the certified subject (implementation, module, contract, etc.)"
+    },
+    "subject_type": {
+      "type": "string",
+      "enum": ["module", "contract", "pipeline", "policy", "component", "service", "infrastructure"],
+      "description": "Type of certified subject"
+    },
+    "maturity_gate": {
+      "type": "string",
+      "enum": ["SUBSTRATION", "SUBSTRATE", "CONFORMANCE", "IMPLEMENTATION", "DEPLOYMENT", "STEWARDSHIP"],
+      "description": "Maturity gate achieved"
+    },
+    "certification_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of certification"
+    },
+    "certified_by": {
+      "type": "string",
+      "description": "Actor or authority that granted certification"
+    },
+    "gate_evidence": {
+      "type": "object",
+      "required": ["conformance_results", "evidence_bundles", "replay_verification", "audit_trail"],
+      "properties": {
+        "conformance_results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["check_id", "passed", "duration_ms", "evidence_ref"],
+            "properties": {
+              "check_id": { "type": "string" },
+              "passed": { "type": "boolean" },
+              "duration_ms": { "type": "integer", "minimum": 0 },
+              "evidence_ref": { "type": "string", "format": "uuid" }
+            }
+          }
+        },
+        "evidence_bundles": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" }
+        },
+        "replay_verification": {
+          "type": "object",
+          "required": ["deterministic", "replay_handle", "merkle_root"],
+          "properties": {
+            "deterministic": { "type": "boolean" },
+            "replay_handle": { "type": "string", "format": "uuid" },
+            "merkle_root": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          }
+        },
+        "audit_trail": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["timestamp", "actor", "action", "hash"],
+            "properties": {
+              "timestamp": { "type": "string", "format": "date-time" },
+              "actor": { "type": "string" },
+              "action": { "type": "string" },
+              "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+            }
+          }
+        }
+      }
+    },
+    "lineage_chain": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["subject_id", "subject_type", "certification_gate", "certified_by", "timestamp"],
+        "properties": {
+          "subject_id": { "type": "string" },
+          "subject_type": { "type": "string" },
+          "certification_gate": { "type": "string" },
+          "certified_by": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "governance_lifecycle": {
+      "type": "object",
+      "required": ["status", "certified_at", "expires_at", "renewal_policy"],
+      "properties": {
+        "status": { "type": "string", "enum": ["active", "expired", "revoked", "superseded"] },
+        "certified_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "renewal_policy": { "type": "string", "enum": ["automatic", "manual", "reassessment_required"] },
+        "superseded_by": { "type": "string", "format": "uuid" }
+      }
+    },
+    "evidence_requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "const": [
+        "conformance_results",
+        "evidence_bundles",
+        "replay_verification",
+        "audit_trail",
+        "gate_evidence",
+        "lineage_chain"
+      ]
+    },
+    "replay_guarantees": {
+      "type": "object",
+      "required": ["deterministic_replay", "replay_handle", "merkle_root", "environment_snapshot"],
+      "properties": {
+        "deterministic_replay": { "type": "boolean", "const": true },
+        "replay_handle": { "type": "string", "format": "uuid" },
+        "merkle_root": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "environment_snapshot": { "type": "object" }
+      }
+    }
+  },
+  "contract_metadata": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "contract_id": { "type": "string", "const": "constitutional-maturity-manifest" },
+    "contract_version": { "type": "string", "const": "1.0.0" },
+    "compatible_versions": { "type": "array", "items": { "type": "string" }, "const": ["1.0.0"] },
+    "migration_policy": { "type": "string", "const": "backward_compatible" },
+    "deterministic_replay_guaranteed": { "type": "boolean", "const": true },
+    "evidence_requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "const": [
+        "conformance_results",
+        "evidence_bundles",
+        "replay_verification",
+        "audit_trail",
+        "gate_evidence",
+        "lineage_chain"
+      ]
+    }
+  }
+}

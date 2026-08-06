@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sme.mandala.io/contracts/v1/evidence-bundle.json",
+  "title": "EvidenceBundle",
+  "version": "1.0.0",
+  "description": "Complete evidence bundle for an intent execution. Produced by Sovereign X Router after full constitutional chain execution.",
+  "type": "object",
+  "required": ["bundle_id", "intent_id", "world_id", "timeline_id", "artifacts", "frames", "merkle_root", "created_at"],
+  "properties": {
+    "bundle_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique bundle identifier"
+    },
+    "intent_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Original request intent ID"
+    },
+    "world_id": {
+      "type": "string",
+      "description": "World identifier"
+    },
+    "timeline_id": {
+      "type": "string",
+      "description": "Timeline identifier"
+    },
+    "artifacts": {
+      "type": "object",
+      "description": "Artifacts keyed by artifact_id",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["artifact_id", "bundle_id", "artifact_type", "data", "checksum", "created_at"],
+        "properties": {
+          "artifact_id": { "type": "string" },
+          "bundle_id": { "type": "string" },
+          "artifact_type": { "type": "string", "enum": ["embedding", "transcript", "generation", "decision", "frame", "audio", "video"] },
+          "data": { "type": "object" },
+          "checksum": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["frame_id", "intent_id", "world_id", "timeline_id", "time_seconds", "parameters", "substrate", "shapes", "dtypes", "seed", "evidence_refs"],
+        "properties": {
+          "frame_id": { "type": "string", "format": "uuid" },
+          "intent_id": { "type": "string", "format": "uuid" },
+          "world_id": { "type": "string" },
+          "timeline_id": { "type": "string" },
+          "time_seconds": { "type": "number", "minimum": 0 },
+          "parameters": { "type": "object" },
+          "substrate": { "type": "string", "enum": ["CPU_AVX2", "CPU_AVX512", "GPU_CUDA_10", "GPU_CUDA_11"] },
+          "kernel_call_id": { "type": "string", "format": "uuid" },
+          "shapes": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "integer" } } },
+          "dtypes": { "type": "object", "additionalProperties": { "type": "string" } },
+          "seed": { "type": "integer" },
+          "evidence_refs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "merkle_root": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Merkle root of all artifacts and frames"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Bundle creation timestamp"
+    },
+    "contract_metadata": {
+      "type": "object",
+      "required": ["schema_version", "contract_id", "contract_version", "compatible_versions", "migration_policy", "deterministic_replay_guaranteed", "evidence_requirements"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "1.0.0" },
+        "contract_id": { "type": "string", "const": "evidence-bundle" },
+        "contract_version": { "type": "string", "const": "1.0.0" },
+        "compatible_versions": { "type": "array", "items": { "type": "string" }, "const": ["1.0.0"] },
+        "migration_policy": { "type": "string", "const": "backward_compatible" },
+        "deterministic_replay_guaranteed": { "type": "boolean", "const": true },
+        "evidence_requirements": {
+          "type": "array",
+          "items": { "type": "string" },
+          "const": [
+            "intent_declaration",
+            "agent_dispatch_log",
+            "output_collection",
+            "policy_validation",
+            "approval_record",
+            "timestamp_chain",
+            "authority_chain",
+            "evidence_chain",
+            "mcp_provenance_chain",
+            "conformance_snapshot"
+          ]
+        }
+      }
+    }
+  }
+}

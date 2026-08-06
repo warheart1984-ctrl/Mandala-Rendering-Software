@@ -1,0 +1,12 @@
+pyproject.toml
+src/__init__.py
+src/embed/extractor.py
+src/ifc/aud_ifc.py
+src/sme_aud.egg-info/PKG-INFO
+src/sme_aud.egg-info/SOURCES.txt
+src/sme_aud.egg-info/dependency_links.txt
+src/sme_aud.egg-info/requires.txt
+src/sme_aud.egg-info/top_level.txt
+src/whisper/transcribe.py
+src/whisper/wrapper.py
+tests/test_aud.py

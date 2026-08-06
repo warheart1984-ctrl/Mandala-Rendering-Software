@@ -163,6 +163,21 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
+  mcp:
+    dependencies:
+      '@mrs/engine3d-core':
+        specifier: workspace:*
+        version: link:../packages/engine3d-core
+      '@mrs/renderer-core':
+        specifier: workspace:*
+        version: link:../packages/renderer-core
+      '@mrs/scene-schema':
+        specifier: workspace:*
+        version: link:../packages/scene-schema
+      '@mrs/sovereign-x-router':
+        specifier: workspace:*
+        version: link:../packages/sovereign-x-router
+
   packages/engine3d-core:
     devDependencies:
       '@types/node':

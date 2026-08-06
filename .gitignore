@@ -79,6 +79,15 @@ tmp/
 .worktrees/
 renders/
 
+# Runtime logs and probe artifacts (evidence/traces are regenerable)
+logs/
+*.err
+test_pollinations.png
+test_tts.mp3
+
+# CDK context (local synth state)
+infra/cdk/cdk.context.json
+
 # HIP hello binary under proofs (JSON compile proof is SoT; rebuild with hipcc)
 docs/4d-engine/proofs/legacy-efficient/hip_hello.exe
 docs/4d-engine/proofs/legacy-efficient/*.exe
@@ -102,6 +111,23 @@ operator-assets/**/*.bin
 !sme/dist/
 !sme/dist/lattice/
 !sme/dist/lattice/**
+sme/dist/models/
+sme/dist/node_modules/
+
+# ARIS is a separate project (own git repo) — never absorb into MRS
+Aris-/
+
+# SME model weights and binaries — never tracked
+models/
+sme-suite/models/
+
+# SME native build artifacts + vendored third-party (llama.cpp, whisper.cpp, onnxruntime)
+sme-suite/build/
+sme-suite/modules/*/build/
+sme-suite/third_party/
+
+# Parallel native working copy (canonical native source lives under sme-suite/modules)
+modules/
 
 # Mandala desktop app — binaries, weights, and secrets are never tracked
 mandala-app/models/

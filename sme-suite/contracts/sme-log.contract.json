@@ -1,0 +1,14 @@
+{
+  "$schema": "./contract.schema.json",
+  "module": "sme-log",
+  "contractId": "contract.sme-log.v1",
+  "version": "1.0.0",
+  "authority": "implement",
+  "invariants": [
+    { "id": "log_store_exists",    "description": "audit log store (SQLite/JSONL) exists and is writable" },
+    { "id": "entry_valid",         "description": "log entry has required fields: timestamp, actor, action, module, payload" },
+    { "id": "append_succeeds",     "description": "log entry successfully appended to store" },
+    { "id": "query_works",         "description": "can query log entries by time range, actor, module" }
+  ],
+  "evidenceChain": ["intent", "authority", "validation", "decision", "output", "verification", "replay", "audit"]
+}

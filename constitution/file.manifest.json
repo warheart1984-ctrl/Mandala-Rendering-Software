@@ -1,0 +1,143 @@
+{
+  "version": "1.0",
+  "generated": "2026-08-04T15:30:00Z",
+  "constitutionalFiles": [
+    {
+      "path": "constitution/CHARTER.md",
+      "sha256": "PENDING",
+      "description": "Human-readable constitutional charter"
+    },
+    {
+      "path": "engine/constitution/charter.js",
+      "sha256": "PENDING",
+      "description": "Machine-readable charter (SoT)"
+    },
+    {
+      "path": "engine/constitution/contracts.js",
+      "sha256": "PENDING",
+      "description": "Authority contracts for actors"
+    },
+    {
+      "path": "engine/governance/policies/default.policies.json",
+      "sha256": "PENDING",
+      "description": "Runtime policy rules"
+    },
+    {
+      "path": "engine/conformance/default.conformance-profile.json",
+      "sha256": "PENDING",
+      "description": "Conformance check profile (22/22 checks + 8 replay checks = 30 total)"
+    },
+    {
+      "path": "constitution/file.manifest.json",
+      "sha256": "PENDING",
+      "description": "This file manifest"
+    },
+    {
+      "path": "constitution/replay.contract.json",
+      "sha256": "PENDING",
+      "description": "Director Replay Contract (DRC v1.0) specification"
+    },
+    {
+      "path": "constitution/replay.acceptance.json",
+      "sha256": "PENDING",
+      "description": "DRC acceptance criteria (12 criteria)"
+    }
+  ],
+  "directorAgent": {
+    "type": "Director Agent",
+    "scope": "Full MRS Director (Option B)",
+    "contractId": "contract.director.v1",
+    "status": "enforced",
+    "coordinates": [
+      "architect",
+      "builder",
+      "implementor",
+      "inspector",
+      "reviewer",
+      "engineer-standards"
+    ],
+    "mcpToolAccess": [
+      "render_rt4d_preview",
+      "storyforge_build_narrative",
+      "storyforge_full_pipeline",
+      "beatbox_score_narrative",
+      "speakers_mix_audio",
+      "compute_engine_spiral_state",
+      "query_knowledge_platform"
+    ],
+    "evidenceRequirements": [
+      "intent_declaration",
+      "agent_dispatch_log",
+      "output_collection",
+      "policy_validation",
+      "approval_record"
+    ],
+    "conformanceChecks": [
+      "binding.director-contract-exists",
+      "authority.chain-valid",
+      "governance.no-implicit-escalation",
+      "execution.no-cross-layer-mutation"
+    ]
+  },
+  "replayAgent": {
+    "type": "Replay Agent",
+    "scope": "Replay Only (Subordinate to Director)",
+    "contractId": "contract.replay.v1",
+    "status": "enforced",
+    "authority": "replay-only",
+    "forbiddenActions": [
+      "execute_specialist_work",
+      "mutate_artifacts",
+      "generate_artifacts",
+      "invoke_external",
+      "interpret",
+      "escalate_authority",
+      "alter_evidence"
+    ],
+    "requiredEvidence": [
+      "intent_declaration",
+      "agent_dispatch_log",
+      "output_collection",
+      "policy_validation",
+      "approval_record",
+      "timestamp_chain",
+      "authority_chain",
+      "evidence_chain",
+      "mcp_provenance_chain",
+      "conformance_snapshot"
+    ],
+    "conformanceChecks": [
+      "replay.binding.director-contract-exists",
+      "replay.authority.chain-valid",
+      "replay.governance.no-implicit-escalation",
+      "replay.execution.no-cross-layer-mutation",
+      "replay.evidence-chain-complete",
+      "replay.provenance-chain-complete",
+      "replay.timestamp-chain-consistent",
+      "replay.approval-chain-valid"
+    ]
+  },
+  "protectedFiles": [
+    "constitution/CHARTER.md",
+    "engine/constitution/charter.js",
+    "engine/constitution/contracts.js",
+    "engine/governance/policies/default.policies.json",
+    "engine/conformance/default.conformance-profile.json",
+    "constitution/file.manifest.json",
+    "constitution/replay.contract.json",
+    "constitution/replay.acceptance.json"
+  ],
+  "conformanceProfile": "engine/conformance/default.conformance-profile.json",
+  "acceptanceCriteria": {
+    "directorContractExists": "contract.director.v1 exists with status: enforced in contracts.js",
+    "directorPrincipleEnforced": "director-coordination-authority and director-never-executes principles have status: enforced in charter.js",
+    "directorPoliciesActive": "All director policies (policy-director-contract-required, policy-director-no-execution, policy-director-mcp-provenance) present in default.policies.json with severity: critical/high",
+    "directorConformanceChecks": "All 4 director conformance checks (binding.director-contract-exists, binding.resolver-exists, authority.chain-valid, governance.no-implicit-escalation, execution.no-cross-layer-mutation) present in conformance profile with severity: critical/high",
+    "directorContractEnforced": "contract.director.v1 has status: enforced in contracts.js with proper mcpToolAccess for Option B",
+    "directorNeverExecutes": "constitutional rule 'Director agents may coordinate but never execute' enforced via policy-director-no-execution and charter principle director-never-executes",
+    "mcpToolAccessComplete": "Director contract includes all Option B MCP tools: render_rt4d_preview, storyforge_build_narrative, storyforge_full_pipeline, beatbox_score_narrative, speakers_mix_audio, compute_engine_spiral_state, query_knowledge_platform",
+    "evidenceRequirementsDefined": "Director contract includes all 5 evidence requirements",
+    "conformanceChecksDefined": "Director contract includes all 4 conformance checks",
+    "forbiddenActionsComplete": "Director contract includes execute_specialist_work and mutate_artifacts_directly in forbiddenActions"
+  }
+}

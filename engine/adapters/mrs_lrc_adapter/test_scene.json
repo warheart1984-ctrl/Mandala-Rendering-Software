@@ -1,0 +1,9 @@
+{
+  "scene_id": "test-scene-001",
+  "world_id": "test-world-001",
+  "hypersurface": {"type": "gyroid", "params": {"frequency": 1.0}},
+  "materials": {"default": {"brdf": "ggx4d", "albedo": [0.8, 0.8, 0.8], "roughness": 0.3}},
+  "lights": [{"type": "point4d", "position": [0, 0, 5, 2], "intensity": 100}],
+  "camera": {"position": [0, 0, 10, 0], "look_at": [0, 0, 0, 0], "fov": 60},
+  "timeline": {"duration": 10.0, "frame_rate": 30}
+}

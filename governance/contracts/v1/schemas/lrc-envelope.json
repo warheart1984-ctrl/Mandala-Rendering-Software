@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sme.mandala.io/contracts/v1/lrc-envelope.json",
+  "title": "LRCEnvelope",
+  "version": "1.0.0",
+  "description": "LRC Envelope - wraps every module call with constitutional metadata",
+  "type": "object",
+  "required": ["envelope_id", "origin_node", "target_node", "actor_id", "action", "lawbook_chain", "payload", "evidence_requirements"],
+  "properties": {
+    "envelope_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique envelope identifier"
+    },
+    "origin_node": {
+      "type": "string",
+      "const": "sovereign-x-router",
+      "description": "Must be sovereign-x-router"
+    },
+    "target_node": {
+      "type": "string",
+      "enum": ["sme-txt", "sme-vis", "sme-aud", "sme-vid", "sme-gen", "sme-log"],
+      "description": "Target SME module"
+    },
+    "actor_id": {
+      "type": "string",
+      "description": "Actor identity from request"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["encode", "transcribe", "complete", "generate", "replay", "audit"],
+      "description": "Module action to execute"
+    },
+    "lawbook_chain": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["authority", "validation", "decision", "evidence", "verification", "replay", "audit"] },
+      "const": ["authority", "validation", "decision", "evidence", "verification", "replay", "audit"]
+    },
+    "payload": {
+      "type": "object",
+      "description": "Module-specific payload"
+    },
+    "evidence_requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Required evidence fields for this call"
+    },
+    "contract_metadata": {
+      "type": "object",
+      "required": ["schema_version", "contract_id", "contract_version", "compatible_versions", "migration_policy", "deterministic_replay_guaranteed", "evidence_requirements"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "1.0.0" },
+        "contract_id": { "type": "string", "const": "lrc-envelope" },
+        "contract_version": { "type": "string", "const": "1.0.0" },
+        "compatible_versions": { "type": "array", "items": { "type": "string" }, "const": ["1.0.0"] },
+        "migration_policy": { "type": "string", "const": "backward_compatible" },
+        "deterministic_replay_guaranteed": { "type": "boolean", "const": true },
+        "evidence_requirements": {
+          "type": "array",
+          "items": { "type": "string" },
+          "const": [
+            "intent_declaration",
+            "agent_dispatch_log",
+            "output_collection",
+            "policy_validation",
+            "approval_record",
+            "timestamp_chain",
+            "authority_chain",
+            "evidence_chain",
+            "mcp_provenance_chain",
+            "conformance_snapshot"
+          ]
+        }
+      }
+    }
+  }
+}

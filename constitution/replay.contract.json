@@ -1,0 +1,112 @@
+{
+  "id": "contract.replay.v1",
+  "actor": "4dce.replay",
+  "status": "enforced",
+  "authority": "replay-only",
+  "description": "Director Replay Contract (DRC v1.0) - Constitutional Replay Layer for Coordinated Intelligence Systems (CIEMS)",
+  "purpose": [
+    "Ensure every Director action is replayable",
+    "Ensure every replay is evidence-backed",
+    "Ensure every replay is verifiable",
+    "Ensure every replay is auditable",
+    "No replay can alter constitutional state",
+    "No replay can escalate authority",
+    "No replay can produce new artifacts",
+    "Replay is non-executive, non-mutative, non-interpretive"
+  ],
+  "authorityClass": "Replay Only",
+  "subordinateTo": [
+    "Constitutional Authority",
+    "Director Coordination Authority",
+    "Specialist Execution Authority",
+    "Evidence Verification Authority",
+    "Audit Authority"
+  ],
+  "forbiddenActions": [
+    "execute_specialist_work",
+    "mutate_artifacts",
+    "generate_artifacts",
+    "invoke_external",
+    "interpret",
+    "escalate_authority",
+    "alter_evidence"
+  ],
+  "requiredEvidence": [
+    "intent_declaration",
+    "agent_dispatch_log",
+    "output_collection",
+    "policy_validation",
+    "approval_record",
+    "timestamp_chain",
+    "authority_chain",
+    "evidence_chain",
+    "mcp_provenance_chain",
+    "conformance_snapshot"
+  ],
+  "conformanceChecks": [
+    "replay.binding.director-contract-exists",
+    "replay.authority.chain-valid",
+    "replay.governance.no-implicit-escalation",
+    "replay.execution.no-cross-layer-mutation",
+    "replay.evidence-chain-complete",
+    "replay.provenance-chain-complete",
+    "replay.timestamp-chain-consistent",
+    "replay.approval-chain-valid"
+  ],
+  "replayRecordFields": [
+    "intent_declaration",
+    "agent_dispatch_log",
+    "output_collection",
+    "policy_validation",
+    "approval_record",
+    "timestamp_chain",
+    "authority_chain",
+    "evidence_chain",
+    "mcp_provenance_chain",
+    "conformance_snapshot"
+  ],
+  "replayTranscriptFields": [
+    "full_coordination_sequence",
+    "full_evidence_chain",
+    "full_authority_chain",
+    "full_policy_validation_chain",
+    "full_conformance_snapshot",
+    "full_mcp_provenance_chain",
+    "full_approval_chain",
+    "replay_deltas"
+  ],
+  "replayAuditRecordFields": [
+    "replay_initiator",
+    "replay_timestamp",
+    "replay_scope",
+    "replay_evidence_completeness",
+    "replay_conformance_results",
+    "replay_transcript_hash",
+    "replay_audit_hash",
+    "replay_constitutional_signature"
+  ],
+  "constitutionalInvariants": [
+    "Replay cannot produce new evidence",
+    "Replay cannot alter existing evidence",
+    "Replay cannot alter constitutional state",
+    "Replay cannot escalate authority",
+    "Replay cannot invoke MCP tools",
+    "Replay cannot generate artifacts",
+    "Replay cannot interpret content",
+    "Replay cannot mutate models",
+    "Replay cannot mutate runtime state",
+    "Replay is strictly read-only"
+  ],
+  "ratificationRequirements": [
+    "Added to constitution/file.manifest.json",
+    "Bound to JCR",
+    "Bound to CSR",
+    "Bound to CSE",
+    "Bound to CAS",
+    "Bound to Director Contract v1",
+    "Bound to Conformance Profile",
+    "Bound to Governance Policies",
+    "Bound to Authority Chain",
+    "Approved by constitutional acceptance criteria"
+  ]
+}

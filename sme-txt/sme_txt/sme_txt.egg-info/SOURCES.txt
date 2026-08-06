@@ -1,0 +1,15 @@
+pyproject.toml
+src/__init__.py
+src/ifc/txt_ifc.py
+src/models/gguf.py
+src/models/loader.py
+src/models/quantization.py
+src/models/safetensors.py
+src/sme_txt.egg-info/PKG-INFO
+src/sme_txt.egg-info/SOURCES.txt
+src/sme_txt.egg-info/dependency_links.txt
+src/sme_txt.egg-info/requires.txt
+src/sme_txt.egg-info/top_level.txt
+src/tokenizer/chat_template.py
+src/tokenizer/hf_tokenizer.py
+tests/test_txt.py

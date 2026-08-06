@@ -1,0 +1,13 @@
+{
+  "name": "nvidia-gpu-assist",
+  "version": "1.0.0",
+  "description": "NVIDIA CUDA/TAO/NIM assist capabilities for Sovereign X Router",
+  "capabilities": [
+    "gpu.gen.nvidia.nim_flux",
+    "gpu.inference.nvidia.tao",
+    "gpu.compute.nvidia.cuda"
+  ],
+  "entrypoint": "index.js",
+  "status": "declared",
+  "note": "Stubs only — no live GPU. Reload agent skills after install."
+}

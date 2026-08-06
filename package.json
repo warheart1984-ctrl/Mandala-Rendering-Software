@@ -76,7 +76,12 @@
     "sx:face-creation": "node sovereign-x/cli/sx-face-creation.mjs",
     "test:sovereign-x-parity": "node --test sovereign-x/tests/gpuParitySuite.test.js",
     "test:sovereign-x-promotion": "node --test sovereign-x/tests/gpuIntegratorPromotion.test.js",
-    "test:sovereign-x-sot": "node --test sovereign-x/tests/*.test.js"
+    "test:sovereign-x-sot": "node --test sovereign-x/tests/*.test.js",
+    "service:mcp": "node mrs/mcp/server.js",
+    "service:rest": "node mrs/mcp/server.js",
+    "service:mcp:smoke": "node scripts/mcp-smoke.mjs",
+    "test:mcp": "node --test mrs/mcp/tools/*.js",
+    "test:lattice": "node --test sme/dist/lattice/test/lattice.test.js"
   },
   "dependencies": {
     "4d-renderer": "file:./4d-renderer",
