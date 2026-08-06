@@ -1,0 +1,23 @@
+{
+  "name": "@mrs/mythar-encoder",
+  "version": "0.1.0",
+  "description": "Mythar → NSM prime → SceneSpec deterministic encoder (v2 front-end, declared)",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./primes": "./src/primes.js",
+    "./scenespec": "./src/scenespec.js",
+    "./mythar": "./src/mythar.js"
+  },
+  "files": [
+    "src/**/*.js",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
