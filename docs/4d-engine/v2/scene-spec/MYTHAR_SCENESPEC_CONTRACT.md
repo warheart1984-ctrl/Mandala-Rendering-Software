@@ -225,12 +225,56 @@ The actual mapping table is constitutional and fixed at implementation time; the
 - [ ] Prime→SceneSpec mapping table is finalized
 - [ ] This contract is a runtime gate (it is not; the frozen v1.5 hash path remains in force)
 - [ ] Synonym convergence thresholds (§6A) are validated against a live encoder
+- [ ] Path B (`render_rt4d_from_prompt_semantic`) is exposed in any runtime route (it is not — §9 gating)
 
 ---
 
-## 9. Rejection criteria
+## 9. Dual-path service design (hash vs semantic)
 
-This contract is satisfied only when: the encoder is deterministic, synonym convergence passes §6A thresholds, mode never mutates primes (§6C), replay is byte-identical (§6D), and the surface/mode vocabularies match the deployed engine (§4). Any of these failing means Mythar's projection is deterministic but not semantically coherent — and therefore **not** constitutionally acceptable as a front-end.
+> **Decision (architecture):** the v1.5 hash path is the authoritative runtime.
+> The Mythar/prime pipeline is v2 semantics only, and remains **inactive** until
+> the gates in §9.2 pass. This section is contract separation only — no Lambda
+> change.
+
+### 9.1 The two paths
+
+| | Path A — `render_rt4d_from_prompt_hash` (v1.5) | Path B — `render_rt4d_from_prompt_semantic` (v2) |
+| --- | --- | --- |
+| **Status** | **ACTIVE / authoritative** | **INACTIVE / declared** |
+| **Pipeline** | `sha256(prompt.lower)` → `buildSceneSpec` → SceneSpec | `MytharEncode` → `PrimitiveToPrimes` → `PrimesToSceneSpec` → SceneSpec |
+| **Semantic source** | digest (`promptHash` is semantic in v1.5) | Mythar/prime vector (`promptHash` is identity only) |
+| **Runtime location** | deployed Lambda (`index.mts` `buildSceneSpec`) | none — no route, no handler |
+| **Change policy** | frozen; no change without a new contract revision + §6 conformance | activation only via §9.2 gates |
+
+### 9.2 Activation gates — Path B stays inactive until BOTH pass
+
+| Gate | Criterion |
+| --- | --- |
+| **G1 · Mythar stable service** | Mythar runs as a stable, independently deployed service (§10) with a versioned API and a determinism guarantee |
+| **G2 · §6 conformance** | Synonym convergence (cosine ≥ 0.85), coherence, mode-override byte-identical primes, replay byte-identical — all passing against the live encoder |
+
+No partial activation. No silent routing. Until both gates pass, **Path A is the only route**.
+
+### 9.3 Route semantics during v2 activation (future, not now)
+
+- Default route remains Path A — behavior unchanged.
+- Path B is reached only by an **explicit** semantic request (new tool id / REST endpoint); never a silent swap.
+- Both paths stay independently testable, and a replay harness compares their outputs.
+
+---
+
+## 10. Deployment topology — Mythar as an external service
+
+- **Lambda = renderer only.** Lean runtime; no embedded Python/Mythar.
+- When v2 activates, Lambda calls the **Mythar microservice** over HTTP (versioned API, deterministic). Mythar returns the primitive/prime material; Lambda applies `PrimesToSceneSpec` locally (pure JS).
+- The encoder package (`mrs/packages/mythar-encoder`) stays independently deployable — it is bundled with the Mythar service, not the Lambda.
+- Keeps: AWS runtime simple · Mythar evolvable · contracts clean (**Lambda = renderer; Mythar = encoder**).
+
+---
+
+## 11. Rejection criteria
+
+This contract is satisfied only when: the encoder is deterministic, synonym convergence passes §6A thresholds, mode never mutates primes (§6C), replay is byte-identical (§6D), the surface/mode vocabularies match the deployed engine (§4), and both activation gates in §9.2 are met. Any of these failing means Mythar's projection is deterministic but not semantically coherent — and therefore **not** constitutionally acceptable as a front-end.
 
 ## Related
 
