@@ -1,28 +1,128 @@
 version: '3.9'
 
+# Production RT4D Anime Lane stack:
+# - genblaze-media: FLUX image generation + RT4D renderer backend (port 8000)
+# - rt4d-mcp: ChatGPT MCP plugin + interactive viewer (port 8010)
+# - (optional) redis: session cache / job queue
+
 services:
-  # 4D Rendering System (4DRS) — Browser host + CSSV dashboard
-  app:
+  # Genblaze media: prompt → FLUX → B2, RT4D renderer backend
+  genblaze-media:
     build:
       context: .
-      dockerfile: Dockerfile.4drs
-    container_name: 4drs-hackathon
+      dockerfile: Dockerfile
+    container_name: mrs-genblaze-media
+    restart: unless-stopped
     ports:
-      - "8080:8080"  # Browser host
-      - "3000:3000"  # CSSV dashboard
+      - "8000:8000"
     environment:
+      PORT: "8000"
       NODE_ENV: production
+      # Genblaze timeouts
+      GENBLAZE_HTTP_TIMEOUT: "600"
+      GENBLAZE_NVCF_TIMEOUT: "600"
+      GENBLAZE_PIPELINE_TIMEOUT: "720"
+      GENBLAZE_NVCF_POLL_SECONDS: "300"
+      GENBLAZE_EMPTY_504_RETRY: "0"
+      GENBLAZE_NVIDIA_WARMUP_ON_STARTUP: "1"
+      GENBLAZE_CONNECT_TIMEOUT: "30"
+      # Image backend (FLUX via NVIDIA NIM or RT4D fallback)
+      GENBLAZE_IMAGE_FALLBACK_TO_RT4D: "1"
+      GENBLAZE_IMAGE_BACKEND: "rt4d"
+      # RT4D render-still
+      RT4D_NODE_PATH: "node"
+      RT4D_SCRIPT_PATH: "/app/renderer-core/scripts/render-still.mjs"
+      RT4D_RENDER_WIDTH: "256"
+      RT4D_RENDER_HEIGHT: "256"
+      RT4D_SAMPLES: "6"
+      RT4D_TIMEOUT: "180"
+      # Scene spec rendering
+      SCENE_SPEC_SCRIPT_PATH: "/app/renderer-core/scripts/render-scene.mjs"
+      VALIDATE_SCENE_SPEC_SCRIPT_PATH: "/app/renderer-core/scripts/validate-scene-spec.mjs"
+      # Engine3D soft-raster stills
+      ENGINE3D_STILL_SCRIPT_PATH: "/app/engine3d-core/scripts/render-engine3d-still.mjs"
+      ENGINE3D_STILL_ENABLED: "1"
+      ENGINE3D_SEQUENCE_SCRIPT_PATH: "/app/engine3d-core/scripts/render-engine3d-sequence.mjs"
+      ENGINE3D_SEQUENCE_ENABLED: "1"
+      MRS_RENDER_OUTPUT_DIR: "/app/data/output"
+      MRS_RENDER_TIMEOUT_SECONDS: "120"
+      # Backblaze B2 S3-compatible
       B2_KEY_ID: ${B2_KEY_ID:-}
       B2_APPLICATION_KEY: ${B2_APPLICATION_KEY:-}
-      B2_BUCKET: ${B2_BUCKET:-your-mrs-assets-bucket}
-      B2_REGION: ${B2_REGION:-us-west-004}
-      B2_ENDPOINT: ${B2_ENDPOINT:-https://s3.us-west-004.backblazeb2.com}
-      B2_FORCE_PATH_STYLE: ${B2_FORCE_PATH_STYLE:-true}
+      B2_BUCKET: ${B2_BUCKET:-mrs-anime-renders}
+      B2_REGION: ${B2_REGION:-us-east-005}
+      B2_ENDPOINT: ${B2_ENDPOINT:-https://s3.us-east-005.backblazeb2.com}
+      B2_FORCE_PATH_STYLE: "true"
+      # NVIDIA (if using NIM instead of RT4D fallback)
       NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      GENBLAZE_IMAGE_MODEL: ${GENBLAZE_IMAGE_MODEL:-black-forest-labs/flux.1-schnell}
+    volumes:
+      - genblaze_output:/app/data/output
+      - genblaze_cache:/app/data
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - rt4d-anime
+
+  # RT4D ChatGPT MCP Plugin: interactive 4D viewer + MCP tools
+  rt4d-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.rt4d-mcp
+    container_name: mrs-rt4d-mcp
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    environment:
+      NODE_ENV: production
+      PORT: "8010"
+      RT4D_PLUGIN_PORT: "8010"
+      # Point to Genblaze backend for render previews (preferred)
+      RT4D_ENGINE_URL: "http://genblaze-media:8000"
+      RT4D_ENGINE_TIMEOUT_MS: "120000"
+      # Optional: API key if Genblaze requires bearer auth
+      # RT4D_API_KEY: ${RT4D_API_KEY:-}
+    depends_on:
+      genblaze-media:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8010/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-    restart: unless-stopped
+    networks:
+      - rt4d-anime
+
+  # (Optional) Redis: session cache, job queue, render result streaming
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: mrs-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #   networks:
+  #     - rt4d-anime
+
+volumes:
+  genblaze_output:
+    driver: local
+  genblaze_cache:
+    driver: local
+  # redis_data:
+  #   driver: local
+
+networks:
+  rt4d-anime:
+    driver: bridge
