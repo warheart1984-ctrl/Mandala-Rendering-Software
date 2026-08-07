@@ -1,0 +1,209 @@
+{
+  "version": "1.0",
+  "checks": [
+    {
+      "id": "binding.fundingos-contract-exists",
+      "domain": "binding",
+      "description": "Every FundingOS agent has a valid constitutional contract registered.",
+      "severity": "critical"
+    },
+    {
+      "id": "binding.mrs-contract-exists",
+      "domain": "binding",
+      "description": "Every MRS crew agent has a valid constitutional contract registered.",
+      "severity": "critical"
+    },
+    {
+      "id": "binding.director-contract-exists",
+      "domain": "binding",
+      "description": "MRS Director agent has a valid constitutional contract registered.",
+      "severity": "critical"
+    },
+    {
+      "id": "binding.resolver-exists",
+      "domain": "binding",
+      "description": "Runtime exposes a BindingResolver that maps all agent bindings including MRS crew.",
+      "severity": "high"
+    },
+    {
+      "id": "authority.fundingos-chain-valid",
+      "domain": "authority",
+      "description": "FundingOS authority chains are valid; no coordinate→execute collapse.",
+      "severity": "critical"
+    },
+    {
+      "id": "authority.strategy-chain-valid",
+      "domain": "authority",
+      "description": "Strategy division authority chain valid.",
+      "severity": "critical"
+    },
+    {
+      "id": "authority.portfolio-chain-valid",
+      "domain": "authority",
+      "description": "Portfolio division authority chain valid.",
+      "severity": "critical"
+    },
+    {
+      "id": "authority.priority-chain-valid",
+      "domain": "authority",
+      "description": "Priority division authority chain valid.",
+      "severity": "critical"
+    },
+    {
+      "id": "authority.chain-valid",
+      "domain": "authority",
+      "description": "MRS Director authority chain does not collapse coordination/execution boundaries.",
+      "severity": "critical"
+    },
+    {
+      "id": "governance.fundingos-no-implicit-escalation",
+      "domain": "governance",
+      "description": "FundingOS agents cannot implicitly escalate privileges.",
+      "severity": "critical"
+    },
+    {
+      "id": "governance.no-implicit-escalation",
+      "domain": "governance",
+      "description": "MRS Director cannot implicitly escalate privileges; all escalations require explicit approval.",
+      "severity": "critical"
+    },
+    {
+      "id": "execution.fundingos-no-cross-layer-mutation",
+      "domain": "execution",
+      "description": "FundingOS agents cannot mutate artifacts outside their authority.",
+      "severity": "critical"
+    },
+    {
+      "id": "execution.no-cross-layer-mutation",
+      "domain": "execution",
+      "description": "MRS Director cannot mutate artifacts directly; all mutations delegated.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.discovery-chain-complete",
+      "domain": "evidence",
+      "description": "Discovery division produces complete evidence chain.",
+      "severity": "high"
+    },
+    {
+      "id": "evidence.analysis-chain-complete",
+      "domain": "evidence",
+      "description": "Market intelligence produces complete evidence chain.",
+      "severity": "high"
+    },
+    {
+      "id": "evidence.monitoring-chain-complete",
+      "domain": "evidence",
+      "description": "Policy watch produces complete evidence chain.",
+      "severity": "high"
+    },
+    {
+      "id": "evidence.proposal-chain-complete",
+      "domain": "evidence",
+      "description": "Proposal preparation produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.budget-chain-complete",
+      "domain": "evidence",
+      "description": "Budget calculation produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.documentation-chain-complete",
+      "domain": "evidence",
+      "description": "Documentation assembly produces complete evidence chain.",
+      "severity": "high"
+    },
+    {
+      "id": "evidence.eligibility-chain-complete",
+      "domain": "evidence",
+      "description": "Eligibility verification produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.compliance-chain-complete",
+      "domain": "evidence",
+      "description": "Compliance checking produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.audit-chain-complete",
+      "domain": "evidence",
+      "description": "Audit preparation produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.submission-chain-complete",
+      "domain": "evidence",
+      "description": "Submission produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.calendar-chain-complete",
+      "domain": "evidence",
+      "description": "Calendar tracking produces complete evidence chain.",
+      "severity": "high"
+    },
+    {
+      "id": "evidence.communication-chain-complete",
+      "domain": "evidence",
+      "description": "Communication produces complete evidence chain.",
+      "severity": "high"
+    },
+    {
+      "id": "evidence.award-chain-complete",
+      "domain": "evidence",
+      "description": "Award management produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.reporting-chain-complete",
+      "domain": "evidence",
+      "description": "Reporting produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "evidence.performance-chain-complete",
+      "domain": "evidence",
+      "description": "Performance tracking produces complete evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "funding-render-provenance",
+      "domain": "cross-domain",
+      "description": "Funding operations with MRS rendering carry cross-domain provenance.",
+      "severity": "high"
+    },
+    {
+      "id": "funding-narrative-evidence",
+      "domain": "cross-domain",
+      "description": "Funding operations with MRS narrative generation produce evidence chain.",
+      "severity": "critical"
+    },
+    {
+      "id": "mrs-crew-integration",
+      "domain": "cross-domain",
+      "description": "MRS crew invoked only through MRSDirectorAdapter with proper contracts.",
+      "severity": "critical"
+    },
+    {
+      "id": "ckl.policy-load",
+      "domain": "ckl",
+      "description": "Runtime loads default.policies.json with all funding + MRS policies.",
+      "severity": "critical"
+    },
+    {
+      "id": "ckl.deny-without-intent",
+      "domain": "ckl",
+      "description": "CKL denies execution when intent is null/absent.",
+      "severity": "critical"
+    },
+    {
+      "id": "provenance.recorder-exists",
+      "domain": "provenance",
+      "description": "Runtime exposes ProvenanceRecorder for funding + MRS operations.",
+      "severity": "critical"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": ".",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    "baseUrl": ".",
+    "allowJs": true,
+    "checkJs": false,
+    "paths": {
+      "@fundingos/*": ["*"],
+      "@mrs/*": ["../engine/*", "../js/*", "../mrs/packages/*"],
+      "fundingos-base-agent": ["agents/base-agent.ts"]
+    },
+    "types": ["node"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.js",
+    "mrs-types.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test"
+  ]
+}

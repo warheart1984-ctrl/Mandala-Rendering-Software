@@ -1,0 +1,130 @@
+[
+  {
+    "id": "policy-fungingos-no-execution-without-intent",
+    "scope": "runtime",
+    "condition": "intent != null",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "No funding operation without intent."
+  },
+  {
+    "id": "policy-fungingos-no-state-change-without-evidence",
+    "scope": "state",
+    "condition": "require_evidence_for_mutation",
+    "rule": "deny_if_false",
+    "severity": "high",
+    "message": "No funding state change without evidence."
+  },
+  {
+    "id": "policy-fungingos-no-authority-without-contract",
+    "scope": "authority",
+    "condition": "actor_has_contract",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "No authority without contract (actor must have registered contract)."
+  },
+  {
+    "id": "policy-fungingos-eligibility-required",
+    "scope": "preparation",
+    "condition": "proposal_requires_eligibility",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "Proposal preparation requires eligibility verification."
+  },
+  {
+    "id": "policy-fungingos-compliance-before-submission",
+    "scope": "execution",
+    "condition": "submission_requires_compliance",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "Submission requires compliance check."
+  },
+  {
+    "id": "policy-fungingos-deadline-enforcement",
+    "scope": "execution",
+    "condition": "deadline_not_passed",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "Cannot submit past deadline."
+  },
+  {
+    "id": "policy-fungingos-budget-validation",
+    "scope": "preparation",
+    "condition": "budget_validated",
+    "rule": "deny_if_false",
+    "severity": "high",
+    "message": "Budget must be validated before proposal assembly."
+  },
+  {
+    "id": "policy-fungingos-reporting-cadence",
+    "scope": "stewardship",
+    "condition": "reporting_on_schedule",
+    "rule": "deny_if_false",
+    "severity": "high",
+    "message": "Reports must be generated on schedule."
+  },
+  {
+    "id": "policy-fungingos-audit-trail-complete",
+    "scope": "stewardship",
+    "condition": "audit_trail_complete",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "Audit trail must be complete for award management."
+  },
+  {
+    "id": "policy-fungingos-performance-measurement",
+    "scope": "stewardship",
+    "condition": "performance_tracked",
+    "rule": "deny_if_false",
+    "severity": "high",
+    "message": "Performance must be tracked for all awards."
+  },
+  {
+    "id": "policy-director-contract-required",
+    "scope": "authority",
+    "condition": "director_has_valid_contract",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "Director agent must have a valid constitutional contract."
+  },
+  {
+    "id": "policy-director-no-execution",
+    "scope": "execution",
+    "condition": "director_action_not_forbidden",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "Director agents may coordinate but never execute specialist work."
+  },
+  {
+    "id": "policy-director-mcp-provenance",
+    "scope": "render",
+    "condition": "director_mcp_invocation",
+    "rule": "attach_provenance",
+    "severity": "high",
+    "message": "All MCP tool invocations by Director must carry provenance."
+  },
+  {
+    "id": "policy-funding-render-provenance",
+    "scope": "cross-domain",
+    "condition": "funding_operation_with_rendering",
+    "rule": "attach_provenance",
+    "severity": "high",
+    "message": "Funding operations invoking MRS rendering must carry cross-domain provenance."
+  },
+  {
+    "id": "policy-funding-narrative-evidence",
+    "scope": "cross-domain",
+    "condition": "funding_operation_with_narrative",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "Funding operations generating narratives via MRS must produce evidence chain."
+  },
+  {
+    "id": "policy-mrs-crew-integration",
+    "scope": "cross-domain",
+    "condition": "mrs_crew_invoked_via_adapter",
+    "rule": "deny_if_false",
+    "severity": "critical",
+    "message": "MRS crew must be invoked through MRSDirectorAdapter only."
+  }
+]
