@@ -1,0 +1,53 @@
+﻿
+> @sovereignx/ciems-engine@1.5.0 test:conformance
+> node scripts/test-conformance.mjs
+
+Loading browser runtime adapterΓÇª
+Evaluating conformance profileΓÇª
+
+ΓòÉΓòÉΓòÉ Conformance Report: browser ΓòÉΓòÉΓòÉ
+Profile v1.0  |  2026-08-08T02:58:59.328Z
+Result: Γ£à COMPLIANT  (29/29)
+
+  [Γ£ô] provenance
+      Γ£ô provenance.recorder-exists
+      Γ£ô provenance.frame-fields
+      Γ£ô provenance.frame-recorded-during-play
+  [Γ£ô] replay
+      Γ£ô replay.service-exists
+      Γ£ô replay.deterministic-params
+      Γ£ô replay.binding.director-contract-exists
+      Γ£ô replay.authority.chain-valid
+      Γ£ô replay.governance.no-implicit-escalation
+      Γ£ô replay.execution.no-cross-layer-mutation
+      Γ£ô replay.evidence-chain-complete
+      Γ£ô replay.provenance-chain-complete
+      Γ£ô replay.timestamp-chain-consistent
+      Γ£ô replay.approval-chain-valid
+  [Γ£ô] binding
+      Γ£ô binding.resolver-exists
+      Γ£ô binding.all-tracks-resolved
+      Γ£ô binding.director-contract-exists
+  [Γ£ô] timeline
+      Γ£ô timeline.loader-exists
+      Γ£ô timeline.clip-application
+      Γ£ô timeline.world-required
+  [Γ£ô] evidence
+      Γ£ô evidence.bundle-fields
+      Γ£ô evidence.dual-require
+  [Γ£ô] ckl
+      Γ£ô ckl.policy-load
+      Γ£ô ckl.deny-without-intent
+      Γ£ô ckl.modify-param
+      Γ£ô ckl.attach-provenance
+  [Γ£ô] authority
+      Γ£ô authority.chain-valid
+  [Γ£ô] governance
+      Γ£ô governance.no-implicit-escalation
+  [Γ£ô] execution
+      Γ£ô execution.no-cross-layer-mutation
+  [Γ£ô] normalization
+      Γ£ô normalization.brdf-energy
+
+
+Γ£à Browser runtime is fully compliant.

@@ -1,0 +1,62 @@
+# RT4D ChatGPT MCP Plugin — Anime Lane hybrid production surface
+# TypeScript MCP server + React widget bundle
+# Port: 8010
+
+FROM node:22-alpine AS builder
+
+WORKDIR /build
+
+# Copy server deps + src
+COPY mrs/apps/rt4d-chatgpt-plugin/server/package.json \
+     mrs/apps/rt4d-chatgpt-plugin/server/package-lock.json \
+     ./server/
+RUN cd ./server && npm ci
+
+COPY mrs/apps/rt4d-chatgpt-plugin/server/tsconfig.json ./server/
+COPY mrs/apps/rt4d-chatgpt-plugin/server/src ./server/src
+
+# Copy widget + build
+COPY mrs/apps/rt4d-chatgpt-plugin/widget/package.json \
+     mrs/apps/rt4d-chatgpt-plugin/widget/package-lock.json \
+     ./widget/
+RUN cd ./widget && npm ci
+
+COPY mrs/apps/rt4d-chatgpt-plugin/widget ./widget/
+
+# Build widget → assets/rt4d-viewer.html
+RUN cd ./widget && npm run build
+
+# Runtime stage
+FROM node:22-alpine
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    PORT=8010 \
+    RT4D_PLUGIN_PORT=8010 \
+    RT4D_ENGINE_TIMEOUT_MS=120000
+
+# Install runtime deps (curl for healthcheck)
+RUN apk add --no-cache curl
+
+# Copy built widget assets (if they exist)
+COPY mrs/apps/rt4d-chatgpt-plugin/assets ./assets
+COPY --from=builder /build/widget/dist ./widget-dist
+
+# Copy server node_modules + code
+COPY --from=builder /build/server/node_modules ./node_modules
+COPY --from=builder /build/server/tsconfig.json \
+     mrs/apps/rt4d-chatgpt-plugin/server/package.json ./
+COPY --from=builder /build/server/src ./src
+
+# Use tsx at runtime (already installed as dev dep, safe in prod for this use)
+RUN npm install -g tsx
+
+EXPOSE 8010
+
+# Health check: MCP bridge liveness
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl --fail http://localhost:8010/health || exit 1
+
+# Start MCP server (streams HTTP)
+CMD ["tsx", "src/index.ts"]

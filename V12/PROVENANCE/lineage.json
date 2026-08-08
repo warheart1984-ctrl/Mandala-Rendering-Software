@@ -1,0 +1,67 @@
+{
+  "schema": "mrs.v12.provenance.lineage",
+  "version": 1,
+  "generatedAt": "2026-08-07T00:00:00Z",
+  "author": "warheart1984-ctrl <warheart1984@gmail.com>",
+  "chains": [
+    {
+      "subsystem": "constitution-contracts",
+      "idea": "ADR-0002 (execution substrate)",
+      "decision": "ADR-0002 (plain-JS ESM, no build)",
+      "implementation": "commit 59b1378",
+      "tests": "98/98 constitution suite (V12/VALIDATION/test-results/constitution-suite.txt)",
+      "artifacts": {
+        "ConstitutionalInferenceContract.js": "4C27E29402167DDAB7679EFE152A1EE05CC889C46695A6040DBB9926E3695B4F",
+        "ConstitutionalContinuityContract.js": "4416F3A3CA039CF5B163C354340AEFD815AF59E2E46D3A638D8A6CB2C97F9E90",
+        "IntentLifecycleContract.js": "BFBB2F04CC2DFC0593BA4364597BC5AB7633AAD7E9347A7BCBAFB6073767B58E"
+      },
+      "evidence": "V12/ADR/ADR-0002-execution-substrate.md"
+    },
+    {
+      "subsystem": "reasoning-engine",
+      "idea": "Phase D+ CRE (evidence-backed reasoning)",
+      "decision": "ADR-0003 (deterministic execution)",
+      "implementation": "commit 59b1378",
+      "tests": "CRE smoke tests: success + rejection paths",
+      "artifacts": {
+        "ConstitutionalReasoningEngine.js": "7D3C84062AEAE1350A5A6AB7AE63D09AA31FA64A7E28CF8610B472330CC4D912",
+        "ConstitutionalEvidenceRoot.js": "800BFAE7CC7B5B609EC70F1BB62EF3EB0961C0F9B049E5CE6FD8D06B9BE6826A"
+      },
+      "evidence": "V12/ADR/ADR-0003-deterministic-execution.md"
+    },
+    {
+      "subsystem": "governance-gates",
+      "idea": "Constitutional gates before execution",
+      "decision": "ADR-0004",
+      "implementation": "engine/governance/ + default.policies.json",
+      "tests": "16/16 conformance (V12/VALIDATION/conformance-results/conformance-run.txt)",
+      "artifacts": {
+        "default.policies.json": "10468D3E53C0E10E7C683F4619748E5CDF5BFA54A1517CD7CB165DB329E76796",
+        "default.conformance-profile.json": "A6B617E8D4918CCF0A13429939CC5292F5DD4DA1A64FC5B4535ACFD4F6A7849E",
+        "charter.js": "DCFBD18AC4D9673DEC971BCD19C5C4852F51B5E4A401A68C20B78C47DE2D452A"
+      },
+      "evidence": "V12/ADR/ADR-0004-constitutional-gates.md"
+    },
+    {
+      "subsystem": "authority-execution-separation",
+      "idea": "Darz audit",
+      "decision": "ADR-0005 (Darz separation)",
+      "implementation": "commit e92d0b1 (audit) + 59b1378 (subsystem)",
+      "tests": "conformance: authority.chain-valid, governance.no-implicit-escalation, execution.no-cross-layer-mutation",
+      "artifacts": {
+        "default.policies.json": "10468D3E53C0E10E7C683F4619748E5CDF5BFA54A1517CD7CB165DB329E76796",
+        "charter.js": "DCFBD18AC4D9673DEC971BCD19C5C4852F51B5E4A401A68C20B78C47DE2D452A"
+      },
+      "evidence": "V12/ADR/ADR-0005-dar-z-separation.md"
+    },
+    {
+      "subsystem": "documentation-root",
+      "idea": "Documentation as first-class artifact",
+      "decision": "ADR-0001 (V12 origin)",
+      "implementation": "commit 66dfabf (this V12 tree)",
+      "tests": "V12/VALIDATION/* (test, conformance, replay, security)",
+      "artifacts": {},
+      "evidence": "V12/ADR/ADR-0001-v12-origin.md"
+    }
+  ]
+}
