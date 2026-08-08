@@ -1,0 +1,38 @@
+{
+  "schema": "mrs.v12.provenance.architecture-history",
+  "version": 1,
+  "generatedAt": "2026-08-07T00:00:00Z",
+  "author": "warheart1984-ctrl <warheart1984@gmail.com>",
+  "events": [
+    {
+      "ts": "2026-07-28T00:00:00Z",
+      "type": "adr",
+      "ref": "docs/governance/cecp/trails/director-atcm-2026-07/ADR-001-render-accel-contract.md",
+      "summary": "RenderAccelContract draft accepted (PROMOTE_WITH_GAPS)"
+    },
+    {
+      "ts": "2026-08-06T00:00:00Z",
+      "type": "audit",
+      "ref": "commit e92d0b1",
+      "summary": "Darz reference audit recorded"
+    },
+    {
+      "ts": "2026-08-07T00:00:00Z",
+      "type": "implementation",
+      "ref": "commit 59b1378",
+      "summary": "Phase D+ constitutional subsystem (src/) added; contracts rewritten as plain JS"
+    },
+    {
+      "ts": "2026-08-07T00:00:00Z",
+      "type": "decision",
+      "ref": "V12/ADR/ADR-0001 … ADR-0005",
+      "summary": "V12 evidence-linked documentation root established"
+    },
+    {
+      "ts": "2026-08-07T00:00:00Z",
+      "type": "validation",
+      "ref": "V12/VALIDATION/",
+      "summary": "98/98 tests, 16/16 conformance, replay probe, security audit captured"
+    }
+  ]
+}

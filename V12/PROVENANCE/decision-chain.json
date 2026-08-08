@@ -1,0 +1,124 @@
+{
+  "schema": "mrs.v12.provenance.decision-chain",
+  "version": 1,
+  "generatedAt": "2026-08-07T00:00:00Z",
+  "author": "warheart1984-ctrl <warheart1984@gmail.com>",
+  "decisions": [
+    {
+      "decisionId": "ADR-0001",
+      "title": "V12: Evidence-Linked Architecture Documentation Root",
+      "status": "accepted",
+      "date": "2026-08-07T00:00:00Z",
+      "author": "warheart1984-ctrl <warheart1984@gmail.com>",
+      "rationale": "Make documentation a first-class, traceable artifact (idea → decision → implementation → test → artifact → evidence).",
+      "alternativesRejected": [
+        "Inline prose only, no dedicated root",
+        "Fold into docs/governance/cecp/trails",
+        "Generate docs purely from code",
+        "No provenance JSON"
+      ],
+      "evidence": {
+        "commit": "59b1378",
+        "tests": ["V12/VALIDATION/test-results/constitution-suite.txt"],
+        "artifactHashes": {},
+        "replayIdentity": []
+      },
+      "file": "V12/ADR/ADR-0001-v12-origin.md"
+    },
+    {
+      "decisionId": "ADR-0002",
+      "title": "Execution Substrate: Plain-JS ESM, No Build Step",
+      "status": "accepted",
+      "date": "2026-08-07T00:00:00Z",
+      "author": "warheart1984-ctrl <warheart1984@gmail.com>",
+      "rationale": "Directly loadable/testable under Node without transpilation; prior TS-annotated JS failed to parse.",
+      "alternativesRejected": [
+        "TypeScript source + build step",
+        "JSDoc-typed .mjs only",
+        "C# substrate for contracts"
+      ],
+      "evidence": {
+        "commit": "59b1378",
+        "tests": ["constitution suite 98/98", "node --check clean"],
+        "artifactHashes": {
+          "ConstitutionalInferenceContract.js": "4C27E29402167DDAB7679EFE152A1EE05CC889C46695A6040DBB9926E3695B4F",
+          "ConstitutionalContinuityContract.js": "4416F3A3CA039CF5B163C354340AEFD815AF59E2E46D3A638D8A6CB2C97F9E90",
+          "IntentLifecycleContract.js": "BFBB2F04CC2DFC0593BA4364597BC5AB7633AAD7E9347A7BCBAFB6073767B58E"
+        },
+        "replayIdentity": ["2d7665292cc4ad67"]
+      },
+      "file": "V12/ADR/ADR-0002-execution-substrate.md"
+    },
+    {
+      "decisionId": "ADR-0003",
+      "title": "Deterministic, Replay-Verifiable Execution (Partial)",
+      "status": "accepted (partial)",
+      "date": "2026-08-07T00:00:00Z",
+      "author": "warheart1984-ctrl <warheart1984@gmail.com>",
+      "rationale": "Replayable reality (P4): tokens/hashes recompute identically; identity generation declared non-portable.",
+      "alternativesRejected": [
+        "Fully deterministic identity",
+        "Hash-at-rest only, no replay tokens",
+        "Wall-clock time seeds"
+      ],
+      "evidence": {
+        "commit": "59b1378",
+        "tests": ["replay probe", "normalization 23/23"],
+        "artifactHashes": {
+          "ConstitutionalInferenceContract.js": "4C27E29402167DDAB7679EFE152A1EE05CC889C46695A6040DBB9926E3695B4F"
+        },
+        "replayIdentity": [
+          "2d7665292cc4ad67 / 6106c619f1cb3996226221a6b49fd59a3b1c16e765ab7b34b05dbd421cb4930f"
+        ]
+      },
+      "file": "V12/ADR/ADR-0003-deterministic-execution.md"
+    },
+    {
+      "decisionId": "ADR-0004",
+      "title": "Constitutional Gates Before Execution",
+      "status": "accepted",
+      "date": "2026-08-07T00:00:00Z",
+      "author": "warheart1984-ctrl <warheart1984@gmail.com>",
+      "rationale": "Execution gated by the 7 policies; 16/16 conformance verifies the runtime honors them.",
+      "alternativesRejected": [
+        "Gate only at authority",
+        "Log-and-continue for critical policies",
+        "Skip conformance in non-browser hosts"
+      ],
+      "evidence": {
+        "commit": "59b1378",
+        "tests": ["npm run test:conformance — 16/16"],
+        "artifactHashes": {
+          "default.policies.json": "10468D3E53C0E10E7C683F4619748E5CDF5BFA54A1517CD7CB165DB329E76796",
+          "default.conformance-profile.json": "A6B617E8D4918CCF0A13429939CC5292F5DD4DA1A64FC5B4535ACFD4F6A7849E",
+          "charter.js": "DCFBD18AC4D9673DEC971BCD19C5C4852F51B5E4A401A68C20B78C47DE2D452A"
+        },
+        "replayIdentity": []
+      },
+      "file": "V12/ADR/ADR-0004-constitutional-gates.md"
+    },
+    {
+      "decisionId": "ADR-0005",
+      "title": "Darz Separation: Authority Plane vs. Execution Plane",
+      "status": "accepted",
+      "date": "2026-08-07T00:00:00Z",
+      "author": "warheart1984-ctrl <warheart1984@gmail.com>",
+      "rationale": "Decision authority and execution effect in separate planes; no implicit escalation or cross-layer mutation.",
+      "alternativesRejected": [
+        "Single merged plane",
+        "Execution may self-authorize when trusted",
+        "Planes separated only in browser runtime"
+      ],
+      "evidence": {
+        "commit": "e92d0b1, 59b1378",
+        "tests": ["conformance authority.chain-valid", "governance.no-implicit-escalation", "execution.no-cross-layer-mutation"],
+        "artifactHashes": {
+          "default.policies.json": "10468D3E53C0E10E7C683F4619748E5CDF5BFA54A1517CD7CB165DB329E76796",
+          "charter.js": "DCFBD18AC4D9673DEC971BCD19C5C4852F51B5E4A401A68C20B78C47DE2D452A"
+        },
+        "replayIdentity": []
+      },
+      "file": "V12/ADR/ADR-0005-dar-z-separation.md"
+    }
+  ]
+}
