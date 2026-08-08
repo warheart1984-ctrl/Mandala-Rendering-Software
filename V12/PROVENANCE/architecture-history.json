@@ -33,6 +33,12 @@
       "type": "validation",
       "ref": "V12/VALIDATION/",
       "summary": "98/98 tests, 16/16 conformance, replay probe, security audit captured"
+    },
+    {
+      "ts": "2026-08-07T00:00:00Z",
+      "type": "docs",
+      "ref": "commit 66dfabf",
+      "summary": "V12 tree committed (24 files, 1493 insertions) — this record self-references its own creation commit"
     }
   ]
 }

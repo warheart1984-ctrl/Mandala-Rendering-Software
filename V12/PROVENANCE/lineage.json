@@ -58,7 +58,7 @@
       "subsystem": "documentation-root",
       "idea": "Documentation as first-class artifact",
       "decision": "ADR-0001 (V12 origin)",
-      "implementation": "this V12 tree",
+      "implementation": "commit 66dfabf (this V12 tree)",
       "tests": "V12/VALIDATION/* (test, conformance, replay, security)",
       "artifacts": {},
       "evidence": "V12/ADR/ADR-0001-v12-origin.md"
