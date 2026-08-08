@@ -21,6 +21,9 @@
   "keywords": ["funding", "grants", "ai", "governance", "mrs"],
   "author": "",
   "license": "MIT",
+  "overrides": {
+    "minimatch": "9.0.9"
+  },
   "dependencies": {
     "commander": "^11.1.0",
     "yaml": "^2.3.4"
@@ -28,7 +31,7 @@
   "devDependencies": {
     "@types/node": "^20.10.0",
     "typescript": "^5.3.0",
-    "vitest": "^1.0.0",
+    "vitest": "^3.2.6",
     "eslint": "^8.55.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
