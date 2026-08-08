@@ -113,13 +113,13 @@ export class GovernanceAdapter {
     };
   }
 
-  toolIdToAction(toolId) {
+toolIdToAction(toolId) {
     const map = {
       'mrs.render.rt4d': 'render_4d_tesseract',
       'mrs.health': 'health_check',
       'mrs.ready': 'readiness_check',
       'mrs.version': 'version_check',
-      'mrs.director.dep': 'plan',  // DEP workflow: plan → route → supervise → enforce_governance
+      'mrs.director.dep': 'plan',
       'mrs.sme.dispatch': 'dispatch',
       'mrs.sme.collect': 'collect',
       'mrs.sme.validate': 'validate',
@@ -183,6 +183,8 @@ getContractForActor(actorIdentity) {
         'sme.core': 'sme.core',
         'user': 'user',
         'sovereignx': 'sovereignx',
+        'ugr.prime-architect': 'ugr.prime-architect',
+        'prime-architect': 'ugr.prime-architect',
       };
       return map[type] || type;
     }

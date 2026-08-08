@@ -222,6 +222,7 @@ export const CONTRACTS = {
       allowedActions: [
         "render.session.start",
         "render.frame.live",
+        "play_timeline",
         "artifact.picture.export",
         "artifact.movie.export",
         "csr.replay.params"
@@ -405,25 +406,105 @@ export const CONTRACTS = {
         "ckl.deny-without-intent",
         "policy-no-execution-without-intent"
       ]
+    },
+    {
+      contractId: "contract.aris.governance.v1",
+      actor: "aris",
+      status: "enforced",
+      authority: "govern",
+      allowedActions: [
+        "python_execute",
+        "command_execute",
+        "file_write",
+        "file_replace",
+        "text_patch_apply",
+        "patch_apply",
+        "patch_hunk_apply",
+        "patch_line_apply",
+        "symbol_edit",
+        "task_approval",
+        "mutation_apply",
+        "snapshot_restore",
+        "workspace_import_upload",
+        "workspace_repo_clone",
+        "change_rollback",
+        "uninstall_agent",
+        "install_agent",
+        "mystic_reflection"
+      ],
+      forbiddenActions: [
+        "bypass_authority",
+        "mutate_governance",
+        "mutate_ledger",
+        "escalate_authority",
+        "alter_evidence"
+      ],
+      evidenceRequirements: [
+        "intent_declaration",
+        "action_payload",
+        "forge_eval_result",
+        "verification_artifacts"
+      ],
+      conformanceChecks: [
+        "ckl.deny-without-intent",
+        "policy-no-execution-without-intent",
+        "policy-no-state-change-without-evidence",
+        "authority.chain-valid",
+        "governance.no-implicit-escalation",
+        "execution.no-cross-layer-mutation"
+      ]
+    },
+    {
+      contractId: "contract.prime-architect.v1",
+      actor: "ugr.prime-architect",
+      status: "enforced",
+      authority: "sovereign",
+      identity: {
+        keyId: "ugr.prime-architect:1002",
+        displayName: "Prime Architect",
+        human: { name: "Jon Halstead", id: "1002" },
+        organization: "UGR",
+        role: "prime-architect"
+      },
+      allowedActions: ["*"],
+      forbiddenActions: [],
+      scopeKeys: [
+        "project-infi",
+        "mandala-rendering-software"
+      ],
+      conformanceChecks: [
+        "authority.chain-valid",
+        "policy-no-authority-without-contract"
+      ]
     }
   ],
   resolveAuthority: function(actorId, action) {
-    const contract = this.contracts.find(c => c.actor === actorId || c.actor.startsWith(actorId.split(':')[0] + ':*'));
+    const contract = this.contracts.find(c =>
+      c.actor === actorId ||
+      (actorId.includes(':') && actorId.startsWith(c.actor + ':')) ||
+      c.actor.startsWith(actorId.split(':')[0] + ':*')
+    );
     if (!contract) return { ok: false, allowed: false, reason: "No contract found for actor" };
     const forbidden = [...(contract.forbiddenActions || []), ...(contract.forbidden || [])];
     if (forbidden.includes(action)) return { ok: false, allowed: false, reason: `Action ${action} forbidden by ${contract.contractId}` };
-    if (!contract.allowedActions?.includes(action)) return { ok: false, allowed: false, reason: `Action ${action} not in allow-list for ${contract.contractId}` };
+    const allowed = contract.allowedActions?.includes(action) || contract.allowedActions?.includes('*');
+    if (!allowed) return { ok: false, allowed: false, reason: `Action ${action} not in allow-list for ${contract.contractId}` };
     return { ok: true, allowed: true, contractId: contract.contractId, contract, authority: contract.authority };
   }
 };
 
 // ESM exports
 export const resolveAuthority = (actorId, action) => {
-  const contract = CONTRACTS.contracts.find(c => c.actor === actorId || c.actor.startsWith(actorId.split(':')[0] + ':*'));
+  const contract = CONTRACTS.contracts.find(c =>
+    c.actor === actorId ||
+    (actorId.includes(':') && actorId.startsWith(c.actor + ':')) ||
+    c.actor.startsWith(actorId.split(':')[0] + ':*')
+  );
   if (!contract) return { ok: false, allowed: false, reason: "No contract found for actor" };
   const forbidden = [...(contract.forbiddenActions || []), ...(contract.forbidden || [])];
   if (forbidden.includes(action)) return { ok: false, allowed: false, reason: `Action ${action} forbidden by ${contract.contractId}` };
-  if (!contract.allowedActions?.includes(action)) return { ok: false, allowed: false, reason: `Action ${action} not in allow-list for ${contract.contractId}` };
+  const allowed = contract.allowedActions?.includes(action) || contract.allowedActions?.includes('*');
+  if (!allowed) return { ok: false, allowed: false, reason: `Action ${action} not in allow-list for ${contract.contractId}` };
   return { ok: true, allowed: true, contractId: contract.contractId, contract, authority: contract.authority };
 };
 
