@@ -5,7 +5,7 @@
  *
  * Usage:
  *   node sovereign-x/cli/sx-legacy-efficient.mjs --intent <id> [--width 64] [--height 64] [--tile 8] [--p 0.1] [--out path]
- *   node sovereign-x/cli/sx-legacy-efficient.mjs --intent <id> --still [--provider auto|lemonade|lemonade-sdk|opencl.gen|opencl]
+ *   node sovereign-x/cli/sx-legacy-efficient.mjs --intent <id> --still [--provider auto|axiomx|lemonade|lemonade-sdk|opencl.gen|opencl]
  *   node sovereign-x/cli/sx-legacy-efficient.mjs --probe-lemonade-sdk
  *   node sovereign-x/cli/sx-legacy-efficient.mjs --intent <id> --provider lemonade-sdk --chat "ping"
  */
@@ -70,8 +70,8 @@ async function main() {
   --tile N         default 8
   --p F            salience fraction (sparse) default 0.1
   --seed N         default 0
-  --still          request beauty still (Lemonade SD → opencl.gen on auto; Lemonade held until pixels)
-  --provider MODE  none|auto|lemonade|lemonade-sdk|opencl.gen|opencl|opencl-legacy
+  --still          request beauty still (Axiom-X OpenCL → Lemonade SD → opencl.gen on auto; Lemonade held until pixels)
+  --provider MODE  none|auto|axiomx|lemonade|lemonade-sdk|opencl.gen|opencl|opencl-legacy
   --prompt TEXT    still prompt for Lemonade SD
   --chat TEXT      Lemonade SDK OpenAI chat (implies --provider lemonade-sdk)
   --probe-lemonade write Lemonade SD capability report only

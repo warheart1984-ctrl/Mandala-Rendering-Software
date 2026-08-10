@@ -16,6 +16,9 @@ genblaze-core==0.3.8
 genblaze-s3==0.3.6
 genblaze-nvidia==0.3.3
 
+# Google Gen AI SDK for Gemini Enterprise Agent Platform (img2img polish)
+google-genai==1.10.0
+
 # Explicit boto3 for health/list helpers (also pulled by genblaze-s3)
 boto3==1.39.14
 # Blank/near-black still detection after NIM decode

@@ -39,6 +39,7 @@ from app.anime_world_profile import (
 )
 from app.config import _load_dotenv_files, resolve_repo_root
 from app.style_steer import ANIME_STEER_SUFFIX, apply_style_steer
+from app.grafana_mcp import probe_grafana, push_frame_metrics_sync
 
 # Match the app's canonical env source (repo-root .env then app-local .env,
 # override=False so process env / test monkeypatches win).
@@ -63,6 +64,7 @@ BACKEND_LEMONADE = "lemonade"
 BACKEND_NVIDIA = "nvidia"
 BACKEND_HFSPACE = "hfspace"
 BACKEND_GMICLOUD = "gmicloud"
+BACKEND_GEMINI = "gemini"
 
 
 def _repo_root() -> Path:
@@ -663,6 +665,158 @@ def probe_gmicloud(live: bool | None = None) -> PainterProbe:
         ),
         env_vars_required=["GMI_API_KEY"],
     )
+    
+
+
+def probe_gemini(live: bool | None = None) -> PainterProbe:
+    """Probe Gemini Enterprise Agent Platform (google-genai SDK, ADC auth).
+
+    Requires:
+      - GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION (or GOOGLE_GENAI_USE_ENTERPRISE=True)
+      - ADC credentials: `gcloud auth application-default login`
+      - Model: gemini-3.1-flash-image (supports img2img with TEXT+IMAGE response)
+    """
+    live = _env_live() if live is None else live
+
+    # Check ADC / env config
+    project = (os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip()
+    location = (os.getenv("GOOGLE_CLOUD_LOCATION") or "global").strip()
+    use_enterprise = (os.getenv("GOOGLE_GENAI_USE_ENTERPRISE") or "").strip().lower() in {"1", "true", "yes", "on"}
+
+    if not (project or use_enterprise):
+        return PainterProbe(
+            backend=BACKEND_GEMINI,
+            configured=False,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="missing GOOGLE_CLOUD_PROJECT (or GOOGLE_GENAI_USE_ENTERPRISE=True)",
+            env_vars_required=["GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GOOGLE_GENAI_USE_ENTERPRISE"],
+        )
+
+    if not _polish_enabled():
+        return PainterProbe(
+            backend=BACKEND_GEMINI,
+            configured=False,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="GENBLAZE_POLISH_ENABLED not enabled (fail closed); ADC present but policy gate off",
+            env_vars_required=["GOOGLE_CLOUD_PROJECT"],
+        )
+
+    if not live:
+        return PainterProbe(
+            backend=BACKEND_GEMINI,
+            configured=True,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="configured (live probe disabled via GENBLAZE_PROBE_LIVE=0)",
+            env_vars_required=["GOOGLE_CLOUD_PROJECT"],
+        )
+
+    try:
+        from google import genai
+        from google.genai.types import GenerateContentConfig, Modality
+
+        client = genai.Client(vertexai=True, project=project, location=location)
+        # Light probe: text-only generate to verify auth + model access
+        resp = client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents="constitutional painter probe",
+            config=GenerateContentConfig(max_output_tokens=16),
+        )
+        if resp and resp.text:
+            return PainterProbe(
+                backend=BACKEND_GEMINI,
+                configured=True,
+                reachable=True,
+                operational=True,
+                verified=True,
+                last_verified=_utc_now(),
+                detail="gemini: live auth + generate ok (HTTP 200)",
+                env_vars_required=["GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION"],
+            )
+        return PainterProbe(
+            backend=BACKEND_GEMINI,
+            configured=True,
+            reachable=True,
+            operational=False,
+            verified=True,
+            last_verified=_utc_now(),
+            detail="gemini: auth ok but empty response",
+            env_vars_required=["GOOGLE_CLOUD_PROJECT"],
+        )
+    except Exception as exc:  # noqa: BLE001
+        return PainterProbe(
+            backend=BACKEND_GEMINI,
+            configured=True,
+            reachable=False,
+            operational=False,
+            verified=True,
+            last_verified=_utc_now(),
+            detail=f"gemini: {type(exc).__name__}: {exc}",
+            env_vars_required=["GOOGLE_CLOUD_PROJECT"],
+        )
+
+
+def probe_parallel(live: bool | None = None) -> PainterProbe:
+    """Probe Parallel Search availability for pipeline health check."""
+    live = _env_live() if live is None else live
+    api_key = os.getenv("PARALLEL_API_KEY", "").strip()
+
+    if not api_key:
+        return PainterProbe(
+            backend="parallel",
+            configured=False,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="missing PARALLEL_API_KEY",
+            env_vars_required=["PARALLEL_API_KEY"],
+        )
+
+    if not live:
+        return PainterProbe(
+            backend="parallel",
+            configured=True,
+            reachable=None,
+            operational=None,
+            verified=False,
+            last_verified=None,
+            detail="configured (live probe disabled)",
+            env_vars_required=["PARALLEL_API_KEY"],
+        )
+
+    try:
+        from app.parallel_mcp import search_style_refs_sync
+        search_style_refs_sync("test probe", num_results=1)
+        return PainterProbe(
+            backend="parallel",
+            configured=True,
+            reachable=True,
+            operational=True,
+            verified=True,
+            last_verified=_utc_now(),
+            detail="parallel: live search ok",
+            env_vars_required=["PARALLEL_API_KEY"],
+        )
+    except Exception as exc:
+        return PainterProbe(
+            backend="parallel",
+            configured=True,
+            reachable=False,
+            operational=False,
+            verified=True,
+            last_verified=_utc_now(),
+            detail=f"parallel: {type(exc).__name__}: {exc}",
+            env_vars_required=["PARALLEL_API_KEY"],
+        )
 
 
 def probe_painters(live: bool | None = None) -> list[PainterProbe]:
@@ -672,6 +826,9 @@ def probe_painters(live: bool | None = None) -> list[PainterProbe]:
         probe_gmicloud(live),
         probe_lemonade(live),
         probe_nvidia(live),
+        probe_gemini(live),
+        probe_parallel(live),
+        probe_grafana(live),
     ]
 
 
@@ -1018,6 +1175,109 @@ def try_gmicloud_t2i(prompt: str) -> tuple[bytes | None, str]:
         return None, f"gmicloud: {type(exc).__name__}: {exc}"
 
 
+def try_gemini_img2img(structure_png: bytes, prompt: str) -> tuple[bytes | None, str]:
+    """Gemini Enterprise img2img — preserves structure via image+text input.
+
+    Uses gemini-3.1-flash-image with response_modalities=[TEXT, IMAGE].
+    Returns (image_bytes, detail) or (None, error_detail).
+    """
+    probe = probe_gemini()
+    if not probe.available:
+        return None, f"gemini: {probe.detail}"
+
+    try:
+        from google import genai
+        from google.genai.types import GenerateContentConfig, Modality, Part
+        import io
+
+        project = (os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip()
+        location = (os.getenv("GOOGLE_CLOUD_LOCATION") or "global").strip()
+        client = genai.Client(vertexai=True, project=project, location=location)
+        # Convert structure_png to Part
+        structure_part = Part.from_bytes(data=structure_png, mime_type="image/png")
+
+        resp = client.models.generate_content(
+            model="gemini-3.1-flash-image",
+            contents=[prompt, structure_part],
+            config=GenerateContentConfig(
+                response_modalities=[Modality.TEXT, Modality.IMAGE],
+            ),
+        )
+
+        if not resp.candidates:
+            return None, "gemini: no candidates in response"
+
+        for part in resp.candidates[0].content.parts:
+            if part.inline_data and part.inline_data.data:
+                return part.inline_data.data, "gemini: img2img ok (structure preserved)"
+
+        return None, "gemini: no inline image data in response"
+
+    except Exception as exc:  # noqa: BLE001
+        return None, f"gemini: {type(exc).__name__}: {exc}"
+
+
+def run_director_stage(
+    *,
+    profile: dict[str, Any],
+    shot_description: str,
+    shot_type: str,
+    mood: str,
+) -> tuple[str, dict[str, Any]]:
+    """Director agent: queries Parallel Search for style, cinematography, and color refs.
+
+    Returns (enhanced_prompt_fragment, director_artifacts).
+    """
+    from app.parallel_mcp import (
+        search_style_refs_sync,
+        search_cinematography_refs_sync,
+        search_color_palettes_sync,
+    )
+
+    director_artifacts = {
+        "style_refs": [],
+        "cinematography_refs": [],
+        "color_palettes": [],
+        "errors": [],
+    }
+    prompt_fragments = []
+
+    # 1. Style references
+    try:
+        style_refs = search_style_refs_sync(shot_description, num_results=3)
+        director_artifacts["style_refs"] = [asdict(r) for r in style_refs]
+        for r in style_refs:
+            prompt_fragments.append(r.to_prompt_fragment())
+    except Exception as exc:  # noqa: BLE001
+        director_artifacts["errors"].append(f"style_refs: {type(exc).__name__}: {exc}")
+
+    # 2. Cinematography references
+    try:
+        cine_refs = search_cinematography_refs_sync(shot_type, mood, num_results=3)
+        director_artifacts["cinematography_refs"] = [asdict(r) for r in cine_refs]
+        for r in cine_refs:
+            prompt_fragments.append(r.to_prompt_fragment())
+    except Exception as exc:  # noqa: BLE001
+        director_artifacts["errors"].append(f"cinematography_refs: {type(exc).__name__}: {exc}")
+
+    # 3. Color palettes
+    palette_mood = profile.get("color_palette", {}).get("mood", mood)
+    palette_era = profile.get("color_palette", {}).get("era", "")
+    palette_director = profile.get("color_palette", {}).get("director", "")
+    try:
+        color_palettes = search_color_palettes_sync(
+            mood=palette_mood, era=palette_era, director=palette_director, num_results=3
+        )
+        director_artifacts["color_palettes"] = [asdict(r) for r in color_palettes]
+        for r in color_palettes:
+            prompt_fragments.append(r.to_prompt_fragment())
+    except Exception as exc:  # noqa: BLE001
+        director_artifacts["errors"].append(f"color_palettes: {type(exc).__name__}: {exc}")
+
+    enhanced_fragment = " | ".join(prompt_fragments) if prompt_fragments else ""
+    return enhanced_fragment, director_artifacts
+
+
 def run_beauty_stage(
     *,
     structure_png: bytes,
@@ -1026,8 +1286,11 @@ def run_beauty_stage(
     allow_cel_proxy: bool,
     probe_map: dict[str, PainterProbe] | None = None,
     profile_issues: list[str] | None = None,
-) -> tuple[bytes, str, str, bool, str]:
-    """Return (beauty_bytes, lane, backend, anime_claim, detail).
+    shot_description: str = "",
+    shot_type: str = "",
+    mood: str = "cinematic",
+) -> tuple[bytes, str, str, bool, str, dict[str, Any]]:
+    """Return (beauty_bytes, lane, backend, anime_claim, detail, director_artifacts).
 
     ``anime_claim`` is fail-closed via :func:`resolve_anime_claim` — never true
     without a validated profile id and distinct beauty pixels.
@@ -1042,6 +1305,16 @@ def run_beauty_stage(
     if ANIME_STEER_SUFFIX not in steered:
         steered = f"{steered}, {ANIME_STEER_SUFFIX}"
 
+    # Director stage: query Parallel for grounded references
+    director_fragment, director_artifacts = run_director_stage(
+        profile=profile,
+        shot_description=shot_description or profile.get("shot_description", ""),
+        shot_type=shot_type or profile.get("shot_type", ""),
+        mood=mood or profile.get("mood", "cinematic"),
+    )
+    if director_fragment:
+        steered = f"{steered} | {director_fragment}"
+
     probes = (
         probe_map
         if probe_map is not None
@@ -1049,8 +1322,9 @@ def run_beauty_stage(
     )
     order: list[str]
     if painter_pref == "auto":
-        # Live polish order: fal → hfspace → gmicloud → lemonade → cel-proxy
+        # Live polish order: gemini → fal → hfspace → gmicloud → lemonade → cel-proxy
         order = [
+            BACKEND_GEMINI,
             BACKEND_FAL,
             BACKEND_HFSPACE,
             BACKEND_GMICLOUD,
@@ -1076,6 +1350,16 @@ def run_beauty_stage(
             details.append(detail)
             if pixels:
                 beauty_bytes, lane, backend = pixels, LANE_BEAUTY, BACKEND_FAL
+                break
+        elif candidate == BACKEND_GEMINI:
+            if probe is None or not probe.available:
+                details.append(probe.detail if probe else "gemini: not probed")
+                continue
+            pixels, detail = try_gemini_img2img(structure_png, steered)
+            details.append(detail)
+            if pixels:
+                # img2img preserves structure; claim on gate only.
+                beauty_bytes, lane, backend = pixels, LANE_BEAUTY, BACKEND_GEMINI
                 break
         elif candidate == BACKEND_HFSPACE:
             if probe is None or not probe.available:
@@ -1133,11 +1417,11 @@ def run_beauty_stage(
         backend = BACKEND_NONE
         beauty_bytes = structure_png
         detail = f"structure-only fail-closed ({gate_reason})"
-        return beauty_bytes, lane, backend, False, detail
+        return beauty_bytes, lane, backend, False, detail, director_artifacts
 
     if anime_claim:
         painter_detail = details[-1] if details else gate_reason
-        return beauty_bytes, lane, backend, True, f"{painter_detail} | {gate_reason}"
+        return beauty_bytes, lane, backend, True, f"{painter_detail} | {gate_reason}", director_artifacts
 
     detail = " | ".join(details) if details else "painter skipped"
     return (
@@ -1146,6 +1430,7 @@ def run_beauty_stage(
         BACKEND_NONE,
         False,
         f"structure-only fallback ({detail}) | {gate_reason}",
+        director_artifacts,
     )
 
 
@@ -1244,13 +1529,32 @@ def run_pipeline(args: argparse.Namespace) -> RenderManifest:
 
     probes = probe_painters(live=args.painter != BACKEND_NONE)
 
-    beauty_bytes, lane, backend, anime_claim, beauty_detail = run_beauty_stage(
+    import time
+    beauty_start = time.perf_counter()
+    beauty_bytes, lane, backend, anime_claim, beauty_detail, director_artifacts = run_beauty_stage(
         structure_png=structure_bytes,
         profile=profile,
         painter_pref=args.painter,
         allow_cel_proxy=not args.no_cel_proxy,
         probe_map={p.backend: p for p in probes},
         profile_issues=issues,
+        shot_description=args.shot_description,
+        shot_type=args.shot_type,
+        mood=args.mood,
+    )
+    beauty_render_ms = (time.perf_counter() - beauty_start) * 1000
+
+    # Push frame metrics to Grafana (if configured)
+    push_frame_metrics_sync(
+        frame_index=0,
+        shot_id=args.shot_type or "demo",
+        structure_render_ms=0,  # Structure render time not tracked here
+        beauty_render_ms=beauty_render_ms,
+        total_ms=beauty_render_ms,
+        backend=backend,
+        anime_claim=anime_claim,
+        structure_sha256=structure_sha,
+        beauty_sha256=beauty_sha if anime_claim else None,
     )
     # Final fail-closed re-check before any manifest write.
     anime_claim, claim_gate_reason = resolve_anime_claim(
@@ -1286,6 +1590,7 @@ def run_pipeline(args: argparse.Namespace) -> RenderManifest:
                 "anime_world_profile_id": profile_id,
                 "beauty_png": str(beauty_path),
                 "final_png": str(final_path),
+                "director_artifacts": director_artifacts,
             },
         )
     )
@@ -1468,6 +1773,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default="auto",
         choices=[
             "auto",
+            "gemini",
             "fal",
             "hfspace",
             "gmicloud",
@@ -1477,7 +1783,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ],
         help=(
             "Beauty backend preference "
-            "(auto tries fal→hfspace→gmicloud→lemonade→cel-proxy)"
+            "(auto tries gemini→fal→hfspace→gmicloud→lemonade→cel-proxy)"
         ),
     )
     p.add_argument(
@@ -1494,6 +1800,21 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--run-engine3d",
         action="store_true",
         help="Invoke npm Engine3D continuity runner for structure",
+    )
+    p.add_argument(
+        "--shot-description",
+        default="",
+        help="Shot description for director agent (Parallel style refs)",
+    )
+    p.add_argument(
+        "--shot-type",
+        default="",
+        help="Shot type for director agent (Parallel cinematography refs)",
+    )
+    p.add_argument(
+        "--mood",
+        default="cinematic",
+        help="Mood for director agent (Parallel color palette refs)",
     )
     p.add_argument("--intent-id", default=None)
     p.add_argument("--world-id", default=None)

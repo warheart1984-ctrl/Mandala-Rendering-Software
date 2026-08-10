@@ -1,135 +1,88 @@
-node_modules/
-.DS_Store
-Thumbs.db
-*.log
-*.zip
+# Axiom-X .gitignore
 
-# Build / cache
-dist/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
-output/
-4d-renderer/output/
-# Optional/legacy local junction → mrs/packages/renderer-core/src (npm run link:mrs-shim)
-4d-renderer/src/
-# Leftover shim copy — canonical clients live under mrs/packages/renderer-core/clients
-4d-renderer/clients/
-examples/comparisons/out/
-4d-renderer/node_modules/
-cssv/node_modules/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Unity
-unity/**/Library/
-unity/**/Temp/
-unity/**/Obj/
-unity/**/Logs/
-unity/**/UserSettings/
-unity/**/*.csproj
-unity/**/*.sln
-unity/**/*.userprefs
-unity/**/MemoryCaptures/
-
-# Unreal
-unreal/**/Binaries/
-unreal/**/DerivedDataCache/
-unreal/**/Intermediate/
-unreal/**/Saved/
-unreal/**/.vs/
-unreal/**/*.xcworkspace
-unreal/**/*.opendb
-unreal/**/*.opensdf
-unreal/**/*.sdf
-unreal/**/*.sln
-unreal/**/*.suo
-unreal/**/*.xcodeproj
-
-# Env / secrets
+# Virtual environments
+venv/
+env/
+ENV/
 .env
-.env.*
-!.env.example
-credentials.json
-*.pem
+.venv
 
 # IDE
+.vscode/
 .idea/
-.vs/
 *.swp
-.cursor/
+*.swo
+*~
 
-# Upstream reference clone (pip packages remain the runtime dependency)
-vendor/
+# OS
+.DS_Store
+Thumbs.db
 
-# Python / local envs (hygiene)
-.venv/
-__pycache__/
-.pytest_cache/
-.mypy_cache/
-*.pyc
+# Build artifacts
+*.so
+*.dll
+*.dylib
 
-# Local RT4D / WebGPU smoke artifacts (not product outputs)
-mrs/packages/renderer-core/_tmp_*.png
-mrs/packages/renderer-core/_debug_*.png
-mrs/packages/renderer-web/_webgpu-smoke/_out/
-*.wip-full
-*.receipt-wip
-
-# Temporary build artifacts
-.tmp_*
-.tmp-*/
+# Test outputs
 tmp/
-.worktrees/
-renders/
+*.log
+*.json
+evidence*.json
 
-# Runtime logs and probe artifacts (evidence/traces are regenerable)
-logs/
-*.err
-test_pollinations.png
-test_tts.mp3
+# Docker
+.docker/
 
-# CDK context (local synth state)
-infra/cdk/cdk.context.json
+# Secrets (never commit!)
+*.pem
+*.key
+*.crt
+*.env
+.env.local
+.env.production
 
-# HIP hello binary under proofs (JSON compile proof is SoT; rebuild with hipcc)
-docs/4d-engine/proofs/legacy-efficient/hip_hello.exe
-docs/4d-engine/proofs/legacy-efficient/*.exe
-docs/4d-engine/proofs/legacy-efficient/hip-hello-*.tmp
-docs/4d-engine/proofs/legacy-efficient/hip-hello-run.log
+# Large files
+*.png
+*.jpg
+*.mp4
+*.mov
+*.avi
+*.mkv
 
-# Local package metadata / source references kept outside Git
-jarvis-memoryboard/*.egg-info/
-aiki/docs/reference-models/e8/sources/*.docx
-VP_VULKANINFO_*.json
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Operator-provided production face GLBs (keep README / .gitkeep tracked)
-operator-assets/**/*.glb
-operator-assets/**/*.gltf
-operator-assets/**/*.bin
-!operator-assets/**/README.md
-!operator-assets/**/.gitkeep
+# IDE specific
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 
-# Mandala Lattice v1.0 runtime — source of truth lives under sme/dist
-# (dist/ is the deployed distribution layout for the desktop build)
-!sme/dist/
-!sme/dist/lattice/
-!sme/dist/lattice/**
-sme/dist/models/
-sme/dist/node_modules/
-
-# ARIS is a separate project (own git repo) — never absorb into MRS
-Aris-/
-
-# SME model weights and binaries — never tracked
-models/
-sme-suite/models/
-
-# SME native build artifacts + vendored third-party (llama.cpp, whisper.cpp, onnxruntime)
-sme-suite/build/
-sme-suite/modules/*/build/
-sme-suite/third_party/
-
-# Parallel native working copy (canonical native source lives under sme-suite/modules)
-modules/
-
-# Mandala desktop app — binaries, weights, and secrets are never tracked
-mandala-app/models/
-mandala-app/config/api-keys.json
-**/api-keys.json
+# Optional: keep these if you want to track
+# docs/
+# examples/

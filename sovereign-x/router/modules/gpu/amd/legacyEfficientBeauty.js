@@ -37,6 +37,7 @@ import {
   resolveHipBeautyKernelStatus,
 } from "./hipSdkProbe.js";
 import { generateOpenClLegacyStill } from "./openclLegacyStill.js";
+import { generateStillViaAxiomX } from "./axiomXBridge.js";
 import {
   generateClGenStill,
   CL_GEN_PROVIDER,
@@ -323,12 +324,13 @@ export function integrateLegacyEfficientBeauty(request = {}) {
 /**
  * Async path: schedule + optional Lemonade SD / Lemonade SDK chat / CL-Gen / OpenCL still.
  *
- * request.beautyProvider: "auto" | "lemonade" | "lemonade-sdk" | "opencl.gen" | "opencl" | "hip" | "none"
+ * request.beautyProvider: "auto" | "lemonade" | "lemonade-sdk" | "opencl.gen" | "opencl" | "hip" | "axiomx" | "none"
  * request.requestStill: boolean (same as beautyProvider auto when true)
  * request.chatPrompt: optional — used with lemonade-sdk for OpenAI chat
  * request.probeHip: optional — attach HIP SDK detection (also on auto/hip)
  *
- * Auto prefer: Lemonade SD → opencl.gen (CL-Gen) → opencl-legacy radial probe.
+ * Auto prefer: Axiom-X OpenCL kernel → Lemonade SD → opencl.gen (CL-Gen) → opencl-legacy radial probe.
+ * Axiom-X is the proven live GPU path on legacy GCN hosts (RX 580).
  * Lemonade held until pixelsProduced:true on this host.
  *
  * @param {object} request
@@ -355,6 +357,9 @@ export async function integrateLegacyEfficientBeautyAsync(request = {}) {
     "opencl-gen-dim-room.png",
   );
   const openclLegacyOut = join(outDir, "opencl-tonga-still.png");
+  const axiomXOutDir = request.axiomXOutDir
+    ? resolve(String(request.axiomXOutDir))
+    : join(outDir, "axiom-x");
 
   /** @type {any} */
   const beauty = {
@@ -364,6 +369,7 @@ export async function integrateLegacyEfficientBeautyAsync(request = {}) {
     hip: null,
     openclGen: null,
     opencl: null,
+    axiomX: null,
     stillPath: null,
     stillProvider: null,
   };
@@ -388,6 +394,12 @@ export async function integrateLegacyEfficientBeautyAsync(request = {}) {
     providerRaw === "lemonade-sdk" ||
     providerRaw === LEMONADE_SDK_PROVIDER ||
     providerRaw === "auto";
+  const wantAxiomX =
+    providerRaw === "axiomx" ||
+    providerRaw === "axiom-x" ||
+    providerRaw === "axiom_x" ||
+    providerRaw === "axiomX" ||
+    (providerRaw === "auto" && request.allowAxiomX !== false);
   const wantLemonadeSd =
     providerRaw === "auto" || providerRaw === "lemonade";
   const wantClGen =
@@ -423,7 +435,29 @@ export async function integrateLegacyEfficientBeautyAsync(request = {}) {
     beauty.lemonadeSdk = sdkBlock;
   }
 
-  if (wantLemonadeSd) {
+  // Axiom-X OpenCL kernel path — live GPU via Sovereign-X → Axiom-X bridge.
+  // Preferred on auto: produces real pixels from the proven legacy_still
+  // kernel (OpenCL on legacy GCN), assist-only, never print SoT.
+  if (wantAxiomX) {
+    const ax = await generateStillViaAxiomX({
+      outDir: axiomXOutDir,
+      width: Math.min(512, request.width ?? 256),
+      height: Math.min(512, request.height ?? 256),
+      seed: Number.isFinite(request.seed) ? request.seed : 1.0,
+      intentId,
+      worldId: request.worldId || "world.unknown",
+      timelineId: request.timelineId || "timeline.unknown",
+      python: request.axiomXPython,
+      timeoutMs: request.axiomXTimeoutMs ?? 120_000,
+    });
+    beauty.axiomX = ax;
+    if (ax.ok && ax.outPath) {
+      beauty.stillPath = ax.outPath;
+      beauty.stillProvider = "axiom-x";
+    }
+  }
+
+  if (wantLemonadeSd && !beauty.stillPath) {
     const probe = await probeLemonadeCapabilities({ verifyWeights: false });
     const hostGpuBlocked = (probe.blockers || []).some((b) =>
       ["HOST_LEGACY_GCN", "LEMONADE_UNREACHABLE"].includes(b.code),

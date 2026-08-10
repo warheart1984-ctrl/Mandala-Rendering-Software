@@ -1,6 +1,6 @@
 /**
  * Optional OpenCL still bridge for SX legacy-efficient route.
- * Spawns scripts/legacy-efficient/opencl_tonga_still.py when requested.
+ * Spawns scripts/legacy_efficient/opencl_tonga_still.py when requested.
  *
  * STATUS: **partial** — host OpenCL proof path; requires pyopencl on PATH python.
  */
@@ -25,7 +25,7 @@ export function generateOpenClLegacyStill(opts = {}) {
   const script = join(
     repoRoot,
     "scripts",
-    "legacy-efficient",
+    "legacy_efficient",
     "opencl_tonga_still.py",
   );
   if (!existsSync(script)) {
