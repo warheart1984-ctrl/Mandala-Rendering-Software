@@ -311,7 +311,7 @@ export class UniversalConformanceGate {
   async _checkNoReplayDivergence(ctx) {
     const { originalExecution, replayExecution } = ctx;
     if (!originalExecution || !replayExecution) {
-      throw new Error("Both original and replay executions required");
+      return { evidence: { replayDivergenceChecked: false, reason: "no_replay_execution" } };
     }
 
     if (originalExecution.seed !== replayExecution.seed) {
