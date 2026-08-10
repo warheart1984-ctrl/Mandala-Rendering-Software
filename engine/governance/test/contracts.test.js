@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { CONTRACTS, resolveAuthority } from "../../constitution/contracts.js";
 
 describe("CONTRACTS", () => {
-  it("has 10 SME contracts", () => {
-    assert.equal(CONTRACTS.contracts.length, 10);
+  it("has 14 registered contracts", () => {
+    assert.equal(CONTRACTS.contracts.length, 14);
   });
 
   it("includes director + replay contracts", () => {
@@ -80,6 +80,40 @@ describe("resolveAuthority()", () => {
     assert.ok(
       result.reason.includes("not in allow-list"),
       `Expected reason to contain "not in allow-list", got: ${result.reason}`,
+    );
+  });
+
+  it("prime architect 1002 is sovereign over scoped actions", () => {
+    const pa = CONTRACTS.contracts.find(
+      (c) => c.contractId === "contract.prime-architect.v1",
+    );
+    assert.ok(pa, "prime-architect contract exists");
+    assert.equal(pa.status, "enforced");
+    assert.equal(pa.authority, "sovereign");
+    assert.equal(pa.identity.human.name, "Jon Halstead");
+    assert.equal(pa.identity.human.id, "1002");
+    assert.equal(pa.identity.organization, "UGR");
+    assert.ok(pa.allowedActions.includes("*"));
+    assert.ok(pa.scopeKeys.includes("project-infi"));
+
+    const result = resolveAuthority("ugr.prime-architect:1002", "render.session.start");
+    assert.equal(result.ok, true);
+    assert.equal(result.contractId, "contract.prime-architect.v1");
+    assert.equal(result.authority, "sovereign");
+  });
+
+  it("prime architect bare actor id resolves too", () => {
+    const result = resolveAuthority("ugr.prime-architect", "modify_governance");
+    assert.equal(result.ok, true);
+    assert.equal(result.contractId, "contract.prime-architect.v1");
+  });
+
+  it("unrelated ugr actor is not granted sovereign authority", () => {
+    const result = resolveAuthority("ugr.other", "render.session.start");
+    assert.equal(result.ok, false);
+    assert.ok(
+      result.reason.includes("No contract"),
+      `Expected reason to contain "No contract", got: ${result.reason}`,
     );
   });
 });

@@ -1,0 +1,23 @@
+{
+  "schema": "mrs.constitution.identity-key.v1",
+  "keyId": "ugr.prime-architect:1002",
+  "kind": "human-sovereign",
+  "human": {
+    "name": "Jon Halstead",
+    "givenName": "Jon",
+    "familyName": "Halstead",
+    "operatorId": "operator:jon-halstead"
+  },
+  "role": "prime-architect",
+  "roleNumber": "1002",
+  "organization": "UGR",
+  "authority": "sovereign",
+  "status": "enforced",
+  "scopeKeys": [
+    "project-infi",
+    "mandala-rendering-software"
+  ],
+  "soleHuman": true,
+  "grantedBy": "ugr.prime-architect:1002",
+  "note": "Sole human authority in the Mandala rendering system. Public governance identity key — contains no secret material."
+}
