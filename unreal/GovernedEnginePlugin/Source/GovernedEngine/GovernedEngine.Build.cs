@@ -17,6 +17,8 @@ public class GovernedEngine : ModuleRules
 			"RHI",
 			"RenderCore",
 			"ProceduralMeshComponent",
+			"MovieRenderPipelineCore",
+			"MovieRenderPipelineRenderPasses",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
@@ -36,5 +38,22 @@ public class GovernedEngine : ModuleRules
 			System.IO.Path.Combine(SharedEngine, "timeline"),
 			System.IO.Path.Combine(SharedEngine, "conformance"),
 		});
+
+		// Editor-only dependencies for automation tests
+		if (Target.Type == TargetType.Editor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"UnrealEd",
+				"LevelSequence",
+				"MovieScene",
+				"MovieRenderPipelineCore",
+				"MovieRenderPipelineRenderPasses",
+				"MovieRenderPipelineEditor",
+				"AutomationController",
+				"AutomationTest",
+				"AutomationUtils",
+			});
+		}
 	}
 }

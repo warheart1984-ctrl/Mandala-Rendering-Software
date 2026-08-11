@@ -1,0 +1,208 @@
+name: Unreal PIE / MRQ CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    paths:
+      - 'unreal/**'
+      - '.github/workflows/unreal-pie.yml'
+
+env:
+  UE_VERSION: "5.3"
+  UE_PROJECT_PATH: unreal/GovernedUnrealProject/GovernedUnrealProject.uproject
+  PLUGIN_PATH: unreal/GovernedEnginePlugin
+
+jobs:
+  build:
+    name: Unreal Build (Editor)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Unreal Engine
+        uses: seanmiddleditch/gha-setup-unreal@v1
+        with:
+          version: ${{ env.UE_VERSION }}
+
+      - name: Cache DerivedDataCache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.UE_PROJECT_PATH }}/DerivedDataCache
+            ${{ env.UE_PROJECT_PATH }}/Intermediate
+            ${{ env.PLUGIN_PATH }}/Intermediate
+          key: ue-${{ env.UE_VERSION }}-ddc-${{ hashFiles('**/Source/**', '**/Build.cs', '**/*.uplugin') }}
+          restore-keys: |
+            ue-${{ env.UE_VERSION }}-ddc-
+
+      - name: Generate Project Files
+        run: |
+          & "C:\Program Files\Epic Games\UE_${{ env.UE_VERSION }}\Engine\Build\BatchFiles\GenerateProjectFiles.bat" "${{ env.UE_PROJECT_PATH }}"
+
+      - name: Build Editor Target
+        run: |
+          & "C:\Program Files\Epic Games\UE_${{ env.UE_VERSION }}\Engine\Build\BatchFiles\Build.bat" `
+            GovernedUnrealProjectEditor Win64 Development `
+            -Project="${{ env.UE_PROJECT_PATH }}" `
+            -WaitMutex -FromMsBuild
+
+      - name: Build Plugin
+        run: |
+          & "C:\Program Files\Epic Games\UE_${{ env.UE_VERSION }}\Engine\Build\BatchFiles\Build.bat" `
+            GovernedEngine Win64 Development `
+            -Project="${{ env.UE_PROJECT_PATH }}" `
+            -WaitMutex -FromMsBuild
+
+  pie-tests:
+    name: Unreal PIE Tests
+    runs-on: windows-latest
+    timeout-minutes: 60
+    needs: build
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Unreal Engine
+        uses: seanmiddleditch/gha-setup-unreal@v1
+        with:
+          version: ${{ env.UE_VERSION }}
+
+      - name: Cache DerivedDataCache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.UE_PROJECT_PATH }}/DerivedDataCache
+            ${{ env.UE_PROJECT_PATH }}/Intermediate
+          key: ue-${{ env.UE_VERSION }}-ddc-${{ hashFiles('**/Source/**', '**/Build.cs', '**/*.uplugin') }}
+          restore-keys: |
+            ue-${{ env.UE_VERSION }}-ddc-
+
+      - name: Run PIE Governance Tests
+        run: |
+          & "C:\Program Files\Epic Games\UE_${{ env.UE_VERSION }}\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" `
+            "${{ env.UE_PROJECT_PATH }}" `
+            -run=GovernedEngineTests `
+            -unattended `
+            -nullrhi `
+            -NoSplash `
+            -log
+
+      - name: Upload PIE Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unreal-pie-test-results
+          path: |
+            ${{ env.UE_PROJECT_PATH }}/Saved/Logs/
+          retention-days: 7
+
+  mrq-smoke:
+    name: Unreal MRQ Smoke Test
+    runs-on: windows-latest
+    timeout-minutes: 60
+    needs: build
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Unreal Engine
+        uses: seanmiddleditch/gha-setup-unreal@v1
+        with:
+          version: ${{ env.UE_VERSION }}
+
+      - name: Cache DerivedDataCache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.UE_PROJECT_PATH }}/DerivedDataCache
+            ${{ env.UE_PROJECT_PATH }}/Intermediate
+          key: ue-${{ env.UE_VERSION }}-ddc-${{ hashFiles('**/Source/**', '**/Build.cs', '**/*.uplugin') }}
+          restore-keys: |
+            ue-${{ env.UE_VERSION }}-ddc-
+
+      - name: Run MRQ Governed Movie Capture Test
+        run: |
+          # Create a minimal test map with GovernedMovieCaptureMRQComponent
+          & "C:\Program Files\Epic Games\UE_${{ env.UE_VERSION }}\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" `
+            "${{ env.UE_PROJECT_PATH }}" `
+            -ExecCmds="Automation RunTests GovernedEngine.MRQ.GovernedMovieCaptureMRQ" `
+            -unattended `
+            -nullrhi `
+            -NoSplash `
+            -log
+
+      - name: Upload MRQ Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unreal-mrq-test-results
+          path: |
+            ${{ env.UE_PROJECT_PATH }}/Saved/Logs/
+            ${{ env.UE_PROJECT_PATH }}/Saved/Movies/
+          retention-days: 7
+
+  conformance:
+    name: Unreal Conformance Tests
+    runs-on: windows-latest
+    timeout-minutes: 30
+    needs: build
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Unreal Engine
+        uses: seanmiddleditch/gha-setup-unreal@v1
+        with:
+          version: ${{ env.UE_VERSION }}
+
+      - name: Cache DerivedDataCache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.UE_PROJECT_PATH }}/DerivedDataCache
+            ${{ env.UE_PROJECT_PATH }}/Intermediate
+          key: ue-${{ env.UE_VERSION }}-ddc-${{ hashFiles('**/Source/**', '**/Build.cs', '**/*.uplugin') }}
+          restore-keys: |
+            ue-${{ env.UE_VERSION }}-ddc-
+
+      - name: Run Conformance Tests
+        run: |
+          & "C:\Program Files\Epic Games\UE_${{ env.UE_VERSION }}\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" `
+            "${{ env.UE_PROJECT_PATH }}" `
+            -ExecCmds="Automation RunTests GovernedEngine.Conformance" `
+            -unattended `
+            -nullrhi `
+            -NoSplash `
+            -log
+
+      - name: Upload Conformance Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unreal-conformance-results
+          path: |
+            ${{ env.UE_PROJECT_PATH }}/Saved/Logs/
+          retention-days: 7

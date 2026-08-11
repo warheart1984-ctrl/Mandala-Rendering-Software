@@ -1,0 +1,204 @@
+name: Unity Play Mode CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    paths:
+      - 'unity/**'
+      - '.github/workflows/unity-playmode.yml'
+
+env:
+  UNITY_VERSION: 2022.3.22f1
+  UNITY_PROJECT_PATH: unity/GovernedUnityProject
+
+jobs:
+  playmode-tests:
+    name: Unity PlayMode Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.UNITY_PROJECT_PATH }}/Library
+          key: unity-${{ env.UNITY_VERSION }}-${{ hashFiles('**/Packages/**', '**/Assets/**') }}
+          restore-keys: |
+            unity-${{ env.UNITY_VERSION }}-
+
+      - name: Setup Unity
+        uses: game-ci/unity-installer@v4
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          cacheKey: unity-${{ env.UNITY_VERSION }}
+
+      - name: Activate Unity License
+        uses: game-ci/unity-activate@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Run PlayMode Tests
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: ${{ env.UNITY_PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: playmode
+          customParameters: -batchmode -nographics -logFile -
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Upload PlayMode Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-playmode-results
+          path: ${{ env.UNITY_PROJECT_PATH }}/TestResults/
+          retention-days: 7
+
+      - name: Upload Editor Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-editor-log
+          path: ${{ env.UNITY_PROJECT_PATH }}/editor.log
+          retention-days: 7
+
+  editmode-tests:
+    name: Unity EditMode Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.UNITY_PROJECT_PATH }}/Library
+          key: unity-${{ env.UNITY_VERSION }}-edit-${{ hashFiles('**/Packages/**', '**/Assets/**') }}
+          restore-keys: |
+            unity-${{ env.UNITY_VERSION }}-edit-
+
+      - name: Setup Unity
+        uses: game-ci/unity-installer@v4
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          cacheKey: unity-${{ env.UNITY_VERSION }}
+
+      - name: Activate Unity License
+        uses: game-ci/unity-activate@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Run EditMode Tests
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: ${{ env.UNITY_PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: editmode
+          customParameters: -batchmode -nographics -logFile -
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Upload EditMode Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-editmode-results
+          path: ${{ env.UNITY_PROJECT_PATH }}/TestResults/
+          retention-days: 7
+
+  conformance:
+    name: Unity Conformance Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Unity
+        uses: game-ci/unity-installer@v4
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          cacheKey: unity-${{ env.UNITY_VERSION }}
+
+      - name: Activate Unity License
+        uses: game-ci/unity-activate@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Run Conformance Tests (EditMode)
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: ${{ env.UNITY_PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: editmode
+          categoryFilter: Conformance
+          customParameters: -batchmode -nographics -logFile -
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Upload Conformance Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-conformance-results
+          path: ${{ env.UNITY_PROJECT_PATH }}/TestResults/
+          retention-days: 7
+
+  solid-smoke:
+    name: Unity Solid 4D Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.UNITY_PROJECT_PATH }}/Library
+          key: unity-${{ env.UNITY_VERSION }}-solid-${{ hashFiles('**/Packages/**', '**/Assets/**') }}
+          restore-keys: |
+            unity-${{ env.UNITY_VERSION }}-solid-
+
+      - name: Setup Unity
+        uses: game-ci/unity-installer@v4
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          cacheKey: unity-${{ env.UNITY_VERSION }}
+
+      - name: Activate Unity License
+        uses: game-ci/unity-activate@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Run FourDSolidPlayModeTests
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: ${{ env.UNITY_PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: playmode
+          testFilter: FourDSolidPlayModeTests
+          customParameters: -batchmode -nographics -logFile -
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Upload Solid Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-solid-smoke-results
+          path: ${{ env.UNITY_PROJECT_PATH }}/TestResults/
+          retention-days: 7
