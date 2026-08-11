@@ -145,16 +145,24 @@ export class Projector4DTo3D {
   }
 
   _perspective(p, d) {
-    const denom = d - p.w;
+    return this._perspectiveCoords(p.x, p.y, p.z, p.w, d);
+  }
+
+  _perspectiveCoords(x, y, z, w, d) {
+    const denom = d - w;
     if (Math.abs(denom) < 1e-12) {
       return { x: 0, y: 0, z: 0, degenerate: true };
     }
     const s = d / denom;
-    return { x: p.x * s, y: p.y * s, z: p.z * s, degenerate: false };
+    return { x: x * s, y: y * s, z: z * s, degenerate: false };
   }
 
   _orthographic(p) {
     return { x: p.x, y: p.y, z: p.z, degenerate: false };
+  }
+
+  _orthographicCoords(x, y, z) {
+    return { x, y, z, degenerate: false };
   }
 
   _slice(p, w0, epsilon) {
@@ -164,13 +172,99 @@ export class Projector4DTo3D {
     return { x: p.x, y: p.y, z: p.z, degenerate: false, rejected: false };
   }
 
+  _sliceCoords(x, y, z, w, w0, epsilon) {
+    if (Math.abs(w - w0) > epsilon) {
+      return { x: 0, y: 0, z: 0, rejected: true, reason: `w=${w} outside slice w0=${w0}±${epsilon}` };
+    }
+    return { x, y, z, degenerate: false, rejected: false };
+  }
+
   _stereographic(p, R) {
-    const denom = R - p.w;
+    return this._stereographicCoords(p.x, p.y, p.z, p.w, R);
+  }
+
+  _stereographicCoords(x, y, z, w, R) {
+    const denom = R - w;
     if (Math.abs(denom) < 1e-12) {
       return { x: 0, y: 0, z: 0, degenerate: true };
     }
     const s = R / denom;
-    return { x: p.x * s, y: p.y * s, z: p.z * s, degenerate: false };
+    return { x: x * s, y: y * s, z: z * s, degenerate: false };
+  }
+
+  _forward(result) {
+    const p4 = result.point4D || [];
+    const [x, y, z, w] = p4;
+    const params = result.parameters || {};
+    switch (result.mode) {
+      case PROJECTION_MODES.PERSPECTIVE:
+        return this._perspectiveCoords(x, y, z, w, params.d);
+      case PROJECTION_MODES.ORTHOGRAPHIC:
+        return this._orthographicCoords(x, y, z);
+      case PROJECTION_MODES.SLICE:
+        return this._sliceCoords(x, y, z, w, params.w0, params.epsilon);
+      case PROJECTION_MODES.STEREOGRAPHIC:
+        return this._stereographicCoords(x, y, z, w, params.R);
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Error-bound evidence for a projection result: roundtrip residual
+   * (forward map recomputed from the source 4D point must reproduce the
+   * stored 3D result) plus a numeric condition estimate (how much the map
+   * amplifies a delta perturbation of the 4D input).
+   */
+  computeErrorBound(result, delta = 1e-6, tolerance = 1e-9) {
+    const p4 = result.point4D || [];
+    if (p4.length < 4) {
+      return { finite: false, roundtripResidual: Infinity, conditionEstimate: Infinity, withinTolerance: false };
+    }
+
+    const forward = this._forward(result);
+    const finite =
+      forward !== null &&
+      Number.isFinite(result.x) &&
+      Number.isFinite(result.y) &&
+      Number.isFinite(result.z) &&
+      !result.degenerate &&
+      !result.rejected;
+
+    let roundtripResidual = Infinity;
+    if (finite) {
+      roundtripResidual = Math.max(
+        Math.abs(forward.x - result.x),
+        Math.abs(forward.y - result.y),
+        Math.abs(forward.z - result.z)
+      );
+    }
+
+    let conditionEstimate = Infinity;
+    if (finite) {
+      const perturbed = p4.map((c) => c + delta);
+      const forwardPerturbed = this._forward({ ...result, point4D: perturbed });
+      const inputDelta = Math.hypot(
+        perturbed[0] - p4[0],
+        perturbed[1] - p4[1],
+        perturbed[2] - p4[2],
+        perturbed[3] - p4[3]
+      );
+      if (forwardPerturbed !== null && !forwardPerturbed.degenerate && inputDelta > 0) {
+        conditionEstimate = Math.max(
+          Math.abs(forwardPerturbed.x - forward.x),
+          Math.abs(forwardPerturbed.y - forward.y),
+          Math.abs(forwardPerturbed.z - forward.z)
+        ) / inputDelta;
+      }
+    }
+
+    return {
+      finite,
+      roundtripResidual,
+      conditionEstimate,
+      withinTolerance: finite && roundtripResidual <= tolerance,
+    };
   }
 
   projectBatch(points, policy, camera = null) {
@@ -188,6 +282,12 @@ export class CertifiedProjection {
     this.projectionParameters = governance.projectionParameters || projectionResult.parameters;
     this.sourceCertificate = governance.sourceCertificate || null;
     this.projectionVerification = governance.projectionVerification || { hash: null };
+    this.projectionError = governance.projectionError || {
+      finite: false,
+      roundtripResidual: null,
+      conditionEstimate: null,
+      withinTolerance: false,
+    };
     this.intentId = governance.intentId || null;
     this.worldId = governance.worldId || null;
     this.timelineId = governance.timelineId || null;
@@ -201,6 +301,11 @@ export class CertifiedProjection {
 
   setVerification(hash) {
     this.projectionVerification.hash = hash;
+    return this;
+  }
+
+  setProjectionError(errorBound) {
+    this.projectionError = errorBound;
     return this;
   }
 
@@ -219,6 +324,7 @@ export class CertifiedProjection {
       projectionParameters: this.projectionParameters,
       sourceCertificationId: this.sourceCertificate?.certificationId || null,
       verificationHash: this.projectionVerification.hash,
+      errorBound: this.projectionError,
       intentId: this.intentId,
       worldId: this.worldId,
       timelineId: this.timelineId,
@@ -237,6 +343,7 @@ export class CertifiedProjection {
       projectionParameters: this.projectionParameters,
       sourceCertificate: this.sourceCertificate?.toJSON?.() ?? this.sourceCertificate,
       projectionVerification: this.projectionVerification,
+      projectionError: this.projectionError,
       intentId: this.intentId,
       worldId: this.worldId,
       timelineId: this.timelineId,

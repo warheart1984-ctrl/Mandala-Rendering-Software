@@ -13,6 +13,7 @@ export class CertifiedProjector {
     const { intentId, worldId, timelineId, stateId, sourceCertificate } = options;
 
     const projectionResult = this.projector.project(state, policy, camera);
+    const errorBound = this.projector.computeErrorBound(projectionResult);
     const projectedTensor = new CertifiedTensor(
       { components: [projectionResult.x, projectionResult.y, projectionResult.z, 0], rank: 1, metric: this.metric },
       {
@@ -32,6 +33,7 @@ export class CertifiedProjector {
       intentId,
       worldId,
       timelineId,
+      projectionError: errorBound,
     });
 
     certifiedProjection.setVerification(CertifiedTensor._hashTensor(projectedTensor.tensor));

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { computeErrorBound, withinTolerance } from "./MathValidity.js";
 
 export const CERTIFICATION_STATUSES = Object.freeze({
   DRAFT: "draft",
@@ -23,7 +24,7 @@ export class CertifiedTensor {
   constructor(tensor, governance = {}) {
     this.tensor = tensor;
     this.authority = governance.authority || AUTHORITIES.TENSOR_ENGINE;
-    this.validation = governance.validation || { passed: false, checks: [] };
+    this.validation = governance.validation || { passed: false, checks: [], errorBound: { max: 0, sources: [] } };
     this.decision = governance.decision || { made: false, reason: "" };
     this.evidence = governance.evidence || [];
     this.verification = governance.verification || { hash: null, replayable: false };
@@ -41,9 +42,10 @@ export class CertifiedTensor {
 
   static certify(tensor, authority, validationChecks = [], evidence = []) {
     const passed = validationChecks.every(c => c.passed);
+    const errorBound = computeErrorBound(validationChecks);
     return new CertifiedTensor(tensor, {
       authority,
-      validation: { passed, checks: validationChecks },
+      validation: { passed, checks: validationChecks, errorBound },
       decision: { made: passed, reason: passed ? "All checks passed" : "Validation failed" },
       evidence,
       verification: { hash: CertifiedTensor._hashTensor(tensor), replayable: true },
@@ -91,6 +93,14 @@ export class CertifiedTensor {
     return this.validation.passed && this.certificationStatus !== CERTIFICATION_STATUSES.DRAFT;
   }
 
+  isWithinTolerance(tolerance) {
+    return withinTolerance(this.validation.errorBound, tolerance);
+  }
+
+  errorBound() {
+    return this.validation.errorBound;
+  }
+
   toJSON() {
     return {
       certificationId: this.certificationId,
@@ -113,6 +123,7 @@ export class CertifiedTensor {
       tensorRank: this.tensor.rank,
       authority: this.authority,
       validationPassed: this.validation.passed,
+      errorBound: this.validation.errorBound,
       verificationHash: this.verification.hash,
       replayToken: this.replay.token,
       auditReference: this.audit.reference,

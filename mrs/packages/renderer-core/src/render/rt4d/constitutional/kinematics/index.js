@@ -304,11 +304,12 @@ export class KinematicsEngine {
 
   certifyFourVelocity(u, c = 1) {
     const normalized = new FourVelocity(u, this.metric).normalize(c);
+    const norm2 = this.metric.norm2(normalized);
     return certifyTensor(
       normalized,
       AUTHORITIES.KINEMATICS_ENGINE,
       [
-        { name: "normalization", passed: normalized.isNormalized(c), value: this.metric.norm2(normalized) },
+        { name: "normalization", passed: normalized.isNormalized(c), value: norm2, diff: Math.abs(norm2 + c * c), residual: Math.abs(norm2 + c * c), tolerance: 1e-9 },
         { name: "timelike", passed: this.metric.isTimelike(normalized) },
       ],
       [{ type: "four_velocity", components: normalized.toArray() }]
@@ -321,8 +322,8 @@ export class KinematicsEngine {
       p,
       AUTHORITIES.KINEMATICS_ENGINE,
       [
-        { name: "momentum_invariant", passed: inv.diff < 1e-10, diff: inv.diff },
-        { name: "mass_consistency", passed: Math.abs(p.mass - mass) < 1e-10 },
+        { name: "momentum_invariant", passed: inv.diff < 1e-10, diff: inv.diff, residual: inv.diff, tolerance: 1e-10 },
+        { name: "mass_consistency", passed: Math.abs(p.mass - mass) < 1e-10, diff: Math.abs(p.mass - mass) },
       ],
       [{ type: "four_momentum", components: p.toArray(), mass }]
     );

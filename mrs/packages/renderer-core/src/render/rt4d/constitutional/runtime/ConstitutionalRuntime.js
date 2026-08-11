@@ -130,10 +130,21 @@ export class ConstitutionalRuntime {
 
     const kinematicsResult = state.kinematics.geodesicStep(state.position, state.velocity, state.dtau);
 
+    const stepVector = new FourVector(
+      kinematicsResult.position.x - state.position.x,
+      kinematicsResult.position.y - state.position.y,
+      kinematicsResult.position.z - state.position.z,
+      kinematicsResult.position.w - state.position.w,
+      state.metric
+    );
+    const expectedDs2 = -state.c * state.c * state.dtau * state.dtau;
+    const stepDs2 = state.metric.norm2(stepVector);
     const positionCert = certifyTensor(
       kinematicsResult.position,
       AUTHORITIES.KINEMATICS_ENGINE,
-      [{ name: "geodesic_step", passed: true }],
+      [
+        { name: "geodesic_step", passed: true, residual: Math.abs(stepDs2 - expectedDs2), tolerance: 1e-6 },
+      ],
       [{ type: "position_step", step: state.stepCount }]
     );
 
@@ -157,13 +168,15 @@ export class ConstitutionalRuntime {
     );
 
     const projectionResult = state.projector.project(kinematicsResult.position, state.projectionPolicy, state.camera);
+    const projectionError = state.projector.computeErrorBound(projectionResult);
     const certifiedProjection = CertifiedProjection.create(projectionResult, {
-      stateId: `STATE-${state.stepCount}`,
+      stateId: "STATE-" + state.stepCount,
       cameraId: state.camera.cameraId,
       metricId: state.metric.hash(),
       projectionMode: state.projectionPolicy.mode,
       projectionParameters: state.projectionPolicy.getParameters(),
       sourceCertificate: positionCert,
+      projectionError,
     });
     certifiedProjection.setVerification(CertifiedTensor._hashTensor(certifiedProjection.projection));
 
