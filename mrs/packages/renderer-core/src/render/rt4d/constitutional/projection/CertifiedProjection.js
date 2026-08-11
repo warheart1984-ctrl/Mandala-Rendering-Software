@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { CertifiedTensor } from "../governance/CertifiedTensor.js";
-import { Projector4DTo3D, Camera4D, ProjectionPolicy, PROJECTION_MODES } from "./Projector4DTo3D.js";
+import { Projector4DTo3D, Camera4D, ProjectionPolicy, PROJECTION_MODES, CertifiedProjection } from "./Projector4DTo3D.js";
+import { AUTHORITIES } from "../governance/index.js";
 
 export class CertifiedProjector {
   constructor(metric = null, governanceConfig = {}) {

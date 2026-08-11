@@ -209,6 +209,7 @@ export class ConstitutionalRuntime {
       velocityCert: velocityCert.toProvenanceRecord?.() ?? velocityCert,
       momentumCert: momentumCert.toProvenanceRecord?.() ?? momentumCert,
       projection: certifiedProjection.toProvenanceRecord(),
+      physicsConformance: conformance,
       replayToken: createHash("sha256").update(`${state.stepCount}-${kinematicsResult.position.x}-${kinematicsResult.position.y}-${kinematicsResult.position.z}-${kinematicsResult.position.w}`).digest("hex"),
     });
 

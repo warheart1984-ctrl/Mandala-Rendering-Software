@@ -1,0 +1,31 @@
+TITLE: The Archive of Consent — Chapter 1 Trailer
+FCM: NON-DROP FRAME
+
+001  AX       V     C        00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
+* FROM CLIP: dawn_pier_approach
+* CAMERA: tracked_dolly | spline path
+* ENV: dawn, clear, cloudCover=0.15, fog=0.0008
+* CHARS: hero(walk_pier 30-250), figure_shadow(distant_stand 100-299)
+* AUDIO: trailer_01_narration @ frame 60
+* SUBS: "The Archive remembers what we choose to forget." (2.0-5.5)
+* SUBS: "Every consent given. Every refusal recorded." (6.0-9.0)
+
+002  AX       V     C        00:00:10:00 00:00:20:00 00:00:10:00 00:00:20:00
+* FROM CLIP: archive_interior_reveal
+* CAMERA: crane_sweep | arc path
+* ENV: perpetual_twilight, interior_luminescent, fog=0.0003
+* CHARS: archivist(record_retrieval 320-580), hero(witness 350-599)
+* AUDIO: trailer_02_archivist @ frame 360
+* SUBS: "Every choice echoes through these halls." (12.0-15.5)
+* SUBS: "Your consent is not a signature. It's a covenant." (16.0-19.0)
+
+003  AX       V     C        00:00:20:00 00:00:30:00 00:00:20:00 00:00:30:00
+* FROM CLIP: burden_dawn_resolve
+* CAMERA: dolly_zoom | push_in path
+* ENV: full_dawn, breaking_storm, cloudCover=0.65, fog=0.0012
+* CHARS: hero(resolve_stance 620-899), figure_shadow(approach 700-899)
+* AUDIO: trailer_03_hero @ frame 660
+* SUBS: "The burden of contradiction... I carry it willingly." (22.0-25.5)
+* SUBS: "The Archive of Consent. Book One. Coming soon." (26.0-29.5)
+
+* END OF EDL
