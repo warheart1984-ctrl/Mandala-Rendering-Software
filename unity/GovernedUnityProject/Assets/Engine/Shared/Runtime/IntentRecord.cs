@@ -1,7 +1,7 @@
 // mirrors engine/runtime/IntentRecord.cs — keep in sync with engine/
 using System.Collections.Generic;
 
-namespace GovernedEngine.Runtime
+namespace SovereignX.CIEMS.Engine.Runtime
 {
     public sealed class IntentRecord
     {

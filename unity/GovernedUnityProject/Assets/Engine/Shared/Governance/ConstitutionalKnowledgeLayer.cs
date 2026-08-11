@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using GovernedEngine.Runtime;
+using SovereignX.CIEMS.Engine.Runtime;
 
-namespace GovernedEngine.Governance
+namespace SovereignX.CIEMS.Engine.Governance
 {
     public sealed class ConstitutionalKnowledgeLayer : IConstitutionalKnowledgeLayer
     {

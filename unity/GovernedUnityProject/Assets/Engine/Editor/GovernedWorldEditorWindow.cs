@@ -16,7 +16,7 @@ public class GovernedWorldEditorWindow : EditorWindow
 {
     GovernedWorld world;
 
-    [MenuItem("Governed/World Editor")]
+    [MenuItem("SovereignX.CIEMS.Engine/World Editor")]
     public static void Open() => GetWindow<GovernedWorldEditorWindow>("Governed World");
 
     void OnGUI()

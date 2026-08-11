@@ -3,9 +3,9 @@
 // Status: host mirror (policy evaluation logic).
 
 using System.Collections.Generic;
-using GovernedEngine.Runtime;
+using SovereignX.CIEMS.Engine.Runtime;
 
-namespace GovernedEngine.Governance
+namespace SovereignX.CIEMS.Engine.Governance
 {
     public static class DecisionEngine
     {

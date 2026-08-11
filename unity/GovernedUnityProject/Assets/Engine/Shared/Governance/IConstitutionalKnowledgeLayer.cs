@@ -6,11 +6,11 @@
 
 using System.Collections.Generic;
 
-using GovernedEngine.Runtime;
+using SovereignX.CIEMS.Engine.Runtime;
 
 
 
-namespace GovernedEngine.Governance
+namespace SovereignX.CIEMS.Engine.Governance
 
 {
 

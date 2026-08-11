@@ -3,11 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using GovernedEngine.Runtime;
+using SovereignX.CIEMS.Engine.Runtime;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace GovernedEngine.CSSV
+namespace SovereignX.CIEMS.Engine.CSSV
 {
     public sealed class UnityCssvHost
     {

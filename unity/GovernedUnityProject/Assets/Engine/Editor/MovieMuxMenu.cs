@@ -10,7 +10,7 @@ using UnityEngine;
 /// </summary>
 public static class MovieMuxMenu
 {
-    [MenuItem("GovernedEngine/Mux Movie Sequence (ffmpeg)")]
+    [MenuItem("SovereignX.CIEMS.Engine/Mux Movie Sequence (ffmpeg)")]
     public static void MuxSelectedFolder()
     {
         var folder = EditorUtility.OpenFolderPanel(

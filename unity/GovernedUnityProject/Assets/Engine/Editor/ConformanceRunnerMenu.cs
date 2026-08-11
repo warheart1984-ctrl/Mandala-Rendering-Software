@@ -1,7 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
-using GovernedEngine.Conformance;
+using SovereignX.CIEMS.Engine.Conformance;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,7 +10,7 @@ public static class ConformanceRunnerMenu
 {
     const string ProfileRelative = "engine/conformance/default.conformance-profile.json";
 
-    [MenuItem("GovernedEngine/Run Conformance Checks")]
+    [MenuItem("SovereignX.CIEMS.Engine/Run Conformance Checks")]
     public static void RunConformance()
     {
         var profilePath = ResolveProfilePath();

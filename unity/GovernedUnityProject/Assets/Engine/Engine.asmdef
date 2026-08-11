@@ -1,6 +1,6 @@
 {
-  "name": "GovernedEngine",
-  "rootNamespace": "GovernedEngine",
+  "name": "SovereignX.CIEMS.Engine",
+  "rootNamespace": "SovereignX.CIEMS.Engine",
   "references": [],
   "includePlatforms": [],
   "excludePlatforms": [],

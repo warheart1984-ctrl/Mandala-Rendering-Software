@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 
 
-namespace GovernedEngine.Dto
+namespace SovereignX.CIEMS.Engine.Dto
 
 {
 

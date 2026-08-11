@@ -1,8 +1,8 @@
 // mirrors engine/runtime/ExecutionOrchestrator.cs — Unity host uses Runtime/ExecutionOrchestrator.cs (ExecutionOrchestratorHost)
 using System;
-using GovernedEngine.Governance;
+using SovereignX.CIEMS.Engine.Governance;
 
-namespace GovernedEngine.Runtime
+namespace SovereignX.CIEMS.Engine.Runtime
 {
     public interface ITimelinePlayer
     {

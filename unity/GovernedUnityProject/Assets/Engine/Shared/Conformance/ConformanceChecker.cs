@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace GovernedEngine.Conformance
+namespace SovereignX.CIEMS.Engine.Conformance
 {
     public sealed class CheckResult
     {

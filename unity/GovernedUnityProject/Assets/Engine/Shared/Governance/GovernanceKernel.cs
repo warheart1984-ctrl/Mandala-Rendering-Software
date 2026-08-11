@@ -1,8 +1,8 @@
 // mirrors engine/governance/GovernanceKernel.cs
 using System.Linq;
-using GovernedEngine.Runtime;
+using SovereignX.CIEMS.Engine.Runtime;
 
-namespace GovernedEngine.Governance
+namespace SovereignX.CIEMS.Engine.Governance
 {
     public sealed class GovernanceKernel
     {

@@ -12,13 +12,13 @@ using System.Globalization;
 
 using System.IO;
 
-using GovernedEngine.Dto;
+using SovereignX.CIEMS.Engine.Dto;
 
 using UnityEngine;
 
 
 
-namespace GovernedEngine.World
+namespace SovereignX.CIEMS.Engine.World
 
 {
 

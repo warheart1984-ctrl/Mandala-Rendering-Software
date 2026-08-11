@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using GovernedEngine.Runtime;
+using SovereignX.CIEMS.Engine.Runtime;
 
-namespace GovernedEngine.Scripting
+namespace SovereignX.CIEMS.Engine.Scripting
 {
     public sealed class IslEngine : IIslEngine
     {

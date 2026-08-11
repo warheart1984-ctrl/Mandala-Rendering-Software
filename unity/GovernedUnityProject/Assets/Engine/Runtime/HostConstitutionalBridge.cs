@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace GovernedEngine.Runtime.Hosts
+namespace SovereignX.CIEMS.Engine.Runtime.Hosts
 {
     /// <summary>
     /// Mirrors JS HostConstitutionalRouter actions for editor tooling.

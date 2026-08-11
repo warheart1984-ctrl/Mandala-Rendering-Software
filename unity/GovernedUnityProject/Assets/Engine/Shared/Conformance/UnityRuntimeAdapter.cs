@@ -3,11 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using GovernedEngine.Governance;
-using GovernedEngine.Runtime;
+using SovereignX.CIEMS.Engine.Governance;
+using SovereignX.CIEMS.Engine.Runtime;
 using UnityEngine;
 
-namespace GovernedEngine.Conformance
+namespace SovereignX.CIEMS.Engine.Conformance
 {
     public sealed class UnityRuntimeAdapter : IRuntimeAdapter
     {

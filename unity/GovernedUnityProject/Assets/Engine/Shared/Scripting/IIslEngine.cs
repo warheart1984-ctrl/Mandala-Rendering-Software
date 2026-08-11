@@ -1,7 +1,7 @@
 // mirrors engine/scripting/IIslEngine.cs
-using GovernedEngine.Runtime;
+using SovereignX.CIEMS.Engine.Runtime;
 
-namespace GovernedEngine.Scripting
+namespace SovereignX.CIEMS.Engine.Scripting
 {
     public interface IIslEngine
     {

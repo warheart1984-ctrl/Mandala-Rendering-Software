@@ -122,5 +122,138 @@
     "action": "deny_if_false",
     "condition": "replay.authority == replay-only",
     "description": "Replay cannot escalate authority beyond replay-only."
+  },
+  {
+    "id": "policy-biometric-conformance",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "biometric_amendment_vii",
+    "kind": "biometric",
+    "haltOn": ["deny.biometric", "HALT:BIOMETRIC-NONCONFORMANCE"],
+    "order": 7,
+    "description": "Biometric conformance gate for human fixtures — metrics must be within profile ranges."
+  },
+  {
+    "id": "policy-adaptive-scale",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "biometric_amendment_vii",
+    "kind": "adaptive-scale",
+    "haltOn": ["deny.adaptiveScale", "HALT:MISSING-SCALE-CONTEXT"],
+    "order": 8,
+    "description": "Adaptive scale context gate — fixtures must declare or inherit scaleClass."
+  },
+  {
+    "id": "policy-organic-variance",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "biometric_amendment_vii",
+    "kind": "organic-variance",
+    "haltOn": ["deny.organicVariance", "HALT:ORGANIC-VARIANCE-VIOLATION"],
+    "order": 9,
+    "description": "Organic variance gate — measured variance must meet minimum; L/R averaging prohibited."
+  },
+  {
+    "id": "world.biogeometric",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "requires": ["biometric", "adaptiveScale"],
+    "haltOn": ["deny.world.biogeometric"],
+    "order": 10,
+    "description": "World biogeometric umbrella — validates entity profiles and ensures profile loads."
+  },
+  {
+    "id": "world.scaleContext",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "haltOn": ["deny.world.scaleContext"],
+    "order": 11,
+    "description": "World scale context — cross-cutting gate ensuring scaleClass for all entities."
+  },
+  {
+    "id": "world.architecture",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "haltOn": ["deny.world.architecture"],
+    "order": 12,
+    "description": "World architecture profile gate."
+  },
+  {
+    "id": "world.terrain",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "haltOn": ["deny.world.terrain"],
+    "order": 13,
+    "description": "World terrain profile gate."
+  },
+  {
+    "id": "world.water",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "haltOn": ["deny.world.water"],
+    "order": 14,
+    "description": "World water profile gate."
+  },
+  {
+    "id": "world.plant",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "haltOn": ["deny.world.plant"],
+    "order": 15,
+    "description": "World plant profile gate."
+  },
+  {
+    "id": "world.synthetic",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "haltOn": ["deny.world.synthetic"],
+    "order": 16,
+    "description": "World synthetic profile gate."
+  },
+  {
+    "id": "world.material",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "haltOn": ["deny.world.material"],
+    "order": 17,
+    "description": "World material profile gate."
+  },
+  {
+    "id": "world.variance",
+    "scope": "render",
+    "severity": "critical",
+    "action": "deny_if_false",
+    "condition": "world_profile_ckl",
+    "kind": "world-profile",
+    "haltOn": ["deny.world.variance"],
+    "order": 18,
+    "description": "World variance profile gate — environmental variance must meet minimum."
   }
 ]
