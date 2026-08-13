@@ -47,6 +47,7 @@ def main():
             reasoning_engine=local_agent,
             requirements=[
                 "google-cloud-aiplatform>=1.163.0",
+                "google-genai>=1.0.0",
                 "httpx>=0.28.1",
                 "vertexai>=1.163.0",
             ],

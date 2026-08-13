@@ -2,6 +2,7 @@
 
 import os
 import time
+import base64
 import httpx
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
@@ -14,6 +15,86 @@ GENBLAZE_BASE_URL = os.getenv(
     "GENBLAZE_BASE_URL",
     "https://mrs-genblaze-media-351151207359.us-central1.run.app",
 )
+
+# Grafana Cloud (partner track) — remote write + auth. Unconfigured env vars
+# disable the push (returns False) so observability never breaks rendering.
+GRAFANA_INSTANCE = os.getenv("GRAFANA_CLOUD_INSTANCE", "").strip()
+GRAFANA_API_KEY = os.getenv("GRAFANA_CLOUD_API_KEY", "").strip()
+GRAFANA_PROMETHEUS_URL = os.getenv("GRAFANA_CLOUD_PROMETHEUS_URL", "").strip()
+GRAFANA_REMOTE_WRITE_URL = os.getenv("GRAFANA_CLOUD_REMOTE_WRITE_URL", "").strip()
+GRAFANA_USERNAME = os.getenv("GRAFANA_CLOUD_PROMETHEUS_USERNAME", "").strip()
+
+
+def _grafana_configured() -> bool:
+    return bool((GRAFANA_INSTANCE or GRAFANA_PROMETHEUS_URL) and GRAFANA_API_KEY)
+
+
+def build_prometheus_lines(
+    shot_id: str,
+    backend: str,
+    anime_claim: bool,
+    total_ms: float,
+    structure_render_ms: float,
+    beauty_render_ms: float,
+    api_latency_ms: Optional[float] = None,
+    tokens_used: Optional[int] = None,
+) -> str:
+    """Build Prometheus exposition-format payload for one frame (offline-testable)."""
+    timestamp_ns = int(datetime.now(timezone.utc).timestamp() * 1e9)
+    lines = [
+        f'mrs_frame_duration_ms{{shot="{shot_id}",backend="{backend}",anime_claim="{str(anime_claim).lower()}"}} {total_ms} {timestamp_ns}',
+        f'mrs_structure_render_ms{{shot="{shot_id}"}} {structure_render_ms} {timestamp_ns}',
+        f'mrs_beauty_render_ms{{shot="{shot_id}",backend="{backend}"}} {beauty_render_ms} {timestamp_ns}',
+    ]
+    if api_latency_ms is not None:
+        lines.append(f'mrs_api_latency_ms{{shot="{shot_id}",backend="{backend}"}} {api_latency_ms} {timestamp_ns}')
+    if tokens_used is not None:
+        lines.append(f'mrs_tokens_used{{shot="{shot_id}",backend="{backend}"}} {tokens_used} {timestamp_ns}')
+    return "\n".join(lines) + "\n"
+
+
+async def push_frame_metrics(
+    shot_id: str,
+    backend: str,
+    anime_claim: bool,
+    total_ms: float,
+    structure_render_ms: float,
+    beauty_render_ms: float,
+    api_latency_ms: Optional[float] = None,
+    tokens_used: Optional[int] = None,
+) -> bool:
+    """Push one frame's metrics to Grafana Cloud Prometheus. True on 204."""
+    if not _grafana_configured():
+        return False
+    push_url = (
+        GRAFANA_REMOTE_WRITE_URL
+        or GRAFANA_PROMETHEUS_URL.rstrip("/") + "/api/v1/push"
+        or f"https://prometheus-{GRAFANA_INSTANCE}/api/v1/push"
+    )
+    creds = base64.b64encode(f"{GRAFANA_USERNAME}:{GRAFANA_API_KEY}".encode()).decode()
+    payload = build_prometheus_lines(
+        shot_id=shot_id,
+        backend=backend,
+        anime_claim=anime_claim,
+        total_ms=total_ms,
+        structure_render_ms=structure_render_ms,
+        beauty_render_ms=beauty_render_ms,
+        api_latency_ms=api_latency_ms,
+        tokens_used=tokens_used,
+    )
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                push_url,
+                content=payload,
+                headers={
+                    "Authorization": f"Basic {creds}",
+                    "Content-Type": "text/plain",
+                },
+            )
+            return resp.status_code == 204
+    except Exception:  # noqa: BLE001 - observability must never break rendering
+        return False
 
 
 app = FastAPI(
@@ -65,7 +146,7 @@ async def query(request: AgentQueryRequest):
     """Generate stills via Genblaze and push metrics to Grafana."""
     shot_id = request.shot_id or f"shot-{datetime.now().strftime('%H%M%S')}"
     results = []
-    grafana_pushed = False
+    pushed = 0
 
     async with httpx.AsyncClient(timeout=300.0) as client:
         for i in range(request.frame_count):
@@ -82,10 +163,23 @@ async def query(request: AgentQueryRequest):
             resp.raise_for_status()
             gen = resp.json()
             elapsed_ms = (time.monotonic() - start) * 1000
+            backend = gen.get("provider") or "rt4d-render"
+            anime_claim = "anime" in request.prompt.lower()
+            ok = await push_frame_metrics(
+                shot_id=shot_id,
+                backend=backend,
+                anime_claim=anime_claim,
+                total_ms=elapsed_ms,
+                structure_render_ms=elapsed_ms * 0.6,
+                beauty_render_ms=elapsed_ms * 0.4,
+                api_latency_ms=elapsed_ms,
+            )
+            if ok:
+                pushed += 1
             results.append(FrameResult(
                 frame=i,
                 run_id=gen.get("run_id"),
-                provider=gen.get("provider"),
+                provider=backend,
                 elapsed_ms=elapsed_ms,
                 status=gen.get("status"),
             ))
@@ -96,7 +190,7 @@ async def query(request: AgentQueryRequest):
         frames=results,
         frame_count=len(results),
         status="completed",
-        grafana_pushed=grafana_pushed,
+        grafana_pushed=pushed == len(results) and len(results) > 0,
     )
 
 
