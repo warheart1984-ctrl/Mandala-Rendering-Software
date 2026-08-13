@@ -151,6 +151,8 @@ function recommendPlacement(workloadClass, memoryTelemetry, currentBackend) {
   return "cpu";
 }
 
+let cachedRegistry = null;
+
 export function loadGpuSkillsRegistry(options = {}) {
   if (!options.reload && cachedRegistry) return cachedRegistry;
   cachedRegistry = requireJson(GPU_SKILLS_REGISTRY_PATH);
@@ -225,6 +227,13 @@ export async function route(capabilityId, request = {}) {
     memoryTelemetry,
     request.backend
   );
+
+  // Telemetry block attached to every route() response
+  const telemetry = {
+    workloadClass,
+    recommendedPlacement,
+    memoryTelemetry: memoryTelemetry ?? null,
+  };
 
   // Constitutional safeguard — BEFORE dispatch (GPU × print / determinism)
   const safeguard = checkGpuPrintSafeguard(capabilityId, request);
@@ -307,7 +316,7 @@ export async function route(capabilityId, request = {}) {
       backend: "cpu.rt4d.print",
       determinismRequired: true,
       redirectedFrom: resolved.capabilityId,
-      ...telemetryIntegration,
+      ...telemetry,
     });
   }
 
@@ -369,7 +378,7 @@ export async function route(capabilityId, request = {}) {
         capabilityClass: resolved.capabilityClass,
         backend: resolved.backend,
         provenanceKind: "assistProvenance",
-        ...telemetryIntegration,
+        ...telemetry,
       };
     } catch (err) {
       return {
@@ -408,7 +417,7 @@ export async function route(capabilityId, request = {}) {
     task: { ...request, intent, assistOnly: true, workloadClass, recommendedPlacement },
     provenanceKind: "assistProvenance",
     vendorOverride: request.vendorOverride ?? null,
-    ...telemetryIntegration,
+    ...telemetry,
   };
 }
 
