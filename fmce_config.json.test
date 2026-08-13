@@ -1,0 +1,345 @@
+{
+  "endpoints": {
+    "ollama": {
+      "name": "Ollama (Local)",
+      "base_url": "http://localhost:11434/v1",
+      "api_key": "ollama",
+      "supports_chat": true,
+      "supports_images": false,
+      "supports_embeddings": true,
+      "supports_audio": false,
+      "requires_key": false,
+      "is_local": true,
+      "models": {
+        "chat": [
+          "llama3.2:3b",
+          "llama3.2:1b",
+          "qwen2.5:7b",
+          "phi3.5:3.8b",
+          "gemma2:2b",
+          "mistral:7b"
+        ],
+        "code": [
+          "codellama:7b",
+          "qwen2.5-coder:7b",
+          "deepseek-coder:6.7b"
+        ],
+        "reasoning": [
+          "llama3.2:3b",
+          "qwen2.5:7b"
+        ],
+        "vision": [
+          "llava:7b",
+          "llava:13b",
+          "bakllava:7b"
+        ],
+        "embeddings": [
+          "nomic-embed-text",
+          "mxbai-embed-large"
+        ]
+      },
+      "priority": 10
+    },
+    "lemonade": {
+      "name": "Lemonade (Local)",
+      "base_url": "http://localhost:13305/api/v1",
+      "api_key": "lemonade",
+      "supports_chat": true,
+      "supports_images": true,
+      "supports_embeddings": true,
+      "supports_audio": true,
+      "requires_key": false,
+      "is_local": true,
+      "models": {
+        "chat": [
+          "Llama-3.2-1B-Instruct-GGUF"
+        ],
+        "images": [
+          "SD-Turbo",
+          "SD-Turbo-GGUF"
+        ],
+        "embeddings": [
+          "Llama-3.2-1B-Instruct-GGUF"
+        ],
+        "audio_stt": [
+          "Whisper-Tiny"
+        ],
+        "audio_tts": [
+          "kokoro-v1"
+        ]
+      },
+      "priority": 5
+    },
+    "openrouter": {
+      "name": "OpenRouter (Free Tier)",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key": "sk-or-v1-REPLACED",
+      "supports_chat": true,
+      "supports_images": true,
+      "supports_embeddings": false,
+      "supports_audio": false,
+      "requires_key": true,
+      "is_local": false,
+      "models": {
+        "chat": [
+          "meta-llama/llama-3.1-70b-instruct",
+          "meta-llama/llama-3.1-8b-instruct",
+          "mistralai/mixtral-8x7b-instruct",
+          "qwen/qwen-2.5-72b-instruct",
+          "google/gemma-2-9b-it",
+          "microsoft/phi-3.5-mini-instruct"
+        ],
+        "code": [
+          "deepseek/deepseek-coder",
+          "meta-llama/llama-3.1-70b-instruct",
+          "qwen/qwen-2.5-72b-instruct"
+        ],
+        "reasoning": [
+          "nvidia/nemotron-3-ultra-550b-a55b",
+          "nvidia/nemotron-3-super-120b-a12b",
+          "deepseek/deepseek-chat"
+        ],
+        "vision": [
+          "meta-llama/llama-3.2-11b-vision-instruct",
+          "meta-llama/llama-3.2-90b-vision-instruct"
+        ],
+        "images": [
+          "stability-ai/sd-turbo",
+          "stability-ai/sdxl-turbo"
+        ]
+      },
+      "priority": 20
+    },
+    "groq": {
+      "name": "Groq (Free Tier)",
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_key": "gsk_REPLACED",
+      "supports_chat": true,
+      "supports_images": false,
+      "supports_embeddings": false,
+      "supports_audio": false,
+      "requires_key": true,
+      "is_local": false,
+      "models": {
+        "chat": [
+          "llama-3.1-70b-versatile",
+          "llama-3.1-8b-instant",
+          "gemma2-9b-it"
+        ],
+        "code": [
+          "llama-3.1-70b-versatile",
+          "deepseek-coder"
+        ],
+        "reasoning": [
+          "llama-3.1-70b-versatile",
+          "mixtral-8x7b-32768"
+        ]
+      },
+      "priority": 15
+    },
+    "together": {
+      "name": "Together AI (Free Tier)",
+      "base_url": "https://api.together.xyz/v1",
+      "api_key": "",
+      "supports_chat": true,
+      "supports_images": true,
+      "supports_embeddings": true,
+      "supports_audio": false,
+      "requires_key": true,
+      "is_local": false,
+      "models": {
+        "chat": [
+          "meta-llama/Llama-3.1-70B-Instruct-Turbo",
+          "meta-llama/Llama-3.1-8B-Instruct-Turbo",
+          "mistralai/Mixtral-8x7B-Instruct-v0.1",
+          "Qwen/Qwen2.5-72B-Instruct-Turbo"
+        ],
+        "code": [
+          "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
+          "meta-llama/Llama-3.1-70B-Instruct-Turbo"
+        ],
+        "reasoning": [
+          "deepseek-ai/DeepSeek-V3",
+          "meta-llama/Llama-3.1-70B-Instruct-Turbo"
+        ],
+        "vision": [
+          "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+          "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo"
+        ],
+        "images": [
+          "stability-ai/SDXL-Turbo",
+          "stability-ai/Stable-Diffusion-XL-Base-1.0"
+        ],
+        "embeddings": [
+          "BAAI/bge-large-en-v1.5",
+          "togethercomputer/m2-bert-80M-8k-retrieval"
+        ]
+      },
+      "priority": 25
+    },
+    "deepinfra": {
+      "name": "DeepInfra (Free Tier)",
+      "base_url": "https://api.deepinfra.com/v1/openai",
+      "api_key": "",
+      "supports_chat": true,
+      "supports_images": true,
+      "supports_embeddings": true,
+      "supports_audio": false,
+      "requires_key": true,
+      "is_local": false,
+      "models": {
+        "chat": [
+          "meta-llama/Meta-Llama-3.1-70B-Instruct",
+          "meta-llama/Meta-Llama-3.1-8B-Instruct",
+          "mistralai/Mixtral-8x7B-Instruct-v0.1",
+          "Qwen/Qwen2.5-72B-Instruct"
+        ],
+        "code": [
+          "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
+        ],
+        "reasoning": [
+          "meta-llama/Meta-Llama-3.1-70B-Instruct"
+        ],
+        "vision": [
+          "meta-llama/Llama-3.2-11B-Vision-Instruct"
+        ],
+        "images": [
+          "stability-ai/SDXL-Turbo"
+        ],
+        "embeddings": [
+          "BAAI/bge-large-en-v1.5"
+        ]
+      },
+      "priority": 30
+    },
+    "nvidia": {
+      "name": "NVIDIA NIM (Free Tier)",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "api_key": "",
+      "supports_chat": true,
+      "supports_images": false,
+      "supports_embeddings": true,
+      "supports_audio": false,
+      "requires_key": true,
+      "is_local": false,
+      "models": {
+        "chat": [
+          "meta/llama-3.1-70b-instruct",
+          "meta/llama-3.1-8b-instruct"
+        ],
+        "code": [
+          "nvidia/nemotron-3-ultra-550b-a55b"
+        ],
+        "reasoning": [
+          "nvidia/nemotron-3-ultra-550b-a55b",
+          "nvidia/nemotron-3-super-120b-a12b",
+          "nvidia/nemotron-3-nano-30b-a3b"
+        ],
+        "vision": [
+          "meta/llama-3.2-11b-vision-instruct",
+          "meta/llama-3.2-90b-vision-instruct",
+          "nvidia/neva-22b"
+        ],
+        "embeddings": [
+          "nvidia/nv-embed-v1",
+          "nvidia/nv-embedqa-e5-v5"
+        ]
+      },
+      "priority": 20
+    },
+    "hf": {
+      "name": "Hugging Face Inference (Free Tier)",
+      "base_url": "https://api-inference.huggingface.co/v1",
+      "api_key": "",
+      "supports_chat": true,
+      "supports_images": true,
+      "supports_embeddings": true,
+      "supports_audio": false,
+      "requires_key": true,
+      "is_local": false,
+      "models": {
+        "chat": [
+          "meta-llama/Meta-Llama-3.1-70B-Instruct",
+          "mistralai/Mixtral-8x7B-Instruct-v0.1"
+        ],
+        "code": [
+          "bigcode/starcoder2-15b"
+        ],
+        "images": [
+          "stabilityai/stable-diffusion-xl-base-1.0"
+        ],
+        "embeddings": [
+          "BAAI/bge-large-en-v1.5"
+        ]
+      },
+      "priority": 40
+    }
+  },
+  "roles": {
+    "chat": {
+      "role": "chat",
+      "model": "openrouter/meta-llama/llama-3.1-70b-instruct",
+      "fallback": "ollama/llama3.2:3b",
+      "temperature": 0.7,
+      "max_tokens": 8192,
+      "extra_params": {}
+    },
+    "code": {
+      "role": "code",
+      "model": "openrouter/deepseek/deepseek-coder",
+      "fallback": "ollama/codellama:7b",
+      "temperature": 0.7,
+      "max_tokens": 8192,
+      "extra_params": {}
+    },
+    "reasoning": {
+      "role": "reasoning",
+      "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b",
+      "fallback": "openrouter/nvidia/nemotron-3-super-120b-a12b",
+      "temperature": 0.7,
+      "max_tokens": 8192,
+      "extra_params": {}
+    },
+    "vision": {
+      "role": "vision",
+      "model": "openrouter/meta-llama/llama-3.2-11b-vision-instruct",
+      "fallback": "ollama/llava:7b",
+      "temperature": 0.7,
+      "max_tokens": 8192,
+      "extra_params": {}
+    },
+    "embeddings": {
+      "role": "embeddings",
+      "model": "openrouter/BAAI/bge-large-en-v1.5",
+      "fallback": "ollama/nomic-embed-text",
+      "temperature": 0.7,
+      "max_tokens": 8192,
+      "extra_params": {}
+    },
+    "images": {
+      "role": "images",
+      "model": "lemonade/SD-Turbo",
+      "fallback": "openrouter/stability-ai/sd-turbo",
+      "temperature": 0.7,
+      "max_tokens": 8192,
+      "extra_params": {}
+    },
+    "audio_tts": {
+      "role": "audio_tts",
+      "model": "lemonade/kokoro-v1",
+      "fallback": "openrouter/openai/tts-1",
+      "temperature": 0.7,
+      "max_tokens": 8192,
+      "extra_params": {}
+    },
+    "audio_stt": {
+      "role": "audio_stt",
+      "model": "lemonade/Whisper-Tiny",
+      "fallback": "openrouter/openai/whisper-1",
+      "temperature": 0.7,
+      "max_tokens": 8192,
+      "extra_params": {}
+    }
+  },
+  "default_role": "chat"
+}
