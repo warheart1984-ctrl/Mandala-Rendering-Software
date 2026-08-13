@@ -386,7 +386,7 @@ by default, matching the Director's `DIRECTOR_MEMORYBOARD_BASE_URL`.
 
 - *The Archive of Consent* v1.2 is the Book 1 title in the *Burden of Contradiction* series; user reports the `.docx` is already on Drive `G:\` (earlier Chapter 1 movie work also used Downloads / `The_Archive_of_Consent_DRAFT v1.2.docx`).
 - Chapter 1 book-movie artifacts and cinematic-v2 showcases live under `tmp/book-movie-ch1/` (Engine3D soft-raster / `--upgrade` path; soft-raster is not photoreal).
-- This host uses an AMD R9 380-class GPU: Lemonade SD/`sd-server` image generation has been probed blocked; Lemonade chat/TTS can run without `sd-server`; ROCm/HIP was previously absent and the user has pursued AMD HIP SDK install.
+- Live demo GPU is an AMD RX 580 (Polaris) via Vulkan — sd-server (stable-diffusion.cpp) generates SD-Turbo frames at 512x512 (a 1024 request OOMs and wedges sd-server; recovery is restart `sd_server_13306.bat`). The AMD R9 380 (Tonga) is **not installed**; historical R9 380 / Tonga notes below it are stale and do not apply to the current demo: Lemonade SD/`sd-server` was previously probed blocked on that card; Lemonade chat/TTS can run without `sd-server`; ROCm/HIP was previously absent on Tonga.
 - AIKI scaffold lives under `aiki/` in this workspace; remote target includes `warheart1984-ctrl/AIKI-Constitution-v0.1`.
 - Jarvis Continuity Ledger / memoryboard is expected at `http://localhost:8001` (or `JARVIS_MEMORYBOARD_URL`), with session hooks writing `.cursor/hooks/state/jarvis-live-context.md`.
 - Efficiency-layer / GPU-path work is intended to hook through the Sovereign X router (`sovereign-x/`).
