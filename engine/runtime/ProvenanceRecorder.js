@@ -86,6 +86,16 @@ export function createFrameProvenance({
   worldId,
   timeSeconds,
   parameters = {},
+  allocationLatencyNs,
+  copyBandwidthGBps,
+  copyLatencyNs,
+  memoryCapacityBytes,
+  workingSetBytes,
+  localityScore,
+  numaNode,
+  cacheLineUtilization,
+  deviceUtilizationPercent,
+  queueDepth,
 }) {
   const frame = {
     intentId: intentId ?? null,
@@ -93,6 +103,17 @@ export function createFrameProvenance({
     worldId: worldId ?? null,
     timeSeconds: timeSeconds ?? 0,
     parameters: { ...parameters },
+    // Memory telemetry — Sovereign-X Router resource-aware governance
+    allocationLatencyNs,
+    copyBandwidthGBps,
+    copyLatencyNs,
+    memoryCapacityBytes,
+    workingSetBytes,
+    localityScore,
+    numaNode,
+    cacheLineUtilization,
+    deviceUtilizationPercent,
+    queueDepth,
   };
   frame.provenanceHash = hashFrameProvenance(frame);
   return frame;

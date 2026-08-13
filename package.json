@@ -88,9 +88,10 @@
     "test:lattice": "node --test sme/dist/lattice/test/lattice.test.js"
   },
   "dependencies": {
-    "4d-renderer": "file:./4d-renderer",
-    "@mrs/renderer-core": "file:./mrs/packages/renderer-core",
     "@mrs/engine3d-core": "file:./mrs/packages/engine3d-core",
-    "@mrs/storage-b2": "file:./mrs/packages/storage-b2"
+    "@mrs/renderer-core": "file:./mrs/packages/renderer-core",
+    "@mrs/storage-b2": "file:./mrs/packages/storage-b2",
+    "4d-renderer": "file:./4d-renderer",
+    "node-fetch": "^3.3.2"
   }
 }
