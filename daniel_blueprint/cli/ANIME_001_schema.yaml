@@ -1,0 +1,117 @@
+schema_version: '1.0'
+shot_id: ANIME_001
+project_id: ANIME_DEMO
+scene_intent:
+  mood: dynamic, energetic, cinematic
+  genre: anime action
+  time_of_day: golden hour sunset
+  weather: clear sky with dramatic clouds
+  narrative_beat: Anime Short - opening sequence
+primary_light_source:
+  type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.LightType
+  - sun
+  color_temp_K: 5600
+  intensity_lux: 100000.0
+  direction_vector:
+  - 0.3
+  - -0.8
+  - 0.5
+  angular_diameter_deg: 0.53
+  shadow_softness: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.ShadowSoftness
+  - soft
+material_descriptors:
+- asset_name: character_skin
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - SSS
+  roughness_range:
+  - 0.3
+  - 0.5
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 8.0
+  - 3.0
+  - 2.0
+  notes: Anime-style SSS for character skin
+- asset_name: character_hair
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - mixed
+  roughness_range:
+  - 0.2
+  - 0.4
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 0.0
+  - 0.0
+  - 0.0
+  notes: Anime hair with sharp specular highlights
+- asset_name: character_eyes
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - mixed
+  roughness_range:
+  - 0.05
+  - 0.15
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 0.0
+  - 0.0
+  - 0.0
+  notes: Large reflective anime eyes with catchlights
+- asset_name: sky
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - emission
+  roughness_range:
+  - 0.0
+  - 0.0
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 0.0
+  - 0.0
+  - 0.0
+  notes: Sky dome with gradient
+- asset_name: ground
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - diffuse
+  roughness_range:
+  - 0.7
+  - 0.9
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 0.0
+  - 0.0
+  - 0.0
+  notes: Stylized ground plane
+atmosphere:
+  fog_density: 0.02
+  scattering_coefficient: 0.03
+  dust_particles: false
+  rain_streak_density: 0.0
+  atmospheric_model: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.AtmosphericModel
+  - preetham
+camera:
+  focal_length_mm: 35.0
+  aperture_fstop: 2.8
+  shutter_angle: 180.0
+  sensor_size: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SensorSize
+  - Super35
+  focus_distance_m: 5.0
+  camera_motion: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.CameraMotion
+  - dolly
+color_grade_intent: 'Vibrant anime palette with cel-shaded look. High contrast, saturated
+  colors. Key colors: warm skin tones, vibrant hair colors, saturated sky blues. Cel-shaded
+  shadows with hard boundaries.'
+reference_films:
+- Makoto Shinkai - Your Name (sky rendering)
+- Studio Ghibli - Spirited Away (color palette)
+- Ufotable - Demon Slayer (effects)
+- Mappa - Jujutsu Kaisen (action cinematography)
+ai_instruction: 'Generate a 30.0-second anime opening sequence at 24fps (720 frames).
+  Cel-shaded look with hard shadows, vibrant color palette. Dynamic camera moves:
+  start wide establishing shot, dolly in to character, action pose, dramatic close-up.
+  Cel-shaded shadows with hard boundaries. Vibrant saturated colors. Dynamic camera:
+  start wide, dolly in, action pose, dramatic close-up.'
+random_seed: 3735928559

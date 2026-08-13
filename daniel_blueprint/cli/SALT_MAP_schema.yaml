@@ -1,0 +1,107 @@
+schema_version: '1.0'
+shot_id: SALT_MAP_001
+project_id: SALT_MAP_ANIME
+scene_intent:
+  mood: mystical, ancient, ethereal
+  genre: anime fantasy
+  time_of_day: ink_wash_dawn
+  weather: paper_texture
+  narrative_beat: "Salt map formation \u2014 coastlines, mountains, cities crystallizing\
+    \ from salt crystals"
+primary_light_source:
+  type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.LightType
+  - sun
+  color_temp_K: 4500
+  intensity_lux: 50000.0
+  direction_vector:
+  - 0.3
+  - -0.8
+  - 0.5
+  angular_diameter_deg: 0.53
+  shadow_softness: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.ShadowSoftness
+  - soft
+material_descriptors:
+- asset_name: salt_crystals
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - emission
+  roughness_range:
+  - 0.0
+  - 0.1
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 0.0
+  - 0.0
+  - 0.0
+  notes: Glowing salt crystals forming map features
+- asset_name: paper_texture
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - diffuse
+  roughness_range:
+  - 0.7
+  - 0.9
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 0.0
+  - 0.0
+  - 0.0
+  notes: Paper texture background with ink wash
+- asset_name: ink_lines
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - emission
+  roughness_range:
+  - 0.0
+  - 0.1
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 0.0
+  - 0.0
+  - 0.0
+  notes: Ink lines forming coastlines and borders
+- asset_name: salt_crystals
+  surface_type: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SurfaceType
+  - emission
+  roughness_range:
+  - 0.05
+  - 0.2
+  metalness: 0.0
+  ior: 1.5
+  subsurface_radius_mm:
+  - 0.0
+  - 0.0
+  - 0.0
+  notes: Growing salt crystals forming terrain
+atmosphere:
+  fog_density: 0.0
+  scattering_coefficient: 0.03
+  dust_particles: false
+  rain_streak_density: 0.0
+  atmospheric_model: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.AtmosphericModel
+  - preetham
+camera:
+  focal_length_mm: 35.0
+  aperture_fstop: 2.8
+  shutter_angle: 180.0
+  sensor_size: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.SensorSize
+  - Super35
+  focus_distance_m: 10.0
+  camera_motion: !!python/object/apply:daniel_blueprint.schemas.prompt_schema.CameraMotion
+  - crane
+color_grade_intent: 'Japanese anime ink-wash aesthetic. Muted paper tones with glowing
+  salt crystals. Cel-shaded with hard shadows. Ink wash textures. Color palette: warm
+  sepia paper, cool blue-white salt crystals, deep indigo ink lines. Soft glow on
+  crystal edges.'
+reference_films:
+- Makoto Shinkai - Your Name (crystal/light rendering)
+- Studio Ghibli - Princess Mononoke (nature spirits)
+- Makoto Shinkai - Weathering With You (water/crystal effects)
+- Studio Ghibli - Spirited Away (ink wash aesthetic)
+ai_instruction: 'Generate a 30-second anime opening sequence at 24fps (720 frames).
+  Salt map formation: salt crystals growing from center outward forming coastlines,
+  mountains, cities. Ink lines drawing borders. Paper texture background. Cel-shaded
+  with hard shadows. Vibrant salt crystal glow. Dynamic camera: slow zoom from wide
+  to medium. Cel-shaded shadows with hard boundaries. Vibrant salt crystal glow. Dynamic
+  camera: slow zoom from wide to medium.'
+random_seed: 3735928559

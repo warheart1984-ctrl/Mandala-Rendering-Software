@@ -1,0 +1,58 @@
+schema_version: "1.0"
+shot_id: "SC012_SH0045"
+project_id: "NOCTURNE_2026"
+scene_intent:
+  mood: "oppressive, dread, isolation"
+  genre: "neo-noir crime thriller"
+  time_of_day: "2:00 AM — deep night, no ambient sky light"
+  weather: "heavy rain, standing puddles, wet surfaces throughout"
+  narrative_beat: "protagonist discovers a body — quiet horror, no action"
+primary_light_source:
+  type: "practical_motivated_area"
+  color_temp_K: 2900
+  intensity_lux: 180
+  direction_vector: [0.0, -1.0, 0.1]
+  angular_diameter_deg: 0.0
+  shadow_softness: "soft"
+material_descriptors:
+  - asset_name: "wet_asphalt"
+    surface_type: "mixed"
+    roughness_range: [0.02, 0.15]
+    metalness: 0.0
+    ior: 1.33
+    subsurface_radius_mm: [0, 0, 0]
+    notes: "Use layered shader: dry asphalt base + rain-wet top layer blended by procedural puddle mask. Puddles should reflect neon signs directly."
+  - asset_name: "hero_jacket"
+    surface_type: "mixed"
+    roughness_range: [0.4, 0.7]
+    metalness: 0.0
+    ior: 1.52
+    subsurface_radius_mm: [0, 0, 0]
+    notes: "Black leather jacket, rain-soaked. Specular highlight from streetlamp should read as a single sharp-edged bright streak."
+  - asset_name: "skin_hero"
+    surface_type: "SSS"
+    roughness_range: [0.35, 0.5]
+    metalness: 0.0
+    ior: 1.4
+    subsurface_radius_mm: [8, 3, 2]
+    notes: "Face partially in shadow. Subsurface should be visible only on ear rim and jawline where streetlamp backlit. No rim light — silhouette."
+atmosphere:
+  fog_density: 0.08
+  scattering_coefficient: 0.05
+  dust_particles: false
+  rain_streak_density: 0.7
+  atmospheric_model: "hosek-wilkie"
+camera:
+  focal_length_mm: 75
+  aperture_fstop: 1.8
+  shutter_angle: 180
+  sensor_size: "Super35"
+  focus_distance_m: 2.2
+  camera_motion: "handheld"
+color_grade_intent: "Desaturated teal-blue shadows with deep crushed blacks. Sodium amber for midtones motivated by streetlamp. Highlights land at a cool off-white — no warm rolloff in highlights. Heavy vignette. Reference: Se7en (1995) rain sequences, True Detective S1 night exteriors."
+reference_films:
+  - "Se7en (1995) — night rain sequences, Andrew Lesnie / Darius Khondji"
+  - "True Detective Season 1 — bayou night exteriors, Adam Arkapaw"
+  - "Blade Runner 2049 — artificial light motivated scenes, Roger Deakins"
+  - "Prisoners (2013) — desaturated, overcast, oppressive palette, Roger Deakins"
+ai_instruction: "Generate a 3-point lighting breakdown for this setup. Motivate all secondary fill from off-screen neon signage (specify color temps and angles). Provide specular roughness values for wet asphalt that will show visible neon reflections. Suggest a V-Ray or Arnold shader network for the puddle layer blend. Color grade: target S-Log3/Venice as capture format, grade to Rec.709 delivery."
