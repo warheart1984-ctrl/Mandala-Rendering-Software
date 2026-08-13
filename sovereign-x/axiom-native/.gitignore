@@ -1,0 +1,14 @@
+# Native build artifacts (CMake / NMake / node-gyp) — never commit
+build/
+dist/
+node_modules/
+*.obj
+*.o
+*.lib
+*.dll
+*.exe
+*.exp
+*.pdb
+*.ilk
+binding.gyp
+.gyp/

@@ -56,8 +56,100 @@ export function resolveFluxGenerateModule(skillPath) {
   return IN_REPO_FLUX_GENERATE;
 }
 
-/** @type {object | null} */
-let cachedRegistry = null;
+/**
+ * Classify workload based on MemoryTelemetry observations.
+ * Returns a workload class that informs placement decisions.
+ *
+ * Workload classes:
+ *   "compute-heavy"   - device utilization high, memory pressure low
+ *   "memory-heavy"    - working set large, locality low, copying dominant
+ *   "latency-sensitive" - allocation/copy latency low, minimal waiting
+ *   "bandwidth-heavy" - copy bandwidth demand high, large transfers
+ *   "balanced"        - mixed patterns, no single dominant characteristic
+ */
+function classifyWorkload(memoryTelemetry) {
+  if (!memoryTelemetry) return "balanced";
+
+  const { allocationLatencyNs, copyBandwidthGBps, copyLatencyNs,
+          memoryCapacityBytes, workingSetBytes, localityScore,
+          deviceUtilizationPercent, queueDepth } = memoryTelemetry;
+
+  // Compute-heavy: GPU is actively utilized, memory copies are not the bottleneck
+  const computeHeavy = deviceUtilizationPercent > 70 &&
+    (copyBandwidthGBps < 10 || copyLatencyNs > 100000);
+
+  // Memory-heavy: working set is significant portion of capacity, low locality
+  const memoryCapacityRatio = memoryCapacityBytes > 0
+    ? workingSetBytes / memoryCapacityBytes
+    : 0;
+  const memoryHeavy = memoryCapacityRatio > 0.3 && localityScore < 0.5;
+
+  // Latency-sensitive: allocation and copy latencies are minimal
+  const latencySensitive = allocationLatencyNs < 10000 &&
+    copyLatencyNs < 50000;
+
+  // Bandwidth-heavy: copy bandwidth is a significant demand
+  const bandwidthHeavy = copyBandwidthGBps > 20 && queueDepth > 0;
+
+  // Determine dominant characteristic
+  const classifications = [
+    { name: "compute-heavy", predicate: computeHeavy },
+    { name: "memory-heavy", predicate: memoryHeavy },
+    { name: "latency-sensitive", predicate: latencySensitive },
+    { name: "bandwidth-heavy", predicate: bandwidthHeavy },
+  ];
+
+  // Return the first matching classification, or "balanced"
+  for (const { name } of classifications) {
+    if (name === "compute-heavy" && computeHeavy) return "compute-heavy";
+    if (name === "memory-heavy" && memoryHeavy) return "memory-heavy";
+    if (name === "latency-sensitive" && latencySensitive) return "latency-sensitive";
+    if (name === "bandwidth-heavy" && bandwidthHeavy) return "bandwidth-heavy";
+  }
+
+  return "balanced";
+}
+
+/**
+ * Recommend placement based on workload class and available substrates.
+ * Returns a placement recommendation: "cpu", "ram", or "gpu".
+ *
+ * Placement logic:
+ *   - "compute-heavy" + low memory pressure  → gpu (accelerate computation)
+ *   - "memory-heavy" + low locality         → ram (keep data on CPU side)
+ *   - "latency-sensitive" + data on host    → cpu/ram (minimize transfers)
+ *   - "bandwidth-heavy" + data on device    → gpu (avoid host↔device transfers)
+ *   - default                                   → cpu (safe baseline)
+ */
+function recommendPlacement(workloadClass, memoryTelemetry, currentBackend) {
+  if (workloadClass === "compute-heavy") {
+    // Compute-intensive work benefits from GPU acceleration
+    return "gpu";
+  }
+
+  if (workloadClass === "memory-heavy") {
+    // Large working set with poor locality - keep on CPU RAM to avoid VRAM↔RAM transfers
+    return "ram";
+  }
+
+  if (workloadClass === "latency-sensitive") {
+    // Minimize data movement - prefer where data already resides
+    // If data is already on device (currentBackend is gpu), stay there;
+    // otherwise prefer CPU RAM to avoid copy latency
+    if (currentBackend === "gpu") return "gpu";
+    return "cpu";
+  }
+
+  if (workloadClass === "bandwidth-heavy") {
+    // High bandwidth demand - route data to where it needs to be
+    // If data already on device, keep there; otherwise move to GPU
+    if (currentBackend === "gpu") return "gpu";
+    return "ram";  // Stage through RAM first
+  }
+
+  // balanced or unknown - default to CPU
+  return "cpu";
+}
 
 export function loadGpuSkillsRegistry(options = {}) {
   if (!options.reload && cachedRegistry) return cachedRegistry;
@@ -121,6 +213,19 @@ export function resolveCapability(capabilityId) {
  * @param {object} request
  */
 export async function route(capabilityId, request = {}) {
+  // Extract memory telemetry from request (optional, for Phase 3 router integration)
+  const memoryTelemetry = request.memoryTelemetry;
+
+  // Classify workload based on observed telemetry
+  const workloadClass = classifyWorkload(memoryTelemetry);
+
+  // Recommend placement substrate based on workload class
+  const recommendedPlacement = recommendPlacement(
+    workloadClass,
+    memoryTelemetry,
+    request.backend
+  );
+
   // Constitutional safeguard — BEFORE dispatch (GPU × print / determinism)
   const safeguard = checkGpuPrintSafeguard(capabilityId, request);
   if (safeguard) {
@@ -153,6 +258,8 @@ export async function route(capabilityId, request = {}) {
     };
   }
 
+  // ... rest of the function continues below
+
   if (resolved.capabilityId === "cpu.rt4d.print") {
     const contractReq = {
       ...request,
@@ -183,6 +290,8 @@ export async function route(capabilityId, request = {}) {
         "Hand-off token for PathTracer4D / Digital Printer SoT (no printer invoke in router)",
       request,
       provenanceKind: "printProvenance",
+      workloadClass,
+      recommendedPlacement,
     };
   }
 
@@ -198,6 +307,7 @@ export async function route(capabilityId, request = {}) {
       backend: "cpu.rt4d.print",
       determinismRequired: true,
       redirectedFrom: resolved.capabilityId,
+      ...telemetryIntegration,
     });
   }
 
@@ -214,9 +324,9 @@ export async function route(capabilityId, request = {}) {
       (request.beautyProvider &&
         String(request.beautyProvider).toLowerCase() !== "none");
     if (wantStill) {
-      return integrateLegacyEfficientBeautyAsync(request);
+      return integrateLegacyEfficientBeautyAsync({ ...request, workloadClass, recommendedPlacement });
     }
-    return integrateLegacyEfficientBeauty(request);
+    return integrateLegacyEfficientBeauty({ ...request, workloadClass, recommendedPlacement });
   }
 
   // NIM FLUX image ingest / lookdev-from-image — invoke skill module when present
@@ -245,6 +355,8 @@ export async function route(capabilityId, request = {}) {
         ...request,
         mode: request.mode || "lookdev-from-image",
         assistOnly: true,
+        workloadClass,
+        recommendedPlacement,
       });
       return {
         ...result,
@@ -257,6 +369,7 @@ export async function route(capabilityId, request = {}) {
         capabilityClass: resolved.capabilityClass,
         backend: resolved.backend,
         provenanceKind: "assistProvenance",
+        ...telemetryIntegration,
       };
     } catch (err) {
       return {
@@ -284,7 +397,7 @@ export async function route(capabilityId, request = {}) {
   return {
     ok: true,
     capabilityId: resolved.capabilityId,
-    backend: resolved.backend,
+    backend: recommendedPlacement,  // Use telemetry-informed placement
     capabilityClass: resolved.capabilityClass,
     authority: "assist",
     assistOnly: true,
@@ -292,9 +405,10 @@ export async function route(capabilityId, request = {}) {
     status: "declared",
     skill: resolved.skill,
     message: `Assist stub for ${resolved.capabilityId} (no live GPU)`,
-    task: { ...request, intent, assistOnly: true },
+    task: { ...request, intent, assistOnly: true, workloadClass, recommendedPlacement },
     provenanceKind: "assistProvenance",
     vendorOverride: request.vendorOverride ?? null,
+    ...telemetryIntegration,
   };
 }
 
