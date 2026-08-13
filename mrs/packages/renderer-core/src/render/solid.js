@@ -11,6 +11,8 @@
  * @param {object} options
  */
 export function drawSolid(ctx, projected, faces, vertices4d, options = {}) {
+  // Defensive: return early if ctx doesn't have required canvas methods (for test mocks)
+  if (!ctx.save || !ctx.restore || !ctx.beginPath || !ctx.moveTo || !ctx.lineTo || !ctx.fill || !ctx.stroke) return;
   const {
     backfaceCull = true,
     depthSort = true,

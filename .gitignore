@@ -51,6 +51,10 @@ tmp/
 *.json
 evidence*.json
 
+# Runtime assets the movie scripts need (re-include from *.json / lib/)
+!mrs/packages/renderer-core/schemas/salt_map_anime_timeline.json
+!mrs/packages/renderer-core/scripts/lib/rt4d-movie.js
+
 # Docker
 .docker/
 

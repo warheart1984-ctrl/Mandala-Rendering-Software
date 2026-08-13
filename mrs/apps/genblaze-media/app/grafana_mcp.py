@@ -92,11 +92,15 @@ class GrafanaMCPClient:
         instance: str | None = None,
         api_key: str | None = None,
         prometheus_url: str | None = None,
+        username: str | None = None,
+        remote_write_url: str | None = None,
         timeout: float = 10.0,
     ):
         self.instance = instance or os.getenv("GRAFANA_CLOUD_INSTANCE", "").strip()
         self.api_key = api_key or os.getenv("GRAFANA_CLOUD_API_KEY", "").strip()
         self.prometheus_url = prometheus_url or os.getenv("GRAFANA_CLOUD_PROMETHEUS_URL", "").strip()
+        self.username = username or os.getenv("GRAFANA_CLOUD_PROMETHEUS_USERNAME", "").strip()
+        self.remote_write_url = remote_write_url or os.getenv("GRAFANA_CLOUD_REMOTE_WRITE_URL", "").strip()
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
 
@@ -107,7 +111,11 @@ class GrafanaMCPClient:
 
     async def __aenter__(self):
         headers = {"Content-Type": "application/json"}
-        if self.api_key:
+        if self.username and self.api_key:
+            import base64
+            creds = base64.b64encode(f"{self.username}:{self.api_key}".encode()).decode()
+            headers["Authorization"] = f"Basic {creds}"
+        elif self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         self._client = httpx.AsyncClient(headers=headers, timeout=self.timeout)
         return self
@@ -117,6 +125,8 @@ class GrafanaMCPClient:
             await self._client.aclose()
 
     def _build_prometheus_url(self) -> str:
+        if self.remote_write_url:
+            return self.remote_write_url
         if self.prometheus_url:
             return urljoin(self.prometheus_url, "/api/v1/push")
         return f"https://prometheus-{self.instance}/api/v1/push"
@@ -225,12 +235,14 @@ def push_frame_metrics_sync(
     instance = os.getenv("GRAFANA_CLOUD_INSTANCE", "").strip()
     api_key = os.getenv("GRAFANA_CLOUD_API_KEY", "").strip()
     prometheus_url = os.getenv("GRAFANA_CLOUD_PROMETHEUS_URL", "").strip()
+    username = os.getenv("GRAFANA_CLOUD_PROMETHEUS_USERNAME", "").strip()
+    remote_write_url = os.getenv("GRAFANA_CLOUD_REMOTE_WRITE_URL", "").strip()
 
     if not instance and not prometheus_url:
         return False  # Silently skip if not configured
 
     async def _run():
-        async with GrafanaMCPClient(instance, api_key, prometheus_url) as client:
+        async with GrafanaMCPClient(instance, api_key, prometheus_url, username, remote_write_url) as client:
             metrics = FrameMetrics(
                 frame_index=frame_index,
                 shot_id=shot_id,

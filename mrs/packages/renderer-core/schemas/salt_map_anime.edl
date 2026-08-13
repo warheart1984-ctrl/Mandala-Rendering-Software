@@ -1,0 +1,17 @@
+{
+  "title": "Salt Map Anime — 15s Opening",
+  "fcm": "NON-DROP FRAME",
+  "edl": [
+    {
+      "shot": 1,
+      "name": "salt_map_formation",
+      "timecode_in": "00:00:00:00",
+      "timecode_out": "00:00:15:00",
+      "duration": "00:00:15:00",
+      "camera": "static_overhead",
+      "env": "ink_wash_dawn, paper_texture, salt_crystals",
+      "effects": "salt_drawing, anime_cel_shading, ink_wash",
+      "notes": "Japanese anime style salt map formation"
+    }
+  ]
+}

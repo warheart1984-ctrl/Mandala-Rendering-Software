@@ -43,8 +43,11 @@ def _discover_pipeline_script() -> Path | None:
                 continue
             script = child / "run_pipeline.py"
             schema = child / "schemas" / "RenderRequest.schema.json"
-            if script.is_file() and schema.is_file():
-                return script
+            try:
+                if script.is_file() and schema.is_file():
+                    return script
+            except PermissionError:
+                continue
     return None
 
 

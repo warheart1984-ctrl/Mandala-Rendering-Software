@@ -1481,6 +1481,26 @@ def _run_generate_common(
             "mandala_energy": _last_kernel_result.get("mandala_energy"),
             "instructions": _last_kernel_result.get("instructions", []),
         }
+    # Push frame metrics to Grafana Cloud (if configured).
+    elapsed_ms = int((time.monotonic() - started) * 1000)
+    try:
+        from app.grafana_mcp import push_frame_metrics_sync
+        grafana_pushed = push_frame_metrics_sync(
+            frame_index=0,
+            shot_id=getattr(body, "shot_id", None) or f"gen-{entry.get('run_id', 'unknown')[:12]}",
+            structure_render_ms=0,
+            beauty_render_ms=elapsed_ms,
+            total_ms=elapsed_ms,
+            backend=entry.get("provider", entry.get("image_backend", "nvidia")),
+            anime_claim=(style == STYLE_ANIME),
+            structure_sha256=entry.get("asset_sha256", ""),
+            beauty_sha256=entry.get("asset_sha256"),
+            api_latency_ms=elapsed_ms,
+        )
+        if grafana_pushed:
+            entry["grafana_pushed"] = True
+    except Exception:
+        pass  # Observability must never break the render pipeline
     # Persist cloud/synthetic preview_url only — never rewrite to /api/preview before index.
     if body.embed and settings.nvidia_configured and not settings.dry_run:
         try:

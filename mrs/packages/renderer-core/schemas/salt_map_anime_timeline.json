@@ -1,0 +1,69 @@
+{
+  "title": "Salt Map Anime — 15s Opening",
+  "duration": 15.0,
+  "fps": 30,
+  "width": 1280,
+  "height": 720,
+  "totalFrames": 450,
+  "contractVersion": "1.1.0",
+  "worldId": "world-salt-map-anime-001",
+  "timelineId": "timeline-salt-map-v1",
+  "intentId": "render-4d-salt-map-anime",
+  "edl": [
+    {
+      "shot": 1,
+      "name": "salt_map_formation",
+      "description": "Japanese anime style — map drawn in salt crystals forming coastlines, mountains, cities",
+      "startFrame": 0,
+      "endFrame": 449,
+      "durationFrames": 450,
+      "durationSeconds": 15.0,
+      "camera": {
+        "type": "static_overhead",
+        "path": "fixed",
+        "keyframes": [
+          { "frame": 0, "position": [0.0, 8.0, 0.0], "target": [0.0, 0.0, 0.0], "fov": 45 },
+          { "frame": 225, "position": [0.0, 8.0, 0.0], "target": [0.0, 0.0, 0.0], "fov": 40 },
+          { "frame": 449, "position": [0.0, 8.0, 0.0], "target": [0.0, 0.0, 0.0], "fov": 35 }
+        ]
+      },
+      "environment": {
+        "timeOfDay": "ink_wash_dawn",
+        "weather": "paper_texture",
+        "cloudCover": 0.0,
+        "fogDensity": 0.0,
+        "paperGrain": 0.15,
+        "inkBleed": 0.08,
+        "saltCrystalSize": 0.02
+      },
+      "characters": [],
+      "effects": {
+        "saltDrawing": {
+          "enabled": true,
+          "strokeSpeed": 0.8,
+          "crystalGrowth": 1.2,
+          "inkSpread": 0.5,
+          "layerCount": 5
+        },
+        "animeStyle": {
+          "celShading": true,
+          "lineWeight": 2.5,
+          "colorQuantization": 8,
+          "screenTone": true
+        }
+      },
+      "subtitles": [],
+      "audio": { "track": "none" }
+    }
+  ],
+  "subtitleTracks": [],
+  "audioTracks": [
+    { "language": "none", "track": "silence", "file": "none" }
+  ],
+  "output": {
+    "video": "salt_map_anime_15s.mp4",
+    "manifest": "salt_map_anime_manifest.json",
+    "stills": { "shots": [0, 75, 150, 225, 300, 375, 449] },
+    "edl": "salt_map_anime.edl"
+  }
+}
