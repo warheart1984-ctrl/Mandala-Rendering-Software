@@ -18,7 +18,7 @@
     "@aws-sdk/lib-dynamodb": "^3.1101.0",
     "@aws-sdk/s3-request-presigner": "^3.1101.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "aws-cdk-lib": "^2.140.0",
+    "aws-cdk-lib": "^2.265.0",
     "constructs": "^10.3.0",
     "redis": "^4.6.13",
     "source-map-support": "^0.5.21",
