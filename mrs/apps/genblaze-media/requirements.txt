@@ -1,7 +1,7 @@
 # Pinned for Backblaze Genblaze hackathon MVP (Python >= 3.11)
 # Install: pip install --use-deprecated=legacy-resolver -r requirements.txt
 # (genblaze-core 0.3.8 still declares pillow<12; Pillow 12.3.0 is kept for CVE fixes)
-fastapi==0.116.1
+fastapi==0.141.1
 uvicorn[standard]==0.35.0
 python-dotenv==1.2.2
 pydantic==2.11.7
