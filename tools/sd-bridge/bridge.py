@@ -1,14 +1,16 @@
-"""SD-CPP <-> Lemonade API bridge (standalone, stdlib only).
+"""SD-CPP + Whisper <-> Lemonade API bridge (standalone, stdlib only).
 
-Listens on :13305 and routes to two local backends:
+Listens on :13305 and routes to local backends:
 
-    /api/v1/images/*  /v1/*  /sdapi/v1/*   -> stable-diffusion.cpp sd-server  (127.0.0.1:13306)
-    /api/v1/chat/*    /api/v1/audio/*      -> LemonadeServer                  (127.0.0.1:13307)
-    /health, /api/v1/health                -> aggregated status (200 when SD is healthy)
+    /api/v1/images/*  /v1/*  /sdapi/v1/*     -> stable-diffusion.cpp sd-server  (127.0.0.1:13306)
+    /api/v1/audio/transcriptions             -> whisper.cpp whisper-server      (127.0.0.1:13312)
+    /api/v1/chat/*  /api/v1/audio/speech  -> LemonadeServer                    (127.0.0.1:13307)
+    /health, /api/v1/health                  -> aggregated status
 
 Why it exists: the bundled Lemonade sd-cpp backend crashes on CPUs without
-AVX2 (FX-8350) and cannot run SD on the RX 580. We build stable-diffusion.cpp
-from source (baseline x64 + Vulkan fp16 patch) and serve it separately; this
+AVX2 (FX-8350) and cannot run SD on the RX 580; its bundled whispercpp also
+crashes (whisper-server is AVX2-compiled). We build stable-diffusion.cpp and
+whisper.cpp from source (baseline x64 + Vulkan) and serve them separately; this
 bridge keeps the public endpoint (127.0.0.1:13305) and the OpenAI schema that
 downstream tools (genblaze lemonade_provider, lemonade examples, etc.) expect.
 
@@ -16,11 +18,13 @@ Routing rules:
   - Images always go to sd-server. Its OpenAI route ignores `steps`/`cfg_scale`
     from the JSON body, so the server must be started with --steps 4 --cfg-scale
     1.0 (see start_all.bat). `size` and `n` ARE honored.
+  - STT (audio/transcriptions) goes to whisper-server with a path rewrite to
+    /inference (whisper.cpp's OpenAI-compatible endpoint).
   - Everything else is passed through to LemonadeServer unchanged (same path).
   - Unknown paths: try lemonade first, then sd-server; 404 if neither answers.
 
 Run:  python bridge.py            (bind 0.0.0.0:13305 by default)
-Env:   BRIDGE_HOST  BRIDGE_PORT   SD_PORT=13306  LEMONADE_PORT=13307
+Env:   BRIDGE_HOST  BRIDGE_PORT   SD_PORT=13306  LEMONADE_PORT=13307  WHISPER_PORT=13312
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ import http.client
 import json
 import math
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -38,12 +43,27 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
+import governed_image
+
 SD_PORT = int(os.getenv("SD_PORT", "13306"))
 LEM_PORT = int(os.getenv("LEMONADE_PORT", "13307"))
+WHISPER_PORT = int(os.getenv("WHISPER_PORT", "13312"))
 BRIDGE_HOST = os.getenv("BRIDGE_HOST", "0.0.0.0")
 BRIDGE_PORT = int(os.getenv("BRIDGE_PORT", "13305"))
 IMG_TIMEOUT = 600.0
 GEN_TIMEOUT = 900.0
+
+# sd-server self-healing: path to the from-source Vulkan build and its model,
+# so the bridge can auto-restart sd-server (it deterministically crashes with
+# 0xc0000409 when its cpp-httplib keep-alive handling chokes on the bridge's
+# threaded connections). Set via start_all.bat.
+SD_EXE = os.getenv("SD_EXE", "").strip()
+SD_MODEL = os.getenv("SD_MODEL", "").strip()
+SD_LOGS = os.getenv("SD_LOGS", os.path.dirname(os.path.abspath(__file__))).strip()
+SD_RESTART_LOCK = threading.Lock()
+SD_RESTART_DEBOUNCE_S = 15.0
+SD_START_WAIT_S = 75.0
+_last_sd_restart = 0.0
 
 # Cloud image backends (optional; empty CLOUD_BACKEND = local sd-server only).
 CLOUD_BACKEND = os.getenv("CLOUD_BACKEND", "").strip().lower()
@@ -104,6 +124,9 @@ CLOUD_STEPS = int(os.getenv("CLOUD_STEPS", "4"))
 OUTPUT_DIR = os.getenv(
     "OUTPUT_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
 )
+SD_EXE = os.getenv("SD_EXE", "").strip()
+SD_MODEL = os.getenv("SD_MODEL", "").strip()
+SD_LOGS = os.getenv("SD_LOGS", os.path.dirname(os.path.abspath(__file__))).strip()
 
 LOG_LOCK = threading.Lock()
 
@@ -424,11 +447,19 @@ def log(msg: str) -> None:
         sys.stderr.flush()
 
 
-def forward(method: str, path: str, body: bytes | None, port: int, timeout: float) -> tuple[int, str, bytes]:
-    """Forward one request to an upstream HTTP/1.1 server and return its full response."""
+def forward(method: str, path: str, body: bytes | None, port: int, timeout: float, ctype: str | None = None) -> tuple[int, str, bytes]:
+    """Forward one request to an upstream HTTP/1.1 server and return its full response.
+
+    Always sends ``Connection: close``: sd-server's cpp-httplib keep-alive
+    handling deterministically crashes (0xc0000409) when the bridge's threaded
+    connections attempt connection reuse. Closing per request sidesteps it.
+    """
     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=timeout)
     try:
-        conn.request(method, path, body=body)
+        headers = {"Connection": "close"}
+        if ctype:
+            headers["Content-Type"] = ctype
+        conn.request(method, path, body=body, headers=headers)
         resp = conn.getresponse()
         # http.client already decoded chunked transfer-encoding, so the payload
         # length is correct to re-send with Content-Length.
@@ -476,6 +507,88 @@ def lemonade_healthy() -> bool:
         except Exception:
             continue
     return False
+
+
+def whisper_healthy() -> bool:
+    try:
+        status, _, _ = forward("GET", "/", None, WHISPER_PORT, 3.0)
+        return status < 500
+    except Exception:
+        return False
+
+
+# ---- sd-server watchdog ----------------------------------------------------
+# sd-server has a deterministic crash (0xc0000409 fail-fast in ucrtbase.dll)
+# on certain connection patterns. Rather than die, the bridge detects a dead
+# sd-server, relaunches it, and waits for it to become healthy. Debounced so a
+# concurrent image request can't trigger two restarts at once.
+
+def _sd_cmd() -> list[str] | None:
+    if not SD_EXE or not os.path.exists(SD_EXE):
+        log(f"watchdog: SD_EXE not set or missing ({SD_EXE!r}); cannot restart")
+        return None
+    if not SD_MODEL or not os.path.exists(SD_MODEL):
+        log(f"watchdog: SD_MODEL not set or missing ({SD_MODEL!r}); cannot restart")
+        return None
+    return [
+        SD_EXE,
+        "--listen-ip", "127.0.0.1",
+        "--listen-port", str(SD_PORT),
+        "--model", SD_MODEL,
+        "--vae-tiling",
+        "--steps", "4",
+        "--cfg-scale", "1.0",
+        "--sampling-method", "euler",
+    ]
+
+
+def _spawn_sd() -> None:
+    global _last_sd_restart
+    _last_sd_restart = time.time()
+    cmd = _sd_cmd()
+    if not cmd:
+        return
+    os.makedirs(SD_LOGS, exist_ok=True)
+    log_path = os.path.join(SD_LOGS, f"sd-server-{int(time.time())}.log")
+    log(f"watchdog: launching sd-server -> {log_path}")
+    try:
+        subprocess.Popen(
+            cmd,
+            stdout=open(log_path, "ab", buffering=0),
+            stderr=subprocess.STDOUT,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except Exception as exc:  # noqa: BLE001
+        log(f"watchdog: failed to spawn sd-server: {exc!r}")
+
+
+def ensure_sd() -> bool:
+    """Guarantee sd-server is healthy: restart if needed, wait for readiness."""
+    if sd_healthy():
+        return True
+    with SD_RESTART_LOCK:
+        if sd_healthy():
+            return True
+        if time.time() - _last_sd_restart < SD_RESTART_DEBOUNCE_S:
+            log("watchdog: sd-server down, restart debounce active")
+            return False
+        _spawn_sd()
+        deadline = time.time() + SD_START_WAIT_S
+        while time.time() < deadline:
+            time.sleep(2.0)
+            if sd_healthy():
+                log("watchdog: sd-server recovered")
+                return True
+        log("watchdog: sd-server did not recover in time")
+        return False
+
+
+def ensure_sd_async() -> None:
+    """Fire-and-forget restart if sd-server is down (debounced)."""
+    if not sd_healthy():
+        with SD_RESTART_LOCK:
+            if not sd_healthy() and time.time() - _last_sd_restart >= SD_RESTART_DEBOUNCE_S:
+                _spawn_sd()
 
 
 # ---- cloud image backends --------------------------------------------------
@@ -762,15 +875,33 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
         if path in ("/health", "/api/v1/health"):
             sd = sd_healthy()
+            if not sd:
+                ensure_sd_async()
             lemon = lemonade_healthy()
+            whisper = whisper_healthy()
             self._json(
                 200 if sd else 503,
                 {
                     "status": "ok" if sd else "degraded",
                     "sd_cpp": {"healthy": sd, "port": SD_PORT},
                     "lemonade": {"healthy": lemon, "port": LEM_PORT},
+                    "whisper": {"healthy": whisper, "port": WHISPER_PORT},
                 },
             )
+            return
+
+        # STT -> whisper.cpp whisper-server (built from source; lemonade's
+        # bundled whispercpp is AVX2-compiled and crashes on the FX-8350).
+        if path.startswith("/api/v1/audio/transcriptions"):
+            target = "/inference" + path[len("/api/v1/audio/transcriptions"):]
+            ctype = self.headers.get("Content-Type")
+            try:
+                status, resp_ctype, payload = forward(method, target, body, WHISPER_PORT, GEN_TIMEOUT, ctype)
+            except Exception as exc:  # noqa: BLE001
+                log(f"whisper-server forward failed: {exc!r}")
+                self._json(502, {"error": f"whisper-server unreachable: {exc!r}"})
+                return
+            self._reply(status, payload, resp_ctype or "application/json")
             return
 
         if path.startswith(("/api/v1/images/", "/v1/images/", "/v1/models", "/sdapi/v1/")):
@@ -778,12 +909,33 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 self._cloud_image(body)
                 return
             target = path[4:] if path.startswith("/api/") else path
+            # Governed S-ISA dispatch: image generation runs as a governed
+            # session (instruction trace + invariant checks + replay), so a
+            # latent sd-server crash becomes a governed error, never a dead
+            # bridge. Non-generation routes (e.g. /v1/models, image edits)
+            # pass through the plain crash-safe forward.
+            if method == "POST" and ("images/generations" in target or "txt2img" in target):
+                try:
+                    status, ctype, payload = governed_image.run(method, target, body)
+                except Exception as exc:  # noqa: BLE001
+                    log(f"governed_image.run failed: {exc!r}")
+                    self._json(500, {"error": f"governed image layer failed: {exc!r}"})
+                    return
+                self._reply(status, payload, ctype or "application/json")
+                return
             try:
                 status, ctype, payload = forward(method, target, body, SD_PORT, IMG_TIMEOUT)
             except Exception as exc:  # noqa: BLE001
                 log(f"sd-server forward failed: {exc!r}")
-                self._json(502, {"error": f"sd-server unreachable: {exc!r}"})
-                return
+                if not ensure_sd():
+                    self._json(503, {"error": f"sd-server unreachable: {exc!r}"})
+                    return
+                try:
+                    status, ctype, payload = forward(method, target, body, SD_PORT, IMG_TIMEOUT)
+                except Exception as exc2:  # noqa: BLE001
+                    log(f"sd-server retry failed: {exc2!r}")
+                    self._json(502, {"error": f"sd-server unreachable after restart: {exc2!r}"})
+                    return
             self._reply(status, payload, ctype or "application/json")
             return
 
@@ -819,8 +971,16 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    governed_image.configure(
+        forward=forward,
+        ensure_sd=ensure_sd,
+        sd_port=SD_PORT,
+        timeout=IMG_TIMEOUT,
+        trace_dir=SD_LOGS,
+    )
     server = ThreadingHTTPServer((BRIDGE_HOST, BRIDGE_PORT), BridgeHandler)
-    log(f"bridge listening on {BRIDGE_HOST}:{BRIDGE_PORT} -> sd-server:{SD_PORT} / lemonade:{LEM_PORT}")
+    log(f"bridge listening on {BRIDGE_HOST}:{BRIDGE_PORT} -> sd-server:{SD_PORT} / whisper:{WHISPER_PORT} / lemonade:{LEM_PORT}")
+    log(f"governed S-ISA image layer active (trace -> {governed_image.trace_path()})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
