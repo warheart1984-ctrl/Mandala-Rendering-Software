@@ -1,0 +1,148 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>SD-Turbo Prompt Interface</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; gap: 20px; margin-top: 20px; }
+        .column { flex: 1; }
+        textarea { width: 100%; height: 100px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007cba; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #005a87; }
+        .result-image { max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 10px; border-radius: 4px; }
+        .loading { display: none; color: #666; font-style: italic; }
+        .error { color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 4px; margin-top: 10px; }
+        .success { color: #388e3c; background: #e8f5e9; padding: 10px; border-radius: 4px; margin-top: 10px; }
+        .params { background: #f5f5f5; padding: 15px; border-radius: 4px; margin: 15px 0; }
+        h1, h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>SD-Turbo Prompt Interface</h1>
+    <p>Generate images using the governed SD-Turbo model via the bridge.</p>
+    
+    <div class="params">
+        <h2>Parameters</h2>
+        <label>Model: <input type="text" id="model" value="sd_turbo-f16-q8_0.gguf" readonly style="background: #eee;"></label>
+        <label>Width: <input type="number" id="width" value="512" min="64" max="1024" step="64"></label>
+        <label>Height: <input type="number" id="height" value="512" min="64" max="1024" step="64"></label>
+        <label>Steps: <input type="number" id="steps" value="4" min="1" max="50"></label>
+        <label>CFG Scale: <input type="number" id="cfg" value="1.0" min="0.0" max="20.0" step="0.1"></label>
+    </div>
+    
+    <div>
+        <h2>Prompt</h2>
+        <textarea id="prompt" placeholder="Enter your prompt here...">a beautiful landscape with mountains and sunset</textarea>
+        <br>
+        <label>Negative Prompt (optional):</label>
+        <textarea id="negativePrompt" placeholder="blurry, low quality, distorted..."></textarea>
+    </div>
+    
+    <button id="generateBtn">Generate Image</button>
+    <div class="loading" id="loading">Generating...</div>
+    <div class="error" id="error"></div>
+    <div class="success" id="success"></div>
+    
+    <h2>Result</h2>
+    <div id="resultContainer"></div>
+    
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const prompt = document.getElementById('prompt').value.trim();
+            if (!prompt) {
+                showError('Please enter a prompt');
+                return;
+            }
+            
+            const model = document.getElementById('model').value;
+            const width = parseInt(document.getElementById('width').value);
+            const height = parseInt(document.getElementById('height').value);
+            const steps = parseInt(document.getElementById('steps').value);
+            const cfg = parseFloat(document.getElementById('cfg').value);
+            const negativePrompt = document.getElementById('negativePrompt').value.trim();
+            
+            showLoading();
+            hideError();
+            hideSuccess();
+            hideResult();
+            
+            try {
+                const response = await fetch('http://127.0.0.1:13305/v1/images/generations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        prompt: prompt,
+                        negative_prompt: negativePrompt,
+                        width: width,
+                        height: height,
+                        steps: steps,
+                        cfg_scale: cfg
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || HTTP );
+                }
+                
+                const result = await response.json();
+                if (result.data && result.data.length > 0) {
+                    const base64Image = result.data[0].b64_json;
+                    const imageUrl = 'data:image/png;base64,' + base64Image;
+                    showResult(imageUrl);
+                    showSuccess('Image generated successfully!');
+                } else {
+                    throw new Error('No image data in response');
+                }
+            } catch (error) {
+                showError('Generation failed: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+        
+        function hideSuccess() {
+            document.getElementById('success').style.display = 'none';
+        }
+        
+        function showResult(imageUrl) {
+            const container = document.getElementById('resultContainer');
+            container.innerHTML = <img src="" class="result-image" alt="Generated image">;
+            container.style.display = 'block';
+        }
+        
+        function hideResult() {
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('resultContainer').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

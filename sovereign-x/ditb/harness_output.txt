@@ -1,0 +1,44 @@
+DITB decode/emulate harness
+1. C5 VPADDQ carry
+  translated                                           PASS
+  length == 4                                          PASS
+  carry lane correct                                   FAIL
+  all lanes correct                                    FAIL
+2. C4 VPADDD
+  translated                                           PASS
+  length == 5                                          PASS
+  dst ymm1 = 10                                        PASS
+3. C5 VPSRLDQ byte-shift
+  translated                                           PASS
+  low dword = 0 (byte shift)                           FAIL
+  high dword = 0                                       FAIL
+4. C5 VPSRLD vs VPSRLDQ discrimination
+  translated                                           PASS
+  vpsrld: 0x10>>1 = 8                                  FAIL
+5. Memory operand [rbp+disp32]
+  translated                                           PASS
+  length == 8                                          PASS
+  7 + 100 = 107                                        PASS
+6. RIP-relative operand
+  translated                                           PASS
+  3 + 200 = 203                                        PASS
+7. SIB base+index*scale
+  translated                                           PASS
+  length == 5                                          PASS
+  9 + 50 = 59                                          PASS
+8. VPBROADCASTQ (0F38 59)
+  translated                                           PASS
+  length == 9                                          PASS
+  broadcast all lanes                                  FAIL
+9. VPSLLDQ (73 /7)
+  translated                                           PASS
+  low dword = 0x1000 (shift left 2 bytes)              FAIL
+10. L=0 rejected
+  not translated                                       FAIL
+11. Legacy prefix rejected
+  not translated                                       PASS
+12. C4 REX.B (ymm9 src)
+  translated                                           PASS
+  ymm1 = 4 + 6 = 10                                    PASS
+
+HARNESS FAILED (8 failures)
