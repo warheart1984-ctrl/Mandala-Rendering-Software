@@ -90,3 +90,6 @@ yarn-error.log*
 # Optional: keep these if you want to track
 # docs/
 # examples/
+# H test output logs
+conformance-out.txt
+test-output.txt
