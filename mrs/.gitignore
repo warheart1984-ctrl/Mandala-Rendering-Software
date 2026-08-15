@@ -20,6 +20,9 @@ dustjacket-output/
 # Server logs
 server.log
 
+# Backups
+*.bak
+
 # Test files
 python_test.txt
 test_output.txt
