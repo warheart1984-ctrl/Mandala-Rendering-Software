@@ -1,0 +1,41 @@
+apiVersion: cloudrun.yaml.dev/v1
+kind: CloudRunService
+metadata:
+  name: mandala-mcp
+  labels:
+    app: mandala-rendering-system
+    component: mcp-server
+spec:
+  template:
+    spec:
+      serviceAccountName: mcp-server@project-cf3f91ae-f0c9-4930-852.iam.gserviceaccount.com
+      containers:
+      - name: mandala-mcp
+        image: gcr.io/project-cf3f91ae-f0c9-4930-852/mandala-mcp:latest
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: GEMINI_API_KEY
+              key: GEMINI_API_KEY
+        - name: GRAFANA_CLOUD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: GRAFANA_CLOUD_API_KEY
+              key: GRAFANA_CLOUD_API_KEY
+        - name: PORT
+          value: "8080"
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          limits:
+            cpu "1"
+            memory: "512Mi"
+  traffic:
+  - percent: 100
+    latestRevision: true
+  maxInstances: 1000
+  timeout: 3600
+  scaleToZero: true
+  cpuPerInstance: "1"
+  memoryPerInstance: 512Mi

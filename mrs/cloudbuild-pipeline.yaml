@@ -1,0 +1,94 @@
+# Cloud Build CI/CD Pipeline for Mandala Rendering System
+# Triggers on pushes to main branch
+
+steps:
+# --- Step 1: Setup Google Cloud Project ---
+- name: 'gcloud:config-project'
+  entrypoint: 'bash'
+  args: ['-c', 'gcloud config set project project-cf3f91ae-f0c9-4930-852']
+
+# --- Step 2: Authenticate to Google Cloud ---
+- name: 'gcloud:auth'
+  entrypoint: 'bash'
+  args: ['-c', 'gcloud auth configure-docker']
+
+# --- Step 3: Build MCP Server Docker Image ---
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', '''
+    echo "Building MCP Server Docker image..."
+    cd mandala-mcp
+    docker build -t gcr.io/project-cf3f91ae-f0c9-4930-852/mandala-mcp:${COMMIT_SHA} .
+  ''']
+
+# --- Step 4: Build Web App Docker Image ---
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', '''
+    echo "Building Web App Docker image..."
+    cd mandala-web
+    docker build -t gcr.io/project-cf3f91ae-f0c9-4930-852/mandala-web:${COMMIT_SHA} .
+  ''']
+
+# --- Step 5: Push Images to Artifact Registry ---
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', '''
+    echo "Pushing Docker images to Artifact Registry..."
+    docker push gcr.io/project-cf3f91ae-f0c9-4930-852/mandala-mcp:${COMMIT_SHA}
+    docker push gcr.io/project-cf3f91ae-f0c9-4930-852/mandala-web:${COMMIT_SHA}
+  ''']
+
+# --- Step 6: Deploy MCP Server to Cloud Run ---
+- name: 'gcloud:deploy-mcp'
+  entrypoint: 'bash'
+  args: ['-c', '''
+    echo "Deploying MCP server to Cloud Run..."
+    gcloud run deploy mandala-mcp \
+      --image gcr.io/project-cf3f91ae-f0c9-4930-852/mandala-mcp:${COMMIT_SHA} \
+      --platform managed \
+      --region us-central1 \
+      --allow-unauthenticated \
+      --service-account mcp-server@project-cf3f91ae-f0c9-4930-852.iam.gserviceaccount.com \
+      --set-env-vars=GEMINI_API_KEY=$(gcloud secrets versions access latest GEMINI_API_KEY),GRAFANA_CLOUD_API_KEY=$(gcloud secrets versions access latest GRAFANA_CLOUD_API_KEY)
+  ''']
+
+# --- Step 7: Deploy Web App to Cloud Run ---
+- name: 'gcloud:deploy-web'
+  entrypoint: 'bash'
+  args: ['-c', '''
+    echo "Deploying web app to Cloud Run..."
+    gcloud run deploy mandala-web \
+      --image gcr.io/project-cf3f91ae-f0c9-4930-852/mandala-web:${COMMIT_SHA} \
+      --platform managed \
+      --region us-central1 \
+      --allow-unauthenticated
+  ''']
+
+# --- Step 8: Verify Deployments ---
+- name: 'gcloud:verify'
+  entrypoint: 'bash'
+  args: ['-c', '''
+    echo "Verifying deployments..."
+    echo "MCP Server URL:"
+    gcloud run services describe mandala-mcp --platform managed --region us-central1 --format 'status.url'
+    echo ""
+    echo "Web App URL:"
+    gcloud run services describe mandala-web --platform managed --region us-central1 --format 'status.url'
+  ''']
+
+# --- Substitutions ---
+substitutions:
+  _PROJECT_ID: "project-cf3f91ae-f0c9-4930-852"
+  _REGION: "us-central1"
+
+# --- Tags ---
+tags:
+  - mandala
+  - mcp
+  - web-app
+  - hackathon
+  - google-cloud
+  - ci-cd
+  - cloud-run
+  - docker

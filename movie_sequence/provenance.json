@@ -1,0 +1,15 @@
+{
+  "host": "mrs-cloud-diffusion",
+  "intentId": "movie-gen-1786618323658",
+  "worldId": "world-movie-test",
+  "timelineId": "opening_4d_reveal",
+  "decisionId": "cloud-diffusion-test",
+  "verdict": "allow",
+  "format": "png-sequence",
+  "containerPath": null,
+  "frameCount": 3,
+  "fps": 1,
+  "seconds": 1,
+  "outputDir": "G:\\Mandala Rendering Software\\movie_sequence",
+  "createdAt": "2026-08-13T10:52:03.658Z"
+}

@@ -1,0 +1,13 @@
+{
+  "Id": "movie-movie-1786618323658",
+  "ArtifactType": "movie",
+  "Payload": {
+    "format": "png-sequence",
+    "outputDir": "G:\\Mandala Rendering Software\\movie_sequence",
+    "containerPath": null,
+    "frameCount": 3,
+    "fps": 1,
+    "seconds": 1,
+    "manifestPath": "G:\\Mandala Rendering Software\\movie_sequence\\movie-manifest.json"
+  }
+}

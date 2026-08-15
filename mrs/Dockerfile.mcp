@@ -1,0 +1,35 @@
+FROM node:20-alpine as builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies (production only)
+RUN npm ci --omit=dev
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# === Production stage ===
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy built output from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+
+# Set non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+# Expose the port
+EXPOSE 8080
+
+# Start the MCP server
+CMD ["node", "dist/server.js"]

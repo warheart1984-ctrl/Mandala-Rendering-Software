@@ -1,0 +1,32 @@
+{
+  "format": "png-sequence",
+  "hostId": "mrs-cloud-diffusion",
+  "intentId": "movie-gen-1786618323658",
+  "worldId": "world-movie-test",
+  "timelineId": "opening_4d_reveal",
+  "decisionId": "cloud-diffusion-test",
+  "outputDir": "G:\\Mandala Rendering Software\\movie_sequence",
+  "basename": "movie-1786618323658",
+  "seconds": 1,
+  "fps": 1,
+  "frameCount": 3,
+  "width": 512,
+  "height": 512,
+  "frameFiles": [
+    "frame_00000.png",
+    "frame_00001.png",
+    "frame_00003.png"
+  ],
+  "createdAt": "2026-08-13T10:52:03.658Z",
+  "muxHint": "ffmpeg -y -f concat -safe 0 -i G:/Mandala Rendering Software/movie_sequence/_concat.list -vf scale=trunc(iw/2)*2:trunc(ih/2)*2 -c:v libx264 -pix_fmt yuv420p -crf 18 G:\\Mandala Rendering Software\\movie_sequence\\movie-1786618323658.mp4",
+  "video": {
+    "file": "G:\\Mandala Rendering Software\\movie_sequence\\movie-1786618323658.mp4",
+    "bytes": 152747,
+    "sha256": "ff0d8dae46f2a25e2b25cef61a7f54238b3f1d7e3b7134d88eb226bf161194bb"
+  },
+  "frameHashes": {
+    "frame_00000.png": "sha256:ab1de77086bccc3cf1955f9dc240518d8e3223c4f00e1ae3ed0d6809c37a2ea9",
+    "frame_00001.png": "sha256:059f6788ef25c9f7a9964c1530f1463872ecafbf2dcfd2ea344a6f2e0604d6e8",
+    "frame_00003.png": "sha256:8850a3cafb203552c91d4ad06716c0314ba0a00b59c894a834b97590d38bf8c0"
+  }
+}

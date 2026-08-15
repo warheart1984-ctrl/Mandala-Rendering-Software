@@ -1,0 +1,40 @@
+apiVersion: cloudrun.yaml.dev/v1
+kind: CloudRunService
+metadata:
+  name: mandala-web
+  labels:
+    app: mandala-rendering-system
+    component: web-app
+spec:
+  template:
+    spec:
+      serviceAccountName: mcp-server@project-cf3f91ae-f0c9-4930-852.iam.gserviceaccount.com
+      containers:
+      - name: mandala-web
+        image: gcr.io/project-cf3f91ae-f0c9-4930-852/mandala-web:latest
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: GEMINI_API_KEY
+              key: GEMINI_API_KEY
+        - name: PORT
+          value: "8080"
+        - name: NODE_ENV
+          value: "production"
+        - name: VITE_API_BASE_URL
+          value: "https://mandala-mcp.project-cf3f91ae-f0c9-4930-852.uc.r.appspot.com"
+        - name: MCP_SERVER_URL
+          value: "https://mandala-mcp.project-cf3f91ae-f0c9-4930-852.uc.r.appspot.com"
+        resources:
+          limits:
+            cpu "1"
+            memory: "512Mi"
+  traffic:
+  - percent: 100
+    latestRevision: true
+  maxInstances: 1000
+  timeout: 3600
+  scaleToZero: true
+  cpuPerInstance: "1"
+  memoryPerInstance: 512Mi

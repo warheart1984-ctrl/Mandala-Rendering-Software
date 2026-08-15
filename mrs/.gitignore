@@ -1,18 +1,51 @@
-packages/renderer-core/node_modules/
-packages/renderer-core/output/
-packages/*/node_modules/
-apps/*/node_modules/
-apps/chatgpt-mrs/*/node_modules/
-node_modules/
-*.log
-.DS_Store
-
-packages/renderer-core/output/
-apps/chatgpt-mrs/server/smoke*.log
-apps/chatgpt-mrs/server/smoke.pid
-
-# Python / build caches (hygiene)
-.venv/
+# Python
 __pycache__/
-.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.egg-info/
 dist/
+build/
+*.egg
+
+# Node.js
+node_modules/
+*.lock
+npm-debug.log
+
+# Dustjacket output
+dustjacket-output/
+
+# Server logs
+server.log
+
+# Test files
+python_test.txt
+test_output.txt
+
+# Environment variables
+.env
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Renderer output
+packages/*/output/
+packages/*/node_modules/
+
+# App logs
+apps/*/server/*.log
+apps/*/server/ngrok-*
+apps/*/server/smoke.*
+
+# Packages node modules
+packages/*/node_modules/
+
+# Root node modules
+node_modules/
+
+# IDE
+.vscode/
+.idea/

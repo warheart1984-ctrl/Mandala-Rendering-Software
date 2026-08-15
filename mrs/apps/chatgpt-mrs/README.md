@@ -73,16 +73,32 @@ pnpm --filter @mrs/chatgpt-app-server test
 | `MRS_LIVELINK_URL` | `ws://127.0.0.1:9487` | Optional LiveLink |
 | `MRS_AUTH_MODE` | `dev` | `dev` \| `api-key` |
 | `JARVIS_MEMORYBOARD_URL` | `http://127.0.0.1:8001` | Jarvis memory board base URL for ChatGPT memory tools |
+| **`GOOGLE_AI_API_KEY`** | **unset** | **Google Cloud AI API key for Gemini/Vertex AI integration** |
 
-## Jarvis memory tools
+## Google AI SDK Integration
 
-The ChatGPT MCP server also exposes Jarvis memory tools:
+This project uses Google Cloud AI tools for the Hackathon track. The following SDKs are configured:
 
-1. `search_jarvis_memory` — read live or archived memories plus board context
-2. `fetch_jarvis_memory` — fetch one memory by id
-3. `write_jarvis_memory` — persist a memory or session summary
-4. `update_jarvis_memory` — revise an existing memory by id
-5. `delete_jarvis_memory` — delete an existing memory by id
-6. `write_jarvis_session_summary` — persist a standard recap in one call
+```bash
+# Install Google AI SDKs
+pnpm add google-genai @google/adk
 
-These are tool-only flows; no widget is required.
+# Or using environment configuration:
+export GOOGLE_AI_API_KEY="your-gemini-api-key"
+
+# Example usage in server code:
+import { GoogleGenAI } from 'google-genai';
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY });
+
+// Gemini Pro for text generation, analysis
+// Vertex AI for scalable model deployment
+```
+
+### Primary Google AI Tools
+
+1. `gemini_analyze` — Analyze render logs, provenance, and constitutional compliance
+2. `gemini_describe` — Generate human-readable descriptions of 4D renders
+3. `vertex_predict` — Run inference on trained models for scene classification
+4. `ai_validate` — Validate FMCE constitutional principles using Gemini
+
+Optional viewport tools: `create_4d_scene`, `update_4d_scene`, `inspect_4d_point`, `export_4d_scene`, `replay_4d_scene`.

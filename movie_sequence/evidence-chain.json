@@ -1,0 +1,166 @@
+[
+  {
+    "frame": 0,
+    "timeSeconds": 0,
+    "t": 0,
+    "replayToken": "movie-movie-gen-1786618323658-0",
+    "radianceHash": "sha256:frame_00000.png.png",
+    "aovsHash": "sha256:frame_00000.png.png",
+    "camera": {
+      "eye": [
+        0,
+        0,
+        1
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "focal": 50,
+      "aperture": 2.8,
+      "focusDistance": 10
+    },
+    "integrator": {
+      "spp": 1,
+      "maxDepth": 4,
+      "strategy": "ppm"
+    },
+    "denoiser": {
+      "enabled": false,
+      "method": "none",
+      "historyLength": 0
+    },
+    "renderer": {
+      "contract": "rt4d",
+      "backend": "auto",
+      "seed": 0
+    },
+    "parameters": {
+      "model": "SD-Turbo-GGUF",
+      "steps": 2,
+      "cfg_scale": 0
+    },
+    "intentId": "movie-gen-1786618323658",
+    "timelineId": "opening_4d_reveal",
+    "worldId": "world-movie-test"
+  },
+  {
+    "frame": 1,
+    "timeSeconds": 1,
+    "t": 1,
+    "replayToken": "movie-movie-gen-1786618323658-1",
+    "radianceHash": "sha256:frame_00001.png.png",
+    "aovsHash": "sha256:frame_00001.png.png",
+    "camera": {
+      "eye": [
+        0,
+        0,
+        1
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "focal": 50,
+      "aperture": 2.8,
+      "focusDistance": 10
+    },
+    "integrator": {
+      "spp": 1,
+      "maxDepth": 4,
+      "strategy": "ppm"
+    },
+    "denoiser": {
+      "enabled": false,
+      "method": "none",
+      "historyLength": 0
+    },
+    "renderer": {
+      "contract": "rt4d",
+      "backend": "auto",
+      "seed": 1
+    },
+    "parameters": {
+      "model": "SD-Turbo-GGUF",
+      "steps": 2,
+      "cfg_scale": 0
+    },
+    "intentId": "movie-gen-1786618323658",
+    "timelineId": "opening_4d_reveal",
+    "worldId": "world-movie-test"
+  },
+  {
+    "frame": 2,
+    "timeSeconds": 2,
+    "t": 2,
+    "replayToken": "movie-movie-gen-1786618323658-2",
+    "radianceHash": "sha256:frame_00003.png.png",
+    "aovsHash": "sha256:frame_00003.png.png",
+    "camera": {
+      "eye": [
+        0,
+        0,
+        1
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "focal": 50,
+      "aperture": 2.8,
+      "focusDistance": 10
+    },
+    "integrator": {
+      "spp": 1,
+      "maxDepth": 4,
+      "strategy": "ppm"
+    },
+    "denoiser": {
+      "enabled": false,
+      "method": "none",
+      "historyLength": 0
+    },
+    "renderer": {
+      "contract": "rt4d",
+      "backend": "auto",
+      "seed": 2
+    },
+    "parameters": {
+      "model": "SD-Turbo-GGUF",
+      "steps": 2,
+      "cfg_scale": 0
+    },
+    "intentId": "movie-gen-1786618323658",
+    "timelineId": "opening_4d_reveal",
+    "worldId": "world-movie-test"
+  },
+  {
+    "stage": "mux",
+    "file": "G:/Mandala Rendering Software/movie_sequence/movie-1786618323658.mp4",
+    "bytes": 152747,
+    "sha256": "ff0d8dae46f2a25e2b25cef61a7f54238b3f1d7e3b7134d88eb226bf161194bb",
+    "frameFiles": [
+      "frame_00000.png",
+      "frame_00001.png",
+      "frame_00003.png"
+    ],
+    "fps": 1,
+    "muxedAt": "2026-08-13T11:57:55.178Z"
+  },
+  {
+    "stage": "mux",
+    "file": "G:/Mandala Rendering Software/movie_sequence/movie-1786618323658.mp4",
+    "bytes": 152747,
+    "sha256": "ff0d8dae46f2a25e2b25cef61a7f54238b3f1d7e3b7134d88eb226bf161194bb",
+    "frameFiles": [
+      "frame_00000.png",
+      "frame_00001.png",
+      "frame_00003.png"
+    ],
+    "fps": 1,
+    "muxedAt": "2026-08-13T11:58:40.569Z"
+  }
+]
