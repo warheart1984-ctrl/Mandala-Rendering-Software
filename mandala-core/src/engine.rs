@@ -1,5 +1,5 @@
 use crate::backend::{select_render_backend, RenderBackendKind};
-use crate::rendergraph::{RenderPassMetrics, TemporalCache, FrameState};
+use crate::rendergraph::{RenderPassMetrics, TemporalCache, FrameState, TraceExporter};
 use crate::sd_bridge::{SdTurboGgufRuntime, SdTurboConfig, validate_generation};
 
 #[cfg(feature = "hip")]
@@ -8,6 +8,7 @@ use crate::backend::hip_backend::HipBackend;
 pub struct MandalaEngine {
     backend_kind: RenderBackendKind,
     temporal_cache: TemporalCache,
+    trace_exporter: TraceExporter,
     #[cfg(feature = "hip")]
     hip_backend: Option<HipBackend>,
     #[cfg(not(feature = "hip"))]
@@ -20,6 +21,7 @@ impl MandalaEngine {
         Self {
             backend_kind: sel.kind,
             temporal_cache: TemporalCache::new(3),
+            trace_exporter: TraceExporter::new(),
             #[cfg(feature = "hip")]
             hip_backend: None,
             #[cfg(not(feature = "hip"))]
@@ -63,6 +65,13 @@ impl MandalaEngine {
             replay_token,
         };
         self.temporal_cache.push(state);
+
+        // Metrics export for constitutional trace
+        let backend_name = match self.backend_kind {
+            RenderBackendKind::HipComputeAssistOnly => "HipComputeAssistOnly",
+            RenderBackendKind::Vulkan => "Vulkan",
+        };
+        self.trace_exporter.export(0, backend_name, passes[0].clone(), replay_token);
     }
 
     fn rt4d_memory_budget(&self) -> f32 {
