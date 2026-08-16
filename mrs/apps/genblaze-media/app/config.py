@@ -179,8 +179,8 @@ class Settings:
     # --- Local Lemonade (AMD) OpenAI-compatible API: stills + text + voice ---
     lemonade_base_url: str = "http://127.0.0.1:13307/api/v1"
     lemonade_model: str | None = None
-    lemonade_size: str = "512x512"
-    lemonade_steps: int = 4
+    lemonade_size: str = "768x768"
+    lemonade_steps: int = 8
     lemonade_timeout_seconds: float = 600.0
     lemonade_api_key: str | None = None
     # Text / voice (Lemonade OpenAI-compatible chat + audio endpoints).

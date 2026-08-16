@@ -50,6 +50,85 @@ LEMONADE_SETUP_HELP = (
     "GENBLAZE_IMAGE_BACKEND=lemonade to use this path."
 )
 
+# Scene archetype keywords (mirrors RT4D render-still.mjs pickScene logic)
+_LEMONADE_ARCHETYPES = [
+    ("tesseract-lattice", [
+        "tesseract", "hypercube", "4d", "four-d", "four-dimension", "8-cell",
+        "neon lattice", "lattice beams", "lattice grid", "mandala grid"
+    ]),
+    ("neural-lattice", [
+        "neural lattice", "sovereign mandala", "mandala rendering", "glyphs rotating",
+        "energy core", "constitutional machine", "neural circuit"
+    ]),
+    ("torus-ring", [
+        "torus", "ring", "concentric rings", "fractal rings", "orbital",
+        "crystallized", "crystalline", "mandala rings"
+    ]),
+    ("mythic-tableau", [
+        "mythic", "dragon", "battle", "creature", "wolves", "mountain",
+        "tableau", "fantasy scene", "epic"
+    ]),
+    ("lattice-grid", [
+        "lattice", "grid", "wireframe", "geometric grid", "structural grid"
+    ]),
+]
+
+# Diffusion-friendly prompt suffixes per archetype
+_LEMONADE_ARCHETYPE_SUFFIXES = {
+    "tesseract-lattice": (
+        "intricate 4D hypercube wireframe, neon cyan beams, glowing lattice structure, "
+        "suspended in radial mandala grid, pulsing white energy core, "
+        "studio rim lighting, reflective metallic surfaces, volumetric glow, "
+        "high detail, sharp focus, 8k concept art"
+    ),
+    "neural-lattice": (
+        "sovereign mandala neural lattice, luminous geometric glyphs rotating "
+        "around central energy core, architectural machine aesthetic, "
+        "deep space background, bioluminescent details, 8k, highly detailed"
+    ),
+    "torus-ring": (
+        "concentric fractal torus rings, crystalline reflective surfaces, "
+        "orbital geometry, soft volumetric lighting, metallic iridescence, "
+        "infinite depth, 8k render, octane style"
+    ),
+    "mythic-tableau": (
+        "epic mythic tableau, dramatic cinematic lighting, "
+        "fantasy creature battle on mountain, volumetric atmosphere, "
+        "heroic composition, detailed textures, 8k masterpiece"
+    ),
+    "lattice-grid": (
+        "geometric lattice grid, wireframe structural beauty, "
+        "clean lines, mathematical precision, studio lighting, 8k"
+    ),
+}
+
+_DEFAULT_LEMONADE_SUFFIX = (
+    "highly detailed, sharp focus, professional lighting, 8k resolution, "
+    "masterpiece quality, concept art"
+)
+
+
+def _detect_lemonade_archetype(prompt: str) -> str | None:
+    """Detect scene archetype from prompt (mirrors RT4D pickScene logic)."""
+    if not prompt:
+        return None
+    lower = prompt.lower()
+    for archetype, keywords in _LEMONADE_ARCHETYPES:
+        if any(kw in lower for kw in keywords):
+            return archetype
+    return None
+
+
+def _enhance_lemonade_prompt(prompt: str) -> str:
+    """Enhance prompt with archetype-specific diffusion-friendly suffix."""
+    if not prompt:
+        return _DEFAULT_LEMONADE_SUFFIX
+    archetype = _detect_lemonade_archetype(prompt)
+    if archetype and archetype in _LEMONADE_ARCHETYPE_SUFFIXES:
+        return f"{prompt.rstrip(' ,;.')}, {_LEMONADE_ARCHETYPE_SUFFIXES[archetype]}"
+    return f"{prompt.rstrip(' ,;.')}, {_DEFAULT_LEMONADE_SUFFIX}"
+
+
 class LemonadeGenerateError(Exception):
     """Lemonade reachable but generation failed (HTTP/model/decode)."""
 
@@ -263,7 +342,11 @@ def generate_image_lemonade(settings: Settings, prompt: str) -> GenerateResult:
     created_at = _utc_now()
     model = _model_id(settings)
 
-    png, provenance = _call_lemonade(settings, cleaned)
+    # Enhance prompt with archetype-specific diffusion-friendly suffix
+    enhanced_prompt = _enhance_lemonade_prompt(cleaned)
+    logger.info("Lemonade prompt enhanced: archetype=%s", _detect_lemonade_archetype(cleaned) or "default")
+
+    png, provenance = _call_lemonade(settings, enhanced_prompt)
     if not png:
         raise LemonadeGenerateError("Lemonade returned empty image bytes")
 
@@ -274,7 +357,14 @@ def generate_image_lemonade(settings: Settings, prompt: str) -> GenerateResult:
         )
 
     sha256 = hashlib.sha256(png).hexdigest()
-    provenance = {**provenance, "sha256": sha256}
+    archetype = _detect_lemonade_archetype(cleaned)
+    provenance = {
+        **provenance,
+        "sha256": sha256,
+        "original_prompt": cleaned,
+        "enhanced_prompt": enhanced_prompt,
+        "archetype": archetype or "default",
+    }
     asset_key = f"{settings.storage_prefix}/lemonade/{run_id}/render.png"
     manifest_key = f"{settings.storage_prefix}/lemonade/{run_id}/manifest.json"
     manifest = _build_manifest(
