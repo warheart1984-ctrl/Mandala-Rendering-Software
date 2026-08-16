@@ -1,0 +1,7 @@
+output/
+data/
+node_modules/
+
+# root .gitignore has *.json — re-include the package's own JSON
+!package.json
+!pricing.json

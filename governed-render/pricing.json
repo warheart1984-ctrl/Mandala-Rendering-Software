@@ -1,0 +1,49 @@
+{
+  "version": "0.1.0",
+  "currency": "USD",
+  "credit": {
+    "description": "1 credit per 1,000,000 pixel·sample (width × height × samples). A 448×448@24 still = 5 credits; a 256×256@16 still = 2 credits; a 160×160@8 frame = 1 credit.",
+    "unit": "pixel·sample"
+  },
+  "tiers": {
+    "trial": {
+      "price_monthly_usd": 0,
+      "credits_per_month": 25,
+      "max_width": 448,
+      "max_height": 448,
+      "max_samples": 24,
+      "max_frames": 30,
+      "max_fps": 12,
+      "movies": true,
+      "note": "Self-serve trial for studios. No signup metering; rate-limited by credits."
+    },
+    "studio": {
+      "price_monthly_usd": 149,
+      "credits_per_month": 1000,
+      "max_width": 1024,
+      "max_height": 1024,
+      "max_samples": 64,
+      "max_frames": 240,
+      "max_fps": 24,
+      "movies": true,
+      "note": "For production look-dev, dailies, and approval loops."
+    },
+    "pro": {
+      "price_monthly_usd": 499,
+      "credits_per_month": 5000,
+      "max_width": 2048,
+      "max_height": 2048,
+      "max_samples": 256,
+      "max_frames": 1200,
+      "max_fps": 60,
+      "movies": true,
+      "note": "For feature work with higher resolution, samples, and longer shots."
+    }
+  },
+  "metering": {
+    "header": "X-API-Key",
+    "ledger_file": "data/ledger.json",
+    "provision_keys_env": "GOVERNED_RENDER_KEYS",
+    "example_provision_keys_env": "[{\"key\":\"studio-0001\",\"tier\":\"studio\"}]"
+  }
+}

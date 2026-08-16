@@ -5,6 +5,9 @@
 .gitignore
 .github
 
+# opencode workspace (large, never in images)
+/.opencode
+
 # Large directories
 /unreal
 /unity
@@ -45,6 +48,10 @@ node_modules
 *.zip
 /output
 /tmp
+
+# governed-render runtime artifacts (ledger, keys, renders)
+/governed-render/output
+/governed-render/data
 
 # OS
 .DS_Store
