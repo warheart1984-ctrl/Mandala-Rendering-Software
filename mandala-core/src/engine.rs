@@ -1,5 +1,6 @@
 use crate::backend::{select_render_backend, RenderBackendKind};
 use crate::rendergraph::{RenderPassMetrics, TemporalCache, FrameState};
+use crate::sd_bridge::{SdTurboGgufRuntime, SdTurboConfig, validate_generation};
 
 #[cfg(feature = "hip")]
 use crate::backend::hip_backend::HipBackend;
@@ -33,6 +34,11 @@ impl MandalaEngine {
             self.backend_kind = RenderBackendKind::Vulkan;
         }
 
+        // SD Turbo constitutional source: generate asset on demand
+        if self.backend_kind == RenderBackendKind::HipComputeAssistOnly {
+            let _asset = self.generate_constitutional_asset("mandala texture");
+        }
+
         let passes = vec![
             RenderPassMetrics { latency_est: 0.0, throughput_est: 0.0, thermal_est: 0.0, usage_est: 0.0, priority: 0.0 },
         ];
@@ -51,6 +57,23 @@ impl MandalaEngine {
             replay_token,
         };
         self.temporal_cache.push(state);
+    }
+
+    fn generate_constitutional_asset(&self, prompt: &str) -> Option<()> {
+        let config = SdTurboConfig {
+            model_path: r"E:\models\sd_turbo.gguf".to_string(),
+            n_ctx: 4096,
+            n_batch: 512,
+        };
+        let mut runtime = SdTurboGgufRuntime::new(config);
+        if runtime.load().is_err() {
+            return None;
+        }
+        let bundle = runtime.generate_evidence(prompt)?;
+        let image = validate_generation(&bundle).ok()?;
+        // Inject image into rendergraph as constitutional node
+        // TODO: map image.latent_hash to texture handle
+        Some(())
     }
 
     fn rt4d_pre_validate(&self) -> bool {
