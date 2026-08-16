@@ -124,11 +124,11 @@ class GPUConnector:
         request: GPUOffloadRequest,
     ) -> None:
         """Validate authority grant matches request"""
-        from datetime import datetime
+        from datetime import datetime, timezone
         
         # Check expiration
         expires = datetime.fromisoformat(grant.expires_at.replace("Z", "+00:00"))
-        if datetime.utcnow() > expires:
+        if datetime.now(timezone.utc) > expires:
             raise PermissionError(f"Authority grant expired: {grant.grant_id}")
         
         # Check modality
@@ -174,7 +174,7 @@ class NIMConnector(GPUConnector):
 
 class LocalGPUConnector(GPUConnector):
     """Local GPU container connector (Docker/Podman)"""
-    
+
     def __init__(
         self,
         container_image: str,
@@ -192,6 +192,97 @@ class LocalGPUConnector(GPUConnector):
         # docker run --gpus '"device=0"' ${container_image} generate ...
         
         return super().generate(request)
+
+
+class LemonadeConnector(GPUConnector):
+    """
+    Governed GPU offload via Lemonade Server (OpenAI-compatible images API).
+
+    Posts to <endpoint>/api/v1/images/generations and decodes the returned
+    base64 image artifact. Requires an explicit AuthorityGrant from SME-Core.
+    """
+
+    def __init__(
+        self,
+        endpoint: str = "http://127.0.0.1:13307",
+        model: str = "Anything-V5",
+        auth_token: Optional[str] = None,
+        timeout: int = 600,
+    ):
+        super().__init__(endpoint, auth_token=auth_token, timeout=timeout)
+        self.model = model
+
+    def generate(self, request: GPUOffloadRequest) -> GPUOffloadResponse:
+        self._validate_grant(request.authority_grant, request)
+
+        import base64
+        import json
+
+        import requests
+
+        start = time.perf_counter()
+
+        url = f"{self.endpoint}/api/v1/images/generations"
+        payload = {
+            "model": self.model,
+            "prompt": request.prompt,
+            "negative_prompt": request.negative_prompt,
+            "size": f"{request.width}x{request.height}",
+            "steps": request.steps,
+            "cfg_scale": request.guidance_scale,
+            "n": 1,
+            "response_format": "b64_json",
+        }
+        headers = {"Content-Type": "application/json"}
+        if self.auth_token:
+            headers["Authorization"] = f"Bearer {self.auth_token}"
+
+        resp = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
+        resp.raise_for_status()
+
+        data = resp.json()
+        items = data.get("data", [])
+        if not items:
+            raise RuntimeError(f"Lemonade returned no images: {data}")
+
+        b64 = items[0].get("b64_json") or items[0].get("url")
+        if b64 is None:
+            raise RuntimeError(f"Lemonade image has no b64_json/url: {items[0]}")
+
+        if isinstance(b64, str) and b64.startswith("http"):
+            img_bytes = requests.get(b64, timeout=self.timeout).content
+        else:
+            img_bytes = base64.b64decode(b64)
+
+        import tempfile
+        with tempfile.NamedTemporaryFile(
+            suffix=".png", prefix=f"gen_{request.seed}_", delete=False
+        ) as tmp:
+            output_path = Path(tmp.name)
+        output_path.write_bytes(img_bytes)
+
+        latency_s = time.perf_counter() - start
+
+        evidence = {
+            "endpoint": self.endpoint,
+            "backend": "lemonade",
+            "model": request.model,
+            "modality": request.modality,
+            "authority_grant_id": request.authority_grant.grant_id,
+            "prompt": request.prompt,
+            "negative_prompt": request.negative_prompt,
+            "steps": request.steps,
+            "guidance_scale": request.guidance_scale,
+            "resolution": [request.width, request.height],
+            "seed": request.seed,
+            "latency_seconds": round(latency_s, 3),
+            "bytes": len(img_bytes),
+        }
+
+        return GPUOffloadResponse(
+            artifact_path=output_path,
+            evidence=evidence,
+        )
 
 
 def create_authority_grant(

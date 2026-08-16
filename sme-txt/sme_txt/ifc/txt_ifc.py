@@ -36,7 +36,7 @@ class TxtPrompt:
     
     def __post_init__(self):
         if self.stop_sequences is None:
-            self.stop_sequences = ["</s>", "<|endoftext|>", "\n\n"]
+            self.stop_sequences = ["\n\n", "<|endoftext|>", "\n\n"]
 
 
 @dataclass
@@ -57,24 +57,36 @@ class MmEmbeddings:
             vis = self.vis_embed
             if vis.ndim == 1:
                 vis = vis[None, :]
-            embeddings.append(vis)
+            embeddings.append(self._project(vis, d_llm))
         
         if self.aud_embed is not None:
             aud = self.aud_embed
             if aud.ndim == 1:
                 aud = aud[None, :]
-            embeddings.append(aud)
+            embeddings.append(self._project(aud, d_llm))
         
         if self.vid_embed is not None:
             vid = self.vid_embed
             if vid.ndim == 1:
                 vid = vid[None, :]
-            embeddings.append(vid)
+            embeddings.append(self._project(vid, d_llm))
         
         if not embeddings:
             return None
         
         return np.concatenate(embeddings, axis=0)
+
+    @staticmethod
+    def _project(embeddings: np.ndarray, d_llm: int) -> np.ndarray:
+        """Project embeddings to LLM hidden dim (pad/truncate per dimension)."""
+        _, d_in = embeddings.shape
+        if d_in == d_llm:
+            return embeddings
+        if d_in > d_llm:
+            return embeddings[:, :d_llm]
+        out = np.zeros((embeddings.shape[0], d_llm), dtype=np.float32)
+        out[:, :d_in] = embeddings
+        return out
 
 
 @dataclass

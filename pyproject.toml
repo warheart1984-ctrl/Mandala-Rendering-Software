@@ -1,0 +1,40 @@
+[project]
+name = "mandala-sme"
+version = "1.1.0"
+description = "Sovereign Multimodal Engine — monorepo root config"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sme_*", "mrs*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = [
+    "sme-txt",
+    "sme-aud",
+    "sme-vis",
+    "sme-gen",
+    "sme-vid",
+    "sme-log",
+    "sme-core/src",
+]
+testpaths = [
+    "sme-core/tests",
+    "sme-txt/tests",
+    "sme-aud/tests",
+    "sme-vis/tests",
+    "sme-gen/tests",
+    "sme-vid/tests",
+    "sme-log/tests",
+]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"

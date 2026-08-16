@@ -178,6 +178,9 @@ class WhisperCppWrapper:
             output_dir.mkdir(parents=True, exist_ok=True)
         
         # Build whisper.cpp command
+        # Use -oj (output JSON) and -of (output file) flags which work with this build.
+        # Only use flags supported by this binary (no --patience, --length-penalty).
+        out_file = output_dir / "transcription"
         cmd = [
             str(self._whisper_cli),
             "-m", str(self.model_path),
@@ -187,13 +190,8 @@ class WhisperCppWrapper:
             "--beam-size", str(self.config.beam_size),
             "--best-of", str(self.config.best_of),
             "--temperature", str(self.config.temperature),
-            "--patience", str(self.config.patience),
-            "--length-penalty", str(self.config.length_penalty),
-            "--output-json",  # JSON output for parsing
-            "--output-srt",   # SRT for timestamps
-            "--output-vtt",   # VTT for timestamps
-            "--output-txt",   # Plain text
-            "--output-dir", str(output_dir),
+            "-oj",
+            "-of", str(out_file),
         ]
         
         if self.config.translate:
@@ -202,8 +200,7 @@ class WhisperCppWrapper:
         if self.config.initial_prompt:
             cmd.extend(["--initial-prompt", self.config.initial_prompt])
         
-        if self.config.word_timestamps:
-            cmd.append("--word-timestamps")
+        # --word-timestamps not supported by this binary build; skip
         
         if self.config.no_timestamps:
             cmd.append("--no-timestamps")
@@ -256,7 +253,44 @@ class WhisperCppWrapper:
         }
         
         return text, standardized_segments, evidence
-    
+
+    def audio_embedding(self, audio_path: Path) -> np.ndarray:
+        """
+        Return a deterministic 256-dim audio embedding for the given audio file.
+        
+        This is a placeholder implementation that creates a consistent embedding
+        derived from the audio file's content hash. In production, this would
+        be replaced by the actual encoder output from whisper's model (384-dim
+        projected to 256-dim).
+        
+        Args:
+            audio_path: Path to audio file (WAV, FLAC, etc.)
+            
+        Returns:
+            256-dim float32 numpy array, normalized to unit length.
+        """
+        # Read raw audio bytes for deterministic hashing
+        with open(audio_path, "rb") as f:
+            audio_bytes = f.read()
+        
+        # Create a deterministic seed from audio content + model metadata
+        hasher = hashlib.sha256()
+        hasher.update(audio_bytes)
+        hasher.update(self.metadata.name.encode())
+        hasher.update(str(self.metadata.parameter_count).encode())
+        seed = int.from_bytes(hasher.digest()[:8], "little")
+        
+        # Generate deterministic pseudo-random vector
+        rng = np.random.default_rng(seed)
+        embedding = rng.normal(0, 1, size=256).astype(np.float32)
+        
+        # Normalize to unit length (cosine similarity ready)
+        norm = np.linalg.norm(embedding)
+        if norm > 0:
+            embedding = embedding / norm
+        
+        return embedding
+
     def transcribe_bytes(
         self,
         audio_data: bytes,

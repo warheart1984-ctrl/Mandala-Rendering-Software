@@ -15,7 +15,7 @@ from PIL import Image
 @dataclass
 class PreprocessConfig:
     """Preprocessing configuration matching model requirements"""
-    resize: tuple[int, int] = (224, 224)
+    resize: tuple[int, int] = (256, 256)
     mean: list[float] = None
     std: list[float] = None
     interpolation: str = "bicubic"  # "bilinear", "bicubic", "lanczos"
@@ -137,19 +137,19 @@ class PreprocessorFactory:
     
     CONFIGS = {
         "mobilevit-xxs": PreprocessConfig(
-            resize=(224, 224),
+            resize=(256, 256),
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225],
             interpolation="bicubic",
         ),
         "vit-tiny-patch16-224": PreprocessConfig(
-            resize=(224, 224),
+            resize=(256, 256),
             mean=[0.5, 0.5, 0.5],
             std=[0.5, 0.5, 0.5],
             interpolation="bicubic",
         ),
         "efficientnet-b0": PreprocessConfig(
-            resize=(224, 224),
+            resize=(256, 256),
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225],
             interpolation="bicubic",
