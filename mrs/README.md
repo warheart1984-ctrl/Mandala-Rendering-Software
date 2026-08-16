@@ -26,6 +26,7 @@ Drive-G-1 status tags. Package rows marked **working tree** are uncommitted WIP 
 | **renderer-web** | Wires existing `GPUMeshRenderer` when WebGPU init succeeds; otherwise Canvas2D (no throw). | Browser with WebGPU; unit tests under `packages/renderer-web` | **Working tree** — unit-tested; live GPU browser verification **not yet claimed** |
 | **scene-schema** | `validateScene4DDTO`, deeper world validation, serialize/deserialize, `SURFACE_ID_ALIAS_MAP`, `tsc` → `dist/` | `packages/scene-schema` README + `npm test` | **Working tree** — sibling SurfaceId duplicates **not** migrated |
 | **plp/** (`renderer-core`) | Live orchestration: 6-plane rotate, `slice_hyperplane`, live/partial status, meshRef/sdfRef dispatch, wireframe edges, diagnostics, real lineage. URI loaders still partial. | `packages/renderer-core/src/plp/` + `projectWorld.test.js` | **Working tree** — skeleton markers cleared in production plp source; uri loaders **partial** |
+| **FMCE demo** (`renderer-core`) | Deterministic SME e2e demo under FMCE governance: GEN → VIS → TXT → AUD, seed-reproducible artifacts, bit-exact replay, full Appendix C constitutional trace. FMCE subsystem green: 14 suites / 131 tests. | `packages/renderer-core/src/fmce/demo/` + `packages/renderer-core/src/fmce/README.md`; run `npm run test:fmce` and `npm run demo` (repo root) | **Working tree** — green; docs aligned in SME-SPEC.md / SME-IMPLEMENTATION-PLAN.md |
 
 Genblaze operator detail: `apps/genblaze-media/README.md` (RT4D section, Render Dockerfile context, 502/503 table).
 

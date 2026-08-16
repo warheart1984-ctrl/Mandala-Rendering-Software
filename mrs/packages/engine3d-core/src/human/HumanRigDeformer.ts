@@ -57,7 +57,7 @@ export function computeGlobalBones(skeleton: HumanSkeleton, pose?: Pose): Record
   return global;
 }
 
-function generateNormals(vertices: Float32Array, indices: Uint16Array | Uint32Array): Float32Array {
+export function generateNormals(vertices: Float32Array, indices: Uint16Array | Uint32Array): Float32Array {
   const normals = new Float32Array(vertices.length);
   for (let i = 0; i + 2 < indices.length; i += 3) {
     const ia = indices[i]! * 3, ib = indices[i + 1]! * 3, ic = indices[i + 2]! * 3;

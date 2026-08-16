@@ -5,7 +5,7 @@ async function runFMCE() {
     {
       config: JSON.stringify({
         testEnvironment: 'node',
-        roots: ['fmce/tests'],
+        roots: ['mrs/packages/renderer-core/src/fmce'],
         verbose: true
       })
     },

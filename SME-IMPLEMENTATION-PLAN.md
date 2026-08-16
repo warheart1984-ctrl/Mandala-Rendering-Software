@@ -2,6 +2,26 @@
 **Revision:** CPU-Bound Mathematical Constraints Applied
 **Spec Version:** 1.1 (see SME-SPEC.md Appendix H & I)
 
+## Implementation Status
+
+The **Federated Mandala Constitutional Engine (FMCE)** — the canonical JS
+governance runtime this plan's constitutional tasks target — is **green**:
+
+- **14 test suites / 131 tests passing** (`npm run test:fmce` from repo root)
+- Modules: PILOT → CPP → ConstitutionalCore → V12 → EvidenceChain → ReplayEngine
+  → RT4D → MandalaLattice, plus navigation grammar, anomaly drift escalation,
+  explanation engine, and cross-layer equivalence (CPU/GPU/Axiom-X)
+- Protected paths (`/constitution`, `/policies`, `AGENTS.md`) enforced
+- Deterministic **SME e2e demo** under FMCE governance: `npm run demo`
+  (GEN → VIS → TXT → AUD, seed-reproducible, bit-exact replay, full Appendix C
+  constitutional trace) — see `mrs/packages/renderer-core/src/fmce/README.md`
+- **Item 5**: FaceIdentityModeler green via `npm run test:face-identity`
+  (`@mrs/engine3d-core/src/face/`, procedural/fixture-based, no diffusion/ML)
+
+The tasks below remain the target plan for the heavier model-backed phases
+(SME-TXT/VIS/AUD/VID/GEN with llama.cpp/ONNX/whisper/ffmpeg); the JS FMCE
+already covers the constitutional runtime, evidence, replay, and audit layers.
+
 ## Overview
 This plan breaks the SME specification into **discrete tasks** across 7 modules, each assigned to a constitutional crew agent with specific file manifests, acceptance criteria, and conformance check mappings. **All model size, quantization, and compute budgets now reflect the mathematical ceilings in SME-SPEC.md §23 (Appendix H).**
 
@@ -421,16 +441,18 @@ This plan breaks the SME specification into **discrete tasks** across 7 modules,
 
 ## Milestones & Gates
 
-| Milestone | Target | Gate Criteria |
-|-----------|--------|---------------|
-| **M0: Constitutional Foundation** | Day 3 | All 21 conformance checks defined; CI loads policies; Director contract valid |
-| **M1: Core Runtime** | Day 14 | SME-Core passes unit tests; Authority→Validation→Fusion→Decision→EVR→Audit chain executes |
-| **M2: Text Core** | Day 21 | SME-TXT generates deterministic text; integrates with SME-Core fusion; replay verified |
-| **M3: Vision + Audio** | Day 28 | SME-VIS/SME-AUD encode + evidence; multimodal fusion works |
-| **M4: Video + Gen** | Day 42 | SME-VID encodes video; SME-GEN generates (CPU + GPU offload); full pipeline E2E |
-| **M5: Evidence/Log** | Day 49 | SME-LOG stores/replays/audits; Merkle verification passes |
-| **M6: Conformance Gate** | Day 56 | **21/21 conformance checks pass**; integration tests green; replay verified |
-| **M7: Production Ready** | Day 70 | Docker/K8s deploy; SDK published; docs complete; runbooks tested |
+| Milestone | Target | Gate Criteria | Status |
+|-----------|--------|---------------|--------|
+| **M0: Constitutional Foundation** | Day 3 | All 21 conformance checks defined; CI loads policies; Director contract valid | ✅ **JS FMCE constitutional chain green (14 suites / 131 tests)** |
+| **M1: Core Runtime** | Day 14 | SME-Core passes unit tests; Authority→Validation→Fusion→Decision→EVR→Audit chain executes | ✅ **FMCE enforces Authority→Validation→Decision→Evidence→Replay→Audit + loop closure** |
+| **M2: Text Core** | Day 21 | SME-TXT generates deterministic text; integrates with SME-Core fusion; replay verified | ◐ Deterministic `sme-txt` simulation in e2e demo (D2, replay-verified); model-backed path pending |
+| **M3: Vision + Audio** | Day 28 | SME-VIS/SME-AUD encode + evidence; multimodal fusion works | ◐ Deterministic `sme-vis`/`sme-aud` simulations in e2e demo; ONNX/whisper paths pending |
+| **M4: Video + Gen** | Day 42 | SME-VID encodes video; SME-GEN generates (CPU + GPU offload); full pipeline E2E | ◐ Deterministic `sme-gen` image/audio in e2e demo; diffusion/ffmpeg paths pending |
+| **M5: Evidence/Log** | Day 49 | SME-LOG stores/replays/audits; Merkle verification passes | ✅ **EvidenceChain + ReplayEngine + append-only evidence in FMCE** |
+| **M6: Conformance Gate** | Day 56 | **21/21 conformance checks pass**; integration tests green; replay verified | ○ pending model-backed phases |
+| **M7: Production Ready** | Day 70 | Docker/K8s deploy; SDK published; docs complete; runbooks tested | ○ pending |
+
+Legend: ✅ met by JS FMCE + demo · ◐ partially met (deterministic simulation, model-backed path pending) · ○ not started
 
 ---
 

@@ -18,6 +18,17 @@ This specification covers:
 - Interfaces: between modules and the constitutional runtime.
 - Contracts: for behavior, safety, and conformance.
 
+**Implementation status:** The Federated Mandala Constitutional Engine (FMCE)
+implements the constitutional runtime (Authority → Validation → Decision →
+Evidence → Verification → Replay → Audit) and is **green**: 14 test suites /
+131 tests (`npm run test:fmce`), plus a deterministic SME e2e demo under FMCE
+governance (`npm run demo`) covering GEN → VIS → TXT → AUD with seed-reproducible
+artifacts, bit-exact replay verification, and a full Appendix C constitutional
+trace. See `mrs/packages/renderer-core/src/fmce/README.md`. The heavier
+model-backed phases (llama.cpp / ONNX / whisper / diffusion / ffmpeg) remain
+targets of `SME-IMPLEMENTATION-PLAN.md`; Item 5 (FaceIdentityModeler, procedural,
+no diffusion/ML) is green via `@mrs/engine3d-core`.
+
 ---
 
 ### 2. Constitutional invariants

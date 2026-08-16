@@ -115,3 +115,16 @@ export {
   type Engine3DObjectType,
   type RenderContext,
 } from "./Engine3DContext.js";
+export {
+  MAX_IDENTITY_DISPLACEMENT,
+  NEUTRAL_DESCRIPTOR,
+  deriveFaceRegionMasks,
+  identityDescriptorHash,
+  normalizeDescriptor,
+  sculptFaceIdentity,
+  faceMeshFromRig,
+  sculptedFaceToRasterMesh,
+  type FaceIdentityDescriptor,
+  type FaceRegionMasks,
+  type SculptedFaceModel,
+} from "./FaceIdentityModeler.js";

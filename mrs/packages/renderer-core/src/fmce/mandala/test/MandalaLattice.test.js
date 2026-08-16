@@ -32,6 +32,7 @@ describe("Lattice Node Validity", () => {
     });
 
     expect(node.determinismClass).toBe("D3_SEMANTIC");
+    const validDeterminismClasses = ["D0_UNSPECIFIED", "D1_EXACT", "D2_NUMERICAL", "D3_SEMANTIC", "D4_STATISTICAL"];
     expect(validDeterminismClasses).toContain(node.determinismClass);
   });
 

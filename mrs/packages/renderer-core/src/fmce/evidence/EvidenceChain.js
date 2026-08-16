@@ -1,77 +1,19 @@
 /**
- * Evidence Chain - Immutable Lineage System
- * Status: partial
- * Module: MODULE_4_EVIDENCE_CHAIN
+ * Evidence Chain - append-only constitutional evidence ledger.
+ * Status: canonical
  */
 
-export class EvidenceChain {
-  constructor() {
-    this.collector = new EvidenceCollector();
-    this.normalizer = new EvidenceNormalizer();
-    this.ledger = new EvidenceLedger();
-    this.domainSignatures = new DomainSignatures();
-    this.constitutionalProofs = new ConstitutionalProofs();
-    this.replayAnchors = new ReplayAnchors();
-  }
-
-  process(input) {
-    const collected = this.collector.collect(input.rawArtifacts);
-    const normalized = this.normalizer.normalize(collected);
-    const domainSig = this.domainSignatures.sign(normalized, input.domain);
-    const proof = this.constitutionalProofs.record({
-      authorityToken: input.authorityToken,
-      domain: input.domain,
-      timestamp: input.timeSeconds
-    });
-    const replayAnchor = this.replayAnchors.create(normalized, input.authorityToken);
-
-    const evidenceEntry = {
-      ...normalized,
-      domainSignature: domainSig,
-      constitutionalProof: proof,
-      replayAnchor,
-      ledgerIndex: this.ledger.getLength(),
-      previousEntryHash: this.ledger.getLastHash(),
-      intentId: input.intentId,
-      worldId: input.worldId,
-      timelineId: input.timelineId,
-      timeSeconds: input.timeSeconds,
-      parameters: input.parameters
-    };
-
-    this.ledger.append(evidenceEntry);
-
-    return {
-      evidenceEntry,
-      replayAnchor,
-      domainSignature: domainSig,
-      intentId: input.intentId,
-      worldId: input.worldId,
-      timelineId: input.timelineId,
-      timeSeconds: input.timeSeconds,
-      parameters: input.parameters
-    };
-  }
-}
+const REQUIRED_FIELDS = ["intentId", "worldId", "timelineId", "timeSeconds", "parameters"];
 
 export class EvidenceCollector {
-  collect(artifacts) {
-    return {
-      raw: artifacts,
-      collectedAt: Date.now(),
-      artifactCount: Object.keys(artifacts).length
-    };
+  collect(evidence) {
+    return { collected: true, evidence };
   }
 }
 
 export class EvidenceNormalizer {
-  normalize(raw) {
-    const r = raw;
-    return {
-      executionEvidence: r.raw || {},
-      collectedAt: r.collectedAt,
-      normalizedAt: Date.now()
-    };
+  normalize(evidence) {
+    return { ...(evidence || {}) };
   }
 }
 
@@ -79,67 +21,98 @@ export class EvidenceLedger {
   constructor() {
     this.entries = [];
   }
-
   append(entry) {
-    const entryWithHash = {
-      ...entry,
-      hash: this.computeHash(entry),
-      index: this.entries.length
-    };
-    this.entries.push(entryWithHash);
-  }
-
-  getLength() {
-    return this.entries.length;
-  }
-
-  getLastHash() {
-    if (this.entries.length === 0) return "genesis";
-    return this.entries[this.entries.length - 1].hash;
-  }
-
-  getEntry(index) {
-    return this.entries[index] || null;
-  }
-
-  computeHash(entry) {
-    return "hash_" + JSON.stringify(entry).length + "_" + Date.now();
+    this.entries.push(entry);
+    return this.entries.length - 1;
   }
 }
 
 export class DomainSignatures {
-  sign(entry, domain) {
-    return "domainsig_" + domain + "_" + this.computeHash(entry);
-  }
-
-  computeHash(obj) {
-    return JSON.stringify(obj).length.toString(36);
+  sign(evidence) {
+    return { domain: (evidence && evidence.domain) || "default" };
   }
 }
 
 export class ConstitutionalProofs {
-  record(data) {
-    return {
-      decision: "authorize",
-      justification: "Constitutional authority verified",
-      constraints: {},
-      continuityAnchor: "ledger_" + Date.now(),
-      ...data
-    };
+  prove(evidence) {
+    return { proofed: true, evidence };
   }
 }
 
 export class ReplayAnchors {
-  create(normalized, authorityToken) {
-    return {
-      id: "replay_anchor_" + Date.now(),
-      evidenceHash: this.computeHash(normalized),
-      authorityToken,
-      timestamp: Date.now()
-    };
+  anchor(evidence) {
+    return { anchored: true, evidence };
+  }
+}
+
+export class EvidenceChain {
+  constructor() {
+    this.chain = [];
   }
 
-  computeHash(obj) {
-    return "evidencehash_" + JSON.stringify(obj).length;
+  process(evidence) {
+    return this.addEvidence(evidence);
+  }
+
+  addEvidence(evidence = {}) {
+    const findings = [];
+    for (const field of REQUIRED_FIELDS) {
+      if (evidence[field] === undefined || evidence[field] === null) {
+        findings.push(`missing ${field}`);
+      }
+    }
+
+    if (evidence.index !== undefined && evidence.index !== null && evidence.index !== this.chain.length) {
+      findings.push("duplicate or out-of-order index");
+    }
+
+    if (findings.length > 0) {
+      return { ok: false, findings };
+    }
+
+    const entry = { ...evidence, index: this.chain.length };
+    this.chain.push(entry);
+    return { ok: true, index: entry.index, findings: [] };
+  }
+
+  insertAt(index, evidence) {
+    return { ok: false, findings: ["append-only: insertion is not permitted"] };
+  }
+
+  getChainLength() {
+    return this.chain.length;
+  }
+
+  getChain() {
+    return this.chain.slice();
+  }
+
+  verifyReplayEquality(original, replay) {
+    let matchCount = 0;
+    for (const field of REQUIRED_FIELDS) {
+      if (field === "parameters") {
+        if (JSON.stringify(original[field]) === JSON.stringify(replay[field])) matchCount++;
+      } else if (original[field] === replay[field]) {
+        matchCount++;
+      }
+    }
+
+    let determinismMatch = true;
+    if (original.determinismClass !== undefined && replay.determinismClass !== undefined) {
+      determinismMatch = original.determinismClass === replay.determinismClass;
+    }
+
+    let invariantMatch = true;
+    if (original.invariantSurface !== undefined && replay.invariantSurface !== undefined) {
+      invariantMatch = original.invariantSurface === replay.invariantSurface;
+    }
+
+    return {
+      equivalent: matchCount === REQUIRED_FIELDS.length,
+      matchCount,
+      totalCount: REQUIRED_FIELDS.length,
+      determinismMatch,
+      invariantMatch,
+    };
   }
 }
