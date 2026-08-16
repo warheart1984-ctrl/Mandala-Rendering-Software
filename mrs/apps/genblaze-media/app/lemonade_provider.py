@@ -36,7 +36,7 @@ from app.pipeline import (
 logger = logging.getLogger(__name__)
 
 LEMONADE_PROVIDER_ID = "lemonade-local"
-DEFAULT_LEMONADE_BASE_URL = "http://127.0.0.1:13305/api/v1"
+DEFAULT_LEMONADE_BASE_URL = "http://127.0.0.1:13307/api/v1"
 DEFAULT_LEMONADE_MODEL = "SD-Turbo"
 DEFAULT_LEMONADE_SIZE = "512x512"
 DEFAULT_LEMONADE_STEPS = 4
@@ -49,7 +49,6 @@ LEMONADE_SETUP_HELP = (
     f"`lemonade pull {DEFAULT_LEMONADE_MODEL}`. Set "
     "GENBLAZE_IMAGE_BACKEND=lemonade to use this path."
 )
-
 
 class LemonadeGenerateError(Exception):
     """Lemonade reachable but generation failed (HTTP/model/decode)."""

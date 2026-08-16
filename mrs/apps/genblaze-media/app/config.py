@@ -176,16 +176,28 @@ class Settings:
     # --- RT4D deterministic renderer backend (defaults keep NVIDIA the default) ---
     image_backend: str = "nvidia"
     image_fallback_to_rt4d: bool = False
-    # --- Local Lemonade (AMD) OpenAI-compatible image API ---
-    lemonade_base_url: str = "http://127.0.0.1:13305/api/v1"
+    # --- Local Lemonade (AMD) OpenAI-compatible API: stills + text + voice ---
+    lemonade_base_url: str = "http://127.0.0.1:13307/api/v1"
     lemonade_model: str | None = None
     lemonade_size: str = "512x512"
     lemonade_steps: int = 4
     lemonade_timeout_seconds: float = 600.0
     lemonade_api_key: str | None = None
+    # Text / voice (Lemonade OpenAI-compatible chat + audio endpoints).
+    lemonade_chat_model: str = "Llama-3.2-1B-Instruct-GGUF"
+    lemonade_tts_model: str = "kokoro-v1"
+    lemonade_stt_model: str = "Whisper-Large-v3-Turbo"
     # GENBLAZE_SKIP_LOCAL_SD=1 — skip Lemonade/local SD (AMD hosts without sd-server).
     # Pre-render beauty on a cloud-capable / GMI-credit host instead.
     skip_local_sd: bool = False
+    # Local frames-to-video (flipbook of seeded stills stitched with ffmpeg).
+    frames_video_count: int = 12
+    frames_video_fps: int = 6
+    frames_video_seed: int = 1337
+    # Which local backend produces the stills: "rt4d" (deterministic Node
+    # render-still, works on hosts where sd-server is unavailable) or "lemonade"
+    # (local SD-Turbo via Lemonade's sd-server).
+    frames_video_source: str = "rt4d"
     rt4d_node_path: str = "node"
     rt4d_script_path: str | None = None
     scene_spec_script_path: str | None = None
@@ -355,6 +367,9 @@ class Settings:
             return True
         if self.video_backend == "seedance":
             return self.seedance_configured
+        if self.video_backend == "frames":
+            # Local flipbook only needs a reachable local image backend + ffmpeg.
+            return not self.skip_local_sd
         return self.nvidia_configured
 
 
@@ -432,7 +447,31 @@ def get_settings() -> Settings:
             "off",
         }
     backend_raw = (os.getenv("GENBLAZE_VIDEO_BACKEND") or "nvidia").strip().lower()
-    video_backend = "seedance" if backend_raw in {"seedance", "fal", "bytedance"} else "nvidia"
+    if backend_raw in {"frames", "local-frames", "flipbook", "stitch"}:
+        video_backend = "frames"
+    elif backend_raw in {"seedance", "fal", "bytedance"}:
+        video_backend = "seedance"
+    else:
+        video_backend = "nvidia"
+    try:
+        frames_video_count = int((os.getenv("GENBLAZE_FRAMES_COUNT") or "12").strip() or "12")
+    except ValueError:
+        frames_video_count = 12
+    frames_video_count = max(2, min(120, frames_video_count))
+    try:
+        frames_video_fps = int((os.getenv("GENBLAZE_FRAMES_FPS") or "6").strip() or "6")
+    except ValueError:
+        frames_video_fps = 6
+    frames_video_fps = max(1, min(60, frames_video_fps))
+    try:
+        frames_video_seed = int((os.getenv("GENBLAZE_FRAMES_SEED") or "1337").strip() or "1337")
+    except ValueError:
+        frames_video_seed = 1337
+    frames_source_raw = (os.getenv("GENBLAZE_FRAMES_SOURCE") or "rt4d").strip().lower()
+    if frames_source_raw in {"lemonade", "sd", "sdturbo", "sd-turbo"}:
+        frames_video_source = "lemonade"
+    else:
+        frames_video_source = "rt4d"
     fal_key = (
         os.getenv("FAL_KEY") or os.getenv("SEEDANCE_API_KEY") or os.getenv("FAL_API_KEY") or ""
     ).strip() or None
@@ -458,9 +497,16 @@ def get_settings() -> Settings:
         image_backend = "nvidia"
 
     lemonade_base_url = (
-        os.getenv("LEMONADE_BASE_URL") or "http://127.0.0.1:13305/api/v1"
+        os.getenv("LEMONADE_BASE_URL") or "http://127.0.0.1:13307/api/v1"
     ).strip()
     lemonade_model = (os.getenv("GENBLAZE_LEMONADE_MODEL") or "").strip() or None
+    lemonade_chat_model = (
+        os.getenv("GENBLAZE_LEMONADE_CHAT_MODEL") or "Llama-3.2-1B-Instruct-GGUF"
+    ).strip()
+    lemonade_tts_model = (os.getenv("GENBLAZE_LEMONADE_TTS_MODEL") or "kokoro-v1").strip()
+    lemonade_stt_model = (
+        os.getenv("GENBLAZE_LEMONADE_STT_MODEL") or "Whisper-Large-v3-Turbo"
+    ).strip()
     lemonade_size = (os.getenv("GENBLAZE_LEMONADE_SIZE") or "512x512").strip() or "512x512"
     try:
         lemonade_steps = int((os.getenv("GENBLAZE_LEMONADE_STEPS") or "4").strip() or "4")
@@ -766,6 +812,10 @@ def get_settings() -> Settings:
         seedance_aspect_ratio=(os.getenv("SEEDANCE_ASPECT_RATIO") or "16:9").strip(),
         seedance_generate_audio=seedance_audio,
         seedance_watermark=False if seedance_watermark is None else seedance_watermark,
+        frames_video_count=frames_video_count,
+        frames_video_fps=frames_video_fps,
+        frames_video_seed=frames_video_seed,
+        frames_video_source=frames_video_source,
         embed_model=(
             os.getenv("NVIDIA_EMBED_MODEL") or "nvidia/nv-embedcode-7b-v1"
         ).strip(),
@@ -791,6 +841,9 @@ def get_settings() -> Settings:
         lemonade_steps=lemonade_steps,
         lemonade_timeout_seconds=lemonade_timeout,
         lemonade_api_key=lemonade_api_key,
+        lemonade_chat_model=lemonade_chat_model,
+        lemonade_tts_model=lemonade_tts_model,
+        lemonade_stt_model=lemonade_stt_model,
         skip_local_sd=skip_local_sd,
         rt4d_node_path=rt4d_node_path,
         rt4d_script_path=rt4d_script_override,
