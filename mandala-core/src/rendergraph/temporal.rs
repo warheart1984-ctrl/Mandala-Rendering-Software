@@ -8,7 +8,7 @@ pub struct FrameState {
 }
 
 pub struct TemporalCache {
-    history: Vec<FrameState>,
+    pub(crate) history: Vec<FrameState>,
     max_len: usize,
 }
 
