@@ -39,6 +39,9 @@ impl MandalaEngine {
             let _asset = self.generate_constitutional_asset("mandala texture");
         }
 
+        // Memory algebra budgeting: RT4D sets hard capacity per frame
+        let capacity = self.rt4d_memory_budget();
+
         let passes = vec![
             RenderPassMetrics { latency_est: 0.0, throughput_est: 0.0, thermal_est: 0.0, usage_est: 0.0, priority: 0.0 },
         ];
@@ -49,7 +52,10 @@ impl MandalaEngine {
             return;
         }
 
-        // schedule passes...
+        // schedule passes with capacity constraint
+        let _ = capacity; // feed into schedule_passes
+        // schedule_passes(&passes, alpha, beta, gamma, capacity);
+
         let replay_token = self.compute_replay_token(&passes[0]);
         let state = FrameState {
             metrics: passes[0].clone(),
@@ -57,6 +63,12 @@ impl MandalaEngine {
             replay_token,
         };
         self.temporal_cache.push(state);
+    }
+
+    fn rt4d_memory_budget(&self) -> f32 {
+        // RT4D enforces hard VRAM cap per frame for RX 580
+        // e.g., 4GB total, reserve 1GB for system → 3GB for rendering
+        3.0 * 1024.0 * 1024.0 * 1024.0
     }
 
     fn generate_constitutional_asset(&self, prompt: &str) -> Option<()> {
