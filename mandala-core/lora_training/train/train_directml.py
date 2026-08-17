@@ -30,7 +30,7 @@ LEARNING_RATE = 1e-4
 BATCH_SIZE = 1
 NUM_EPOCHS = 10
 SAVE_EVERY = 2
-IMG_SIZE = 512
+IMG_SIZE = 256  # Reduced for 4GB VRAM on RX 580
 MAX_STEPS = 3000
 SEED = 42
 
@@ -150,9 +150,13 @@ def train():
     print("Loading SD Turbo...")
     from diffusers import StableDiffusionPipeline
 
+    CONFIG_DIR = Path(r"E:\Mandala-Rendering-Software\models\sd_turbo_diffusers")
+
     pipe = StableDiffusionPipeline.from_single_file(
         str(BASE_MODEL),
-        torch_dtype=torch.float32,
+        torch_dtype=torch.float16,
+        load_safety_checker=False,
+        config=str(CONFIG_DIR),
     )
     pipe.to(device)
 
@@ -196,8 +200,8 @@ def train():
 
             # Encode to latent space
             with torch.no_grad():
-                latents = pipe.vae.encode(pixel_values).latent_dist.sample()
-                latents = latents * 0.18215
+                latents = pipe.vae.encode(pixel_values.half()).latent_dist.sample()
+                latents = (latents * 0.18215).to(dtype=torch.float32)
 
             # Random noise
             noise = torch.randn_like(latents)
@@ -208,15 +212,14 @@ def train():
 
             # Text encoding
             with torch.no_grad():
-                encoder_hidden_states = pipe.text_encoder(
-                    pipe.tokenizer(
-                        batch["caption"],
-                        return_tensors="pt",
-                        padding=True,
-                        truncation=True,
-                        max_length=77
-                    ).input_ids.to(device)
-                ).last_hidden_state
+                tokens = pipe.tokenizer(
+                    batch["caption"],
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=77
+                ).input_ids.to(device)
+                encoder_hidden_states = pipe.text_encoder(tokens).last_hidden_state
 
             # Predict noise
             noise_pred = pipe.unet(
