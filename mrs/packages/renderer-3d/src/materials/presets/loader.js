@@ -1,3 +1,4 @@
-import presets from './procedural-materials.json' assert {type:'json'};
-export function getPresets(){ return presets.presets; }
-export function findPreset(name){ return presets.presets.find(p=>p.name===name); }
+import {presets, provenance} from './procedural-materials.js';
+export function getPresets(){ return presets; }
+export function findPreset(name){ return presets.find(p=>p.name===name); }
+export {provenance};
