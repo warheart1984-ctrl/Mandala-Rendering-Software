@@ -3,6 +3,10 @@ pub mod rendergraph;
 pub mod engine;
 pub mod sd_bridge;
 pub mod bradley_bridge;
+pub mod materials;
+pub mod noise;
+pub mod bvh;
+pub mod shaders;
 
 pub use backend::{RenderBackendKind, select_render_backend};
 pub use engine::MandalaEngine;
