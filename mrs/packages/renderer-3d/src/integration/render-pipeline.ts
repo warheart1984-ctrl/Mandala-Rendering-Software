@@ -1,8 +1,8 @@
-import { Mesh } from "../scene/mesh/mesh-types";
-import { meshToPrimitives } from "../scene/mesh/mesh-loader";
-import { buildBVH_SAH } from "../scene/bvh/bvh-builder-sah";
-import { toGPULayout } from "../scene/bvh/bvh-layout";
-import { intersectBVH } from "../scene/bvh/bvh-traversal-simd";
+import { Mesh } from "../scene/mesh/mesh-types.ts";
+import { meshToPrimitives } from "../scene/mesh/mesh-loader.ts";
+import { buildBVH_SAH } from "../scene/bvh/bvh-builder-sah.ts";
+import { toGPULayout } from "../scene/bvh/bvh-layout.ts";
+import { intersectBVH } from "../scene/bvh/bvh-traversal-simd.ts";
 
 export interface RenderPipelineResult {
   bvh;

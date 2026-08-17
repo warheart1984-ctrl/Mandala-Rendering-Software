@@ -1,5 +1,5 @@
-import { BVHTree, PrimitiveRef, Provenance } from "./bvh-spec";
-import { Ray, RaysPacket, RayResult, PacketResult } from "./bvh-traversal-simd";
+import { BVHTree, PrimitiveRef, Provenance } from "./bvh-spec.ts";
+import { Ray, RaysPacket, RayResult, PacketResult } from "./bvh-traversal-simd.ts";
 
 export interface BVHSplitDecisionRecord {
   nodeIndex: number;

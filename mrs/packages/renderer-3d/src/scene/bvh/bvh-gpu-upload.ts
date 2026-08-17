@@ -1,5 +1,5 @@
-import { BVHTree, PrimitiveRef } from "./bvh-spec";
-import { toGPULayout } from "./bvh-layout";
+import { BVHTree, PrimitiveRef } from "./bvh-spec.ts";
+import { toGPULayout } from "./bvh-layout.ts";
 
 export function uploadBVH(device:any, tree:BVHTree, primitives:PrimitiveRef[]){
   const {nodeBuffer, primitiveBuffer, metaBuffer}=toGPULayout(tree, primitives);

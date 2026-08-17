@@ -1,6 +1,6 @@
-import { BVHTree, PrimitiveRef } from "./bvh-spec";
-import { TraversalEvidence, recordTraversalStart, recordNodeVisit, recordTraversalEnd } from "./bvh-evidence";
-import { Mesh } from "../mesh/mesh-types";
+import { BVHTree, PrimitiveRef } from "./bvh-spec.ts";
+import { TraversalEvidence, recordTraversalStart, recordNodeVisit, recordTraversalEnd } from "./bvh-evidence.ts";
+import { Mesh } from "../mesh/mesh-types.ts";
 
 export interface Ray { origin:[number,number,number]; direction:[number,number,number]; }
 export interface HitRecord { hit:true; t:number; primitiveId:string; barycentric:[number,number,number]; nodeIndex:number; }

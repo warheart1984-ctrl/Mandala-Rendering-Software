@@ -1,5 +1,5 @@
-import { Mesh } from "./mesh-types";
-import { PrimitiveRef, AABB } from "../bvh/bvh-spec";
+import { Mesh } from "./mesh-types.ts";
+import { PrimitiveRef, AABB } from "../bvh/bvh-spec.ts";
 
 function computeAABB(mesh:Mesh):AABB{
   let min:[number,number,number]=[Infinity,Infinity,Infinity];

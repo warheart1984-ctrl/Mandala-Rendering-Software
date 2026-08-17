@@ -1,4 +1,4 @@
-import { BVHTree, PrimitiveRef, AABB } from "./bvh-spec";
+import { BVHTree, PrimitiveRef, AABB } from "./bvh-spec.ts";
 
 export function computeSceneBounds(primitives:PrimitiveRef[]):AABB{
   if(primitives.length===0) return {min:[0,0,0],max:[0,0,0]};

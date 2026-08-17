@@ -1,5 +1,5 @@
-import { BVHTree, PrimitiveRef, BVHNode, AABB } from "./bvh-spec";
-import { BuildEvidence, recordBuildStart, recordSplitDecision, recordBuildEnd } from "./bvh-evidence";
+import { BVHTree, PrimitiveRef, BVHNode, AABB } from "./bvh-spec.ts";
+import { BuildEvidence, recordBuildStart, recordSplitDecision, recordBuildEnd } from "./bvh-evidence.ts";
 
 export interface BVHBuildConfig {
   maxLeafSize: number;
@@ -71,7 +71,7 @@ export function buildBVH_SAH(primitives:PrimitiveRef[], config:BVHBuildConfig):B
     const splitInfo=chooseSplit(prims,bounds,config.binCount);
     recordSplitDecision(evidence,{nodeIndex:idx,axis:splitInfo.axis,position:splitInfo.position,cost:0,chosen:true});
     const left=[], right=[];
-    for(const p of prims){ const c=(p.aabb.min[axis]+p.aabb.max[axis])*0.5; (c<=position?left:right).push(p); }
+    for(const p of prims){ const c=(p.aabb.min[splitInfo.axis]+p.aabb.max[splitInfo.axis])*0.5; (c<=splitInfo.position?left:right).push(p); }
     if(left.length===0||right.length===0){
       nodes.push({bounds,children:[],primitiveRange:{start:0,count:prims.length},isLeaf:true,level});
       return idx;

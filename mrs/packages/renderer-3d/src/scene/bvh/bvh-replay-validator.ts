@@ -1,7 +1,7 @@
-import { BVHTree, PrimitiveRef } from "./bvh-spec";
-import { BuildEvidence, TraversalEvidence } from "./bvh-evidence";
-import { BVHBuildConfig, buildBVH_SAH } from "./bvh-builder-sah";
-import { Ray } from "./bvh-traversal-simd";
+import { BVHTree, PrimitiveRef } from "./bvh-spec.ts";
+import { BuildEvidence, TraversalEvidence } from "./bvh-evidence.ts";
+import { BVHBuildConfig, buildBVH_SAH } from "./bvh-builder-sah.ts";
+import { Ray } from "./bvh-traversal-simd.ts";
 
 export interface ValidationReport {
   ok:boolean;

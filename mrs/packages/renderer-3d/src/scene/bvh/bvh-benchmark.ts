@@ -1,5 +1,5 @@
-import { buildBVH_SAH } from "./bvh-builder-sah";
-import { intersectBVH } from "./bvh-traversal-simd";
+import { buildBVH_SAH } from "./bvh-builder-sah.ts";
+import { intersectBVH } from "./bvh-traversal-simd.ts";
 
 export function benchmark(primitives, rays){
   const t0=performance.now();
