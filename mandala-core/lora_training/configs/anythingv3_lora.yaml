@@ -1,0 +1,87 @@
+# AnythingV3 LoRA Training Config
+# Anime/stylized constitutional texture generation
+
+model:
+  name: "stablediffusionapi/anything-v3"
+  dtype: "float16"
+  revision: "main"
+  variant: "fp16"
+  subfolder: "v3"
+
+lora:
+  rank: 64
+  alpha: 128
+  dropout: 0.1
+  target_modules:
+    - "to_q"
+    - "to_k"
+    - "to_v"
+    - "to_out.0"
+    - "proj_in"
+    - "proj_out"
+    - "ff.net.0.proj"
+    - "ff.net.2"
+    - "conv1"
+    - "conv2"
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+training:
+  output_dir: "checkpoints/anythingv3_lora"
+  num_train_epochs: 150
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 5e-5
+  lr_scheduler: "polynomial"
+  lr_warmup_steps: 200
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1e-8
+  max_grad_norm: 1.0
+  mixed_precision: "fp16"
+  use_8bit_adam: true
+  gradient_checkpointing: true
+  dataloader_num_workers: 2
+  seed: 42
+
+  # Constitutional settings
+  deterministic: true
+  replay_token_seed: 42
+  save_every_n_steps: 250
+  eval_every_n_steps: 50
+  log_every_n_steps: 5
+
+data:
+  train_data: "data/processed/stylized_texture_train.jsonl"
+  val_data: "data/processed/stylized_texture_val.jsonl"
+  max_length: 512
+  image_size: 512
+  center_crop: true
+  random_flip: false
+
+categories:
+  - "stylized_npr"
+  - "toon_shading"
+  - "anime_effects"
+  - "watercolor"
+  - "comic_halftone"
+  - "pixel_retro"
+  - "brushstroke_painterly"
+
+validation:
+  prompts:
+    - "toon shader with quantized lighting and ink outline"
+    - "watercolor bleed simulation on paper texture"
+    - "anime specular streaks with glow effect"
+    - "halftone comic shader with cross-hatch"
+    - "pixel art CRT bloom with scanlines"
+  num_inference_steps: 20
+  guidance_scale: 7.0
+  seed: 42
+
+constitutional:
+  replay_validation: true
+  rt4d_check: true
+  deterministic_output: true
+  metadata_embed: true
+  trace_export: true

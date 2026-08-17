@@ -1,0 +1,25 @@
+# Sovereign LoRA Training Dependencies
+torch>=2.1.0
+torchvision>=0.16.0
+diffusers>=0.25.0
+transformers>=4.36.0
+peft>=0.7.0
+accelerate>=0.25.0
+datasets>=2.16.0
+safetensors>=0.4.0
+bitsandbytes>=0.41.0
+xformers>=0.0.23
+wandb>=0.16.0
+tensorboard>=2.15.0
+pillow>=10.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+pyyaml>=6.0
+tqdm>=4.66.0
+einops>=0.7.0
+kornia>=0.7.0
+scikit-image>=0.22.0
+open_clip_torch>=2.24.0
+gguf>=0.1.0
+sentencepiece>=0.1.99
+protobuf>=4.25.0
