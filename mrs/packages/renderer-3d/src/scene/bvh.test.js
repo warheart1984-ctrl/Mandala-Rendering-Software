@@ -1,4 +1,12 @@
 import {buildBVH, intersectBVH} from './bvh-build.js';
-const root = buildBVH([]);
-const hit = intersectBVH(root, {origin:{x:0,y:0,z:0}, dir:{x:0,y:0,z:1}});
-console.log('BVH test', hit.hit===false ? 'PASS' : 'FAIL');
+// Simple triangle at z=1
+const tri = [
+  [[0,0,1],[1,0,1],[0,1,1]]
+];
+const root = buildBVH(tri);
+const hit = intersectBVH(root, {origin:[0,0,0], dir:[0,0,1]});
+console.log('BVH intersect hit?', hit.hit);
+console.log('BVH test', hit.hit && Math.abs(hit.t-1)<1e-6 ? 'PASS' : 'FAIL');
+
+const miss = intersectBVH(root, {origin:[0,0,0], dir:[0,1,0]});
+console.log('BVH miss test', miss.hit===false ? 'PASS' : 'FAIL');
