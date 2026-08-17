@@ -13,6 +13,8 @@ export interface AABB {
 
 export interface PrimitiveRef {
   id: string;
+  meshId: string;
+  indexOffset: number;
   aabb: AABB;
   assetProvenanceId?: string;
 }
