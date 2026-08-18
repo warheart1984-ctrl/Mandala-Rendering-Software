@@ -22,7 +22,8 @@
   "author": "",
   "license": "MIT",
   "overrides": {
-    "minimatch": "9.0.9"
+    "minimatch": "9.0.9",
+    "nanoid": "^3.3.18"
   },
   "dependencies": {
     "commander": "^11.1.0",

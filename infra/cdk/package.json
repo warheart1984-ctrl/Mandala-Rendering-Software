@@ -17,7 +17,7 @@
     "@aws-sdk/client-secrets-manager": "^3.569.0",
     "@aws-sdk/lib-dynamodb": "^3.1101.0",
     "@aws-sdk/s3-request-presigner": "^3.1101.0",
-    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "aws-cdk-lib": "^2.265.0",
     "constructs": "^10.3.0",
     "redis": "^4.6.13",
