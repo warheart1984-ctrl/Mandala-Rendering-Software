@@ -1,0 +1,12 @@
+{
+  "name": "Mandala Rendering Software",
+  "install": "sudo apt-get update && sudo apt-get install -y python3.12-venv && npm ci && (cd mrs/packages/renderer-core && npm install) && python3 -m venv .venv && . .venv/bin/activate && pip install --upgrade pip && pip install \"fastapi==0.116.1\" \"uvicorn[standard]==0.35.0\" \"python-dotenv==1.2.2\" \"pydantic==2.11.7\" \"httpx==0.28.1\" \"pytest==9.1.1\"",
+  "terminals": [
+    {
+      "name": "infinity-director",
+      "command": ". .venv/bin/activate && cd mrs/apps/infinity-director && python -m uvicorn app.main:app --host 0.0.0.0 --port 8080",
+      "description": "Infinity Director FastAPI service (health, ATCM planning, IDAC routes) on http://localhost:8080"
+    }
+  ],
+  "ports": [{ "name": "infinity-director", "port": 8080 }]
+}
