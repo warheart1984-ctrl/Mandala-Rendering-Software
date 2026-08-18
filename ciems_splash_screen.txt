@@ -1,0 +1,14 @@
+██████╗ ██╗ ███████╗███╗   ███╗███████╗
+██╔══██╗██║ ██╔════╝████╗ ████║██╔════╝
+██████╔╝██║ █████╗  ██╔████╔██║█████╗  
+██╔══██╗██║ ██╔══╝  ██║╚██╔╝██║██╔══╝  
+██║  ██║██║ ███████╗██║ ╚═╝ ██║███████╗
+╚═╝  ╚═╝╚═╝ ╚══════╝╚═╝     ╚═╝╚══════╝
+
+        CIEMS Certified Node Installer
+      Sovereign GPU Compute • Vendor-Agnostic
+------------------------------------------------
+ Detecting GPU hardware...
+ Initializing constitutional compute runtime...
+ Preparing PTX/SPIR-V dual backend...
+------------------------------------------------

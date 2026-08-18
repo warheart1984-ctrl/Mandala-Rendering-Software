@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+  <rect width="400" height="200" fill="#0a0a0f"/>
+  <polygon points="200,40 260,120 140,120" fill="#00ffff"/>
+  <circle cx="200" cy="100" r="50" fill="none" stroke="#ff00ff" stroke-width="4"/>
+  <text x="200" y="165" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="20">CIEMS CERTIFIED NODE</text>
+  <text x="200" y="185" text-anchor="middle" fill="#cccccc" font-family="monospace" font-size="12">Sovereign GPU Compute, Vendor-Agnostic</text>
+</svg>

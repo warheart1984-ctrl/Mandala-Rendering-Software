@@ -1,0 +1,19 @@
+[node]
+id = "node-001"
+tier = "S1"
+standard = "CIEMS-1.0"
+version = "2026.08"
+
+[gpu]
+vendor = "NVIDIA"
+model = "Tesla M40"
+vram_gb = 12
+
+[backends]
+nvidia_ptx = true
+vulkan_spirv = true
+
+[conformance]
+core = "pass"
+add_vec = "pass"
+matmul_tiled = "pass"
