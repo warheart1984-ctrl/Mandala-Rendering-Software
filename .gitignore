@@ -93,3 +93,7 @@ yarn-error.log*
 # H test output logs
 conformance-out.txt
 test-output.txt
+
+# Training datasets (never commit)
+Anime Pictures for training/
+

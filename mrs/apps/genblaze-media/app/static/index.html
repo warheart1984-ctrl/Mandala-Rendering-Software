@@ -1187,15 +1187,19 @@
     </section>
 
     <section class="path" id="nim-cosmos" hidden>
-      <h2>NIM Cosmos · video (CMM-NIM-Cosmos)</h2>
+      <h2>Video · local frames flipbook</h2>
       <p class="tips" role="note">
-        <strong>Prompt tips (Cosmos text-to-world):</strong>
-        abstract / world-scale scenes (landscapes, geometry, light) work better than portraits.
-        People and faces may blank or degrade. <strong>NVCF cold-start:</strong> Cosmos is often slower than
-        FLUX on the first hit after Render or NIM idle — even with 600s+ timeouts, expect longer
-        first-request latency; keep this tab open. Larger mp4 objects cost more B2 Class C traffic.
-        This section is hidden by default (stills-only demo); it appears only
-        when the operator explicitly sets <code>GENBLAZE_VIDEO_ENABLED=1</code>.
+        <strong>Default path (GENBLAZE_VIDEO_BACKEND=frames):</strong> generates
+        N seeded stills locally (deterministic RT4D render-still by default, or
+        Lemonade SD-Turbo when <code>GENBLAZE_FRAMES_SOURCE=lemonade</code>), then
+        stitches them into an MP4 with ffmpeg. This is a <strong>flipbook of
+        independent stills</strong> — not a motion/generative-video model. Output
+        is honest: receipts carry provider <code>rt4d-local-frames</code> (or
+        <code>lemonade-local-frames</code>) and a per-frame provenance list.
+        Cloud alternatives: <code>GENBLAZE_VIDEO_BACKEND=seedance</code> (fal,
+        billed) or <code>nvidia</code> (NIM Cosmos). This section is hidden by
+        default (stills-only demo); it appears only when the operator sets
+        <code>GENBLAZE_VIDEO_ENABLED=1</code>.
       </p>
 
       <form id="video-form">
@@ -1214,6 +1218,58 @@
         <div class="meta" id="video-result-meta"></div>
         <video id="video-preview" controls hidden></video>
       </section>
+    </section>
+
+    <section class="path" id="chat">
+      <h2>Chat · text (Lemonade local)</h2>
+      <p class="tips" role="note">
+        Local text inference via <strong>Lemonade Server</strong> on this machine
+        (default <code>Llama-3.2-1B-Instruct</code>). No cloud key required.
+        Scoped as <strong>assist</strong> — not a print/SoT surface.
+      </p>
+      <div id="chat-log" class="chat-log" style="max-height:20rem;overflow-y:auto;border:1px solid var(--line);border-radius:6px;padding:0.75rem;background:rgba(0,0,0,0.22);margin-bottom:0.75rem">
+        <p class="tips" style="margin:0">Chat will appear here.</p>
+      </div>
+      <form id="chat-form">
+        <label for="chat-input">Message</label>
+        <div class="row">
+          <textarea id="chat-input" maxlength="2000"
+            placeholder="Ask something — local inference, e.g. 'describe a mandala scene'" style="min-height:3rem"></textarea>
+          <button type="submit" id="chat-go">Send</button>
+        </div>
+      </form>
+      <div id="chat-status" class="status"></div>
+    </section>
+
+    <section class="path" id="voice">
+      <h2>Voice · speech (Lemonade local)</h2>
+      <p class="tips" role="note">
+        Local TTS (default <code>kokoro-v1</code>) and STT (default Whisper).
+        <strong>On this host STT may report unavailable</strong> until the local
+        whisper backend starts; TTS is the verified path.
+      </p>
+      <h3 style="font-size:1.05rem;margin-top:0.25rem">Text to speech</h3>
+      <form id="tts-form">
+        <label for="tts-text">Text to speak</label>
+        <textarea id="tts-text" maxlength="4000"
+          placeholder="e.g. Welcome to the Mandala. This voice is generated locally."></textarea>
+        <div class="row">
+          <button type="submit" id="tts-go">Speak</button>
+        </div>
+      </form>
+      <div id="tts-status" class="status"></div>
+      <audio id="tts-audio" controls hidden style="margin-top:0.6rem"></audio>
+
+      <h3 style="font-size:1.05rem;margin-top:1.4rem">Speech to text</h3>
+      <form id="stt-form">
+        <label for="stt-file">Audio file</label>
+        <input type="file" id="stt-file" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/*" />
+        <div class="row">
+          <button type="submit" id="stt-go">Transcribe</button>
+        </div>
+      </form>
+      <div id="stt-status" class="status"></div>
+      <div id="stt-result" class="meta" hidden></div>
     </section>
 
     <section class="assets">
@@ -2479,7 +2535,8 @@
       videoGoBtn.disabled = true;
       setStatus(
         videoStatusEl,
-        "Generating video… Cosmos NVCF cold-start can take several minutes after Render/NIM idle. Keep this tab open.",
+        "Generating video… (local frames flipbook: seeded stills → ffmpeg). " +
+          "This can take a while for many frames; keep this tab open.",
         ""
       );
       videoPreview.hidden = true;
@@ -2495,10 +2552,10 @@
           const detail = data.detail || res.statusText;
           let msg = typeof detail === "string" ? detail : JSON.stringify(detail);
           if (res.status === 503) {
-            msg += "\n(Video disabled, missing NVIDIA key, or model not available on this key.)";
+            msg += "\n(Video disabled, backend unavailable, or model not available.)";
           } else if (res.status === 502) {
             msg +=
-              "\n(Upstream/transfer failure — Cosmos cold start or B2 caps are common causes.)";
+              "\n(Upstream/transfer failure — local sd-server down, cold start, or B2 caps are common causes.)";
           }
           setStatus(videoStatusEl, msg, "err");
           return;
@@ -2520,8 +2577,8 @@
         }
         setStatus(
           videoStatusEl,
-          (data.dry_run ? "Dry-run video stub (not live NIM Cosmos)." : "Video done.") +
-            " Model: " + (data.model || "—"),
+          (data.dry_run ? "Dry-run video stub (not live generation)." : "Video done.") +
+            " Model: " + (data.model || "—") + " · provider: " + (data.provider || "—"),
           data.dry_run ? "warn" : ""
         );
         await loadAssets();
@@ -2529,6 +2586,136 @@
         setStatus(videoStatusEl, String(err), "err");
       } finally {
         videoGoBtn.disabled = false;
+      }
+    });
+
+    // Chat (Lemonade local text)
+    const chatLog = document.getElementById("chat-log");
+    const chatStatusEl = document.getElementById("chat-status");
+    const chatGoBtn = document.getElementById("chat-go");
+    const chatInput = document.getElementById("chat-input");
+    const chatHistory = [];
+    function appendChat(role, text) {
+      const row = document.createElement("div");
+      row.style.cssText =
+        "margin:0.35rem 0;padding:0.5rem 0.7rem;border-radius:6px;white-space:pre-wrap;font-size:0.95rem;";
+      row.style.background =
+        role === "assistant"
+          ? "rgba(124,224,177,0.08)"
+          : "rgba(255,255,255,0.04)";
+      row.style.border =
+        role === "assistant" ? "1px solid rgba(124,224,177,0.25)" : "1px solid var(--line)";
+      const who = document.createElement("strong");
+      who.textContent = role === "assistant" ? "MRS · " : "You · ";
+      who.style.color = role === "assistant" ? "var(--accent)" : "var(--muted)";
+      row.appendChild(who);
+      row.appendChild(document.createTextNode(text));
+      chatLog.appendChild(row);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+    document.getElementById("chat-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+      chatGoBtn.disabled = true;
+      chatHistory.push({ role: "user", content: text });
+      appendChat("user", text);
+      setStatus(chatStatusEl, "Thinking… (local inference)", "");
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: chatHistory, max_tokens: 256 }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setStatus(chatStatusEl, String(data.detail || res.statusText), "err");
+          chatHistory.pop();
+          return;
+        }
+        const reply = data.text || "(no text)";
+        chatHistory.push({ role: "assistant", content: reply });
+        appendChat("assistant", reply);
+        setStatus(chatStatusEl, "", "");
+        chatInput.value = "";
+      } catch (err) {
+        setStatus(chatStatusEl, String(err), "err");
+        chatHistory.pop();
+      } finally {
+        chatGoBtn.disabled = false;
+      }
+    });
+
+    // TTS (Lemonade local kokoro)
+    const ttsStatusEl = document.getElementById("tts-status");
+    const ttsAudio = document.getElementById("tts-audio");
+    const ttsGoBtn = document.getElementById("tts-go");
+    document.getElementById("tts-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const text = document.getElementById("tts-text").value.trim();
+      if (!text) return;
+      ttsGoBtn.disabled = true;
+      setStatus(ttsStatusEl, "Synthesizing speech… (local kokoro)", "");
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setStatus(ttsStatusEl, String(data.detail || res.statusText), "err");
+          return;
+        }
+        if (!data.audio_base64) {
+          setStatus(ttsStatusEl, "TTS succeeded but no audio returned.", "warn");
+          return;
+        }
+        const bytes = atob(data.audio_base64);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const blob = new Blob([arr], { type: "audio/mpeg" });
+        ttsAudio.src = URL.createObjectURL(blob);
+        ttsAudio.hidden = false;
+        setStatus(
+          ttsStatusEl,
+          "Speech ready. Model: " + (data.model || "—") + " · " + (data.bytes_len || 0) + " bytes",
+          ""
+        );
+        ttsAudio.play().catch(() => {});
+      } catch (err) {
+        setStatus(ttsStatusEl, String(err), "err");
+      } finally {
+        ttsGoBtn.disabled = false;
+      }
+    });
+
+    // STT (Lemonade local Whisper)
+    const sttStatusEl = document.getElementById("stt-status");
+    const sttResultEl = document.getElementById("stt-result");
+    const sttGoBtn = document.getElementById("stt-go");
+    document.getElementById("stt-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const file = document.getElementById("stt-file").files[0];
+      if (!file) return;
+      sttGoBtn.disabled = true;
+      setStatus(sttStatusEl, "Transcribing… (local Whisper)", "");
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/stt", { method: "POST", body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setStatus(sttStatusEl, String(data.detail || res.statusText), "err");
+          return;
+        }
+        sttResultEl.hidden = false;
+        sttResultEl.textContent = data.text || "(no transcription)";
+        setStatus(sttStatusEl, "Transcribed. Model: " + (data.model || "—"), "");
+      } catch (err) {
+        setStatus(sttStatusEl, String(err), "err");
+      } finally {
+        sttGoBtn.disabled = false;
       }
     });
 

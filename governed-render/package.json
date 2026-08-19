@@ -1,0 +1,16 @@
+{
+  "name": "@mrs/governed-render",
+  "version": "0.1.0",
+  "description": "Hosted governed-render API + studio trial: RT4D stills and movies wrapped in FMCE constitutional evidence, replay, and pricing metering.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "trial": "node src/cli.mjs",
+    "start": "node src/server.mjs",
+    "test": "node --test test/"
+  },
+  "license": "MIT"
+}

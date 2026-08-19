@@ -1,0 +1,9 @@
+CIEMS Node Certificate Schema v1.0
+standard: CIEMS
+version: 1.0
+node_id: string
+tier: S1|S2|Sx
+hardware: vendor, model, vram_gb
+backends: nvidia_ptx, vulkan_spirv
+conformance: core, add_vec, matmul_tiled
+certificate: status, timestamp, runtime_hash, kernel_hash

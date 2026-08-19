@@ -15,6 +15,20 @@ jobs:
           node-version: "22"
       - run: npm test
 
+  fmce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: "Install FMCE test deps (root: jest + babel)"
+        run: npm ci
+      - name: Run FMCE constitutional suite (14 suites / 131 tests)
+        run: npm run test:fmce
+      - name: Run deterministic SME e2e demo under FMCE governance
+        run: npm run demo
+
   governance:
     runs-on: ubuntu-latest
     steps:

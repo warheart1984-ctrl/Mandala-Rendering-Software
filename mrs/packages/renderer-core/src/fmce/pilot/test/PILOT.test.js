@@ -100,7 +100,7 @@ describe("Constitutional Dispatch", () => {
     // Valid intent should result in dispatch to CPP
     expect(dispatchResult).toBeDefined();
     expect(dispatchResult.authorityToken).toBeDefined();
-    expect(dispatchResult.decision).toBe("authorize") || expect(dispatchResult.decision).toBe("conditional");
+    expect(dispatchResult.decision).toBe("authorize");
   });
 
   test("PILOT rejects dispatch with invalid/malformed intent", () => {

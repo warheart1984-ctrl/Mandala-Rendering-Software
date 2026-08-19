@@ -1,0 +1,12 @@
+[package]
+name = "mandala-core"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+hip = []
+
+[dependencies]
+axiom-x-hip = { path = "../../Sovereign-X-Constitutional-Compute/axiom-x/axiom-x-hip" }
+serde_json = "1"

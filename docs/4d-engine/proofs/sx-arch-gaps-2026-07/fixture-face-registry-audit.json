@@ -11,7 +11,7 @@
       "logicalName": "HumanFaceRigged",
       "faceAsset": "fixture",
       "lawfulForRaster": true,
-      "contentHash": "sha256:08fb1e9d02e2dccc1ddf9013356a901e07487bf430e350cb7a64106f71dff74c",
+      "contentHash": "sha256:7de5a67f6c22f4dc77534c917ccccd920380de36a5717a8b4d873712507ef55b",
       "aabb": {
         "min": [
           -0.550000011920929,
@@ -27,13 +27,13 @@
         "vertexCount": 117
       },
       "issues": [],
-      "path": "G:\\Mandala Rendering Software\\mrs\\assets\\human\\HumanFaceRigged.glb"
+      "path": "E:\\Mandala-Rendering-Software\\mrs\\assets\\human\\HumanFaceRigged.glb"
     },
     {
       "logicalName": "HumanFaceNeutral",
       "faceAsset": "fixture",
       "lawfulForRaster": false,
-      "contentHash": "sha256:ea2d5b1478ad7da342f48ee91b9edddd76affce9a4de7015d24eb685430badb2",
+      "contentHash": "sha256:4780ef2e5e6d48cc0aa96e36b8f0199bfe8a7176756b7f88ca80e50e187fc1c7",
       "aabb": {
         "min": [
           0,
@@ -53,7 +53,7 @@
         "aabb-invalid",
         "aabb-empty"
       ],
-      "path": "G:\\Mandala Rendering Software\\mrs\\assets\\human\\HumanFaceNeutral.glb"
+      "path": "E:\\Mandala-Rendering-Software\\mrs\\assets\\human\\HumanFaceNeutral.glb"
     }
   ]
 }

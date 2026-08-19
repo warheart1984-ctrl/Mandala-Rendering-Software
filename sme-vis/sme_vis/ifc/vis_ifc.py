@@ -150,7 +150,7 @@ class SmeVisIFC:
         timestamp = datetime.utcnow().isoformat() + "Z"
         
         # Load and preprocess image
-        preprocessor = self.preprocessor_factory.create(self._current_model.value)
+        preprocessor = self.preprocessor_factory.create(str(self._current_model))
         image_tensor, preprocess_evidence = preprocessor.preprocess(request.image.data)
         
         # Safety check (placeholder - integrate with SME-VAL)
@@ -205,7 +205,7 @@ class SmeVisIFC:
         if not self._encoder:
             self.load_model()
         
-        preprocessor = self.preprocessor_factory.create(self._current_model.value)
+        preprocessor = self.preprocessor_factory.create(str(self._current_model))
         image_tensors = []
         preprocess_evidences = []
         

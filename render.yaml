@@ -1,105 +1,108 @@
-services:
-  - type: web
-    name: mrs-rt4d-engine
-    runtime: node
-    rootDir: mrs
-    buildCommand: corepack enable && pnpm install --frozen-lockfile
-    startCommand: pnpm --filter @mrs/rt4d-engine start
-    healthCheckPath: /health
-    plan: free
-    autoDeploy: true
-    envVars:
+# Exported from Render on 2026-08-16T14:18:25Z
+version: "1"
+projects:
+- name: MRS
+  environments:
+  - name: Production
+    services:
+    - type: web
+      name: Mandala-Rendering-System-MRS-
+      runtime: docker
+      repo: https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-
+      plan: free
+      envVars:
       - key: NVIDIA_API_KEY
         sync: false
-      # Hackathon GMI credits — set in dashboard; never commit. Image may include
-      # optional genblaze-gmicloud (requirements-gmi.txt); key is runtime-only.
-      - key: GMI_API_KEY
+      - key: GENBLAZE_IMAGE_FALLBACK_TO_RT4D
         sync: false
-      - key: GMI_BASE_URL
+      - key: GENBLAZE_IMAGE_BACKEND
         sync: false
-      - key: FAL_KEY
+      - key: NVIDIA_EMBED_URL
         sync: false
-      - key: B2_KEY_ID
+      - key: NVIDIA_EMBED_MODEL
         sync: false
-      - key: B2_APPLICATION_KEY
+      - key: GENBLAZE_IMAGE_MODEL
         sync: false
-      - key: B2_APP_KEY
+      - key: NVIDIA_NIM_API_KEY
         sync: false
-      - key: B2_BUCKET
+      - key: NGC_API_KEY
         sync: false
-      - key: B2_REGION
+      - key: B2_FORCE_PATH_STYLE
         sync: false
       - key: B2_ENDPOINT
         sync: false
-      - key: GENBLAZE_IMAGE_MODEL
-        value: black-forest-labs/flux.1-schnell
-      - key: GENBLAZE_ALLOW_BYOK
-        value: "1"
-      - key: GENBLAZE_STORAGE_PREFIX
-        value: genblaze-media
-      - key: GENBLAZE_HTTP_TIMEOUT
-        value: "600"
-      - key: GENBLAZE_NVCF_TIMEOUT
-        value: "600"
-      - key: GENBLAZE_PIPELINE_TIMEOUT
-        value: "720"
-      # NVIDIA documents 300 as the NVCF-POLL-SECONDS maximum. Render plus a
-      # cold NIM otherwise risks returning an empty gateway 504 before 202.
-      - key: GENBLAZE_NVCF_POLL_SECONDS
-        value: "300"
-      # Default off: do not auto-retry empty NVIDIA 504s (billing ambiguity).
-      - key: GENBLAZE_EMPTY_504_RETRY
-        value: "0"
-      # If this invalid-payload probe also gets 504, /health reports the NIM
-      # unavailable; the probe did not successfully warm the model.
-      - key: GENBLAZE_NVIDIA_WARMUP_ON_STARTUP
-        value: "1"
-      # When NVIDIA NIM returns 504/unavailable, fall back to MRS RT4D stills
-      # (requires repo-root Dockerfile so rt4d.available=true).
-      - key: GENBLAZE_IMAGE_FALLBACK_TO_RT4D
-        value: "1"
-      # NIM FLUX has been returning gateway 504s, so stills are served by the
-      # deterministic RT4D path tracer instead. This is a seeded procedural 4D
-      # render, not text-to-image. Remove this key to return to NVIDIA primary;
-      # the fallback above stays armed for that case.
-      - key: GENBLAZE_IMAGE_BACKEND
-        value: rt4d
-      # Stills-only judge/demo default. Enable later only if the deployed key
-      # is ready for Cosmos and the public lane is intentionally widened.
-      - key: GENBLAZE_VIDEO_ENABLED
-        value: "0"
-      # Free plan is a shared 0.1 CPU and the tracer is single-threaded.
-      # tesseract-lattice (~540 objects) at 448×448 / 20 spp timed out at 180s
-      # in production when these env vars were unsynced (code defaults). Pin a
-      # lattice-safe mid profile: 256×256 / 6 spp with 180s timeout leaves
-      # headroom for ~3–5× slower free-tier CPUs vs a fast local machine.
-      # /api/generate defaults to quality=draft (further caps via RT4D_DRAFT_*);
-      # these values bound quality=final. Code also hard-clamps unless
-      # RT4D_ALLOW_HEAVY=1 — sync this blueprint after merge or redeploy alone
-      # is not enough if dashboard env still has old values.
-      - key: RT4D_RENDER_WIDTH
-        value: "256"
-      - key: RT4D_RENDER_HEIGHT
-        value: "256"
-      - key: RT4D_SAMPLES
-        value: "6"
-      - key: RT4D_TIMEOUT
-        value: "180"
-      # Prompt→scene bridge (repo-root Docker /app layout). Expand stays opt-in.
-      # Live /health.prompt_scene.available is declared until Manual Deploy proves it.
-      - key: PROMPT_SCENE_BRIDGE_SCRIPT
-        value: /app/prompt-scene-bridge/run_bridge.py
-      - key: ENGINE3D_EXPAND_SCRIPT
-        value: /app/engine3d-core/scripts/expand-world-document.mjs
-      - key: PROMPT_SCENE_EXPAND_WORLD
-        value: "0"
-      # Render health checks must stay cheap: do not ListObjects on every probe.
+      - key: B2_REGION
+        sync: false
+      - key: B2_BUCKET
+        sync: false
+      - key: B2_APP_KEY
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_KEY_ID
+        sync: false
+      region: ohio
+      healthCheckPath: /health
+      dockerContext: .
+      dockerfilePath: ./Dockerfile
+      autoDeployTrigger: "off"
+    - type: web
+      name: mrs-rt4d-engine
+      runtime: node
+      repo: https://github.com/warheart1984-ctrl/Mandala-Rendering-System-MRS-
+      plan: free
+      envVars:
+      - key: MRS_PRINT_TIMEOUT_SECONDS
+        sync: false
+      - key: PRINTER_PIPELINE_SCRIPT
+        sync: false
+      - key: PRINTER_API_ENABLED
+        sync: false
       - key: B2_PROBE_ON_HEALTH
         value: "0"
-      # Digital Printer HTTP (/printer/*). Health: GET /printer/health
-      - key: PRINTER_API_ENABLED
+      - key: PROMPT_SCENE_EXPAND_WORLD
+        value: "0"
+      - key: ENGINE3D_EXPAND_SCRIPT
+        value: /app/engine3d-core/scripts/expand-world-document.mjs
+      - key: PROMPT_SCENE_BRIDGE_SCRIPT
+        value: /app/prompt-scene-bridge/run_bridge.py
+      - key: RT4D_TIMEOUT
+        value: "180"
+      - key: RT4D_SAMPLES
+        value: "6"
+      - key: RT4D_RENDER_HEIGHT
+        value: "256"
+      - key: RT4D_RENDER_WIDTH
+        value: "256"
+      - key: RT4D_ALLOW_HEAVY
+        value: "0"
+      - key: GENBLAZE_VIDEO_ENABLED
+        value: "0"
+      - key: GENBLAZE_IMAGE_BACKEND
+        value: "rt4d"
+      - key: GENBLAZE_IMAGE_FALLBACK_TO_RT4D
         value: "1"
-      - key: PRINTER_PIPELINE_SCRIPT
-        value: /app/storyforge-boundary/run_print.py
-      - key: MRS_PRINT_TIMEOUT_SECONDS
-        value: "900"
+      - key: GENBLAZE_NVIDIA_WARMUP_ON_STARTUP
+        value: "1"
+      - key: GENBLAZE_EMPTY_504_RETRY
+        value: "0"
+      - key: GENBLAZE_NVCF_POLL_SECONDS
+        value: "300"
+      - key: GENBLAZE_PIPELINE_TIMEOUT
+        value: "720"
+      - key: GENBLAZE_NVCF_TIMEOUT
+        value: "600"
+      - key: GENBLAZE_HTTP_TIMEOUT
+        value: "600"
+      - key: GENBLAZE_STORAGE_PREFIX
+        value: genblaze-media
+      - key: GENBLAZE_ALLOW_BYOK
+        value: "0"
+      - key: GENBLAZE_IMAGE_MODEL
+        sync: false
+      region: oregon
+      buildCommand: corepack enable && pnpm install --frozen-lockfile
+      startCommand: pnpm --filter @mrs/rt4d-engine start
+      healthCheckPath: /health
+      autoDeployTrigger: commit
+      rootDir: mrs

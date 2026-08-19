@@ -80,8 +80,8 @@ def test_api_anime_dry_run():
     body = r.json()
     assert body["status"] == "partial"
     assert body["anime_world_profile_id"] == "anime.mandala-cel.v1"
-    assert body["provenance"]["print_sot_touched"] is False
-    assert body["provenance"]["projection_method"] == "projector4d-sot"
+    assert body["provenance"]["structure_plate_provenance"]["print_sot_touched"] is False
+    assert body["provenance"]["structure_plate_provenance"]["projection_method"] == "projector4d-sot"
     assert Path(body["anime_world_profile_path"]).name.endswith(".json")
 
 

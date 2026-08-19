@@ -7,7 +7,7 @@
 This repository contains the complete Mandala Rendering System ready for the
 Google Cloud Agentic Cinema Hackathon (Grafana track). The system includes:
 
-- **FMCE Constitutional Engine**: 13 canonical test files with real behavioral guarantees
+- **FMCE Constitutional Engine**: 14 canonical test suites (131 tests) with real behavioral guarantees, plus a deterministic SME e2e demo (`npm run demo`)
 - **MCP Server**: 60+ Grafana Cloud tools (metrics, logs, traces, dashboards, alerts)
 - **Sovereign X Router**: GPU/CPU arena selection with HIP/ROCm detection
 - **Convergence Verifier**: D0-D4 determinism classes (D0 immutable, D1 seed-based, D2-D4 numerical)
@@ -198,7 +198,7 @@ G:\Mandala Rendering Software\mrs\
 ├── mcp/
 │   └── server.js                   # MCP server with 60+ tools
 ├── packages/renderer-core/
-│   └── fmce/                       # 13 canonical test files
+│   └── fmce/                       # 14 canonical test suites (131 tests)
 ├── apps/chatgpt-mrs/
 │   ├── README.md                   # Google AI SDK config
 │   └── web/                        # React/Vite Mandala Viewer
@@ -227,7 +227,7 @@ G:\Mandala Rendering Software\mrs\
 ### Technical Compliance
 - [ ] Google AI SDKs only (no OpenAI, Anthropic, etc.)
 - [ ] Grafana MCP server with 60+ tools
-- [ ] FMCE with 13 canonical test files and real guarantees
+- [ ] FMCE with 14 canonical test suites (131 tests) and real guarantees
 - [ ] Sovereign X bridge + router operational
 - [ ] Convergence verifier D0-D4 functional
 - [ ] Dustjacket pipeline generating governed artifacts

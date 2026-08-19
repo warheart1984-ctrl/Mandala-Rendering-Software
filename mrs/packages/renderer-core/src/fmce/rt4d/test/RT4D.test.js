@@ -158,6 +158,6 @@ describe("Constitutional Output", () => {
     expect(run1.evidence.timeSeconds).toBe(run2.evidence.timeSeconds);
 
     // Provenance must be identical
-    expect(result.provenance.intentId).toBe(run2.provenance.intentId);
+    expect(run1.provenance.intentId).toBe(run2.provenance.intentId);
   });
 });

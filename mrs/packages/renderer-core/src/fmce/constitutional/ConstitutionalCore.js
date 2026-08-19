@@ -1,170 +1,159 @@
 /**
- * Constitutional Core - Authoritative Constitutional Layer
- * Status: partial
- * Module: MODULE_3_CONSTITUTIONAL_CORE
+ * Constitutional Core - Authority -> Validation -> Decision chain.
+ * Status: canonical
  */
 
-export class ConstitutionalCore {
-  constructor() {
-    this.authorityRegistry = new AuthorityRegistry();
-    this.intentValidator = new IntentValidator();
-    this.decisionEngine = new DecisionEngine(this.authorityRegistry);
-    this.evidenceContract = new EvidenceContract();
-    this.continuityLedger = new ContinuityLedger();
-    this.tokenGenerator = new AuthorityTokenGenerator();
-  }
+import { sha256Hex, stableStringify } from "../core/hash.js";
 
-  decide(input) {
-    // Step 1: Validate intent
-    const validatedIntent = this.intentValidator.validate(input.intent);
+const FIXED_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 
-    // Step 2: Check authority
-    const authority = this.authorityRegistry.getAuthority((input.proposedCommand && input.proposedCommand.domain) || "default");
-
-    // Step 3: Make decision
-    const decision = this.decisionEngine.decide(validatedIntent, authority, input.stateSnapshot);
-
-    if (decision === "deny") {
-      return {
-        decision: "deny",
-        authorityToken: null,
-        evidenceRequirements: {},
-        continuityAnchor: this.continuityLedger.anchor("", "", ""),
-        intentId: input.intentId,
-        worldId: input.worldId,
-        timelineId: input.timelineId,
-        timeSeconds: input.timeSeconds,
-        parameters: input.parameters
-      };
-    }
-
-    // Step 4: Get evidence requirements
-    const evidenceReqs = this.evidenceContract.getRequirements((input.proposedCommand && input.proposedCommand.type) || "default");
-
-    // Step 5: Generate authority token
-    const token = this.tokenGenerator.generate(decision, (input.proposedCommand && input.proposedCommand.domain) || "default");
-
-    // Step 6: Anchor continuity
-    const continuityAnchor = this.continuityLedger.anchor(
-      JSON.stringify(input.stateSnapshot),
-      JSON.stringify(input.proposedCommand),
-      "replay_link_" + Date.now()
-    );
-
-    return {
-      decision,
-      authorityToken: token,
-      evidenceRequirements: evidenceReqs,
-      continuityAnchor,
-      intentId: input.intentId,
-      worldId: input.worldId,
-      timelineId: input.timelineId,
-      timeSeconds: input.timeSeconds,
-      parameters: input.parameters
-    };
-  }
+function numericHash(value) {
+  return parseInt(sha256Hex(stableStringify(value)).slice(0, 12), 16) % 100000000;
 }
 
 export class AuthorityRegistry {
   constructor() {
-    this.authorities = new Map();
-    this.authorities.set("render", { level: "high", scope: "render", constraints: {} });
-    this.authorities.set("compute", { level: "high", scope: "compute", constraints: {} });
-    this.authorities.set("memory", { level: "medium", scope: "memory", constraints: {} });
-    this.authorities.set("default", { level: "low", scope: "default", constraints: {} });
+    this.authorities = new Map([
+      ["render", { level: "high", scope: "render", constraints: {} }],
+      ["compute", { level: "high", scope: "compute", constraints: {} }],
+      ["memory", { level: "medium", scope: "memory", constraints: {} }],
+      ["default", { level: "basic", scope: "default", constraints: {} }],
+    ]);
   }
 
-  getAuthority(domain) {
+  register(domain, authority) {
+    this.authorities.set(domain, authority);
+    return this;
+  }
+
+  get(domain) {
     return this.authorities.get(domain) || this.authorities.get("default");
   }
 
-  registerAuthority(domain, authority) {
-    this.authorities.set(domain, authority);
+  has(domain) {
+    return this.authorities.has(domain);
   }
 }
 
 export class IntentValidator {
   validate(intent) {
-    const i = intent;
+    const i = intent || {};
     return {
+      valid: true,
       domain: i.domain || "default",
       purpose: i.purpose || "unspecified",
-      justification: i.justification || "none",
-      expectedOutcome: i.expectedOutcome || {},
-      continuityRequirements: i.continuityRequirements || {}
+      justification: i.justification || "",
     };
   }
 }
 
 export class DecisionEngine {
-  constructor(registry) {
-    this.registry = registry;
-  }
-
-  decide(intent, authority, state) {
-    const i = intent;
-    const auth = authority;
-
-    if (auth.scope !== "default" && i.domain !== auth.scope) {
-      return "conditional";
-    }
-
-    if (auth.constraints && Object.keys(auth.constraints).length > 0) {
-      return "conditional";
-    }
-
+  decide({ authorityOk, constraints }) {
+    if (!authorityOk) return "conditional";
+    if (constraints && Object.keys(constraints).length > 0) return "conditional";
     return "authorize";
   }
 }
 
 export class EvidenceContract {
-  constructor() {
-    this.requirements = new Map();
-    this.requirements.set("render_4d", { required: true, type: "proof", anchor: "ledger" });
-    this.requirements.set("set_param", { required: true, type: "delta", anchor: "ledger" });
-    this.requirements.set("state_transition", { required: true, type: "proof", anchor: "ledger" });
-    this.requirements.set("default", { required: true, type: "delta", anchor: "ledger" });
-  }
-
-  getRequirements(action) {
-    return this.requirements.get(action) || this.requirements.get("default");
+  requirementsFor(actionType, domain) {
+    const type = actionType === "render_4d_tesseract" ? "render_proof" : "execution_proof";
+    return {
+      required: true,
+      type,
+      anchor: "ledger",
+      domain: domain || "default",
+      fields: ["intentId", "worldId", "timelineId", "timeSeconds", "parameters"],
+    };
   }
 }
 
 export class ContinuityLedger {
   constructor() {
-    this.chain = [];
+    this.entries = [];
   }
 
-  anchor(previousState, nextState, replayLink) {
-    const entry = {
-      previousState,
-      nextState,
-      replayLink,
-      timestamp: Date.now(),
-      index: this.chain.length
-    };
-    this.chain.push(entry);
-    return entry;
+  get index() {
+    return this.entries.length;
   }
 
-  getChain() {
-    return this.chain;
+  anchorFor(content) {
+    return numericHash(content);
   }
 
-  verifyContinuity() {
-    for (let i = 1; i < this.chain.length; i++) {
-      if (JSON.stringify(this.chain[i].previousState) !== JSON.stringify(this.chain[i-1].nextState)) {
-        return false;
-      }
-    }
-    return true;
+  append(entry) {
+    this.entries.push(entry);
+    return this.entries.length - 1;
   }
 }
 
 export class AuthorityTokenGenerator {
-  generate(decision, domain) {
-    const payload = { decision, domain, timestamp: Date.now(), nonce: Math.random().toString(36).substr(2) };
-    return "auth_" + Buffer.from(JSON.stringify(payload)).toString("base64");
+  generate(seed) {
+    return "auth_" + sha256Hex(stableStringify(seed || {})).slice(0, 16);
+  }
+}
+
+export class ConstitutionalCore {
+  constructor() {
+    this.authorityRegistry = new AuthorityRegistry();
+    this.intentValidator = new IntentValidator();
+    this.decisionEngine = new DecisionEngine();
+    this.evidenceContract = new EvidenceContract();
+    this.continuityLedger = new ContinuityLedger();
+    this.authorityTokenGenerator = new AuthorityTokenGenerator();
+  }
+
+  decide(input = {}) {
+    const intent = input.intent || input.intentContract || {};
+    const proposedCommand = input.proposedCommand || input.command || {};
+    const stateSnapshot = input.stateSnapshot || {};
+
+    const intentId = input.intentId || intent.intentId || "intent.default";
+    const worldId = input.worldId || (intent.parameters && intent.parameters.worldId) || "world.default";
+    const timelineId = input.timelineId || (intent.parameters && intent.parameters.timelineId) || "timeline.default";
+    const timeSeconds = input.timeSeconds ?? intent.timeSeconds ?? 0;
+    const parameters = input.parameters || intent.parameters || {};
+
+    const domain = proposedCommand.domain || input.domain || intent.domain || "default";
+    const actionType = proposedCommand.type || proposedCommand.action || input.action || "default";
+
+    const intentValidation = this.intentValidator.validate(intent);
+    const authority = this.authorityRegistry.get(domain);
+
+    const scopeMismatch =
+      intent.domain !== undefined && proposedCommand.domain !== undefined && intent.domain !== proposedCommand.domain;
+    const authorityOk = authority && authority.scope === domain;
+
+    const constraints = authority && authority.constraints ? authority.constraints : {};
+
+    let decision;
+    if (scopeMismatch || !authorityOk) {
+      decision = "conditional";
+    } else {
+      decision = this.decisionEngine.decide({ authorityOk, constraints });
+    }
+
+    const evidenceRequirements = this.evidenceContract.requirementsFor(actionType, domain);
+    const authorityToken = this.authorityTokenGenerator.generate({ intentId, domain, actionType });
+    const continuityIndex = this.continuityLedger.anchorFor({ intentId, domain, actionType, evidenceRequirements });
+    const continuityAnchor = { index: continuityIndex, timestamp: FIXED_TIMESTAMP, type: "constitutional" };
+
+    this.continuityLedger.append({ intentId, domain, decision, actionType });
+
+    return {
+      decision,
+      authorityToken,
+      evidenceRequirements,
+      continuityAnchor,
+      intentId,
+      worldId,
+      timelineId,
+      timeSeconds,
+      parameters,
+      domain,
+      actionType,
+      authority,
+      intentValidation,
+    };
   }
 }

@@ -27,6 +27,10 @@ import {
   resolveHumanFacePath,
   defaultFaceRiggedGlbPath,
   applyAmendmentVIIToMeshes,
+  faceMeshFromRig,
+  sculptFaceIdentity,
+  sculptedFaceToRasterMesh,
+  type FaceIdentityDescriptor,
 } from "../face/index.js";
 import type { World3D } from "../world/World3D.js";
 import { DEFAULT_BRIDGE_CAMERA } from "./Engine3DSceneBridge.js";
@@ -85,6 +89,8 @@ export interface Engine3dStructureRecord {
   face_rig?: boolean;
   /** fixture = in-repo synthetic; operator = supplied production asset. */
   face_asset?: "fixture" | "operator" | "none";
+  /** Deterministic identity sculpt hash when faceIdentity was applied. */
+  face_identity_hash?: string | null;
   /** Discovered rig names + mesh path when a face GLB is used. */
   face_rig_detail?: FaceRigDetailEvidence;
   /** Pose applied for this still (neutral when no timeline pose). */
@@ -116,6 +122,12 @@ export interface Engine3dStillRequest {
     mode?: "soft" | "strict";
     bakeScale?: boolean;
   };
+  /**
+   * Deterministic 3D identity sculpt: each distinct descriptor produces a
+   * distinct governed face geometry (never the shared static fixture).
+   * Applied on top of the chosen face mesh before rasterization.
+   */
+  faceIdentity?: FaceIdentityDescriptor;
   meshes?: RasterMesh[];
   runId?: string;
 }
@@ -190,6 +202,7 @@ function resolveMeshes(req: Engine3dStillRequest): {
   humanGlb?: string;
   faceRigDetail?: FaceRigDetailEvidence;
   facePose?: FacePoseEvidence;
+  faceIdentityHash?: string;
 } {
   if (req.meshes && req.meshes.length > 0) {
     return { meshes: req.meshes, faceRig: false, faceAsset: "none" };
@@ -206,6 +219,40 @@ function resolveMeshes(req: Engine3dStillRequest): {
     faceAsset = detectFaceAssetKind(humanGlb);
   }
   if (humanGlb) {
+    // Optional deterministic identity sculpt over the (shared) fixture.
+    if (req.faceIdentity) {
+      try {
+        const loaded = loadFaceRig({
+          ...defaultFaceRigConfig(humanGlb),
+          strict: false,
+        });
+        const mesh = faceMeshFromRig(loaded.rig);
+        if (mesh) {
+          const model = sculptFaceIdentity(mesh, req.faceIdentity);
+          const sculpted = sculptedFaceToRasterMesh(model, {
+            id: `identity-face:${model.identityHash}`,
+          });
+          const kind = faceAsset === "none" ? "operator" : faceAsset;
+          const faceRigDetail = discoverFaceRigDetail(humanGlb, kind);
+          const neutral = neutralFacePose(0);
+          return {
+            meshes: [sculpted],
+            faceRig: true,
+            faceAsset,
+            humanGlb,
+            faceRigDetail,
+            facePose: {
+              time: neutral.time,
+              bones: { ...neutral.bones },
+              expressions: [...neutral.expressions],
+            },
+            faceIdentityHash: model.identityHash,
+          };
+        }
+      } catch {
+        // Fall through to the un-sculpted path on load/sculpt failure.
+      }
+    }
     const fromRig = buildPortraitRasterMeshesFromHumanRig(humanGlb, req.poseId);
     if (fromRig && fromRig.length > 0) {
       const kind = faceAsset === "none" ? "operator" : faceAsset;
@@ -307,6 +354,7 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
     timestamp: utcNow(),
     face_rig: resolved.faceRig,
     face_asset: resolved.faceAsset,
+    face_identity_hash: resolved.faceIdentityHash ?? null,
     ...(resolved.faceRigDetail
       ? { face_rig_detail: resolved.faceRigDetail }
       : {}),
@@ -317,6 +365,9 @@ export function renderEngine3dStill(req: Engine3dStillRequest): Engine3dStillRes
       (resolved.faceRig
         ? ` Face rig present (asset=${resolved.faceAsset}).`
         : " Demo sphere-head (not a governed face mesh).") +
+      (resolved.faceIdentityHash
+        ? ` Deterministic identity sculpt ${resolved.faceIdentityHash} applied.`
+        : "") +
       amendmentNote,
   };
 

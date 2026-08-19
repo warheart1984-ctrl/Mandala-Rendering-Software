@@ -178,6 +178,13 @@ from app.lemonade_provider import (
     generate_image_lemonade,
     lemonade_availability,
 )
+from app.lemonade_text_voice import (
+    LemonadeTextVoiceError,
+    chat_completion,
+    lemonade_text_voice_availability,
+    speech_to_text,
+    text_to_speech,
+)
 from app.rt4d_to_nvidia import (
     NvidiaUnavailableError,
     build_nvidia_vision_provenance,
@@ -457,11 +464,57 @@ class GenerateRequest(BaseModel):
         le=9999,
         description="Demo-cache frame index (default GENBLAZE_DEMO_CACHE_FRAME).",
     )
+    frames: int | None = Field(
+        default=None,
+        ge=2,
+        le=120,
+        description=(
+            "Video: number of stills for the local frames flipbook backend "
+            "(default GENBLAZE_FRAMES_COUNT). Ignored by cloud video backends."
+        ),
+    )
+    fps: int | None = Field(
+        default=None,
+        ge=1,
+        le=60,
+        description=(
+            "Video: playback rate for the local frames flipbook backend "
+            "(default GENBLAZE_FRAMES_FPS). Ignored by cloud video backends."
+        ),
+    )
+    base_seed: int | None = Field(
+        default=None,
+        ge=0,
+        le=2**31 - 1,
+        description=(
+            "Video: base seed for the local frames flipbook backend "
+            "(default GENBLAZE_FRAMES_SEED). Ignored by cloud video backends."
+        ),
+    )
 
 
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
     limit: int = Field(default=8, ge=1, le=30)
+
+
+class ChatRequest(BaseModel):
+    """Lemonade local chat (text modality of the merged media server)."""
+
+    messages: list[dict[str, str]] = Field(
+        ..., min_length=1, max_length=32, description="[{role, content}, ...]"
+    )
+    model: str | None = Field(default=None, max_length=200)
+    max_tokens: int = Field(default=256, ge=1, le=4096)
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+
+
+class TtsRequest(BaseModel):
+    """Lemonade local TTS (voice modality)."""
+
+    text: str = Field(..., min_length=1, max_length=4000)
+    voice: str | None = Field(default=None, max_length=100)
+    model: str | None = Field(default=None, max_length=200)
 
 
 class ImageIngestJsonRequest(BaseModel):
@@ -890,13 +943,68 @@ def health(request: Request) -> dict:
         "image_fallback_to_rt4d": settings.image_fallback_to_rt4d,
         "rt4d": rt4d_availability(settings),
         "lemonade": lemonade_availability(settings),
+        "lemonade_text_voice": lemonade_text_voice_availability(settings),
         "lemonade_note": (
             "Set GENBLAZE_IMAGE_BACKEND=lemonade to generate concept stills via "
-            "local Lemonade Server (default SD-Turbo on localhost:13305). "
+            "local Lemonade Server (default SD-Turbo on localhost:13307). "
             "No NVIDIA API key required. First run may pull the model. "
             "AMD hosts without sd-server: GENBLAZE_SKIP_LOCAL_SD=1 and pre-render "
             "beauty on a GMI/cloud host (docs/ops/HACKATHON_DEMO_CACHE_B2.md)."
         ),
+        "modalities": {
+            "text": {
+                "route": "/api/chat",
+                "backend": "lemonade-local",
+                "model": settings.lemonade_chat_model,
+                "configured": bool(
+                    getattr(settings, "lemonade_base_url", None)
+                ),
+                "available": lemonade_text_voice_availability(settings).get("available"),
+            },
+            "voice": {
+                "tts_route": "/api/tts",
+                "stt_route": "/api/stt",
+                "backend": "lemonade-local",
+                "tts_model": settings.lemonade_tts_model,
+                "stt_model": settings.lemonade_stt_model,
+                "configured": bool(
+                    getattr(settings, "lemonade_base_url", None)
+                ),
+                "available": lemonade_text_voice_availability(settings).get("available"),
+            },
+            "video": {
+                "route": "/api/generate-video",
+                "backend": settings.video_backend,
+                "enabled": settings.video_enabled,
+                "configured": True
+                if settings.video_backend == "frames"
+                else (
+                    settings.seedance_configured
+                    if settings.video_backend == "seedance"
+                    else settings.nvidia_configured
+                ),
+                "available": settings.video_available,
+                "video_backends": ["nvidia", "seedance", "frames"],
+                "frames_source": getattr(settings, "frames_video_source", "rt4d"),
+                "frames_config": {
+                    "count": getattr(settings, "frames_video_count", None),
+                    "fps": getattr(settings, "frames_video_fps", None),
+                    "seed": getattr(settings, "frames_video_seed", None),
+                },
+            },
+            "stills": {
+                "route": "/api/generate",
+                "backend": settings.image_backend,
+                "image_backends": [
+                    "nvidia-genai",
+                    RT4D_PROVIDER_ID,
+                    LEMONADE_PROVIDER_ID,
+                ],
+                "configured": settings.nvidia_configured
+                or settings.image_backend != "nvidia",
+                "available": True,
+            },
+        },
         "skip_local_sd": bool(getattr(settings, "skip_local_sd", False)),
         "rt4d_note": (
             "Deterministic procedural 4D path-traced stills via renderer-core. "
@@ -1337,7 +1445,13 @@ def _run_generate_common(
             raise RuntimeError(f"Constitutional kernel halted: {kr.error}")
 
         if video:
-            result = generate_video(settings, prompt_for_gen)
+            result = generate_video(
+                settings,
+                prompt_for_gen,
+                frames=getattr(body, "frames", None),
+                fps=getattr(body, "fps", None),
+                base_seed=getattr(body, "base_seed", None),
+            )
         else:
             result = _dispatch_image(settings, prompt_for_gen, quality=body.quality)
     except ValueError as exc:
@@ -1853,6 +1967,99 @@ def api_generate(body: GenerateRequest, request: Request) -> dict:
 @app.post("/api/generate-video")
 def api_generate_video(body: GenerateRequest, request: Request) -> dict:
     return _run_generate_common(body, video=True, request=request)
+
+
+@app.post("/api/chat")
+def api_chat(body: ChatRequest, request: Request) -> dict:
+    """Lemonade local text (Llama-3.2-1B default). No cloud key required."""
+    try:
+        settings, byok_meta = resolve_settings_for_request(
+            get_settings(), request, scope=BYOK_SCOPE_ASSIST
+        )
+    except ByokForbiddenError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ByokScopeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    try:
+        receipt = chat_completion(
+            settings,
+            body.messages,
+            model=body.model,
+            max_tokens=body.max_tokens,
+            temperature=body.temperature,
+        )
+    except LemonadeTextVoiceError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    payload = receipt.to_dict()
+    if byok_meta.get("byok_used"):
+        payload["byok"] = {
+            "byok_used": True,
+            "byok_source": byok_meta.get("byok_source"),
+            "assistOnly": True,
+            "printSoT": False,
+        }
+    return payload
+
+
+@app.post("/api/tts")
+def api_tts(body: TtsRequest, request: Request) -> dict:
+    """Lemonade local TTS (kokoro-v1 default). Returns MP3 audio bytes (b64)."""
+    try:
+        settings, byok_meta = resolve_settings_for_request(
+            get_settings(), request, scope=BYOK_SCOPE_ASSIST
+        )
+    except ByokForbiddenError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ByokScopeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    try:
+        receipt = text_to_speech(settings, body.text, voice=body.voice, model=body.model)
+    except LemonadeTextVoiceError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    payload = receipt.to_dict()
+    if byok_meta.get("byok_used"):
+        payload["byok"] = {
+            "byok_used": True,
+            "byok_source": byok_meta.get("byok_source"),
+            "assistOnly": True,
+            "printSoT": False,
+        }
+    return payload
+
+
+@app.post("/api/stt")
+async def api_stt(request: Request) -> dict:
+    """Lemonade local STT (Whisper). Accepts multipart audio upload (field 'file')."""
+    import base64
+
+    try:
+        settings, byok_meta = resolve_settings_for_request(
+            get_settings(), request, scope=BYOK_SCOPE_ASSIST
+        )
+    except ByokForbiddenError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ByokScopeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    form = await request.form()
+    file = form.get("file")
+    if file is None:
+        raise HTTPException(status_code=400, detail="multipart field 'file' is required")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="uploaded audio is empty")
+    try:
+        receipt = speech_to_text(settings, data, filename=getattr(file, "filename", "audio.mp3"))
+    except LemonadeTextVoiceError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    payload = receipt.to_dict()
+    if byok_meta.get("byok_used"):
+        payload["byok"] = {
+            "byok_used": True,
+            "byok_source": byok_meta.get("byok_source"),
+            "assistOnly": True,
+            "printSoT": False,
+        }
+    return payload
 
 
 @app.post("/api/image-to-scene")

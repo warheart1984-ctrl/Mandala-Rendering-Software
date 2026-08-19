@@ -1,0 +1,9 @@
+   ____ _ _       _       _ _   
+  / ___(_) | __ _| |_ ___| | |  
+ | |  _| | |/ _` | __/ _ \ | |  
+ | |_| | | | (_| | ||  __/ | |  
+  \____|_|_|\__,_|\__\___|_|_|  
+                                  
+  CIEMS CERTIFIED NODE
+  Sovereign GPU Compute, Vendor-Agnostic
+  PTX + SPIR-V Dual Backend | Constitutional Memory Model

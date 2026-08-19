@@ -1,0 +1,24 @@
+.version 0.1
+.target gpu-universal
+
+.kernel add_vec(
+    param global_f32* A,
+    param global_f32* B,
+    param global_f32* C,
+    param u32 N
+)
+{
+    .reg u32 i0
+    .reg f32 rA, rB, rC
+    .pred p0
+
+    get_global_id.u32 i0
+    cmp.lt.u32 p0, i0, N
+    @!p0 bra DONE
+    ld.global.f32 rA, [A + i0]
+    ld.global.f32 rB, [B + i0]
+    add.f32 rC, rA, rB
+    st.global.f32 [C + i0], rC
+DONE:
+    ret
+}

@@ -27,6 +27,14 @@ class VisionModelName(str):
     VIT_TINY = "vit-tiny-patch16-224"
     EFFICIENTNET_B0 = "efficientnet-b0"
 
+    @property
+    def value(self) -> str:
+        return str(self)
+
+    @property
+    def value(self) -> str:
+        return str(self)
+
 
 @dataclass(frozen=True)
 class VisionModelMetadata:
@@ -60,11 +68,11 @@ VISION_MODEL_SPECS = {
     VisionModelName.MOBILEVIT_XXS: {
         "parameter_count": 1_300_000,
         "embedding_dim": 512,
-        "input_shape": (1, 3, 224, 224),
+        "input_shape": (1, 3, 256, 256),
         "preprocessing": {
-            "resize": (224, 224),
-            "mean": [0.485, 0.456, 0.406],
-            "std": [0.229, 0.224, 0.225],
+            "resize": (256, 256),
+            "mean": [0.485, 0.456, 0.229],
+            "std": [0.224, 0.225, 0.225],
             "interpolation": "bicubic",
         },
     },
@@ -246,19 +254,19 @@ class VisionEncoderFactory:
         spec = VISION_MODEL_SPECS[model_name]
         
         # Find model file
-        model_dir = self.models_dir / model_name.value
+        model_dir = self.models_dir / str(model_name)
         model_files = list(model_dir.glob("*.onnx"))
         
         if not model_files:
             raise FileNotFoundError(
-                f"No ONNX model found for {model_name.value} in {model_dir}"
+                f"No ONNX model found for {str(model_name)} in {model_dir}"
             )
         
         model_path = model_files[0]
         checksum = self._compute_sha256(model_path)
         
         metadata = VisionModelMetadata(
-            name=model_name.value,
+            name=str(model_name),
             version="1.0.0",
             parameter_count=spec["parameter_count"],
             quantization="INT8",
@@ -287,8 +295,8 @@ if __name__ == "__main__":
     for model_name in [VisionModelName.MOBILEVIT_XXS, VisionModelName.VIT_TINY]:
         try:
             encoder = factory.create(model_name)
-            print(f"Loaded {model_name.value}: {encoder.metadata.parameter_count/1e6:.1f}M params")
+            print(f"Loaded {str(model_name)}: {encoder.metadata.parameter_count/1e6:.1f}M params")
         except FileNotFoundError as e:
-            print(f"{model_name.value}: NOT FOUND - {e}")
+            print(f"{str(model_name)}: NOT FOUND - {e}")
         except Exception as e:
-            print(f"{model_name.value}: ERROR - {e}")
+            print(f"{str(model_name)}: ERROR - {e}")

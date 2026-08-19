@@ -1,6 +1,17 @@
 {
+  "name": "mandala-rendering-software",
+  "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "jest": {
-    "roots": ["<rootDir>/fmce/tests"]
+  "main": "index.js",
+  "scripts": {
+    "test:fmce": "jest --config jest.config.cjs",
+    "demo": "node mrs/packages/renderer-core/src/fmce/demo/run-demo.js"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0"
   }
 }

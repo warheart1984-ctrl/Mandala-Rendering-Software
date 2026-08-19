@@ -46,6 +46,26 @@ struct LightData {
 const PI: f32 = 3.14159265;
 const EPS: f32 = 1e-6;
 
+// Material helper functions - intentId=material-disney-v1, material-ggx-v1, material-clearcoat-v1, material-sss-v1
+fn disneyBRDF4D(albedo: vec4<f32>, roughness: f32, metallic: f32, NdotV: f32, NdotL: f32) -> vec4<f32> {
+  let F0 = mix(vec4<f32>(0.04), albedo, metallic);
+  let spec = roughness * roughness / max(4.0 * NdotV * NdotL, EPS);
+  return F0 * spec;
+}
+fn ggxNDF4D(alpha: f32, NdotH: f32) -> f32 {
+  let a2 = alpha * alpha;
+  let denom = NdotH * NdotH * (a2 - 1.0) + 1.0;
+  return a2 / (PI * denom * denom + EPS);
+}
+fn clearcoatFresnel(NdotV: f32) -> f32 {
+  let R0 = 0.04;
+  return R0 + (1.0 - R0) * pow(1.0 - NdotV, 5.0);
+}
+fn sssDipole4D(NdotL: f32, radius: f32) -> vec4<f32> {
+  let att = exp(-radius * 0.5);
+  return vec4<f32>(att) * max(0.0, NdotL);
+}
+
 fn pcgHash(input: u32) -> u32 {
   var state = input * 747796405u + 2891336453u;
   let word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
@@ -127,17 +147,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let u1 = randFloat(&seed);
   let u2 = randFloat(&seed);
   let u3 = randFloat(&seed);
-
   let scatterDir = cosineWeightedSampleS3(normal, u1, u2, u3);
   let cosTheta = max(dot(scatterDir, normal), 0.0);
-
-  // Lambertian: BRDF = 3ρ/(4π), pdf = 3cosθ/(4π)
-  let brdf = 3.0 * mat.albedo / (4.0 * PI);
-  let pdf = 3.0 * cosTheta / (4.0 * PI);
-  let throughput = brdf * cosTheta / max(pdf, EPS);
-
   let offset = 0.002;
   rayOriginsOut[idx] = hitPos + normal * offset;
   scatterDirs[idx] = scatterDir;
+
+  // Material dispatch based on typeAndParams.x
+  // 0 = Lambertian, 1 = Disney, 2 = GGX, 3 = Clearcoat, 4 = SSS
+  let matType = i32(mat.typeAndParams.x);
+  var throughput = vec4<f32>(0.0);
+  let roughness = mat.typeAndParams.y;
+  let metallic = mat.typeAndParams.z;
+  if (matType == 0) {
+    let brdf = 3.0 * mat.albedo / (4.0 * PI);
+    let pdf = 3.0 * cosTheta / (4.0 * PI);
+    throughput = brdf * cosTheta / max(pdf, EPS);
+  } else if (matType == 1) {
+    throughput = disneyBRDF4D(mat.albedo, roughness, metallic, cosTheta, cosTheta);
+  } else if (matType == 2) {
+    let nDotH = max(dot(normalize(normal + scatterDir), normal), 0.0);
+    let ndf = ggxNDF4D(roughness * roughness, nDotH);
+    throughput = vec4<f32>(ndf) * mat.albedo;
+  } else if (matType == 3) {
+    let F = clearcoatFresnel(cosTheta);
+    throughput = vec4<f32>(F * (1.0 - roughness)) * mat.albedo;
+  } else if (matType == 4) {
+    throughput = sssDipole4D(cosTheta, mat.volumeParams.x);
+  } else {
+    let brdf = 3.0 * mat.albedo / (4.0 * PI);
+    let pdf = 3.0 * cosTheta / (4.0 * PI);
+    throughput = brdf * cosTheta / max(pdf, EPS);
+  }
   pathThroughput[idx] = throughput;
 }

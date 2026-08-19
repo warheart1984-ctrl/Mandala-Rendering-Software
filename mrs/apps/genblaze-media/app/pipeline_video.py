@@ -231,8 +231,15 @@ def _validate_video_model(provider: Any, model: str) -> None:
     )
 
 
-def generate_video(settings: Settings, prompt: str) -> VideoGenerateResult:
-    """Run video backend (NVIDIA Cosmos or Seedance) and persist assets + manifest."""
+def generate_video(
+    settings: Settings,
+    prompt: str,
+    *,
+    frames: int | None = None,
+    fps: int | None = None,
+    base_seed: int | None = None,
+) -> VideoGenerateResult:
+    """Run video backend (NVIDIA Cosmos, Seedance, or local frames flipbook)."""
     raw = (prompt or "").strip()
     if not raw:
         raise ValueError("prompt is required")
@@ -257,6 +264,19 @@ def generate_video(settings: Settings, prompt: str) -> VideoGenerateResult:
 
     if settings.video_backend == "seedance":
         return _generate_seedance_video(settings, cleaned, raw, created_at, run_id)
+
+    if settings.video_backend == "frames":
+        from app.frames_video import generate_frames_video
+
+        result = generate_frames_video(
+            settings, cleaned, frames=frames, fps=fps, base_seed=base_seed
+        )
+        result.created_at = created_at
+        if cleaned != raw:
+            result.detail = (result.detail + " · " if result.detail else "") + (
+                "prompt sanitized (meta-commentary stripped)"
+            )
+        return result
 
     if not settings.nvidia_configured:
         raise RuntimeError(NVIDIA_SETUP_HELP)

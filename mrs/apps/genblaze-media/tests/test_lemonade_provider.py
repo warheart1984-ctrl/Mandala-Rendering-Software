@@ -13,6 +13,8 @@ from app.lemonade_provider import (
     LEMONADE_PROVIDER_ID,
     LemonadeGenerateError,
     _model_id,
+    _detect_lemonade_archetype,
+    _enhance_lemonade_prompt,
     generate_image_lemonade,
     lemonade_availability,
 )
@@ -168,3 +170,85 @@ def test_generate_image_lemonade_model_missing(monkeypatch):
     monkeypatch.setattr("app.lemonade_provider.httpx.Client", FakeClient)
     with pytest.raises(LemonadeGenerateError, match="lemonade pull"):
         generate_image_lemonade(_settings(), "tesseract mandala")
+
+
+def test_archetype_detection_tesseract():
+    assert _detect_lemonade_archetype("floating tesseract made of neon lattice") == "tesseract-lattice"
+    assert _detect_lemonade_archetype("hypercube 8-cell mandala grid") == "tesseract-lattice"
+    assert _detect_lemonade_archetype("four dimension lattice beams") == "tesseract-lattice"
+
+
+def test_archetype_detection_neural_lattice():
+    assert _detect_lemonade_archetype("sovereign mandala neural lattice") == "neural-lattice"
+    assert _detect_lemonade_archetype("glyphs rotating energy core") == "neural-lattice"
+    assert _detect_lemonade_archetype("mandala rendering constitutional machine") == "neural-lattice"
+
+
+def test_archetype_detection_torus_ring():
+    assert _detect_lemonade_archetype("concentric torus rings crystalline") == "torus-ring"
+    assert _detect_lemonade_archetype("fractal orbital rings") == "torus-ring"
+
+
+def test_archetype_detection_mythic():
+    assert _detect_lemonade_archetype("mythic dragon battle mountain") == "mythic-tableau"
+    assert _detect_lemonade_archetype("epic fantasy creature tableau") == "mythic-tableau"
+
+
+def test_archetype_detection_none():
+    assert _detect_lemonade_archetype("random abstract prompt") is None
+    assert _detect_lemonade_archetype("") is None
+    assert _detect_lemonade_archetype(None) is None
+
+
+def test_prompt_enhancement_adds_suffix():
+    # Tesseract archetype gets specific suffix
+    enhanced = _enhance_lemonade_prompt("floating tesseract lattice")
+    assert "intricate 4D hypercube wireframe" in enhanced
+    assert "neon cyan beams" in enhanced
+
+    # Neural lattice archetype
+    enhanced = _enhance_lemonade_prompt("sovereign mandala neural lattice")
+    assert "sovereign mandala neural lattice" in enhanced
+    assert "luminous geometric glyphs" in enhanced
+
+    # Default fallback for unknown
+    enhanced = _enhance_lemonade_prompt("random prompt")
+    assert "highly detailed" in enhanced
+    assert "sharp focus" in enhanced
+
+    # Original prompt preserved
+    enhanced = _enhance_lemonade_prompt("my custom prompt")
+    assert enhanced.startswith("my custom prompt")
+
+
+def test_generate_includes_archetype_in_provenance(monkeypatch):
+    png = _tiny_png_bytes()
+    b64 = base64.b64encode(png).decode("ascii")
+
+    class FakeResp:
+        status_code = 200
+        text = ""
+
+        def json(self):
+            return {"data": [{"b64_json": b64}]}
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def post(self, url, headers=None, json=None):
+            assert "neon cyan beams" in json["prompt"]  # enhanced prompt sent to Lemonade
+            return FakeResp()
+
+    monkeypatch.setattr("app.lemonade_provider.httpx.Client", FakeClient)
+    gen = generate_image_lemonade(_settings(), "floating tesseract mandala")
+    assert gen.provenance["archetype"] == "tesseract-lattice"
+    assert "enhanced_prompt" in gen.provenance
+    assert "original_prompt" in gen.provenance
+    assert gen.provenance["original_prompt"] == "floating tesseract mandala"
