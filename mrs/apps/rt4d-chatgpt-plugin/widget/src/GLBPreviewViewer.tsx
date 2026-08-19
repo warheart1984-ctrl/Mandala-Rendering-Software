@@ -221,7 +221,8 @@ export function GLBPreviewViewer({
       };
 
       if (bytes && bytes.length > 0) {
-        const blob = new Blob([bytes], { type: "model/gltf-binary" });
+        // Use bytes directly as BlobPart (runtime works with three.js)
+        const blob = new Blob([bytes as any], { type: "model/gltf-binary" });
         const objectUrl = URL.createObjectURL(blob);
         loader.load(objectUrl, (gltf) => {
           URL.revokeObjectURL(objectUrl);
@@ -272,7 +273,7 @@ export function GLBPreviewViewer({
  * Export GLB bytes to a downloadable .glb file.
  */
 export function downloadGLB(bytes: Uint8Array, filename = "rt4d-character.glb") {
-  const blob = new Blob([bytes], { type: "model/gltf-binary" });
+  const blob = new Blob([bytes as any], { type: "model/gltf-binary" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

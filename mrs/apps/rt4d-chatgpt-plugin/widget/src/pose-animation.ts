@@ -9,7 +9,18 @@
  * - Secondary channels: ears, jaw, limbs
  */
 
-import type { CharacterRigSchema, BoneSpec, Mat4Tuple } from "../sovereign-sculptor/src/types.js";
+import * as THREE from "three";
+
+/** Minimal rig bone interface (avoids cross-package sovereign-sculptor import) */
+interface RigBone {
+  id: string;
+  parentId: string | null;
+}
+
+/** Minimal rig schema — just enough for pose generation */
+interface MiniRig {
+  bones: RigBone[];
+}
 
 export interface RotationPlane {
   plane: "XW" | "YW" | "ZW";
@@ -138,7 +149,7 @@ function boneToPlaneMapping(boneId: string): {
  * @returns Array of bone animation tracks (one per bone)
  */
 export function generatePoseFromRotationPlanes(
-  rig: CharacterRigSchema,
+  rig: MiniRig,
   rotationPlanes: RotationPlane[],
   duration: number = 2.0,
   fps: number = 24
@@ -206,10 +217,10 @@ export function tracksToAnimationClip(
   for (const track of tracks) {
     const times = track.keyframes.map((kf) => kf.time);
 
-    // Position track
+// Position track
     const positions = track.keyframes.flatMap((kf) => kf.translation);
     threeTracks.push(
-      new (require("three").VectorKeyframeTrack)(
+      new THREE.VectorKeyframeTrack(
         `${track.boneId}.position`,
         times,
         positions
@@ -219,7 +230,7 @@ export function tracksToAnimationClip(
     // Quaternion track
     const quaternions = track.keyframes.flatMap((kf) => kf.rotation);
     threeTracks.push(
-      new (require("three").QuaternionKeyframeTrack)(
+      new THREE.QuaternionKeyframeTrack(
         `${track.boneId}.quaternion`,
         times,
         quaternions
@@ -229,7 +240,7 @@ export function tracksToAnimationClip(
     // Scale track
     const scales = track.keyframes.flatMap((kf) => kf.scale);
     threeTracks.push(
-      new (require("three").VectorKeyframeTrack)(
+      new THREE.VectorKeyframeTrack(
         `${track.boneId}.scale`,
         times,
         scales
@@ -238,5 +249,5 @@ export function tracksToAnimationClip(
   }
 
   const duration = tracks[0]?.keyframes[tracks[0].keyframes.length - 1]?.time ?? 2;
-  return new (require("three").AnimationClip)(name, duration, threeTracks);
+  return new THREE.AnimationClip(name, duration, threeTracks);
 }
