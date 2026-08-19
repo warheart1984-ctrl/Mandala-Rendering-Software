@@ -32,6 +32,8 @@ def import_glb(filepath):
 
     print(f"[RT4D] Imported GLB: {filepath}")
     print(f"[RT4D] Objects: {[obj.name for obj in bpy.data.objects]}")
+    types = {obj.name: obj.type for obj in bpy.data.objects}
+    print(f"[RT4D] ObjectTypes: {types}")
 
     return bpy.data.objects
 
@@ -47,12 +49,11 @@ def setup_armature():
 
     if armature:
         print(f"[RT4D] Found armature: {armature.name}")
-        # Enable pose mode
         bpy.context.view_layer.objects.active = armature
         armature.select_set(True)
-
-        # Show bones in front
         armature.data.display_type = 'OCTAHEDRAL'
+    else:
+        print("[RT4D] Honest: no ARMATURE object in this GLB (fixture mesh may still have bones as nodes).")
 
     return armature
 
@@ -245,9 +246,20 @@ def main():
     setup_camera_and_lighting()
 
     # Save blend file next to the GLB
+    import bpy
     blend_path = filepath.replace(".glb", ".blend")
     bpy.ops.wm.save_as_mainfile(filepath=blend_path)
     print(f"[RT4D] Saved: {blend_path}")
+    log_path = filepath.replace(".glb", ".import.log")
+    armature_note = "armature-present" if armature else "no-armature-object"
+    with open(log_path, "w", encoding="utf-8") as log:
+        log.write(f"glb={filepath}\n")
+        log.write(f"blend={blend_path}\n")
+        log.write(f"armature={armature_note}\n")
+        log.write("pipeline=flatpak-or-wrapper-not-native-blender\n")
+        log.write("statusTag=partial\n")
+    print(f"[RT4D] Log: {log_path}")
+    print(f"[RT4D] Armature: {armature_note}")
 
 if __name__ == "__main__":
     main()
