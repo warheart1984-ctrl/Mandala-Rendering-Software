@@ -17,6 +17,20 @@ export function handleInspectRt4dProvenance(args: unknown) {
     continuityState: scene.continuityState,
     shotEvidence: scene.shotEvidence,
     preview: scene.preview ?? null,
+    characterPipeline: scene.characterPipeline
+      ? {
+          intendedSpecies: scene.characterPipeline.intendedSpecies,
+          meshSeedHex: scene.characterPipeline.meshSeedHex,
+          meshSha256: scene.characterPipeline.wireMesh?.meshSha256 ?? null,
+          includesRigPolylines:
+            scene.characterPipeline.wireMesh?.includesRigPolylines ?? false,
+          rigId: scene.characterPipeline.rigBinding?.rigId ?? null,
+          rigSha256: scene.characterPipeline.rigBinding?.rigSha256 ?? null,
+          rigStatus: scene.characterPipeline.rigBinding?.status ?? null,
+          boneCount: scene.characterPipeline.rigBinding?.boneCount ?? 0,
+          stages: scene.characterPipeline.stages,
+        }
+      : null,
     statusTag: "partial" as const,
     governanceNote:
       "No claim without evidence. Envelope fields are in-memory partial; verified replay / continuity compare / approvals remain declared.",

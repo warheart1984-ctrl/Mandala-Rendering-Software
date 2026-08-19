@@ -5,6 +5,9 @@ import { handleRenderRt4dPreview } from "./render-rt4d-preview.ts";
 import { handleInspectRt4dProvenance } from "./inspect-rt4d-provenance.ts";
 import { handleUpdateRt4dScene } from "./update-rt4d-scene.ts";
 import { handleExportRt4dAsset } from "./skeleton-tools.ts";
+import { handleCreate4dScene } from "./create-4d-scene.ts";
+import { handleBindCharacterRig } from "./bind-character-rig.ts";
+import { handleRenderStage } from "./render-stage.ts";
 
 describe("rt4d-chatgpt-plugin phase1+2", () => {
   it("create_rt4d_scene emits continuity + shot evidence", () => {
@@ -214,6 +217,124 @@ describe("rt4d-chatgpt-plugin phase1+2", () => {
       globalThis.fetch = originalFetch;
       if (originalUrl !== undefined) process.env.RT4D_ENGINE_URL = originalUrl;
       else delete process.env.RT4D_ENGINE_URL;
+    }
+  });
+});
+
+describe("rt4d-chatgpt-plugin character pipeline (energy / clay / beauty)", () => {
+  it("create_4d_scene emits a replay-stable 4D energy wire mesh", () => {
+    const a = handleCreate4dScene({
+      prompt: "anthro fox warrior energy field unique-a",
+      species: "anthro",
+    });
+    const b = handleCreate4dScene({
+      prompt: "anthro fox warrior energy field unique-a",
+      species: "anthro",
+    });
+    assert.equal(a.statusTag, "partial");
+    assert.equal(a.visualKind, "energy_wire_mesh");
+    assert.ok(a.wireMesh.vertexCount >= 16);
+    assert.ok(a.wireMesh.edgeCount >= 32);
+    assert.equal(a.wireMesh.vertices[0].length, 4);
+    assert.equal(a.meshSha256, b.meshSha256);
+    assert.equal(a.wireMesh.includesRigPolylines, false);
+    assert.match(a.meshSha256, /^[0-9a-f]{64}$/);
+    assert.ok(a.pngBase64);
+    assert.equal(Buffer.from(a.pngBase64, "base64").subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(a.pngSha256, b.pngSha256);
+    assert.equal(a.width, 512);
+  });
+
+  it("bind_character_rig attaches anthro fixture hashes onto the same sceneId", () => {
+    const created = handleCreate4dScene({
+      prompt: "bind anthro fox unique-b",
+      species: "anthro",
+    });
+    const bound = handleBindCharacterRig({
+      sceneId: created.sceneId,
+      species: "anthro",
+    });
+    assert.equal(bound.statusTag, "partial");
+    assert.equal(bound.rigBinding.species, "anthro");
+    assert.equal(bound.rigBinding.status, "core-enforced-fixture-not-production-rig");
+    assert.equal(bound.rigBinding.rigId, "anthro-standard-v1");
+    assert.ok(bound.rigBinding.boneCount > 10);
+    assert.match(bound.rigBinding.rigSha256, /^[0-9a-f]{64}$/);
+    assert.equal(bound.includesRigPolylines, true);
+    assert.notEqual(bound.meshSha256, created.meshSha256);
+    const inspected = handleInspectRt4dProvenance({ sceneId: created.sceneId });
+    assert.equal(inspected.characterPipeline.rigSha256, bound.rigBinding.rigSha256);
+    assert.equal(inspected.shotEvidence.characterModelHash, bound.characterModelHash);
+  });
+
+  it("render_stage clay_rig is denied until bind, then shares mesh/rig hashes", async () => {
+    const created = handleCreate4dScene({
+      prompt: "clay requires bind unique-c",
+      species: "anthro",
+    });
+    const denied = await handleRenderStage({
+      sceneId: created.sceneId,
+      stage: "clay_rig",
+    });
+    assert.equal(denied.error, "RigNotBound");
+
+    const bound = handleBindCharacterRig({
+      sceneId: created.sceneId,
+      species: "anthro",
+    });
+    const clay = await handleRenderStage({
+      sceneId: created.sceneId,
+      stage: "clay_rig",
+    });
+    assert.equal(clay.stage, "clay_rig");
+    assert.equal(clay.statusTag, "partial");
+    assert.equal(clay.meshSha256, bound.meshSha256);
+    assert.equal(clay.rigSha256, bound.rigBinding.rigSha256);
+    assert.equal(clay.clay.bones.length, bound.rigBinding.boneCount);
+    assert.equal(clay.clay.vertices3d[0].length, 3);
+    assert.ok(clay.pngBase64);
+    assert.equal(Buffer.from(clay.pngBase64, "base64").subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  });
+
+  it("render_stage beauty is partial_with_gaps and returns a PNG", async () => {
+    const created = handleCreate4dScene({
+      prompt: "beauty declared unique-d",
+      species: "anthro",
+    });
+    const prevPolish = process.env.RT4D_BEAUTY_POLISH;
+    process.env.RT4D_BEAUTY_POLISH = "0";
+    try {
+      const denied = await handleRenderStage({
+        sceneId: created.sceneId,
+        stage: "beauty",
+      });
+      assert.equal(denied.error, "RigNotBound");
+      handleBindCharacterRig({ sceneId: created.sceneId, species: "anthro" });
+      const beauty = await handleRenderStage({
+        sceneId: created.sceneId,
+        stage: "beauty",
+        width: 64,
+        height: 64,
+      });
+      assert.equal(beauty.stage, "beauty");
+      assert.equal(beauty.statusTag, "partial");
+      assert.equal(beauty.beautyFidelity, "partial_with_gaps");
+      assert.equal(beauty.visualKind, "beauty_partial_with_gaps");
+      assert.equal(beauty.previewSource, "clay_raster");
+      assert.ok(beauty.pngBase64);
+      assert.equal(Buffer.from(beauty.pngBase64, "base64").subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+      assert.ok(Array.isArray(beauty.gaps) && beauty.gaps.includes("photoreal_fur_leather_not_guaranteed"));
+      const energy = await handleRenderStage({
+        sceneId: created.sceneId,
+        stage: "energy",
+        width: 64,
+        height: 64,
+      });
+      assert.equal(energy.meshSha256, beauty.meshSha256);
+      assert.ok(energy.pngBase64);
+    } finally {
+      if (prevPolish === undefined) delete process.env.RT4D_BEAUTY_POLISH;
+      else process.env.RT4D_BEAUTY_POLISH = prevPolish;
     }
   });
 });

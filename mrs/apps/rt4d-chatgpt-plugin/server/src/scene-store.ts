@@ -39,6 +39,63 @@ export type SceneProvenance = {
   updatedAt: string;
 };
 
+export type Vec4Tuple = readonly [number, number, number, number];
+export type Vec3Tuple = readonly [number, number, number];
+
+/** Compact 4D energy / wire mesh. Dimensional field, not a production sculpt. */
+export type WireMesh4D = {
+  schemaVersion: "rt4d-wire-mesh/v0.1";
+  statusTag: "partial";
+  kind: "energy_field";
+  vertices: Vec4Tuple[];
+  edges: Array<readonly [number, number]>;
+  vertexCount: number;
+  edgeCount: number;
+  meshSha256: string;
+  includesRigPolylines: boolean;
+};
+
+export type CharacterRigBinding = {
+  schemaVersion: "character-rig/1.0";
+  /** Honest: sculptor fixture contract, not a production body sculpt. */
+  status: "core-enforced-fixture-not-production-rig";
+  species: "human" | "fox" | "anthro";
+  rigId: string;
+  rigSha256: string;
+  boneCount: number;
+  blendshapeCount: number;
+  capabilities: Record<string, boolean>;
+  bones: Array<{
+    id: string;
+    parentId: string | null;
+    position3d: Vec3Tuple;
+  }>;
+  boundAt: string;
+};
+
+export type CharacterPipeline = {
+  intendedSpecies: "human" | "fox" | "anthro";
+  /** Frozen at first energy mesh so later envelope commits do not retessellate. */
+  meshSeedHex: string;
+  wireMesh?: WireMesh4D;
+  rigBinding?: CharacterRigBinding;
+  stages: {
+    energy?: { meshSha256: string; statusTag: "partial"; at: string };
+    clay_rig?: {
+      claySha256: string;
+      armatureSha256: string;
+      statusTag: "partial";
+      at: string;
+    };
+    beauty?: {
+      previewSha256?: string;
+      statusTag: "partial";
+      beautyFidelity: "partial_with_gaps";
+      at: string;
+    };
+  };
+};
+
 export type Rt4dSceneRecord = {
   sceneId: string;
   prompt: string;
@@ -62,6 +119,7 @@ export type Rt4dSceneRecord = {
     width: number;
     height: number;
   };
+  characterPipeline?: CharacterPipeline;
   sceneJson: Record<string, unknown>;
 };
 
@@ -229,8 +287,45 @@ export function attachPreview(
     preview,
     provenance: scene.provenance,
     shotEvidence: scene.shotEvidence,
+    characterPipeline: scene.characterPipeline ?? null,
   };
   sceneStore.set(sceneId, scene);
+  return scene;
+}
+
+/**
+ * Persist character-pipeline mutations and refresh scene / envelope hashes.
+ * Does not invent anatomy; callers must attach fixture rigs and partial meshes only.
+ */
+export function commitSceneRecord(scene: Rt4dSceneRecord): Rt4dSceneRecord {
+  const now = new Date().toISOString();
+  scene.provenance = {
+    ...scene.provenance,
+    updatedAt: now,
+  };
+
+  const sceneJson: Record<string, unknown> = {
+    ...scene.sceneJson,
+    prompt: scene.prompt,
+    rotations: scene.rotations,
+    projection: scene.projection,
+    continuityState: scene.continuityState,
+    provenance: scene.provenance,
+    preview: scene.preview,
+    characterPipeline: scene.characterPipeline ?? null,
+  };
+  const sceneSha256 = sha256Hex(JSON.stringify(sceneJson));
+  scene.provenance.hashes.sceneSha256 = sceneSha256;
+  scene.shotEvidence = buildShotEvidenceEnvelope(scene, {
+    parentShotId: scene.shotEvidence?.parentShotId ?? null,
+    outputHash: scene.provenance.hashes.previewSha256,
+  });
+  scene.sceneJson = {
+    ...sceneJson,
+    provenance: scene.provenance,
+    shotEvidence: scene.shotEvidence,
+  };
+  sceneStore.set(scene.sceneId, scene);
   return scene;
 }
 
@@ -301,6 +396,7 @@ export function updateRt4dSceneRecord(
     projection: scene.projection,
     continuityState: scene.continuityState,
     provenance: scene.provenance,
+    characterPipeline: scene.characterPipeline ?? null,
     note:
       "Phase 2: interactive rotation/projection updates are partial; RT3D persistence, AnimeStylizer, Unity/Unreal export remain declared. Dimensional preview ≠ photoreal anime.",
   };

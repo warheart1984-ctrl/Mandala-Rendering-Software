@@ -6,7 +6,6 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "rootDir": "src",
     "types": ["node"],
     "lib": ["ES2022"]
   },

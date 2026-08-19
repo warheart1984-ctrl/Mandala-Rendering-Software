@@ -6,7 +6,8 @@ Reverse-proxies one public endpoint to two local backends (plus optional cloud):
 |------------------------------------------|-------------------------------|-------|
 | `/api/v1/images/generations`, `/edits`   | sd-server or cloud (see below)| 13306 / cloud |
 | `/v1/models`, `/v1/images/*`, `/sdapi/*` | sd-server                     | 13306 |
-| `/api/v1/chat/*`, `/api/v1/audio/*`, ... | LemonadeServer                | 13307 |
+| `/api/v1/chat/*`, `/api/v1/audio/speech` | lemond (chat / TTS)           | 13307 |
+| `/api/v1/audio/transcriptions`           | whisper-server (optional STT) | 13312 |
 | `/health`, `/api/v1/health`              | bridge (aggregated)           | 13305 |
 | `/`, `/ui`                               | bridge (txt2img web UI)       | 13305 |
 
@@ -21,15 +22,34 @@ schema and the `127.0.0.1:13305` address all downstream tools already use.
 ## Files
 
 - `bridge.py` — the router (stdlib only, no pip install). Also serves the web UI.
-- `start_all.bat` — starts LemonadeServer (:13307), sd-server (:13306), bridge (:13305).
+- `start_all.sh` — **Linux** launcher: lemond (:13307), sd-server (:13306), optional whisper-server (:13312), bridge (:13305).
+- `start_all.bat` — Windows leftover (AppData `LemonadeServer.exe`); do not use on this machine.
 - `.env.example` — template for cloud-backend credentials (copy to `.env`).
+
+
+## Status tags (honest)
+
+| Piece | Status | Evidence |
+| --- | --- | --- |
+| Linux stack `start_all.sh` (lemond :13307, sd-server Vulkan :13306, bridge :13305) | **partial** | health probes / local smoke |
+| Whisper-Tiny Q8_0 via CPU `whisper-server` :13312 (GGML `.bin`) | **partial** | JFK wav smoke HTTP 200 (direct + bridge) |
+| Whisper GGUF weights | **declared** | not this runtime; whisper.cpp still GGML `lmgg` |
+| Vulkan / GPU STT | **declared** | Linux worker is CPU, AVX2 off (FX-8350) |
+| Cloud image backends | **declared** unless `CLOUD_BACKEND` set | local RX 580 when empty |
+
+Never commit `tools/sd-bridge/.env` or model weights. Weights live under `runtime/models/` (document paths; do not git-add `.gguf` / `ggml-*.bin`).
+
+Vendor `runtime/lemonade/.../resources/defaults.json` may still list port 13305. **SoT is** `runtime/start-lemonade.sh` (`LEMONADE_PORT` default **13307**) so lemond does not steal the public bridge port.
 
 ## Run
 
-```
-start_all.bat
-# or manually:
-python bridge.py
+```bash
+# Linux (this machine)
+chmod +x start_all.sh
+./start_all.sh
+
+# Windows leftover
+# start_all.bat
 ```
 
 Env overrides: `BRIDGE_HOST` `BRIDGE_PORT` `SD_PORT` (default 13306) `LEMONADE_PORT` (default 13307).

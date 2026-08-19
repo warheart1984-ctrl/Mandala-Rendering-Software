@@ -1,0 +1,169 @@
+{
+  "schema_version": 2,
+  "models": {
+    "image_primary": {
+      "id": "SD-Turbo-GGUF",
+      "status": "approved",
+      "path": "models/image/sd-turbo-q8.gguf",
+      "format": "gguf",
+      "quantization": "Q8_0",
+      "role": "fast anime keyframe painter",
+      "capabilities": [
+        "scene",
+        "motion",
+        "lighting",
+        "background"
+      ],
+      "execution": {
+        "backend": "vulkan",
+        "params_backend": "vulkan",
+        "max_width": 512,
+        "max_height": 512
+      },
+      "service": {
+        "unit": "mandala-sd-gguf.service",
+        "host": "127.0.0.1",
+        "port": 13306,
+        "exclusive_group": "image-worker"
+      },
+      "defaults": {
+        "steps": 4,
+        "cfg_scale": 1.0,
+        "sampling_method": "euler",
+        "width": 512,
+        "height": 512
+      }
+    },
+    "image_anime": {
+      "id": "Anything-V5-Q4_0",
+      "status": "approved",
+      "path": "models/image/anything-v5-q4_0.gguf",
+      "source_path": "models/image/anything-v5.safetensors",
+      "format": "gguf",
+      "quantization": "Q4_0",
+      "sha256": "2f80d2914a5005c46880d643dc1fb647a6b3d9d59564788f465b8c971e41682d",
+      "role": "CPU-safe anime character and held-cel painter",
+      "capabilities": [
+        "female",
+        "full_character_cel",
+        "face_cel"
+      ],
+      "execution": {
+        "backend": "cpu",
+        "params_backend": "cpu",
+        "threads": 6,
+        "max_width": 384,
+        "max_height": 384
+      },
+      "service": {
+        "unit": "mandala-anything-v5.service",
+        "host": "127.0.0.1",
+        "port": 13306,
+        "exclusive_group": "image-worker"
+      },
+      "defaults": {
+        "backend": "cpu",
+        "params_backend": "cpu",
+        "threads": 6,
+        "steps": 16,
+        "cfg_scale": 7.0,
+        "sampling_method": "euler_a",
+        "clip_skip": 2,
+        "render_crop": [
+          160,
+          16,
+          416,
+          208
+        ]
+      }
+    },
+    "image_character_general": {
+      "id": "DreamShaper-8-Q4_0",
+      "status": "approved",
+      "path": "models/image/dreamshaper-8-q4_0.gguf",
+      "source_repo": "Lykon/DreamShaper",
+      "source_revision": "228d79cb20811466f5c5710aa91f05dabd0b8a14",
+      "source_file": "DreamShaper_8_pruned.safetensors",
+      "source_path": "models/image/dreamshaper-8-source/DreamShaper_8_pruned.safetensors",
+      "source_sha256": "879db523c30d3b9017143d56705015e15a2cb5628762c11d086fed9538abd7fd",
+      "format": "gguf",
+      "quantization": "Q4_0",
+      "sha256": "2880ab4678532cbbf223d25705a5b5ddea2b0f86edac3db41b5d3eaefabd34e7",
+      "role": "CPU-safe general character painter; Mandala-generated matte required",
+      "capabilities": [
+        "male",
+        "female",
+        "animal",
+        "anthro",
+        "full_character_paint"
+      ],
+      "limitations": [
+        "prompt-only magenta chroma key was ignored in the fixed four-class benchmark",
+        "requires Mandala matte or silhouette extraction before compositing",
+        "approved for character concepts and medium-shot paint, not unreviewed close-up faces"
+      ],
+      "execution": {
+        "backend": "cpu",
+        "params_backend": "cpu",
+        "threads": 6,
+        "max_width": 384,
+        "max_height": 384
+      },
+      "service": {
+        "unit": "mandala-character-general.service",
+        "host": "127.0.0.1",
+        "port": 13306,
+        "exclusive_group": "image-worker"
+      },
+      "defaults": {
+        "backend": "cpu",
+        "params_backend": "cpu",
+        "threads": 6,
+        "steps": 16,
+        "cfg_scale": 7.0,
+        "sampling_method": "euler_a",
+        "clip_skip": 2,
+        "width": 320,
+        "height": 320
+      }
+    },
+    "text": {
+      "id": "Llama-3.2-1B-Instruct",
+      "path": "models/llm/llama-3.2-1b-q4.gguf",
+      "format": "gguf",
+      "role": "local prompt and scene assistant"
+    },
+    "tts": {
+      "id": "Kokoro-v1",
+      "path": "models/tts/kokoro-v1.onnx",
+      "voices": "models/tts/kokoro-voices.bin",
+      "format": "onnx",
+      "role": "local speech synthesis"
+    },
+    "video_temporal_experimental": {
+      "id": "Cosmos-Transfer1-7B",
+      "path": null,
+      "format": "planned-weight-only-4bit",
+      "role": "optional temporal repair for short controlled clips",
+      "required": false
+    },
+    "stt": {
+      "id": "Whisper-Tiny-Q8_0",
+      "status": "partial",
+      "path": "models/stt/ggml-tiny-q8_0.bin",
+      "source_path": "models/stt/ggml-tiny.bin",
+      "source_repo": "ggerganov/whisper.cpp",
+      "source_file": "ggml-tiny.bin",
+      "format": "ggml",
+      "quantization": "Q8_0",
+      "sha256": "c2085835d3f50733e2ff6e4b41ae8a2b8d8110461e18821b09a15c40c42d1cca",
+      "source_sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+      "role": "local speech-to-text for whisper-server :13312",
+      "notes": "status=partial: CPU whisper-server + GGML tiny Q8_0 (ggml-tiny-q8_0.bin). Smoke: JFK wav HTTP 200. Remaining declared: GGUF Whisper weights, Vulkan/GPU STT. Not GGUF, not Vulkan STT.",
+      "service": {
+        "host": "127.0.0.1",
+        "port": 13312
+      }
+    }
+  }
+}
