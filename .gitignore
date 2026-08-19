@@ -100,3 +100,10 @@ Anime Pictures for training/
 # Nested git worktrees (do not commit checkouts)
 .worktrees/
 
+# Fox fixture E2E smoke evidence (partial hull — not anatomical fox)
+!docs/proofs/rt4d-fox-fixture-smoke/
+!docs/proofs/rt4d-fox-fixture-smoke/**
+!docs/proofs/rt4d-fox-fixture-smoke/**/*.json
+!docs/proofs/rt4d-fox-fixture-smoke/**/*.png
+!docs/proofs/rt4d-fox-fixture-smoke/**/*.glb
+

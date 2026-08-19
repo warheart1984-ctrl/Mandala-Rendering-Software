@@ -191,6 +191,11 @@ export function handleExportRt4dAsset(args: unknown) {
     const glb = encodeProjectedMeshToGlb(mesh.positions, mesh.indices);
     const glbSha256 = createHash("sha256").update(glb).digest("hex");
     const glbBase64 = Buffer.from(glb).toString("base64");
+    const poseTargetSha256 = createHash("sha256")
+      .update(POSE_BONE_IDS.join("\n"), "utf8")
+      .digest("hex");
+    const characterRigSha256 =
+      scene.characterPipeline?.rigBinding?.rigSha256 ?? null;
 
     return {
       statusTag: "partial" as const,
@@ -207,6 +212,9 @@ export function handleExportRt4dAsset(args: unknown) {
       meshName: GLB_MESH_NAME,
       animationTargets: [...POSE_BONE_IDS],
       meshSha256: wireMesh.meshSha256,
+      poseTargetSha256,
+      rigSha256: characterRigSha256 ?? poseTargetSha256,
+      characterRigSha256,
       fixtureStatus: GLB_FIXTURE_STATUS,
       visualKind: "projected_energy_hull",
       note: "Partial GLB: 4D→3D projected wire hull (convex/adjacency), named bone targets, single mesh `body`. Not an anatomical fox or production sculpt.",

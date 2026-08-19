@@ -247,6 +247,8 @@ def main():
     create_pose_animation(armature, rotation_planes)
     setup_camera_and_lighting()
 
+    import bpy
+
     # Save blend file next to the GLB
     blend_path = filepath.replace(".glb", ".blend")
     bpy.ops.wm.save_as_mainfile(filepath=blend_path)
