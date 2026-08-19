@@ -1,0 +1,34 @@
+#version 460
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 3) uniform EnvSettingsUBO {
+    float envExposure;
+    float gamma;
+    float pad[2];
+} envSettings;
+
+layout(set = 1, binding = 7) uniform sampler2D envTex;
+
+layout(set = 3, binding = 5, rgba32f) uniform image2D FilteredFrame;
+layout(set = 3, binding = 6, rgba8unorm) uniform image2D ResolvedFrame;
+
+vec3 tonemapACES(vec3 x) {
+    const float a = 2.51;
+    const float b = 0.03;
+    const float c = 2.43;
+    const float d = 0.59;
+    const float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+void main() {
+    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(FilteredFrame);
+    if (gid.x >= size.x || gid.y >= size.y) return;
+    
+    vec4 hdr = imageLoad(FilteredFrame, gid);
+    vec3 x = hdr.rgb * exp2(envSettings.envExposure);
+    vec3 t = tonemapACES(x);
+    vec3 ldr = pow(t, vec3(1.0 / envSettings.gamma));
+    imageStore(ResolvedFrame, gid, vec4(ldr, 1.0));
+}

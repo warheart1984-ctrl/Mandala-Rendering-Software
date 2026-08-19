@@ -1,0 +1,105 @@
+#version 460
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+struct BVHNode {
+    vec3 minBounds;
+    uint leftFirst;
+    vec3 maxBounds;
+    uint count;
+};
+
+struct Triangle {
+    vec3 v0;
+    vec3 v1;
+    vec3 v2;
+    int materialIndex;
+    vec3 pad;
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 dir;
+};
+
+struct Hit {
+    float t;
+    int triIndex;
+    vec3 normal;
+};
+
+layout(set = 1, binding = 0) buffer BVHNodesBuffer { BVHNode nodes[]; };
+layout(set = 1, binding = 1) buffer TrianglesBuffer { Triangle tris[]; };
+layout(set = 2, binding = 0) buffer RaysBuffer { Ray rays[]; };
+layout(set = 2, binding = 1) buffer HitsBuffer { Hit hits[]; };
+
+bool intersectAABB(Ray ray, BVHNode node, float tMax) {
+    vec3 invD = 1.0 / ray.dir;
+    vec3 t0 = (node.minBounds - ray.origin) * invD;
+    vec3 t1 = (node.maxBounds - ray.origin) * invD;
+    vec3 tmin = min(t0, t1);
+    vec3 tmaxv = max(t0, t1);
+    float tNear = max(max(tmin.x, tmin.y), tmin.z);
+    float tFar = min(min(tmaxv.x, tmaxv.y), tmaxv.z);
+    return tNear <= tFar && tNear < tMax && tFar > 0.0;
+}
+
+bool intersectTriangle(Ray ray, Triangle tri, out float t, out vec3 n) {
+    vec3 e1 = tri.v1 - tri.v0;
+    vec3 e2 = tri.v2 - tri.v0;
+    vec3 p = cross(ray.dir, e2);
+    float det = dot(e1, p);
+    if (abs(det) < 1e-6) return false;
+    float invDet = 1.0 / det;
+    vec3 s = ray.origin - tri.v0;
+    float u = dot(s, p) * invDet;
+    if (u < 0.0 || u > 1.0) return false;
+    vec3 q = cross(s, e1);
+    float v = dot(ray.dir, q) * invDet;
+    if (v < 0.0 || u + v > 1.0) return false;
+    float tt = dot(e2, q) * invDet;
+    if (tt <= 0.0) return false;
+    t = tt;
+    n = normalize(cross(e1, e2));
+    return true;
+}
+
+void main() {
+    uint idx = gl_GlobalInvocationID.x;
+    Ray ray = rays[idx];
+    float closestT = 1e30;
+    int closestTri = -1;
+    vec3 closestN = vec3(0.0);
+    
+    int stack[64];
+    int sp = 0;
+    stack[sp++] = 0;
+    
+    while (sp > 0) {
+        int nodeIndex = stack[--sp];
+        BVHNode node = nodes[nodeIndex];
+        
+        if (!intersectAABB(ray, node, closestT)) continue;
+        
+        if (node.count > 0) {
+            int first = int(node.leftFirst);
+            int count = int(node.count);
+            for (int i = 0; i < count; ++i) {
+                Triangle tri = tris[first + i];
+                float t; vec3 n;
+                if (intersectTriangle(ray, tri, t, n) && t < closestT) {
+                    closestT = t;
+                    closestTri = first + i;
+                    closestN = n;
+                }
+            }
+        } else {
+            uint left = node.leftFirst;
+            stack[sp++] = int(left);
+            stack[sp++] = int(left + 1);
+        }
+    }
+    
+    hits[idx].t = closestT;
+    hits[idx].triIndex = closestTri;
+    hits[idx].normal = closestN;
+}

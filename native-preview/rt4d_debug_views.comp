@@ -1,0 +1,22 @@
+#version 460
+layout(local_size_x=8,local_size_y=8) in;
+layout(set=0,binding=0) uniform DebugUBO { int mode; } dbg;
+layout(set=3,binding=0,rgba32f) readonly uniform image2D CurrentFrame;
+layout(set=3,binding=1,rgba32f) readonly uniform image2D HistoryFrame;
+layout(set=1,binding=6,rgba32f) readonly uniform image2D DepthImg;
+layout(set=1,binding=7,rgba32f) readonly uniform image2D NormalsImg;
+layout(set=3,binding=2,rgba32f) readonly uniform image2D VarianceImg;
+layout(set=3,binding=7,rgba32f) readonly uniform image2D MotionImg;
+layout(set=3,binding=8,rgba8unorm) uniform image2D DebugOutput;
+
+void main(){
+    ivec2 gid=ivec2(gl_GlobalInvocationID.xy);
+    vec3 col=vec3(0);
+    if(dbg.mode==0){ vec4 v=imageLoad(CurrentFrame,gid); col=v.rgb; }
+    else if(dbg.mode==1){ vec4 v=imageLoad(CurrentFrame,gid); col=v.rgb; } // Albedo placeholder
+    else if(dbg.mode==2){ vec4 n=imageLoad(NormalsImg,gid); col=n.rgb*0.5+0.5; }
+    else if(dbg.mode==3){ vec4 d=imageLoad(DepthImg,gid); col=vec3(d.r); }
+    else if(dbg.mode==4){ vec4 v=imageLoad(VarianceImg,gid); col=vec3(v.r); }
+    else if(dbg.mode==5){ vec4 m=imageLoad(MotionImg,gid); col=normalize(m.rgb*2-1); }
+    imageStore(DebugOutput,gid,vec4(clamp(col,0,1),1));
+}
