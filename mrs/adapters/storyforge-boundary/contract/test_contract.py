@@ -128,6 +128,18 @@ def test_local_fallback_is_click_playlist_not_original_score(infinity_raw):
     assert playlist["entries"][0]["clickHz"] != playlist["entries"][-1]["clickHz"]
 
 
+def test_live_beatbox_mp4_is_declared_without_video_path(infinity_raw):
+    from contract.live_beatbox_mp4 import run_live_handoff
+
+    evidence = run_live_handoff(video_path=None)
+    assert evidence["beatbox"]["invoked"] is False
+    assert evidence["beatbox"]["livePathStatusTag"] == "declared"
+    assert evidence["speakers"]["skip"] is True
+    assert evidence["speakers"]["statusTag"] == "declared"
+    assert evidence["characterId"] == "warrior-anthro-fox-01"
+    assert Path(evidence["evidencePath"]).is_file()
+
+
 def test_refuses_to_invent_identity_lock(infinity_raw):
     raw = deepcopy(infinity_raw)
     raw["narrative_state"]["characters"][0] = {"name": "Nameless"}
