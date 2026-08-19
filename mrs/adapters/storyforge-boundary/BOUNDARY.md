@@ -46,7 +46,21 @@ No `story_forge` / `storyforge` strings under `mrs/apps/genblaze-media/app/*.py`
 Do not import StoryForge into MRS app hosts. Adapter docs may describe the boundary;
 the Genblaze app process stays clean.
 
+## Production contract (v1.0)
+
+One family: `storyforge-mandala-contract/1.0` under `contract/`.
+Infinity (`warheart1984-ctrl/infinity`, `external/story_forge`) owns narrative organs.
+This adapter **maps** `BackendBuildArtifact` → `StoryForgeProductionArtifact` →
+`MandalaProductionRequest` → per-shot `MandalaShotArtifact`. It does **not**
+host a second Story Bible engine.
+
+Per-shot pixels still cross as **RenderRequest**. Beatbox / Speakers / film
+assembly / Narrative Trust Pack lane: **declared**.
+
+Warrior slice: `contract/run_warrior_slice.py` (identity S01==S08, not pretty frames).
+
 ## Schemas
 
 - `schemas/RenderRequest.schema.json` — MRS intake
 - `schemas/RenderResult.schema.json` — MRS output
+- `contract/schemas/` — production contract family v1.0

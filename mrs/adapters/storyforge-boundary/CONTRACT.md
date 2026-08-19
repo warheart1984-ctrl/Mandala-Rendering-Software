@@ -26,6 +26,8 @@ Authoritative ownership: `BOUNDARY.md`.
 | engine3d-world still | **skeleton** / **partial** | best-effort; may retain world JSON only |
 | rt4d worldDocument | **skeleton** / **partial** | fallback to scene-spec when present |
 | Story → PromptSpec → RenderRequest (SF) | **declared** | owner StoryForge — not in MRS |
+| Production contract `storyforge-mandala-contract/1.0` identity compare | **partial** | `contract/test_contract.py` |
+| Beatbox / Speakers / NTP film assembly | **declared** | Infinity lanes; adapter handoff only |
 | Genblaze HTTP `/api/render-request` | **partial** | optional host wire |
 | CHEA / CCR / CDGF | **declared** | layer stack |
 
