@@ -1,7 +1,8 @@
-"""Validate storyforge-mandala-contract/1.0 artifacts.
+"""Validate storyforge-mandala-contract/1.1 artifacts.
 
 Status: **partial** — structural checks matching the JSON schemas.
 Does not import Infinity `story_forge` packages.
+Beatbox live path remains **declared**.
 """
 
 from __future__ import annotations
@@ -84,10 +85,39 @@ def validate_production_artifact(data: Any) -> dict[str, Any]:
     if cont.get("sameCharacterAcrossShots") is not True:
         raise ContractError("vertical slice requires sameCharacterAcrossShots")
     audio = _req_dict(obj.get("audioPlan"), "audioPlan")
-    if audio.get("statusTag") != "declared":
-        raise ContractError("audioPlan.statusTag must be declared")
+    _validate_audio_plan(audio, shot_ids)
     _req_dict(obj.get("provenance"), "provenance")
     return obj
+
+
+def _validate_audio_plan(audio: dict[str, Any], shot_ids: list[str]) -> None:
+    if audio.get("statusTag") != "declared":
+        raise ContractError("audioPlan.statusTag must be declared (Beatbox live path)")
+    if audio.get("mappingStatusTag") != "partial":
+        raise ContractError("audioPlan.mappingStatusTag must be partial")
+    _req_str(audio, "scoreIdentity")
+    cues = _req_list(audio, "cues", min_items=len(shot_ids) if shot_ids else 1)
+    cue_ids = [_req_str(_req_dict(c, "cue"), "shotId") for c in cues]
+    if cue_ids != shot_ids:
+        raise ContractError("audioPlan.cues[].shotId must match shots[] order")
+    for cue in cues:
+        c = _req_dict(cue, "cue")
+        _req_str(c, "audioCueId")
+        _req_str(c, "cue")
+        intensity = c.get("intensity")
+        if not isinstance(intensity, (int, float)) or not 0.0 <= float(intensity) <= 1.0:
+            raise ContractError("audioPlan.cues[].intensity must be 0..1")
+        playback = c.get("playback")
+        if playback not in ("loop", "one-shot"):
+            raise ContractError("audioPlan.cues[].playback must be loop or one-shot")
+    stems = _req_list(audio, "stems", min_items=1)
+    if not any(_req_dict(s, "stem").get("carriesScoreIdentity") for s in stems):
+        raise ContractError("audioPlan.stems must include one identity-carrying stem")
+    duck = _req_list(audio, "forbiddenDucking", min_items=1)
+    for rule in duck:
+        r = _req_dict(rule, "forbiddenDucking")
+        _req_str(r, "stemId")
+        _req_str(r, "reason")
 
 
 def validate_production_request(data: Any) -> dict[str, Any]:
@@ -99,6 +129,10 @@ def validate_production_request(data: Any) -> dict[str, Any]:
     _req_dict(obj.get("world"), "world")
     _req_list(obj, "actors")
     _req_list(obj, "shotTimeline")
+    timeline_ids = [
+        _req_str(_req_dict(s, "shot"), "shotId") for s in obj["shotTimeline"]
+    ]
+    _validate_audio_plan(_req_dict(obj.get("audioPlan"), "audioPlan"), timeline_ids)
     _req_dict(obj.get("renderContract"), "renderContract")
     _req_dict(obj.get("continuityContract"), "continuityContract")
     _req_dict(obj.get("evidenceRequirements"), "evidenceRequirements")
@@ -120,6 +154,8 @@ def validate_shot_artifact(data: Any) -> dict[str, Any]:
         "renderHash",
         "projectionHash",
         "runtimeFingerprint",
+        "audioCueId",
+        "scoreIdentity",
     ):
         _req_str(obj, key)
     if not isinstance(obj.get("frames"), list):

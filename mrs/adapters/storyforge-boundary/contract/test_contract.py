@@ -1,7 +1,7 @@
-"""storyforge-mandala-contract/1.0 tests.
+"""storyforge-mandala-contract/1.1 tests.
 
-partial: schema + identity compare.
-declared: Beatbox/Speakers/NTP (not exercised).
+partial: schema + identity compare + audioPlan cue mapping.
+declared: Beatbox live invoke / Speakers mix / NTP (not exercised).
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ import sys
 if str(_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_DIR.parent))
 
+from contract.audio import compare_score_identity, local_click_playlist
 from contract.canonical import CONTRACT_VERSION
 from contract.map_infinity import from_infinity_backend_build, to_mandala_production_request
 from contract.validate import ContractError, validate_production_artifact
@@ -31,8 +32,8 @@ def infinity_raw():
     return json.loads(FIXTURE.read_text(encoding="utf-8"))
 
 
-def test_contract_version_is_1_0():
-    assert CONTRACT_VERSION == "storyforge-mandala-contract/1.0"
+def test_contract_version_is_1_1():
+    assert CONTRACT_VERSION == "storyforge-mandala-contract/1.1"
 
 
 def test_maps_infinity_backend_build(infinity_raw):
@@ -87,9 +88,44 @@ def test_identity_compare_fails_if_lock_mutates(infinity_raw):
     assert "characterStateHash drifted" in cmp["findings"]
 
 
-def test_audio_plan_is_declared(infinity_raw):
+def test_audio_plan_is_declared_and_cues_match_shots(infinity_raw):
     artifact = from_infinity_backend_build(infinity_raw)
-    assert artifact["audioPlan"]["statusTag"] == "declared"
+    plan = artifact["audioPlan"]
+    assert plan["statusTag"] == "declared"
+    assert plan["mappingStatusTag"] == "partial"
+    assert plan["scoreIdentity"] == "courtyard-warrior-theme-v1"
+    assert [c["shotId"] for c in plan["cues"]] == [s["shotId"] for s in artifact["shots"]]
+    assert plan["cues"][0]["cue"] == "cue-enter-courtyard"
+    assert plan["cues"][-1]["cue"] == "cue-look-gate"
+    assert any(s.get("carriesScoreIdentity") for s in plan["stems"])
+    duck_ids = {d["stemId"] for d in plan["forbiddenDucking"]}
+    assert "courtyard-identity-bed" in duck_ids
+    assert plan["beatbox"]["livePathStatusTag"] == "declared"
+    assert "BeatboxLane.score" in plan["beatbox"]["scoreEntry"]
+
+
+def test_score_identity_holds_while_cues_evolve(infinity_raw):
+    artifact = from_infinity_backend_build(infinity_raw)
+    shots = emit_shot_artifacts(to_mandala_production_request(artifact))
+    cmp = compare_score_identity(shots[0], shots[-1])
+    assert cmp["equal"] is True
+    assert cmp["cuesEvolved"] is True
+    assert cmp["findings"] == []
+    assert shots[0]["scoreIdentity"] == shots[-1]["scoreIdentity"]
+    assert shots[0]["audioCueId"] != shots[-1]["audioCueId"]
+    assert shots[0]["audioIntensity"] != shots[-1]["audioIntensity"]
+    assert shots[0]["audioCueId"].startswith("S01:")
+    assert shots[-1]["audioCueId"].startswith("S08:")
+
+
+def test_local_fallback_is_click_playlist_not_original_score(infinity_raw):
+    artifact = from_infinity_backend_build(infinity_raw)
+    playlist = local_click_playlist(artifact["audioPlan"])
+    assert playlist["beatboxInvoked"] is False
+    assert "not an original" in playlist["claim"]
+    assert playlist["scoreIdentity"] == artifact["audioPlan"]["scoreIdentity"]
+    assert len(playlist["entries"]) == 8
+    assert playlist["entries"][0]["clickHz"] != playlist["entries"][-1]["clickHz"]
 
 
 def test_refuses_to_invent_identity_lock(infinity_raw):

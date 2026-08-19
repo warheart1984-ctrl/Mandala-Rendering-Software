@@ -19,7 +19,7 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "storyforge-mandala-contract/1.0"
+      "const": "storyforge-mandala-contract/1.1"
     },
     "kind": { "type": "string", "const": "NarrativeTrustPackHandoff" },
     "statusTag": { "type": "string", "enum": ["declared"] },

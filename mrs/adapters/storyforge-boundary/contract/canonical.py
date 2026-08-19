@@ -9,7 +9,7 @@ import hashlib
 import json
 from typing import Any
 
-CONTRACT_VERSION = "storyforge-mandala-contract/1.0"
+CONTRACT_VERSION = "storyforge-mandala-contract/1.1"
 HASH_ALG = "sha256:canonical-json-v1"
 
 

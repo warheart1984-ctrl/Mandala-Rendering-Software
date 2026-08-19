@@ -15,6 +15,7 @@ _ADAPTER = _DIR.parent
 if str(_ADAPTER) not in sys.path:
     sys.path.insert(0, str(_ADAPTER))
 
+from contract.audio import compare_score_identity
 from contract.map_infinity import from_infinity_backend_build, to_mandala_production_request
 from contract.vertical_slice import compare_identity, emit_shot_artifacts
 
@@ -27,6 +28,7 @@ def main() -> int:
     request = to_mandala_production_request(artifact)
     shots = emit_shot_artifacts(request)
     result = compare_identity(shots[0], shots[-1])
+    score = compare_score_identity(shots[0], shots[-1])
     payload = {
         "schemaVersion": artifact["schemaVersion"],
         "productionId": artifact["productionId"],
@@ -34,9 +36,11 @@ def main() -> int:
         "shotIds": [s["shotId"] for s in shots],
         "poses": [s["pose"]["id"] for s in shots],
         "identityCompare": result,
+        "scoreIdentityCompare": score,
         "renderHashesDiffer": shots[0]["renderHash"] != shots[-1]["renderHash"],
         "audioPlanStatus": artifact["audioPlan"]["statusTag"],
-        "success": result["equal"] and len(shots) >= 5,
+        "audioMappingStatus": artifact["audioPlan"]["mappingStatusTag"],
+        "success": result["equal"] and score["equal"] and score["cuesEvolved"] and len(shots) >= 5,
     }
     print(json.dumps(payload, indent=2))
     return 0 if payload["success"] else 1

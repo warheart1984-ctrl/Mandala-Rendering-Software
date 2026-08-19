@@ -46,18 +46,21 @@ No `story_forge` / `storyforge` strings under `mrs/apps/genblaze-media/app/*.py`
 Do not import StoryForge into MRS app hosts. Adapter docs may describe the boundary;
 the Genblaze app process stays clean.
 
-## Production contract (v1.0)
+## Production contract (v1.1)
 
-One family: `storyforge-mandala-contract/1.0` under `contract/`.
-Infinity (`warheart1984-ctrl/infinity`, `external/story_forge`) owns narrative organs.
-This adapter **maps** `BackendBuildArtifact` → `StoryForgeProductionArtifact` →
-`MandalaProductionRequest` → per-shot `MandalaShotArtifact`. It does **not**
-host a second Story Bible engine.
+One family: `storyforge-mandala-contract/1.1` under `contract/`.
+Infinity (`warheart1984-ctrl/infinity`, `external/story_forge`) owns narrative organs
+and Beatbox scoring. This adapter **maps** `BackendBuildArtifact` →
+`StoryForgeProductionArtifact` → `MandalaProductionRequest` → per-shot
+`MandalaShotArtifact` with `audioCueId` / timing. It does **not** host a second
+Story Bible engine or generate original music in RT4D.
 
-Per-shot pixels still cross as **RenderRequest**. Beatbox / Speakers / film
-assembly / Narrative Trust Pack lane: **declared**.
+Per-shot pixels still cross as **RenderRequest**. Beatbox live invoke / Speakers
+mix / film assembly / Narrative Trust Pack lane: **declared**. Audio cue mapping:
+**partial**.
 
-Warrior slice: `contract/run_warrior_slice.py` (identity S01==S08, not pretty frames).
+Warrior slice: `contract/run_warrior_slice.py` (identity S01==S08 and
+`scoreIdentity` S01==S08 with evolving cues).
 
 ## Schemas
 
