@@ -97,3 +97,6 @@ test-output.txt
 # Training datasets (never commit)
 Anime Pictures for training/
 
+# Nested git worktrees (do not commit checkouts)
+.worktrees/
+

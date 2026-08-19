@@ -57,19 +57,30 @@ describe("rt4d-chatgpt-plugin phase1+2", () => {
     }
   });
 
-  it("inspect returns envelope; export is declared stub", () => {
+  it("inspect returns envelope; unity export stays declared; glb is partial bytes", () => {
     const created = handleCreateRt4dScene({
       prompt: "manga panel fold",
       mode: "render_manga_panel",
     });
     const inspected = handleInspectRt4dProvenance({ sceneId: created.sceneId });
     assert.equal(inspected.shotEvidence.productLane, "manga");
-    const exported = handleExportRt4dAsset({
+    const unity = handleExportRt4dAsset({
       sceneId: created.sceneId,
       format: "unity",
     });
-    assert.equal(exported.statusTag, "declared");
-    assert.equal(exported.implemented, false);
+    assert.equal(unity.statusTag, "declared");
+    assert.equal(unity.implemented, false);
+    const glb = handleExportRt4dAsset({
+      sceneId: created.sceneId,
+      format: "glb",
+    });
+    assert.equal(glb.statusTag, "partial");
+    assert.equal(glb.implemented, true);
+    assert.equal(typeof glb.glbBase64, "string");
+    assert.ok(glb.glbByteLength > 12);
+    const bytes = Buffer.from(glb.glbBase64, "base64");
+    assert.equal(bytes.readUInt32LE(0), 0x46546c67);
+    assert.match(glb.note, /not an anatomical fox/i);
   });
 
   it("update_rt4d_scene patches rotations/projection and bumps continuity", async () => {

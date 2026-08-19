@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { AnimationClip, Object3D } from "three";
 import {
   callTool,
   getOpenAi,
@@ -9,6 +10,10 @@ import {
 import { ProvenancePanel } from "./ProvenancePanel";
 import { RotationControls } from "./RotationControls";
 import { RT4DViewer } from "./RT4DViewer";
+import { GLBPreviewViewer, downloadGLB } from "./GLBPreviewViewer";
+import { poseClipFromPlanes } from "./pose-animation";
+import { applyFoxWarriorSkin } from "./skin-layer-applier";
+import { encodeDemoFixtureGlb } from "../../shared/encode-glb";
 
 const DEMO: ViewerPayload = {
   sceneId: "local-demo",
@@ -54,6 +59,13 @@ function dist4(payload: ViewerPayload | null): number {
   );
 }
 
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 export default function App() {
   const [payload, setPayload] = useState<ViewerPayload | null>(
     () => readToolOutput() ?? DEMO
@@ -61,16 +73,27 @@ export default function App() {
   const [xw, setXw] = useState(() => speedFor(readToolOutput(), "XW", 0.7));
   const [yw, setYw] = useState(() => speedFor(readToolOutput(), "YW", 0.55));
   const [zw, setZw] = useState(() => speedFor(readToolOutput(), "ZW", 0.2));
-  const [distance4d, setDistance4d] = useState(() =>
-    dist4(readToolOutput())
-  );
+  const [distance4d, setDistance4d] = useState(() => dist4(readToolOutput()));
   const [playing, setPlaying] = useState(true);
   const [showProv, setShowProv] = useState(false);
   const [showPng, setShowPng] = useState(true);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("Ready");
+  const [viewMode, setViewMode] = useState<"energy" | "glb">("energy");
+  const [glbBytes, setGlbBytes] = useState<Uint8Array | null>(null);
+  const demoGlb = useMemo(() => encodeDemoFixtureGlb(), []);
   const inHost = Boolean(getOpenAi()?.callTool);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const poseClip: AnimationClip = useMemo(
+    () =>
+      poseClipFromPlanes([
+        { plane: "XW", speed: xw },
+        { plane: "YW", speed: yw },
+        { plane: "ZW", speed: zw },
+      ]),
+    [xw, yw, zw]
+  );
 
   useEffect(() => {
     return subscribeToToolOutput((next) => {
@@ -80,6 +103,10 @@ export default function App() {
       setYw(speedFor(next, "YW", 0.55));
       setZw(speedFor(next, "ZW", 0.2));
       setDistance4d(dist4(next));
+      if (typeof next.glbBase64 === "string" && next.glbBase64.length > 0) {
+        setGlbBytes(b64ToBytes(next.glbBase64));
+        setViewMode("glb");
+      }
       setStatus(`Bound scene ${next.sceneId ?? "?"}`);
     });
   }, []);
@@ -174,14 +201,63 @@ export default function App() {
     }
   }
 
+  async function loadGlbExport() {
+    setBusy(true);
+    try {
+      if (inHost && payload?.sceneId && payload.sceneId !== "local-demo") {
+        setStatus("Exporting GLB fixture…");
+        const result = await callTool("export_rt4d_asset", {
+          sceneId: payload.sceneId,
+          format: "glb",
+        });
+        if (result?.glbBase64) {
+          const bytes = b64ToBytes(result.glbBase64);
+          setGlbBytes(bytes);
+          setPayload((prev) => ({ ...prev, ...result }));
+          setViewMode("glb");
+          setStatus(
+            `GLB fixture ${bytes.length} bytes — convex/energy hull, not anatomical fox`
+          );
+          return;
+        }
+        setStatus(
+          typeof result?.note === "string"
+            ? result.note
+            : "export_rt4d_asset returned no glbBase64"
+        );
+        return;
+      }
+      const demo = encodeDemoFixtureGlb();
+      setGlbBytes(demo);
+      setViewMode("glb");
+      setStatus(
+        "Local demo tetrahedron GLB (partial). MCP export needs a bound sceneId."
+      );
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "GLB load failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onGlbModelLoaded(root: Object3D) {
+    const { applied, skippedRegions } = applyFoxWarriorSkin(root);
+    setStatus(
+      `GLB loaded · skin body applied=${applied} · skipped ${skippedRegions.join(",")} (no region meshes)`
+    );
+  }
+
   return (
     <div className="app">
       <header className="top">
         <div>
           <h1>RT4D Viewer</h1>
           <p>
-            Phase 2 <strong>partial</strong> · dimensional preview · host:{" "}
-            {inHost ? "MCP / ChatGPT" : "local"}
+            Phase 2 <strong>partial</strong> ·{" "}
+            {viewMode === "glb"
+              ? "fixture GLB hull (not anatomical fox)"
+              : "dimensional energy preview"}{" "}
+            · host: {inHost ? "MCP / ChatGPT" : "local"}
           </p>
         </div>
         <div className="actions">
@@ -201,17 +277,42 @@ export default function App() {
           <button type="button" onClick={() => setShowPng((v) => !v)}>
             {showPng ? "Hide PNG" : "Show PNG"}
           </button>
+          <button
+            type="button"
+            onClick={() => setViewMode((m) => (m === "energy" ? "glb" : "energy"))}
+          >
+            {viewMode === "energy" ? "GLB view" : "Energy view"}
+          </button>
+          <button type="button" disabled={busy} onClick={() => void loadGlbExport()}>
+            Load GLB
+          </button>
+          <button
+            type="button"
+            disabled={!glbBytes}
+            onClick={() => glbBytes && downloadGLB(glbBytes)}
+          >
+            Download GLB
+          </button>
         </div>
       </header>
 
       <div className="main">
-        <RT4DViewer
-          angles={{ xw, yw, zw }}
-          distance4d={distance4d}
-          playing={playing}
-          previewUrl={payload?.previewUrl}
-          showOverlayPreview={showPng}
-        />
+        {viewMode === "glb" ? (
+          <GLBPreviewViewer
+            glbBytes={glbBytes ?? demoGlb}
+            animationClip={playing ? poseClip : null}
+            autoRotate={playing}
+            onModelLoaded={onGlbModelLoaded}
+          />
+        ) : (
+          <RT4DViewer
+            angles={{ xw, yw, zw }}
+            distance4d={distance4d}
+            playing={playing}
+            previewUrl={payload?.previewUrl}
+            showOverlayPreview={showPng}
+          />
+        )}
         <ProvenancePanel
           payload={payload}
           visible={showProv}

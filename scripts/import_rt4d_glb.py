@@ -7,8 +7,11 @@ Imports GLB files exported by the RT4D pipeline into Blender with:
 - Skin layer material assignment
 - Camera + lighting setup for preview
 
-Usage:
-  blender --background --python import_rt4d_glb.py -- path/to/character.glb
+Usage (Linux / any OS with Blender on PATH):
+  blender --background --python scripts/import_rt4d_glb.py -- path/to/character.glb
+
+Status: declared helper — not live-smoke-tested in CI. GLB is a fixture hull, not an anatomical fox.
+
 
 Or from Blender's scripting tab:
   exec(open('import_rt4d_glb.py').read())
