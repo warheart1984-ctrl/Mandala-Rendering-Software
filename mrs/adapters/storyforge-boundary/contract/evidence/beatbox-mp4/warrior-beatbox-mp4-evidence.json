@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "storyforge-mandala-contract/1.1",
+  "productionId": "sf-build-warrior-courtyard-001",
+  "characterId": "warrior-anthro-fox-01",
+  "shotCount": 8,
+  "scoreIdentity": "courtyard-warrior-theme-v1",
+  "beatbox": {
+    "livePathStatusTag": "declared",
+    "statusEndpoint": "GET /api/jarvis/beatbox-lane/status",
+    "scoreEntry": "external/beatbox_speakers/src/beatbox/lanes/beatbox_lane.py::BeatboxLane.score(ScoreRequest)",
+    "sourcePath": null,
+    "invoked": false,
+    "httpStatusProbe": {
+      "ok": false,
+      "error": "<urlopen error [Errno 111] Connection refused>"
+    },
+    "whyDeclared": "BeatboxLane.score source not present in this workspace"
+  },
+  "speakers": {
+    "statusTag": "declared",
+    "video_path": null,
+    "skip": true,
+    "whyDeclared": "No rendered video_path; Speakers mix not run."
+  },
+  "clickPlaylist": {
+    "statusTag": "partial",
+    "claim": "deterministic click/stem playlist \u2014 not an original Beatbox score",
+    "beatboxInvoked": false,
+    "scoreIdentity": "courtyard-warrior-theme-v1",
+    "entries": [
+      {
+        "shotId": "S01",
+        "audioCueId": "S01:cue-enter-courtyard",
+        "intensity": 0.22,
+        "clickHz": 268.4,
+        "stemId": "courtyard-identity-bed"
+      },
+      {
+        "shotId": "S02",
+        "audioCueId": "S02:cue-approach",
+        "intensity": 0.38,
+        "clickHz": 303.6,
+        "stemId": "courtyard-identity-bed"
+      },
+      {
+        "shotId": "S03",
+        "audioCueId": "S03:cue-approach",
+        "intensity": 0.52,
+        "clickHz": 334.4,
+        "stemId": "courtyard-identity-bed"
+      },
+      {
+        "shotId": "S04",
+        "audioCueId": "S04:cue-stop",
+        "intensity": 0.45,
+        "clickHz": 319.0,
+        "stemId": "courtyard-identity-bed"
+      },
+      {
+        "shotId": "S05",
+        "audioCueId": "S05:cue-hold",
+        "intensity": 0.4,
+        "clickHz": 308.0,
+        "stemId": "courtyard-identity-bed"
+      },
+      {
+        "shotId": "S06",
+        "audioCueId": "S06:cue-look-gate",
+        "intensity": 0.58,
+        "clickHz": 347.6,
+        "stemId": "courtyard-identity-bed"
+      },
+      {
+        "shotId": "S07",
+        "audioCueId": "S07:cue-look-gate",
+        "intensity": 0.72,
+        "clickHz": 378.4,
+        "stemId": "courtyard-identity-bed"
+      },
+      {
+        "shotId": "S08",
+        "audioCueId": "S08:cue-look-gate",
+        "intensity": 0.72,
+        "clickHz": 378.4,
+        "stemId": "courtyard-identity-bed"
+      }
+    ]
+  },
+  "clickWav": "/media/jon/New Volume/Mandala Rendering Software/mrs/adapters/storyforge-boundary/contract/evidence/beatbox-mp4/warrior-courtyard-click.wav",
+  "mp4": {
+    "statusTag": "partial",
+    "written": true,
+    "path": "/media/jon/New Volume/Mandala Rendering Software/mrs/adapters/storyforge-boundary/contract/evidence/beatbox-mp4/warrior-courtyard-click-flipbook.mp4",
+    "bytes": 23983,
+    "tag": "flipbook-not-motion",
+    "claim": "tiny click/black-frame MP4 fixture \u2014 not a film score, not Speakers mix, not motion picture"
+  },
+  "limitation": "Cues mapped; Beatbox live score not invoked. Click/flipbook is not an original score."
+}
