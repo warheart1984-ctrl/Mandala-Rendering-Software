@@ -70,6 +70,18 @@ describe("rt4d-chatgpt-plugin phase1+2", () => {
     });
     assert.equal(exported.statusTag, "declared");
     assert.equal(exported.implemented, false);
+    const glb = handleExportRt4dAsset({
+      sceneId: created.sceneId,
+      format: "glb",
+    });
+    assert.equal(glb.statusTag, "partial");
+    assert.equal(glb.implemented, true);
+    assert.equal(glb.sceneId, created.sceneId);
+    assert.equal(typeof glb.glbBase64, "string");
+    assert.ok(glb.glbByteLength > 12);
+    const bytes = Buffer.from(glb.glbBase64, "base64");
+    assert.equal(bytes.readUInt32LE(0), 0x46546c67);
+    assert.match(glb.note, /not an anatomical fox/i);
   });
 
   it("update_rt4d_scene patches rotations/projection and bumps continuity", async () => {

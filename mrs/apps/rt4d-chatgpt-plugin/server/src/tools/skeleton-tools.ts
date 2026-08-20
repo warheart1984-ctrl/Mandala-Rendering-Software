@@ -1,11 +1,13 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { getSceneOrThrow } from "../scene-store.js";
 import { projectWireMeshTo3d, buildEnergyWireMesh4d } from "../wire-mesh-4d.js";
 import {
-  FOX_WARRIOR_PREVIEW_IDS,
-  exportWarriorHybridGlb,
-  isWarriorCharacterId,
-} from "../../../../../packages/sovereign-sculptor/src/warrior-fixture-hybrid.js";
+  encodeProjectedMeshToGlb,
+  GLB_FIXTURE_STATUS,
+  GLB_MESH_NAME,
+  POSE_BONE_IDS,
+} from "../encode-glb.js";
 
 /**
  * RT4D → GLB bridge.
@@ -85,7 +87,7 @@ function wireMeshToSculptDocument(
 
 export const exportRt4dAssetInputShape = {
   sceneId: z.string().min(1),
-  format: z.enum(["png", "json", "glb"]).optional(),
+  format: z.enum(["png", "json", "glb", "unity", "unreal"]).optional(),
   species: z.enum(["fox", "anthro", "human"]).optional(),
   distance4d: z.number().optional(),
   characterId: z.string().min(1).optional(),
@@ -128,6 +130,13 @@ function declaredStub(tool: string, note: string) {
 export function handleExportRt4dAsset(args: unknown) {
   const parsed = z.object(exportRt4dAssetInputShape).parse(args ?? {});
   const format = parsed.format ?? "glb";
+
+  if (format === "unity" || format === "unreal") {
+    return declaredStub(
+      "export_rt4d_asset",
+      `${format} game-pack export is declared — GLB fixture hull only (partial).`
+    );
+  }
 
   try {
     const scene = getSceneOrThrow(parsed.sceneId);
@@ -242,10 +251,13 @@ export function handleExportRt4dAsset(args: unknown) {
       format: "glb",
       characterId,
       species,
-      vertexCount: doc.vertices.length,
-      triangleCount: doc.triangles.length,
-      glbByteLength,
+      vertexCount: mesh.positions.length,
+      triangleCount: mesh.indices.length,
+      glbByteLength: glb.byteLength,
       glbSha256,
+      glbBase64,
+      meshName: GLB_MESH_NAME,
+      animationTargets: [...POSE_BONE_IDS],
       meshSha256: wireMesh.meshSha256,
       visualKind: "projected_energy_hull",
       meshName: "mesh.convex_hull",
