@@ -5,6 +5,9 @@
  * that can be exported as GLB via sovereign-sculptor.
  *
  * Pipeline: 4D vertices → perspective projection → 3D convex hull → SculptDocument → GLB
+ *
+ * The hull is an energy-field surface. It is not warrior/fox body topology.
+ * characterId warrior-anthro-fox-01 uses warrior-fixture-hybrid.ts (sculptor fixture).
  */
 
 import { createHash } from "node:crypto";

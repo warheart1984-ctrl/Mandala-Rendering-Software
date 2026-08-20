@@ -304,6 +304,8 @@ describe("rt4d-chatgpt-plugin character pipeline (energy / clay / beauty)", () =
     assert.equal(clay.rigSha256, bound.rigBinding.rigSha256);
     assert.equal(clay.clay.bones.length, bound.rigBinding.boneCount);
     assert.equal(clay.clay.vertices3d[0].length, 3);
+    assert.equal(clay.clay.topologyKind, "sculptor_fixture");
+    assert.equal(clay.clay.energyMeshName, "mesh.convex_hull");
     assert.ok(clay.pngBase64);
     assert.equal(Buffer.from(clay.pngBase64, "base64").subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
   });
@@ -348,5 +350,33 @@ describe("rt4d-chatgpt-plugin character pipeline (energy / clay / beauty)", () =
       if (prevPolish === undefined) delete process.env.RT4D_BEAUTY_POLISH;
       else process.env.RT4D_BEAUTY_POLISH = prevPolish;
     }
+  });
+
+  it("export_rt4d_asset warrior characterId uses sculptor fixture GLB not hull-as-body", () => {
+    const created = handleCreate4dScene({
+      prompt: "warrior courtyard hybrid unique-w",
+      species: "anthro",
+    });
+    handleBindCharacterRig({
+      sceneId: created.sceneId,
+      species: "anthro",
+      characterId: "warrior-anthro-fox-01",
+    });
+    const exported = handleExportRt4dAsset({
+      sceneId: created.sceneId,
+      format: "glb",
+      characterId: "warrior-anthro-fox-01",
+      productionId: "sf-build-warrior-courtyard-001",
+      species: "anthro",
+    });
+    assert.equal(exported.statusTag, "partial");
+    assert.equal(exported.productionSculpt, false);
+    assert.equal(exported.meshName, "mesh.convex_hull");
+    assert.equal(exported.hybrid.character.kind, "sculptor_fixture");
+    assert.equal(exported.hybrid.energy.role, "energy-field-only");
+    assert.ok(exported.glbBase64);
+    const bytes = Buffer.from(exported.glbBase64, "base64");
+    assert.equal(bytes.subarray(0, 4).toString("ascii"), "glTF");
+    assert.equal(bytes.byteLength, exported.byteLength);
   });
 });
