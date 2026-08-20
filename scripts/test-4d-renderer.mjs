@@ -13,8 +13,19 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pkg = path.join(root, "4d-renderer");
 
+// The deep `src/` tree is exposed via an optional `4d-renderer/src` symlink
+// (created by CI's mandala-check job). Fall back to the canonical source in
+// renderer-core so `npm test`/smoke works without the symlink and on platforms
+// where committing a symlink is unsafe (e.g. Windows).
+const rendererSrc = existsSync(path.join(pkg, "src", "index.js"))
+  ? path.join(pkg, "src")
+  : path.join(root, "mrs/packages/renderer-core/src");
+
 function importFromPkg(rel) {
-  return import(pathToFileURL(path.join(pkg, rel)).href);
+  const target = rel.startsWith("src/")
+    ? path.join(rendererSrc, rel.slice("src/".length))
+    : path.join(pkg, rel);
+  return import(pathToFileURL(target).href);
 }
 
 const {

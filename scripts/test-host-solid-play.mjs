@@ -12,8 +12,19 @@ import { spawnSync } from "node:child_process";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+// Prefer the optional `4d-renderer/src` symlink (created by CI's mandala-check
+// job); fall back to the canonical renderer-core source so this smoke suite
+// runs under `npm test` without the symlink and on platforms where committing
+// a symlink is unsafe (e.g. Windows).
+const rendererSrc = existsSync(path.join(root, "4d-renderer", "src", "index.js"))
+  ? path.join(root, "4d-renderer", "src")
+  : path.join(root, "mrs/packages/renderer-core/src");
+
 function importFromPkg(rel) {
-  return import(pathToFileURL(path.join(root, "4d-renderer", rel)).href);
+  const target = rel.startsWith("src/")
+    ? path.join(rendererSrc, rel.slice("src/".length))
+    : path.join(root, "4d-renderer", rel);
+  return import(pathToFileURL(target).href);
 }
 
 const { getSurface, sampleSurface, cinematicRotation, project4Dto3D } =

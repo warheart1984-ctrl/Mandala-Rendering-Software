@@ -15,6 +15,13 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest==9.1.1"]
 
+# The service code lives in the `app` package. Scope discovery to it so an
+# editable install (`pip install -e .`) does not fail on the flat layout,
+# where setuptools otherwise sees multiple top-level dirs (app, schemas) and
+# refuses to guess. schemas/, scripts/, docs/, and tests/ are not packaged.
+[tool.setuptools.packages.find]
+include = ["app*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

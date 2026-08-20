@@ -11,6 +11,11 @@ import {
 } from "three";
 import { POSE_BONE_IDS, type PoseBoneId } from "../../shared/encode-glb";
 
+/** Optional rig from sovereign-sculptor / GLB nodes. */
+export interface MiniRig {
+  bones: { id: string; parentId: string | null }[];
+}
+
 export interface RotationPlane {
   plane: "XW" | "YW" | "ZW";
   speed: number;
@@ -175,6 +180,22 @@ export function poseClipFromPlanes(
 ): AnimationClip {
   return tracksToAnimationClip(
     generatePoseFromRotationPlanes(rotationPlanes, duration, fps)
+  );
+}
+
+/** Same as poseClipFromPlanes, using bone ids from a MiniRig when present. */
+export function generatePoseFromRig(
+  rig: MiniRig,
+  rotationPlanes: RotationPlane[],
+  duration = 2,
+  fps = 24
+): BoneAnimationTrack[] {
+  const ids = rig.bones.map((b) => b.id);
+  return generatePoseFromRotationPlanes(
+    rotationPlanes,
+    duration,
+    fps,
+    ids.length > 0 ? ids : POSE_BONE_IDS
   );
 }
 

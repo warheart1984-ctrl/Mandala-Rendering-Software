@@ -7,6 +7,13 @@ Imports GLB files exported by the RT4D pipeline into Blender with:
 - Skin layer material assignment
 - Camera + lighting setup for preview
 
+Usage (Linux / any OS with Blender on PATH):
+  blender --background --python scripts/import_rt4d_glb.py -- path/to/character.glb
+
+Status: declared helper — not live-smoke-tested in CI. GLB is a fixture hull, not an anatomical fox.
+
+Status: declared unless `blender` is on PATH. Not a live widget smoke.
+
 Usage:
   blender --background --python import_rt4d_glb.py -- path/to/character.glb
 
@@ -244,6 +251,8 @@ def main():
     apply_fox_warrior_skin()
     create_pose_animation(armature, rotation_planes)
     setup_camera_and_lighting()
+
+    import bpy
 
     # Save blend file next to the GLB
     import bpy
