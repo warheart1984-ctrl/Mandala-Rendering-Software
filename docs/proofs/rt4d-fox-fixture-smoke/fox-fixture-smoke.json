@@ -1,0 +1,54 @@
+{
+  "ok": true,
+  "statusTag": "partial",
+  "note": "Convex/energy hull fixture — not an anatomical fox.",
+  "checks": {
+    "visibleGlbViaExport": true,
+    "poseAnimationXwYwZw": true,
+    "foxFurOnBody": true,
+    "matchingDigests": true,
+    "disposeAndReload": true,
+    "screenshot": true
+  },
+  "sceneId": "rt4d-scene-0a5baea99cded72e",
+  "inspectedSceneId": "rt4d-scene-0a5baea99cded72e",
+  "meshSha256": "6ee95e64e014b106b683aa4a4082c5e77b9bc4135334c3b51b8912ad8b7e5a2c",
+  "rigSha256": "8aa3d544a1269d1befd943f0ca5d02e801e19783b1d859abf966a3c4fba637cf",
+  "poseTargetSha256": "8aa3d544a1269d1befd943f0ca5d02e801e19783b1d859abf966a3c4fba637cf",
+  "characterRigSha256": null,
+  "glbSha256": "1214ffd5bd0fbfafa8c6dace5e7278eaa435eff9efec1fa6878ee3b07d58b5d4",
+  "glbByteLength": 1596,
+  "poseTracks": 60,
+  "poseSpineDelta": 0.0010123252868652344,
+  "skinApplied": 1,
+  "skippedRegions": [
+    "belly",
+    "leather",
+    "armor",
+    "cloth",
+    "eye",
+    "nose"
+  ],
+  "rasterPaintedPixels": 17472,
+  "rasterPngSha256": "ba4525e036826e87844cafbdb35034c05174c7b66d73ffd16d56fd50b0b1efa6",
+  "artifacts": {
+    "glb": "docs/proofs/rt4d-fox-fixture-smoke/fox-fixture.glb",
+    "png": "docs/proofs/rt4d-fox-fixture-smoke/fox-fixture-glb-view.png",
+    "json": "docs/proofs/rt4d-fox-fixture-smoke/fox-fixture-smoke.json"
+  },
+  "blender": {
+    "statusTag": "partial",
+    "blockedWithEvidence": false,
+    "blender": "flatpak run org.blender.Blender",
+    "via": "flatpak",
+    "pathOnPath": false,
+    "helper": "/media/jon/New Volume/mrs-rt4d-glb-preview-integrate/scripts/import_rt4d_glb.py",
+    "glbPath": "/media/jon/New Volume/mrs-rt4d-glb-preview-integrate/docs/proofs/rt4d-fox-fixture-smoke/fox-fixture.glb",
+    "exitCode": 0,
+    "imported": true,
+    "foxFurOnBody": true,
+    "armatureFound": false,
+    "savedBlend": true,
+    "stdoutTail": "[RT4D] Importing /media/jon/New Volume/mrs-rt4d-glb-preview-integrate/docs/proofs/rt4d-fox-fixture-smoke/fox-fixture.glb\n[RT4D] Rotation planes: [{'plane': 'XW', 'speed': 0.35}, {'plane': 'YW', 'speed': 0.25}, {'plane': 'ZW', 'speed': 0.15}]\n13:05:23 | INFO: Data are loaded, start creating Blender stuff\n13:05:23 | INFO: Blender create Mesh node body\n13:05:23 | INFO: glTF import finished in 0.01s\n[RT4D] Imported GLB: /media/jon/New Volume/mrs-rt4d-glb-preview-integrate/docs/proofs/rt4d-fox-fixture-smoke/fox-fixture.glb\n[RT4D] Objects: ['arm_L', 'arm_R', 'body', 'chest', 'ear_L', 'ear_R', 'foot_L', 'foot_R', 'head', 'jaw', 'leg_L', 'leg_R', 'neck', 'paw_L', 'paw_R', 'pelvis', 'root', 'shoulder_L', 'shoulder_R', 'spine', 'tail']\n[RT4D] Applied fox-fur to body\n[RT4D] No armature found, skipping pose animation\n[RT4D] Camera and lighting setup complete\nInfo: Saved as \"fox-fixture.blend\"\n[RT4D] Saved: /media/jon/New Volume/mrs-rt4d-glb-preview-integrate/docs/proofs/rt4d-fox-fixture-smoke/fox-fixture.blend\nBlender 5.2.0 LTS (hash fbe6228777e7 built 2026-07-14 01:32:04)\n\nBlender quit\n\n/media/jon/New Volume/mrs-rt4d-glb-preview-integrate/scripts/import_rt4d_glb.py:97: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0\n  mat.use_nodes = True\n/media/jon/New Volume/mrs-rt4d-glb-preview-integrate/scripts/import_rt4d_glb.py:202: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0\n  world.use_nodes = True\n"
+  }
+}

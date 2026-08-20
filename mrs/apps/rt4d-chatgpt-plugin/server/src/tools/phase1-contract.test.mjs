@@ -57,19 +57,19 @@ describe("rt4d-chatgpt-plugin phase1+2", () => {
     }
   });
 
-  it("inspect returns envelope; export is declared stub", () => {
+  it("inspect returns envelope; unity export stays declared; glb is partial bytes", () => {
     const created = handleCreateRt4dScene({
       prompt: "manga panel fold",
       mode: "render_manga_panel",
     });
     const inspected = handleInspectRt4dProvenance({ sceneId: created.sceneId });
     assert.equal(inspected.shotEvidence.productLane, "manga");
-    const exported = handleExportRt4dAsset({
+    const unity = handleExportRt4dAsset({
       sceneId: created.sceneId,
       format: "unity",
     });
-    assert.equal(exported.statusTag, "declared");
-    assert.equal(exported.implemented, false);
+    assert.equal(unity.statusTag, "declared");
+    assert.equal(unity.implemented, false);
     const glb = handleExportRt4dAsset({
       sceneId: created.sceneId,
       format: "glb",

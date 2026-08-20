@@ -243,6 +243,8 @@ export function handleExportRt4dAsset(args: unknown) {
     const glbSha256 = require("crypto").createHash("sha256")
       .update(JSON.stringify({ vertices: doc.vertices.length, triangles: doc.triangles.length, species }))
       .digest("hex");
+    const characterRigSha256 =
+      scene.characterPipeline?.rigBinding?.rigSha256 ?? null;
 
     return {
       statusTag: "partial" as const,
@@ -259,10 +261,12 @@ export function handleExportRt4dAsset(args: unknown) {
       meshName: GLB_MESH_NAME,
       animationTargets: [...POSE_BONE_IDS],
       meshSha256: wireMesh.meshSha256,
+      poseTargetSha256,
+      rigSha256: characterRigSha256 ?? poseTargetSha256,
+      characterRigSha256,
+      fixtureStatus: GLB_FIXTURE_STATUS,
       visualKind: "projected_energy_hull",
-      meshName: "mesh.convex_hull",
-      productionSculpt: false,
-      note: "GLB metadata from RT4D 4D→3D hull (energy). Not warrior clay. Not a production sculpt. Pass characterId=warrior-anthro-fox-01 for sculptor fixture topology.",
+      note: "Partial GLB: 4D→3D projected wire hull (convex/adjacency), named bone targets, single mesh `body`. Not an anatomical fox or production sculpt.",
       sceneId: scene.sceneId,
     };
   } catch (error) {

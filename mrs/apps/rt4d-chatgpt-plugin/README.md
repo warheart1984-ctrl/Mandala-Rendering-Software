@@ -175,7 +175,7 @@ Hashes (`meshSha256`, `rigSha256`, `characterModelHash`) are the continuity cont
 | `LEMONADE_API_BASE` | Default `http://127.0.0.1:13305/api/v1` |
 | `LEMONADE_API_KEY` | Optional |
 
-```powershell
+```bash
 # server
 npm test
 npm run typecheck
@@ -202,6 +202,7 @@ npm run smoke:glb
 - `export_rt4d_asset` **partial** GLB is a projected 4D wire hull (convex/adjacency), **not** an anatomical fox or production sculpt
 - Unity / Unreal / game packs remain **declared**
 - Widget GLB view + pose tracks + `body` fur preset are **partial** (single mesh region; no skinned deformation)
+- Blender helper `scripts/import_rt4d_glb.py` is **declared** here (not live-smoke-tested in this pass)
 - Blender helper `scripts/import_rt4d_glb.py` is **declared** unless `blender` is actually on PATH
 - Photoreal is **not** claimed
 - No durable scene store across process restarts
