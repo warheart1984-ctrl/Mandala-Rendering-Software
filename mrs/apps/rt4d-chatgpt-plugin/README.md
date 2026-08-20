@@ -33,10 +33,16 @@ npm run build
 
 Produces single-file `assets/rt4d-viewer.html` (served by the MCP server). Local preview without MCP:
 
-```powershell
-npm run preview
-# or: npm run dev
+```bash
+cd mrs/apps/rt4d-chatgpt-plugin/widget
+npm install
+npm run build    # → ../assets/rt4d-viewer.html
+npm run dev      # http://localhost:5173 energy + GLB views
+# or: npm run preview
+npm run smoke:glb
 ```
+
+In the viewer: **GLB view** / **Load GLB**. Local demo uses a tetrahedron fixture. Host MCP uses `export_rt4d_asset` `glbBase64` for the bound `sceneId`. Hull ≠ anatomical fox.
 
 ### 2. Install + start MCP
 
@@ -112,7 +118,7 @@ Also: `npm test` in `server/`.
 | `render_rt4d_preview` | **partial** (placeholder without `RT4D_ENGINE_URL`) |
 | `inspect_rt4d_provenance` | **partial** |
 | `update_rt4d_scene` | **partial** (rotations / projection / optional `rePreview`) |
-| `export_rt4d_asset` | **skeleton** |
+| `export_rt4d_asset` | **partial** for `glb`/`json`/`png` (fixture hull + `glbBase64`); **declared** for Unity/Unreal packs |
 | Governance tools | **declared** stubs |
 
 ### 7. First test prompt
@@ -169,7 +175,7 @@ Hashes (`meshSha256`, `rigSha256`, `characterModelHash`) are the continuity cont
 | `LEMONADE_API_BASE` | Default `http://127.0.0.1:13305/api/v1` |
 | `LEMONADE_API_KEY` | Optional |
 
-```powershell
+```bash
 # server
 npm test
 npm run typecheck
@@ -178,6 +184,7 @@ npm run typecheck
 cd ../widget
 npm run build
 npm run typecheck
+npm run smoke:glb
 ```
 
 ---
@@ -192,7 +199,12 @@ npm run typecheck
 
 ### Phase 3 export gaps (honest)
 
-- `export_rt4d_asset` still NotImplemented (Unity / Unreal / game packs)
+- `export_rt4d_asset` **partial** GLB is a projected 4D wire hull (convex/adjacency), **not** an anatomical fox or production sculpt
+- Unity / Unreal / game packs remain **declared**
+- Widget GLB view + pose tracks + `body` fur preset are **partial** (single mesh region; no skinned deformation)
+- Blender helper `scripts/import_rt4d_glb.py` is **declared** here (not live-smoke-tested in this pass)
+- Blender helper `scripts/import_rt4d_glb.py` is **declared** unless `blender` is actually on PATH
+- Photoreal is **not** claimed
 - No durable scene store across process restarts
 - No verified continuity compare / replay / canonical approval
 - No AnimeStylizer / photoreal character persistence

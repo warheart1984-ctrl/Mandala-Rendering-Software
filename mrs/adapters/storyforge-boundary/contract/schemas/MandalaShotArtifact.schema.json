@@ -18,13 +18,15 @@
     "renderHash",
     "projectionHash",
     "runtimeFingerprint",
+    "audioCueId",
+    "scoreIdentity",
     "frames",
     "evidence"
   ],
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "storyforge-mandala-contract/1.0"
+      "const": "storyforge-mandala-contract/1.1"
     },
     "kind": { "type": "string", "const": "MandalaShotArtifact" },
     "statusTag": { "type": "string", "enum": ["partial"] },
@@ -40,6 +42,15 @@
     "renderHash": { "type": "string" },
     "projectionHash": { "type": "string" },
     "runtimeFingerprint": { "type": "string" },
+    "audioCueId": {
+      "type": "string",
+      "description": "Handoff id for Infinity Beatbox MusicCue / ScoreRequest timing"
+    },
+    "scoreIdentity": { "type": "string", "minLength": 1 },
+    "audioIntensity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "audioPlayback": { "type": "string", "enum": ["loop", "one-shot"] },
+    "cueStartSeconds": { "type": "number" },
+    "audioDurationSeconds": { "type": "number" },
     "pose": { "type": "object" },
     "camera": { "type": "object" },
     "frames": {

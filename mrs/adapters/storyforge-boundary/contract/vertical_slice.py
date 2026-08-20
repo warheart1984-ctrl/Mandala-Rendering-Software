@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .audio import cue_index
 from .canonical import CONTRACT_VERSION, digest
 from .identity import (
     LIMITATION,
@@ -16,7 +17,7 @@ from .identity import (
 )
 from .validate import ContractError, validate_production_request, validate_shot_artifact
 
-RUNTIME_FINGERPRINT = "mrs-storyforge-boundary/contract/1.0"
+RUNTIME_FINGERPRINT = "mrs-storyforge-boundary/contract/1.1"
 
 
 def emit_shot_artifacts(request: dict[str, Any]) -> list[dict[str, Any]]:
@@ -32,8 +33,16 @@ def emit_shot_artifacts(request: dict[str, Any]) -> list[dict[str, Any]]:
     rig = str(lock.get("rigHash") or digest({"rig": actor["characterId"]}))
     artifacts: list[dict[str, Any]] = []
     prev: str | None = None
+    plan = request.get("audioPlan") or {}
+    cues = cue_index(plan) if plan.get("cues") else {}
+    score_identity = str(plan.get("scoreIdentity") or "")
+    if not score_identity:
+        raise ContractError("audioPlan.scoreIdentity required on production request")
     for shot in request["shotTimeline"]:
         shot_id = shot["shotId"]
+        cue = cues.get(shot_id)
+        if not cue:
+            raise ContractError(f"audioPlan missing cue for shotId {shot_id}")
         render_hash = digest(
             {
                 "shotId": shot_id,
@@ -59,6 +68,14 @@ def emit_shot_artifacts(request: dict[str, Any]) -> list[dict[str, Any]]:
             "renderHash": render_hash,
             "projectionHash": projection_hash,
             "runtimeFingerprint": RUNTIME_FINGERPRINT,
+            "audioCueId": str(cue["audioCueId"]),
+            "scoreIdentity": score_identity,
+            "audioIntensity": float(cue["intensity"]),
+            "audioPlayback": str(cue["playback"]),
+            "cueStartSeconds": float(cue.get("cueStartSeconds") or 0.0),
+            "audioDurationSeconds": float(
+                cue.get("durationSeconds") or shot.get("durationSeconds") or 0.0
+            ),
             "pose": shot.get("pose"),
             "camera": shot.get("camera"),
             "frames": [

@@ -13,7 +13,7 @@ MRS-side freeze + **shippable path** for StoryForge Runtime Spec crossing:
 - **Full demo:** `demo_full_run.py` → `output/cecp-full-run/` (proton HQ + scene + engine3d)
 - Wrapper: `node scripts/demo-storyforge-to-4d.mjs`
 - Tests: `test_boundary.py`, `test_pipeline.py`, `contract/test_contract.py`
-- Production contract (v1.0): `contract/FAMILY.md` — maps Infinity `BackendBuildArtifact`; does not rebuild Story Forge
+- Production contract (v1.1): `contract/FAMILY.md` — maps Infinity `BackendBuildArtifact`; does not rebuild Story Forge or Beatbox
 - Warrior 8-shot slice: `python3 mrs/adapters/storyforge-boundary/contract/run_warrior_slice.py`
 
 ```text

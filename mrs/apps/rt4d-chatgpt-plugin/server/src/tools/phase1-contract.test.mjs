@@ -57,19 +57,31 @@ describe("rt4d-chatgpt-plugin phase1+2", () => {
     }
   });
 
-  it("inspect returns envelope; export is declared stub", () => {
+  it("inspect returns envelope; unity export stays declared; glb is partial bytes", () => {
     const created = handleCreateRt4dScene({
       prompt: "manga panel fold",
       mode: "render_manga_panel",
     });
     const inspected = handleInspectRt4dProvenance({ sceneId: created.sceneId });
     assert.equal(inspected.shotEvidence.productLane, "manga");
-    const exported = handleExportRt4dAsset({
+    const unity = handleExportRt4dAsset({
       sceneId: created.sceneId,
       format: "unity",
     });
-    assert.equal(exported.statusTag, "declared");
-    assert.equal(exported.implemented, false);
+    assert.equal(unity.statusTag, "declared");
+    assert.equal(unity.implemented, false);
+    const glb = handleExportRt4dAsset({
+      sceneId: created.sceneId,
+      format: "glb",
+    });
+    assert.equal(glb.statusTag, "partial");
+    assert.equal(glb.implemented, true);
+    assert.equal(glb.sceneId, created.sceneId);
+    assert.equal(typeof glb.glbBase64, "string");
+    assert.ok(glb.glbByteLength > 12);
+    const bytes = Buffer.from(glb.glbBase64, "base64");
+    assert.equal(bytes.readUInt32LE(0), 0x46546c67);
+    assert.match(glb.note, /not an anatomical fox/i);
   });
 
   it("update_rt4d_scene patches rotations/projection and bumps continuity", async () => {
@@ -292,6 +304,8 @@ describe("rt4d-chatgpt-plugin character pipeline (energy / clay / beauty)", () =
     assert.equal(clay.rigSha256, bound.rigBinding.rigSha256);
     assert.equal(clay.clay.bones.length, bound.rigBinding.boneCount);
     assert.equal(clay.clay.vertices3d[0].length, 3);
+    assert.equal(clay.clay.topologyKind, "sculptor_fixture");
+    assert.equal(clay.clay.energyMeshName, "mesh.convex_hull");
     assert.ok(clay.pngBase64);
     assert.equal(Buffer.from(clay.pngBase64, "base64").subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
   });
@@ -336,5 +350,33 @@ describe("rt4d-chatgpt-plugin character pipeline (energy / clay / beauty)", () =
       if (prevPolish === undefined) delete process.env.RT4D_BEAUTY_POLISH;
       else process.env.RT4D_BEAUTY_POLISH = prevPolish;
     }
+  });
+
+  it("export_rt4d_asset warrior characterId uses sculptor fixture GLB not hull-as-body", () => {
+    const created = handleCreate4dScene({
+      prompt: "warrior courtyard hybrid unique-w",
+      species: "anthro",
+    });
+    handleBindCharacterRig({
+      sceneId: created.sceneId,
+      species: "anthro",
+      characterId: "warrior-anthro-fox-01",
+    });
+    const exported = handleExportRt4dAsset({
+      sceneId: created.sceneId,
+      format: "glb",
+      characterId: "warrior-anthro-fox-01",
+      productionId: "sf-build-warrior-courtyard-001",
+      species: "anthro",
+    });
+    assert.equal(exported.statusTag, "partial");
+    assert.equal(exported.productionSculpt, false);
+    assert.equal(exported.meshName, "mesh.convex_hull");
+    assert.equal(exported.hybrid.character.kind, "sculptor_fixture");
+    assert.equal(exported.hybrid.energy.role, "energy-field-only");
+    assert.ok(exported.glbBase64);
+    const bytes = Buffer.from(exported.glbBase64, "base64");
+    assert.equal(bytes.subarray(0, 4).toString("ascii"), "glTF");
+    assert.equal(bytes.byteLength, exported.byteLength);
   });
 });

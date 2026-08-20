@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .audio import audio_plan_from_shots
 from .canonical import CONTRACT_VERSION
 from .identity import character_state_hash, equipment_hash
 from .validate import ContractError, validate_production_artifact
@@ -117,14 +118,7 @@ def from_infinity_backend_build(raw: dict[str, Any]) -> dict[str, Any]:
                 "persistentWorld": True,
             }
         ),
-        "audioPlan": dict(
-            raw.get("audioPlan")
-            or {
-                "statusTag": "declared",
-                "beatbox": "Infinity beatbox lane — not exercised in this adapter",
-                "speakers": "Infinity speakers lane — not exercised in this adapter",
-            }
-        ),
+        "audioPlan": dict(raw.get("audioPlan") or audio_plan_from_shots(shots)),
         "provenance": dict(
             raw.get("provenance")
             or {
@@ -191,5 +185,6 @@ def to_mandala_production_request(artifact: dict[str, Any]) -> dict[str, Any]:
             "shotArtifacts": True,
             "narrativeTrustPackHandoff": True,
         },
+        "audioPlan": artifact["audioPlan"],
     }
     return request

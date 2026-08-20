@@ -15,12 +15,13 @@
     "shotTimeline",
     "renderContract",
     "continuityContract",
-    "evidenceRequirements"
+    "evidenceRequirements",
+    "audioPlan"
   ],
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "storyforge-mandala-contract/1.0"
+      "const": "storyforge-mandala-contract/1.1"
     },
     "kind": { "type": "string", "const": "MandalaProductionRequest" },
     "statusTag": { "type": "string", "enum": ["partial"] },
@@ -92,6 +93,10 @@
         "shotArtifacts": { "type": "boolean" },
         "narrativeTrustPackHandoff": { "type": "boolean" }
       }
+    },
+    "audioPlan": {
+      "type": "object",
+      "description": "Copied from StoryForgeProductionArtifact. Beatbox live path declared."
     }
   }
 }

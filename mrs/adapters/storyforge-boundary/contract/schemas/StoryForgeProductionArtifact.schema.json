@@ -23,7 +23,7 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "storyforge-mandala-contract/1.0"
+      "const": "storyforge-mandala-contract/1.1"
     },
     "kind": { "type": "string", "const": "StoryForgeProductionArtifact" },
     "statusTag": { "type": "string", "enum": ["partial"] },
@@ -162,11 +162,96 @@
     },
     "audioPlan": {
       "type": "object",
-      "description": "Beatbox/Speakers remain Infinity-owned. Status declared until those lanes are exercised.",
+      "additionalProperties": false,
+      "description": "Adaptive cues for Infinity Beatbox. Live Beatbox invoke is declared. Mapping is partial. Mandala does not compose original score in RT4D.",
+      "required": [
+        "statusTag",
+        "mappingStatusTag",
+        "scoreIdentity",
+        "stems",
+        "cues",
+        "forbiddenDucking"
+      ],
       "properties": {
-        "statusTag": { "type": "string", "enum": ["declared"] },
-        "beatbox": { "type": "string" },
-        "speakers": { "type": "string" }
+        "statusTag": {
+          "type": "string",
+          "const": "declared",
+          "description": "Beatbox live path not invoked from Mandala"
+        },
+        "mappingStatusTag": {
+          "type": "string",
+          "const": "partial"
+        },
+        "fallbackStatusTag": {
+          "type": "string",
+          "enum": ["declared", "partial"]
+        },
+        "scoreIdentity": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Theme id that must stay stable across shots (parallel to characterStateHash)"
+        },
+        "scoreIdentityKind": { "type": "string" },
+        "beatbox": {
+          "type": "object",
+          "description": "Infinity invoke recipe. GET /api/jarvis/beatbox-lane/status is the HTTP surface; scoring is BeatboxLane.score(ScoreRequest)."
+        },
+        "speakers": { "type": "object" },
+        "stems": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "role", "playback"],
+            "properties": {
+              "id": { "type": "string" },
+              "role": { "type": "string", "enum": ["theme", "layer", "sting"] },
+              "playback": { "type": "string", "enum": ["loop", "one-shot"] },
+              "carriesScoreIdentity": { "type": "boolean" }
+            }
+          }
+        },
+        "forbiddenDucking": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Stems Speakers must not duck (would break score identity).",
+          "items": {
+            "type": "object",
+            "required": ["stemId", "reason"],
+            "properties": {
+              "stemId": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "cues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "shotId",
+              "audioCueId",
+              "cue",
+              "intensity",
+              "playback",
+              "cueStartSeconds",
+              "durationSeconds"
+            ],
+            "properties": {
+              "shotId": { "type": "string" },
+              "audioCueId": { "type": "string" },
+              "cue": { "type": "string" },
+              "action": { "type": "string" },
+              "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "playback": { "type": "string", "enum": ["loop", "one-shot"] },
+              "cueStartSeconds": { "type": "number" },
+              "durationSeconds": { "type": "number" },
+              "layers": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "limitation": { "type": "string" }
       }
     },
     "provenance": {

@@ -1,6 +1,13 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { getSceneOrThrow } from "../scene-store.js";
 import { projectWireMeshTo3d, buildEnergyWireMesh4d } from "../wire-mesh-4d.js";
+import {
+  encodeProjectedMeshToGlb,
+  GLB_FIXTURE_STATUS,
+  GLB_MESH_NAME,
+  POSE_BONE_IDS,
+} from "../encode-glb.js";
 
 /**
  * RT4D → GLB bridge.
@@ -80,9 +87,12 @@ function wireMeshToSculptDocument(
 
 export const exportRt4dAssetInputShape = {
   sceneId: z.string().min(1),
-  format: z.enum(["png", "json", "glb"]).optional(),
+  format: z.enum(["png", "json", "glb", "unity", "unreal"]).optional(),
   species: z.enum(["fox", "anthro", "human"]).optional(),
   distance4d: z.number().optional(),
+  characterId: z.string().min(1).optional(),
+  productionId: z.string().min(1).optional(),
+  assetId: z.string().min(1).optional(),
 };
 
 export const validateCharacterContinuityInputShape = {
@@ -121,6 +131,13 @@ export function handleExportRt4dAsset(args: unknown) {
   const parsed = z.object(exportRt4dAssetInputShape).parse(args ?? {});
   const format = parsed.format ?? "glb";
 
+  if (format === "unity" || format === "unreal") {
+    return declaredStub(
+      "export_rt4d_asset",
+      `${format} game-pack export is declared — GLB fixture hull only (partial).`
+    );
+  }
+
   try {
     const scene = getSceneOrThrow(parsed.sceneId);
 
@@ -136,7 +153,9 @@ export function handleExportRt4dAsset(args: unknown) {
 
     const distance4d = parsed.distance4d ?? scene.projection.distance4d ?? 4;
     const species = parsed.species ?? "fox";
-    const characterId = `rt4d-export-${scene.sceneId.slice(0, 12)}`;
+    const requestedCharacterId = parsed.characterId;
+    const characterId =
+      requestedCharacterId ?? `rt4d-export-${scene.sceneId.slice(0, 12)}`;
 
     // Project 4D → 3D (convert readonly to mutable)
     const positions3d: Vec3[] = projectWireMeshTo3d(wireMesh, distance4d).map(
@@ -174,12 +193,58 @@ export function handleExportRt4dAsset(args: unknown) {
       };
     }
 
-    // GLB export: build SculptDocument, serialize as GLB
+    // GLB: warrior characterId uses sculptor fixture (clay). Energy hull stays named mesh.convex_hull.
+    if (isWarriorCharacterId(characterId) || characterId === FOX_WARRIOR_PREVIEW_IDS.characterId) {
+      const hybrid = exportWarriorHybridGlb(characterId);
+      const glbBase64 = Buffer.from(hybrid.glb).toString("base64");
+      return {
+        statusTag: "partial" as const,
+        implemented: true,
+        tool: "export_rt4d_asset",
+        format: "glb",
+        mimeType: "model/gltf-binary",
+        encoding: "base64",
+        byteLength: hybrid.glb.byteLength,
+        sha256: hybrid.glbSha256,
+        glbBase64,
+        characterId: hybrid.characterId,
+        productionId: parsed.productionId ?? hybrid.productionId,
+        assetId: parsed.assetId ?? hybrid.energy.assetId,
+        species: hybrid.species,
+        vertexCount: hybrid.character.vertexCount,
+        triangleCount: hybrid.character.triangleCount,
+        glbByteLength: hybrid.glb.byteLength,
+        glbSha256: hybrid.glbSha256,
+        meshName: hybrid.energy.meshName,
+        hybrid: {
+          energy: hybrid.energy,
+          character: {
+            kind: hybrid.character.kind,
+            role: hybrid.character.role,
+            sculptDocumentId: hybrid.character.sculptDocumentId,
+            rigId: hybrid.character.rigId,
+            rigSchemaVersion: hybrid.character.rigSchemaVersion,
+            vertexCount: hybrid.character.vertexCount,
+            blenderAnthroGlbPresent: hybrid.character.blenderAnthroGlbPresent,
+          },
+        },
+        fixtureStatus: hybrid.fixtureStatus,
+        productionSculpt: false,
+        visualKind: "sculptor_fixture_clay_plus_energy_hull",
+        blender: "PRESENT / UNVERIFIED until runtime/bin/blender smoke",
+        meshSha256: wireMesh.meshSha256,
+        note: hybrid.claim,
+        sceneId: scene.sceneId,
+      };
+    }
+
     const doc = wireMeshToSculptDocument(positions3d, wireMesh.edges, characterId, species);
     const glbByteLength = 12 + 8 + 256 + 8 + (doc.vertices.length * 12 + doc.triangles.length * 12);
     const glbSha256 = require("crypto").createHash("sha256")
       .update(JSON.stringify({ vertices: doc.vertices.length, triangles: doc.triangles.length, species }))
       .digest("hex");
+    const characterRigSha256 =
+      scene.characterPipeline?.rigBinding?.rigSha256 ?? null;
 
     return {
       statusTag: "partial" as const,
@@ -188,12 +253,20 @@ export function handleExportRt4dAsset(args: unknown) {
       format: "glb",
       characterId,
       species,
-      vertexCount: doc.vertices.length,
-      triangleCount: doc.triangles.length,
-      glbByteLength,
+      vertexCount: mesh.positions.length,
+      triangleCount: mesh.indices.length,
+      glbByteLength: glb.byteLength,
       glbSha256,
+      glbBase64,
+      meshName: GLB_MESH_NAME,
+      animationTargets: [...POSE_BONE_IDS],
       meshSha256: wireMesh.meshSha256,
-      note: "GLB produced from RT4D 4D→3D projection. Sovereign fixture status: core-enforced-fixture-not-production-glb.",
+      poseTargetSha256,
+      rigSha256: characterRigSha256 ?? poseTargetSha256,
+      characterRigSha256,
+      fixtureStatus: GLB_FIXTURE_STATUS,
+      visualKind: "projected_energy_hull",
+      note: "Partial GLB: 4D→3D projected wire hull (convex/adjacency), named bone targets, single mesh `body`. Not an anatomical fox or production sculpt.",
       sceneId: scene.sceneId,
     };
   } catch (error) {
