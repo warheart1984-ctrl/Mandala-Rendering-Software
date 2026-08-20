@@ -136,8 +136,10 @@ export function GLBPreviewViewer({
 
   const playClip = useCallback((clip: THREE.AnimationClip | null) => {
     const mixer = stateRef.current.mixer;
-    if (!mixer || !clip) return;
+    if (!mixer) return;
     stateRef.current.action?.stop();
+    stateRef.current.action = null;
+    if (!clip) return;
     const action = mixer.clipAction(clip);
     action.play();
     stateRef.current.action = action;

@@ -1,0 +1,8 @@
+# Generated smokes (keep *.json evidence if small)
+blender-fox/
+*.glb
+*.blend
+*.wav
+*-click-flipbook.mp4
+*.import.log
+blender-fox-import.log

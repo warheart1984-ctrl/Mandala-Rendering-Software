@@ -5,5 +5,6 @@ export * from "./rigs.js";
 export * from "./glb.js";
 export * from "./adapter.js";
 export * from "./rt4d-to-rig-bridge.js";
+export * from "./warrior-fixture-hybrid.js";
 export * from "./blender.js";
 export * from "./ai-surface.js";

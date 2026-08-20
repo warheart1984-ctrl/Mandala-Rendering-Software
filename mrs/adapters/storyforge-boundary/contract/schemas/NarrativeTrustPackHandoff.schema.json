@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/storyforge-boundary/contract/NarrativeTrustPackHandoff.schema.json",
+  "title": "NarrativeTrustPackHandoff",
+  "description": "Declared adapter view of Infinity schemas/narrative_trust_pack.v1.json. Mandala hashes feed lineage; Infinity owns the pack. Status: declared until NTP lane is exercised.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "statusTag",
+    "productionId",
+    "narrative_trust_pack_version",
+    "module_id",
+    "cisiv_stage",
+    "claim_label",
+    "shotArtifactHashes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "storyforge-mandala-contract/1.1"
+    },
+    "kind": { "type": "string", "const": "NarrativeTrustPackHandoff" },
+    "statusTag": { "type": "string", "enum": ["declared"] },
+    "productionId": { "type": "string" },
+    "narrative_trust_pack_version": {
+      "type": "string",
+      "const": "narrative_trust_pack.v1"
+    },
+    "module_id": { "type": "string" },
+    "cisiv_stage": {
+      "type": "string",
+      "enum": ["concept", "identity", "structure", "implementation", "verification"]
+    },
+    "claim_label": {
+      "type": "string",
+      "enum": ["asserted", "proven", "rejected"]
+    },
+    "shotArtifactHashes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": { "type": "string" }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/storyforge-boundary/contract/MandalaShotArtifact.schema.json",
+  "title": "MandalaShotArtifact",
+  "description": "Per-shot MRS evidence. characterStateHash must stay stable when identityLock is unchanged. Status: partial. Frames may be fixture placeholders — success is identity lineage, not pretty pixels.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "statusTag",
+    "productionId",
+    "shotId",
+    "characterStateHash",
+    "worldStateHash",
+    "meshHash",
+    "rigHash",
+    "renderHash",
+    "projectionHash",
+    "runtimeFingerprint",
+    "audioCueId",
+    "scoreIdentity",
+    "frames",
+    "evidence"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "storyforge-mandala-contract/1.1"
+    },
+    "kind": { "type": "string", "const": "MandalaShotArtifact" },
+    "statusTag": { "type": "string", "enum": ["partial"] },
+    "productionId": { "type": "string" },
+    "shotId": { "type": "string" },
+    "parentShotId": { "type": ["string", "null"] },
+    "characterId": { "type": "string" },
+    "characterStateHash": { "type": "string" },
+    "worldStateHash": { "type": "string" },
+    "meshHash": { "type": "string" },
+    "rigHash": { "type": "string" },
+    "equipmentHash": { "type": "string" },
+    "renderHash": { "type": "string" },
+    "projectionHash": { "type": "string" },
+    "runtimeFingerprint": { "type": "string" },
+    "audioCueId": {
+      "type": "string",
+      "description": "Handoff id for Infinity Beatbox MusicCue / ScoreRequest timing"
+    },
+    "scoreIdentity": { "type": "string", "minLength": 1 },
+    "audioIntensity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "audioPlayback": { "type": "string", "enum": ["loop", "one-shot"] },
+    "cueStartSeconds": { "type": "number" },
+    "audioDurationSeconds": { "type": "number" },
+    "pose": { "type": "object" },
+    "camera": { "type": "object" },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": { "type": "string" },
+          "sha256": { "type": "string" },
+          "uri": { "type": "string" }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["limitation"],
+      "properties": {
+        "intentId": { "type": "string" },
+        "worldId": { "type": "string" },
+        "limitation": { "type": "string" }
+      }
+    }
+  }
+}

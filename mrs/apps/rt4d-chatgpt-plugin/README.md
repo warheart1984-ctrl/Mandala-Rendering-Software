@@ -33,10 +33,16 @@ npm run build
 
 Produces single-file `assets/rt4d-viewer.html` (served by the MCP server). Local preview without MCP:
 
-```powershell
-npm run preview
-# or: npm run dev
+```bash
+cd mrs/apps/rt4d-chatgpt-plugin/widget
+npm install
+npm run build    # → ../assets/rt4d-viewer.html
+npm run dev      # http://localhost:5173 energy + GLB views
+# or: npm run preview
+npm run smoke:glb
 ```
+
+In the viewer: **GLB view** / **Load GLB**. Local demo uses a tetrahedron fixture. Host MCP uses `export_rt4d_asset` `glbBase64` for the bound `sceneId`. Hull ≠ anatomical fox.
 
 ### 2. Install + start MCP
 
@@ -197,6 +203,8 @@ npm run smoke:glb
 - Unity / Unreal / game packs remain **declared**
 - Widget GLB view + pose tracks + `body` fur preset are **partial** (single mesh region; no skinned deformation)
 - Blender helper `scripts/import_rt4d_glb.py` is **declared** here (not live-smoke-tested in this pass)
+- Blender helper `scripts/import_rt4d_glb.py` is **declared** unless `blender` is actually on PATH
+- Photoreal is **not** claimed
 - No durable scene store across process restarts
 - No verified continuity compare / replay / canonical approval
 - No AnimeStylizer / photoreal character persistence

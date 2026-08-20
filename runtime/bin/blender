@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Mandala Blender launcher. Native `blender` if it is a real binary on PATH;
+# otherwise Flatpak `org.blender.Blender`. This is not a native Blender pipeline.
+set -euo pipefail
+
+self="${BASH_SOURCE[0]:-$0}"
+self_dir="$(cd "$(dirname "$self")" && pwd)"
+
+pick_native() {
+  local candidate
+  if [[ -n "${BLENDER_PATH:-}" && -x "${BLENDER_PATH}" ]]; then
+    printf '%s\n' "${BLENDER_PATH}"
+    return 0
+  fi
+  candidate="$(command -v blender 2>/dev/null || true)"
+  if [[ -n "$candidate" ]]; then
+    local resolved
+    resolved="$(readlink -f "$candidate" 2>/dev/null || realpath "$candidate" 2>/dev/null || printf '%s' "$candidate")"
+    local self_resolved
+    self_resolved="$(readlink -f "$self" 2>/dev/null || realpath "$self" 2>/dev/null || printf '%s' "$self")"
+    if [[ "$resolved" != "$self_resolved" && "$candidate" != "$self_dir/blender" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  fi
+  return 1
+}
+
+if native="$(pick_native)"; then
+  exec "$native" "$@"
+fi
+
+if command -v flatpak >/dev/null 2>&1; then
+  if flatpak info --user org.blender.Blender >/dev/null 2>&1 \
+    || flatpak info org.blender.Blender >/dev/null 2>&1; then
+    exec flatpak run --filesystem=host org.blender.Blender "$@"
+  fi
+fi
+
+echo "blender: native binary not on PATH and Flatpak org.blender.Blender not installed." >&2
+echo "Install Blender, its Flatpak, or set BLENDER_PATH." >&2
+exit 127

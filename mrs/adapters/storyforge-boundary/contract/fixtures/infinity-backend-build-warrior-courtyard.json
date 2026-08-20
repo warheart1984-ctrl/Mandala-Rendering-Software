@@ -1,0 +1,142 @@
+{
+  "build_id": "sf-build-warrior-courtyard-001",
+  "session_id": "sf-session-warrior-courtyard",
+  "scene_id": "courtyard-approach",
+  "narrative_state": {
+    "prompt": "Anthro fox warrior enters the fortress courtyard, walks to camera, stops, looks at the gate.",
+    "setting": "fortress courtyard at late-day haze",
+    "tone": "cinematic-fixture",
+    "characters": [
+      {
+        "characterId": "warrior-anthro-fox-01",
+        "name": "Courtyard Warrior",
+        "identityLock": {
+          "species": "anthro-fox",
+          "rigSpecies": "anthro",
+          "faceRefId": "heroic-fox-face-v1",
+          "bodyBuild": "heroic-athletic",
+          "armorId": "courtyard-plate-v1",
+          "weaponId": "courtyard-sword-v1",
+          "weaponHeldIn": "right",
+          "meshHash": "sha256:fixture-mesh-anthro-fox-warrior-v1",
+          "rigHash": "sha256:fixture-rig-anthro-character-rig-1.0",
+          "prohibitedMutations": [
+            "extra-tails",
+            "human-only-face",
+            "left-hand-sword-swap",
+            "armor-dissolution",
+            "weather-rewrite"
+          ]
+        }
+      }
+    ]
+  },
+  "worldPack": {
+    "id": "fortress-courtyard-v1",
+    "setting": "fortress courtyard",
+    "fortress": "outer-keep-gate",
+    "weather": "late-day-haze",
+    "lighting": "key-west-warm",
+    "notes": "Infinity world pack id mapped into Mandala world; not a Mandala-authored bible."
+  },
+  "temporal_shot_list": {
+    "scene_id": "courtyard-approach",
+    "shots": [
+      {
+        "shotId": "S01",
+        "shot_number": 1,
+        "description": "Warrior enters courtyard through the gate threshold",
+        "action": "enter courtyard",
+        "framing": "24mm-wide",
+        "pose": "gate-threshold",
+        "camera_motion": "static-establishing",
+        "duration_seconds": 2.0
+      },
+      {
+        "shotId": "S02",
+        "shot_number": 2,
+        "description": "Warrior takes first steps toward camera",
+        "action": "begin walk to camera",
+        "framing": "35mm",
+        "pose": "walk-start",
+        "camera_motion": "slow-dolly-in",
+        "duration_seconds": 2.0
+      },
+      {
+        "shotId": "S03",
+        "shot_number": 3,
+        "description": "Mid-walk, sword remains in right hand",
+        "action": "walk mid",
+        "framing": "35mm",
+        "pose": "walk-mid",
+        "camera_motion": "track-forward",
+        "duration_seconds": 2.0
+      },
+      {
+        "shotId": "S04",
+        "shot_number": 4,
+        "description": "Warrior stops in courtyard center",
+        "action": "stop",
+        "framing": "50mm",
+        "pose": "planted-stop",
+        "camera_motion": "settle-lockoff",
+        "duration_seconds": 1.5
+      },
+      {
+        "shotId": "S05",
+        "shot_number": 5,
+        "description": "Hold: facing camera, equipment unchanged",
+        "action": "hold",
+        "framing": "50mm",
+        "pose": "hold-facing-camera",
+        "camera_motion": "lockoff",
+        "duration_seconds": 1.5
+      },
+      {
+        "shotId": "S06",
+        "shot_number": 6,
+        "description": "Begin turn toward the gate",
+        "action": "start look to gate",
+        "framing": "50mm",
+        "pose": "turn-start",
+        "camera_motion": "slight-pan-left",
+        "duration_seconds": 1.5
+      },
+      {
+        "shotId": "S07",
+        "shot_number": 7,
+        "description": "Look at gate",
+        "action": "look at gate",
+        "framing": "85mm",
+        "pose": "look-gate",
+        "camera_motion": "lockoff",
+        "duration_seconds": 2.0
+      },
+      {
+        "shotId": "S08",
+        "shot_number": 8,
+        "description": "Settle on gate; same warrior as S01",
+        "action": "settle look at gate",
+        "framing": "85mm",
+        "pose": "settle-gate",
+        "camera_motion": "lockoff",
+        "duration_seconds": 2.0
+      }
+    ]
+  },
+  "continuityConstraints": {
+    "sameCharacterAcrossShots": true,
+    "persistentEquipment": true,
+    "persistentWorld": true,
+    "notes": "Success is S01 characterStateHash == S08 characterStateHash."
+  },
+  "renderIntent": {
+    "summary": "Courtyard warrior vertical slice — identity lineage, not photoreal",
+    "route": "rt4d",
+    "quality": "draft"
+  },
+  "provenance": {
+    "source": "infinity-BackendBuildArtifact",
+    "infinityRepo": "warheart1984-ctrl/infinity"
+  }
+}

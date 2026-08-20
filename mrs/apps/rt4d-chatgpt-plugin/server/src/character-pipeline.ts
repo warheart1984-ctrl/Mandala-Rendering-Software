@@ -15,6 +15,7 @@ import {
   type Rt4dSceneRecord,
 } from "./scene-store.js";
 import { buildEnergyWireMesh4d, projectWireMeshTo3d } from "./wire-mesh-4d.js";
+import { fixtureClayVertices } from "../../../../packages/sovereign-sculptor/src/warrior-fixture-hybrid.js";
 
 function sha256Hex(payload: string): string {
   return createHash("sha256").update(payload, "utf8").digest("hex");
@@ -105,7 +106,8 @@ export function attachEnergyMeshToScene(
 
 export function bindCharacterRigToScene(
   sceneId: string,
-  species: Species
+  species: Species,
+  characterId?: string
 ): Rt4dSceneRecord {
   const scene = getSceneOrThrow(sceneId);
   const rig = selectRig(species);
@@ -138,6 +140,7 @@ export function bindCharacterRigToScene(
     characterState: {
       ...scene.continuityState.characterState,
       intendedSpecies: species,
+      ...(characterId ? { characterId } : {}),
       rigId: binding.rigId,
       rigSha256: binding.rigSha256,
       rigStatus: binding.status,
@@ -156,13 +159,19 @@ export function clayStagePayload(scene: Rt4dSceneRecord) {
   if (!mesh || !binding) {
     throw new Error("ClayRigRequiresBind");
   }
-  const vertices3d = projectWireMeshTo3d(mesh, scene.projection.distance4d);
+  const energyVertices3d = projectWireMeshTo3d(mesh, scene.projection.distance4d);
+  const vertices3d = fixtureClayVertices(binding.species);
   const clay = {
     schemaVersion: "rt4d-clay-rig/v0.1",
     statusTag: "partial" as const,
-    note: "Fixture clay + armature overlay. Not a production sculpt or photoreal clay render.",
+    productionSculpt: false,
+    topologyKind: "sculptor_fixture" as const,
+    energyMeshName: "mesh.convex_hull",
+    note:
+      "Clay uses Sovereign Sculptor fixture topology (fixture-not-production). Energy hull is not the body. Not a production sculpt.",
     meshSha256: mesh.meshSha256,
     vertices3d,
+    energyVertices3d,
     bones: binding.bones,
     species: binding.species,
     rigId: binding.rigId,

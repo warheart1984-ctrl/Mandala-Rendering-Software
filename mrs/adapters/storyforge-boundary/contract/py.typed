@@ -1,0 +1,1 @@
+"""Package marker so pytest can import contract.* from the adapter root."""

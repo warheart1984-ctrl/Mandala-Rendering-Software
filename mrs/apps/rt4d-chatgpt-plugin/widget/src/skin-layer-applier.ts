@@ -8,6 +8,18 @@ import * as THREE from "three";
 
 export const SKIN_MESH_NAME = "body";
 
+/** Constitutional / fixture region names. Hull GLB currently only ships `body`. */
+export const CONSTITUTIONAL_SKIN_REGIONS = [
+  "body",
+  "whole-body",
+  "belly",
+  "leather",
+  "armor",
+  "cloth",
+  "eye",
+  "nose",
+] as const;
+
 export interface SkinLayerConfig {
   baseColor: string;
   roughness: number;
@@ -76,7 +88,7 @@ export function applySkinLayer(
   root.traverse((child) => {
     if (!(child instanceof THREE.Mesh)) return;
     const mesh = child;
-    if (regionFilter && mesh.name && !mesh.name.includes(regionFilter)) return;
+    if (regionFilter && mesh.name !== regionFilter) return;
     const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     if (!(material instanceof THREE.MeshStandardMaterial)) return;
 
@@ -105,14 +117,21 @@ export function applySkinLayer(
   return applied;
 }
 
-/** Applies fox-fur to `body`. Other named regions remain declared (no matching meshes). */
+/**
+ * Surface-only fox-warrior look. Applies fox-fur to `body` / `whole-body` if present.
+ * Other constitutional region names are declared (no matching meshes on the hull).
+ */
 export function applyFoxWarriorSkin(root: THREE.Object3D): {
   applied: number;
   skippedRegions: string[];
 } {
-  const applied = applySkinLayer(root, SKIN_PRESETS["fox-fur"], SKIN_MESH_NAME);
-  return {
-    applied,
-    skippedRegions: ["belly", "leather", "armor", "cloth", "eye", "nose"],
-  };
+  const hullTargets = ["body", "whole-body"] as const;
+  let applied = 0;
+  for (const name of hullTargets) {
+    applied += applySkinLayer(root, SKIN_PRESETS["fox-fur"], name);
+  }
+  const skippedRegions = CONSTITUTIONAL_SKIN_REGIONS.filter(
+    (r) => r !== "body" && r !== "whole-body"
+  );
+  return { applied, skippedRegions: [...skippedRegions] };
 }

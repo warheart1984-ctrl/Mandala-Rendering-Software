@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/storyforge-boundary/contract/MandalaProductionRequest.schema.json",
+  "title": "MandalaProductionRequest",
+  "description": "MRS-side production intake mapped from StoryForgeProductionArtifact. Status: partial. Per-shot pixel crossing remains RenderRequest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "statusTag",
+    "productionId",
+    "world",
+    "actors",
+    "shotTimeline",
+    "renderContract",
+    "continuityContract",
+    "evidenceRequirements",
+    "audioPlan"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "storyforge-mandala-contract/1.1"
+    },
+    "kind": { "type": "string", "const": "MandalaProductionRequest" },
+    "statusTag": { "type": "string", "enum": ["partial"] },
+    "productionId": { "type": "string", "minLength": 1 },
+    "world": {
+      "type": "object",
+      "required": ["worldPackId", "setting"],
+      "properties": {
+        "worldPackId": { "type": "string" },
+        "setting": { "type": "string" },
+        "fortress": { "type": "string" },
+        "weather": { "type": "string" },
+        "lighting": { "type": "string" }
+      }
+    },
+    "actors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["characterId", "identityLock", "characterStateHash"],
+        "properties": {
+          "characterId": { "type": "string" },
+          "identityLock": { "type": "object" },
+          "characterStateHash": { "type": "string" },
+          "equipmentHash": { "type": "string" }
+        }
+      }
+    },
+    "shotTimeline": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["shotId", "order", "characterId", "pose", "camera"],
+        "properties": {
+          "shotId": { "type": "string" },
+          "order": { "type": "integer" },
+          "characterId": { "type": "string" },
+          "action": { "type": "string" },
+          "pose": { "type": "object" },
+          "camera": { "type": "object" },
+          "durationSeconds": { "type": "number" }
+        }
+      }
+    },
+    "renderContract": {
+      "type": "object",
+      "properties": {
+        "route": { "type": "string" },
+        "quality": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "continuityContract": {
+      "type": "object",
+      "required": ["requireStableCharacterStateHash"],
+      "properties": {
+        "requireStableCharacterStateHash": { "type": "boolean" },
+        "requireStableWorldHash": { "type": "boolean" },
+        "requireStableEquipmentHash": { "type": "boolean" },
+        "limitation": { "type": "string" }
+      }
+    },
+    "evidenceRequirements": {
+      "type": "object",
+      "required": ["shotArtifacts"],
+      "properties": {
+        "shotArtifacts": { "type": "boolean" },
+        "narrativeTrustPackHandoff": { "type": "boolean" }
+      }
+    },
+    "audioPlan": {
+      "type": "object",
+      "description": "Copied from StoryForgeProductionArtifact. Beatbox live path declared."
+    }
+  }
+}

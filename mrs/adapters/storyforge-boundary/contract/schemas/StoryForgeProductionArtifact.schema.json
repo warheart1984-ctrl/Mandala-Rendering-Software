@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mrs.local/adapters/storyforge-boundary/contract/StoryForgeProductionArtifact.schema.json",
+  "title": "StoryForgeProductionArtifact",
+  "description": "Adapter intake envelope mapped FROM Infinity Story Forge (BackendBuildArtifact, world pack, cinematic shots). Status: partial. Not a second Story Bible engine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "statusTag",
+    "productionId",
+    "narrativeId",
+    "worldPack",
+    "characters",
+    "shots",
+    "timeline",
+    "renderIntent",
+    "continuityConstraints",
+    "audioPlan",
+    "provenance"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "storyforge-mandala-contract/1.1"
+    },
+    "kind": { "type": "string", "const": "StoryForgeProductionArtifact" },
+    "statusTag": { "type": "string", "enum": ["partial"] },
+    "productionId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "narrativeId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "infinityBuildId": {
+      "type": "string",
+      "description": "Infinity BackendBuildArtifact.build_id when known"
+    },
+    "worldPack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "setting"],
+      "properties": {
+        "id": { "type": "string" },
+        "setting": { "type": "string" },
+        "fortress": { "type": "string" },
+        "weather": { "type": "string" },
+        "lighting": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "characters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["characterId", "identityLock"],
+        "properties": {
+          "characterId": { "type": "string" },
+          "displayName": { "type": "string" },
+          "identityLock": {
+            "type": "object",
+            "description": "Permanent identity fields from Infinity character/world truth. Pose is not part of this lock.",
+            "additionalProperties": false,
+            "required": [
+              "species",
+              "faceRefId",
+              "bodyBuild",
+              "armorId",
+              "weaponId",
+              "weaponHeldIn"
+            ],
+            "properties": {
+              "species": { "type": "string" },
+              "rigSpecies": { "type": "string" },
+              "faceRefId": { "type": "string" },
+              "bodyBuild": { "type": "string" },
+              "armorId": { "type": "string" },
+              "weaponId": { "type": "string" },
+              "weaponHeldIn": {
+                "type": "string",
+                "enum": ["left", "right", "both", "sheathed", "none"]
+              },
+              "meshHash": { "type": "string" },
+              "rigHash": { "type": "string" },
+              "prohibitedMutations": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "shots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["shotId", "order", "characterId", "action", "pose", "camera"],
+        "properties": {
+          "shotId": { "type": "string" },
+          "order": { "type": "integer", "minimum": 0 },
+          "characterId": { "type": "string" },
+          "durationSeconds": { "type": "number" },
+          "action": { "type": "string" },
+          "background": { "type": "string" },
+          "pose": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          },
+          "camera": {
+            "type": "object",
+            "required": ["lens", "move"],
+            "properties": {
+              "lens": { "type": "string" },
+              "move": { "type": "string" },
+              "fovDeg": { "type": "number" }
+            }
+          },
+          "negativeConstraints": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "required": ["orderedShotIds"],
+      "properties": {
+        "orderedShotIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+    "renderIntent": {
+      "type": "object",
+      "description": "Opaque intent summary. MRS must not re-compose Infinity PromptSpec bodies.",
+      "properties": {
+        "summary": { "type": "string" },
+        "route": {
+          "type": "string",
+          "enum": ["scene-spec", "engine3d-world", "proton-raster", "rt4d"]
+        },
+        "quality": { "type": "string" }
+      }
+    },
+    "continuityConstraints": {
+      "type": "object",
+      "required": ["sameCharacterAcrossShots"],
+      "properties": {
+        "sameCharacterAcrossShots": { "type": "boolean" },
+        "persistentEquipment": { "type": "boolean" },
+        "persistentWorld": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    },
+    "audioPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Adaptive cues for Infinity Beatbox. Live Beatbox invoke is declared. Mapping is partial. Mandala does not compose original score in RT4D.",
+      "required": [
+        "statusTag",
+        "mappingStatusTag",
+        "scoreIdentity",
+        "stems",
+        "cues",
+        "forbiddenDucking"
+      ],
+      "properties": {
+        "statusTag": {
+          "type": "string",
+          "const": "declared",
+          "description": "Beatbox live path not invoked from Mandala"
+        },
+        "mappingStatusTag": {
+          "type": "string",
+          "const": "partial"
+        },
+        "fallbackStatusTag": {
+          "type": "string",
+          "enum": ["declared", "partial"]
+        },
+        "scoreIdentity": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Theme id that must stay stable across shots (parallel to characterStateHash)"
+        },
+        "scoreIdentityKind": { "type": "string" },
+        "beatbox": {
+          "type": "object",
+          "description": "Infinity invoke recipe. GET /api/jarvis/beatbox-lane/status is the HTTP surface; scoring is BeatboxLane.score(ScoreRequest)."
+        },
+        "speakers": { "type": "object" },
+        "stems": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "role", "playback"],
+            "properties": {
+              "id": { "type": "string" },
+              "role": { "type": "string", "enum": ["theme", "layer", "sting"] },
+              "playback": { "type": "string", "enum": ["loop", "one-shot"] },
+              "carriesScoreIdentity": { "type": "boolean" }
+            }
+          }
+        },
+        "forbiddenDucking": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Stems Speakers must not duck (would break score identity).",
+          "items": {
+            "type": "object",
+            "required": ["stemId", "reason"],
+            "properties": {
+              "stemId": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "cues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "shotId",
+              "audioCueId",
+              "cue",
+              "intensity",
+              "playback",
+              "cueStartSeconds",
+              "durationSeconds"
+            ],
+            "properties": {
+              "shotId": { "type": "string" },
+              "audioCueId": { "type": "string" },
+              "cue": { "type": "string" },
+              "action": { "type": "string" },
+              "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "playback": { "type": "string", "enum": ["loop", "one-shot"] },
+              "cueStartSeconds": { "type": "number" },
+              "durationSeconds": { "type": "number" },
+              "layers": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "limitation": { "type": "string" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "source": { "type": "string" },
+        "infinityRepo": { "type": "string" },
+        "promptSpecHash": { "type": "string" },
+        "renderIntentHash": { "type": "string" }
+      }
+    }
+  }
+}

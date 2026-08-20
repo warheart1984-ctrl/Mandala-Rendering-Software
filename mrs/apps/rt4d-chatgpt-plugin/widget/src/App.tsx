@@ -81,6 +81,7 @@ export default function App() {
   const [status, setStatus] = useState("Ready");
   const [viewMode, setViewMode] = useState<"energy" | "glb">("energy");
   const [glbBytes, setGlbBytes] = useState<Uint8Array | null>(null);
+  const [glbSceneId, setGlbSceneId] = useState<string | null>(null);
   const demoGlb = useMemo(() => encodeDemoFixtureGlb(), []);
   const inHost = Boolean(getOpenAi()?.callTool);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -105,6 +106,7 @@ export default function App() {
       setDistance4d(dist4(next));
       if (typeof next.glbBase64 === "string" && next.glbBase64.length > 0) {
         setGlbBytes(b64ToBytes(next.glbBase64));
+        setGlbSceneId(next.sceneId ?? null);
         setViewMode("glb");
       }
       setStatus(`Bound scene ${next.sceneId ?? "?"}`);
@@ -213,10 +215,11 @@ export default function App() {
         if (result?.glbBase64) {
           const bytes = b64ToBytes(result.glbBase64);
           setGlbBytes(bytes);
-          setPayload((prev) => ({ ...prev, ...result }));
+          setGlbSceneId(payload.sceneId);
+          setPayload((prev) => ({ ...prev, ...result, sceneId: payload.sceneId }));
           setViewMode("glb");
           setStatus(
-            `GLB fixture ${bytes.length} bytes — convex/energy hull, not anatomical fox`
+            `GLB fixture ${bytes.length} bytes for ${payload.sceneId} — convex/energy hull, not anatomical fox`
           );
           return;
         }
@@ -229,6 +232,7 @@ export default function App() {
       }
       const demo = encodeDemoFixtureGlb();
       setGlbBytes(demo);
+      setGlbSceneId("local-demo");
       setViewMode("glb");
       setStatus(
         "Local demo tetrahedron GLB (partial). MCP export needs a bound sceneId."
@@ -243,9 +247,12 @@ export default function App() {
   function onGlbModelLoaded(root: Object3D) {
     const { applied, skippedRegions } = applyFoxWarriorSkin(root);
     setStatus(
-      `GLB loaded · skin body applied=${applied} · skipped ${skippedRegions.join(",")} (no region meshes)`
+      `GLB loaded · scene ${payload?.sceneId ?? "?"} · skin applied=${applied} · skipped ${skippedRegions.join(",")} (no region meshes)`
     );
   }
+
+  const ownedGlb =
+    glbBytes && glbSceneId && glbSceneId === payload?.sceneId ? glbBytes : null;
 
   return (
     <div className="app">
@@ -288,8 +295,8 @@ export default function App() {
           </button>
           <button
             type="button"
-            disabled={!glbBytes}
-            onClick={() => glbBytes && downloadGLB(glbBytes)}
+            disabled={!ownedGlb}
+            onClick={() => ownedGlb && downloadGLB(ownedGlb)}
           >
             Download GLB
           </button>
@@ -299,7 +306,7 @@ export default function App() {
       <div className="main">
         {viewMode === "glb" ? (
           <GLBPreviewViewer
-            glbBytes={glbBytes ?? demoGlb}
+            glbBytes={ownedGlb ?? demoGlb}
             animationClip={playing ? poseClip : null}
             autoRotate={playing}
             onModelLoaded={onGlbModelLoaded}

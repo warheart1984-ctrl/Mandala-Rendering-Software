@@ -1,0 +1,15 @@
+{
+  "statusTag": "partial",
+  "blenderKind": "verified-via-flatpak",
+  "nativeBlenderPipeline": false,
+  "glb": "/media/jon/New Volume/Mandala Rendering Software/mrs/adapters/storyforge-boundary/contract/evidence/blender-fox/fox/fox-character-fixture.glb",
+  "blend": "/media/jon/New Volume/Mandala Rendering Software/mrs/adapters/storyforge-boundary/contract/evidence/blender-fox/fox/fox-character-fixture.blend",
+  "importLog": "/media/jon/New Volume/Mandala Rendering Software/mrs/adapters/storyforge-boundary/contract/evidence/blender-fox/fox/fox-character-fixture.import.log",
+  "wrapperLog": "/media/jon/New Volume/Mandala Rendering Software/mrs/adapters/storyforge-boundary/contract/evidence/blender-fox/blender-fox-import.log",
+  "wrapperExit": 0,
+  "armatureNote": "armature-present",
+  "claim": "Flatpak Blender imported fox fixture GLB. Not a native blender pipeline. Not production sculpt.",
+  "importLogText": "glb=/media/jon/New Volume/Mandala Rendering Software/mrs/adapters/storyforge-boundary/contract/evidence/blender-fox/fox/fox-character-fixture.glb\nblend=/media/jon/New Volume/Mandala Rendering Software/mrs/adapters/storyforge-boundary/contract/evidence/blender-fox/fox/fox-character-fixture.blend\narmature=armature-present\npipeline=flatpak-or-wrapper-not-native-blender\nstatusTag=partial\n",
+  "blenderVersion": "5.2.0 LTS",
+  "wrapper": "runtime/bin/blender -> flatpak run org.blender.Blender"
+}

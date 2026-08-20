@@ -375,7 +375,7 @@ function createRt4dPluginServer(): McpServer {
     "export_rt4d_asset",
     {
       title: "Export RT4D Asset",
-      description: "Export RT4D scene as GLB (via 4D→3D projection + sovereign-sculptor). Partial — real 4D math and convex hull, production body sculpts not yet.",
+      description: "Export GLB. Warrior characterId uses sculptor fixture clay (partial, not production). Energy hull remains mesh.convex_hull. Not a production sculpt.",
       inputSchema: exportRt4dAssetInputShape,
       _meta: toolStatusMeta("GLB export from 4D projection", "partial"),
     },
