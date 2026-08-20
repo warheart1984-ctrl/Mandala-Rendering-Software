@@ -57,7 +57,7 @@ Always pass optional `continuityState` when the user cares about persistence acr
 2. **`render_rt4d_preview`** — Engine at `RT4D_ENGINE_URL` or placeholder; updates `outputHash`. Prefer engine when configured.
 3. **`update_rt4d_scene`** — Phase 2 **partial**: XW/YW/ZW speeds + projection distance; optional `rePreview`. Widget debounces control changes into this tool.
 4. **`inspect_rt4d_provenance`** — Provenance + ContinuityState + Shot Evidence Envelope (sceneId, hashes, projector, continuityVersion).
-5. **`export_rt4d_asset`** — Skeleton NotImplemented (Phase 3 gap).
+5. **`export_rt4d_asset`** — **partial** GLB fixture hull (`glbBase64`); Unity/Unreal **declared**. Not an anatomical fox.
 6. **Governance tools** — **declared** stubs; do not fake success.
 
 ### Viewer honesty
