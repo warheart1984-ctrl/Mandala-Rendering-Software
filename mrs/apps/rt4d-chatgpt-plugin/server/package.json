@@ -8,6 +8,7 @@
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/tools/phase1-contract.test.mjs",
+    "test:glb": "tsx --test src/tools/glb-export.test.mjs",
     "test:export-glb": "tsx --test src/tools/export-glb.contract.test.mjs"
   },
   "dependencies": {

@@ -8,6 +8,11 @@ import {
   GLB_MESH_NAME,
   POSE_BONE_IDS,
 } from "../encode-glb.js";
+import {
+  FOX_WARRIOR_PREVIEW_IDS,
+  exportWarriorHybridGlb,
+  isWarriorCharacterId,
+} from "../../../../../packages/sovereign-sculptor/src/warrior-fixture-hybrid.js";
 
 /**
  * RT4D → GLB bridge.
@@ -238,10 +243,11 @@ export function handleExportRt4dAsset(args: unknown) {
       };
     }
 
-    const doc = wireMeshToSculptDocument(positions3d, wireMesh.edges, characterId, species);
-    const glbByteLength = 12 + 8 + 256 + 8 + (doc.vertices.length * 12 + doc.triangles.length * 12);
-    const glbSha256 = require("crypto").createHash("sha256")
-      .update(JSON.stringify({ vertices: doc.vertices.length, triangles: doc.triangles.length, species }))
+    const glb = encodeProjectedMeshToGlb(mesh.positions, mesh.indices);
+    const glbSha256 = createHash("sha256").update(glb).digest("hex");
+    const glbBase64 = Buffer.from(glb).toString("base64");
+    const poseTargetSha256 = createHash("sha256")
+      .update(POSE_BONE_IDS.join("\n"), "utf8")
       .digest("hex");
     const characterRigSha256 =
       scene.characterPipeline?.rigBinding?.rigSha256 ?? null;
@@ -266,6 +272,7 @@ export function handleExportRt4dAsset(args: unknown) {
       characterRigSha256,
       fixtureStatus: GLB_FIXTURE_STATUS,
       visualKind: "projected_energy_hull",
+      productionSculpt: false,
       note: "Partial GLB: 4D→3D projected wire hull (convex/adjacency), named bone targets, single mesh `body`. Not an anatomical fox or production sculpt.",
       sceneId: scene.sceneId,
     };
