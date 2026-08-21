@@ -15,6 +15,8 @@ export {
 } from "./moebius.mjs";
 
 export {
+  hashNoise,
+  hashNoise4,
   createDualLattice,
   createHexLattice,
   createSquareLattice,
@@ -31,6 +33,15 @@ export {
   netDrift,
   etaMean,
 } from "./dual-lattice.mjs";
+
+export {
+  HAMILTONIAN_STATUS,
+  HAMILTONIAN_OPERATOR,
+  hamiltonianEnergy,
+  hamiltonianForceInto,
+  relaxStep,
+  describeLatticeHamiltonian,
+} from "./hamiltonian.mjs";
 
 export {
   BLOCK_AVERAGE,

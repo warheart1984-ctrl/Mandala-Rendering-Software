@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandala.local/schema/mandala-engine-organ.v1.json",
+  "title": "Mandala Engine Organ ABI v1",
+  "description": "Frozen organ/artifact contract. Not AAIS-UL v20 (that label does not exist in this repo).",
+  "abiId": "mandala-engine-organ.v1",
+  "supersedes": "mandala-engine-organ.v0",
+  "aaisUlV20": "not-in-repo",
+  "status": "working",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "abiId",
+    "version",
+    "status",
+    "supersedes",
+    "physicsProposer",
+    "cannotProposePhysics",
+    "organs"
+  ],
+  "properties": {
+    "abiId": { "type": "string", "const": "mandala-engine-organ.v1" },
+    "version": { "type": "string", "const": "1.0.0" },
+    "status": { "type": "string", "enum": ["working", "partial", "draft"] },
+    "supersedes": { "type": "string", "const": "mandala-engine-organ.v0" },
+    "aaisUlV20": { "type": "string", "const": "not-in-repo" },
+    "physicsProposer": { "type": "string", "const": "SimulationChamber" },
+    "cannotProposePhysics": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "string",
+        "enum": ["StoryForge", "Mandala", "AIPainter", "Mythar", "MovieLane", "AAIS"]
+      }
+    },
+    "organs": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "string",
+        "enum": [
+          "StoryForge",
+          "SimulationChamber",
+          "Mandala",
+          "AIPainter",
+          "Mythar",
+          "AAIS",
+          "MovieLane"
+        ]
+      }
+    },
+    "movieLaneOwnsTime": { "type": "boolean", "const": false },
+    "rendererMutatesCertified": { "type": "boolean", "const": false }
+  }
+}

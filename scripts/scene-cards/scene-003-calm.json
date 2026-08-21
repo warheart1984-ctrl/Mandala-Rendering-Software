@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-003",
+  "kind": "SceneSpecification",
+  "name": "The Quiet Ocean",
+  "description": "A hopf surface undulates gently like ocean waves",
+  "entities": [
+    {
+      "id": "ocean-1",
+      "geometry": { "kind": "surface", "surfaceId": "hopf-surface" },
+      "transform4d": { "rotate": { "xy": 0.2, "zw": 0.1 } },
+      "materialId": "water-mat"
+    }
+  ],
+  "materials": [
+    { "id": "water-mat", "color": "#2288bb", "brdf": "ggx", "roughness": 0.3, "f0": 0.5 }
+  ],
+  "camera": {
+    "position4d": [0, 3, 6, 0],
+    "target4d": [0, 0, 0, 0],
+    "fovX": 45, "fovY": 45
+  },
+  "lights": [
+    { "id": "sun", "center": [5, 10, -2, 0], "radius": 1.0, "emission": [1.0, 0.95, 0.9] },
+    { "id": "fill", "center": [-3, 2, 4, 0], "radius": 0.5, "emission": [0.3, 0.4, 0.6] }
+  ],
+  "output": { "width": 512, "height": 512, "samples": 32 },
+  "shot": { "shotId": "shot-003", "sceneVersion": "1" },
+  "metadata": {
+    "emotion": "calm",
+    "setting": "ocean",
+    "shot_type": "wide",
+    "duration": 5.0,
+    "emotionGenome": { "valence": 0.7, "arousal": 0.2, "dominance": 0.5 }
+  }
+}

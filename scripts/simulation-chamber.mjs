@@ -22,7 +22,12 @@
  *   --maxDepth N       Max ray depth (default: 3)
  *   --no-tts           Disable TTS
  *   --llm              Enable LLM-driven decisions (actors ask AI what to do)
+ *                      ACTOR_LLM_MODEL / ACTOR_LLM_BASE_URL select Lemonade chat model
+ *                      (default tries Dolphin3.0-Llama3.2-1B-GGUF-Q4_K_M, falls back to Instruct)
  *   --llm-interval N   Seconds between LLM decisions (default: 2.0)
+ *   --solver mandala-proto   Default. Certified −∇φ defect walk drives actor world positions.
+ *                            Beat clock still drives Movie Lane / observer (ownsTime=false).
+ *   --solver pose            Explicit fallback: beat lerp / pose_interpolation (notGradV).
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
 import { resolve, basename, dirname } from "node:path";
@@ -55,7 +60,17 @@ import {
   describeChamberSubstrate,
   attachDefectTick,
   writeChamberReport,
+  MOTION_DRIVER_PROTO,
+  MOTION_DRIVER_POSE,
 } from "../mandala/substrate/chamber-hook.mjs";
+import {
+  runCinematicProtoSolver,
+  applyDefectMotionToActors,
+  sampleWorldline,
+  CHAMBER_SOLVER_ID,
+  CHAMBER_SOLVER_POSE,
+  CHAMBER_SOLVER_DEFAULT,
+} from "../mandala/engine/chamber/solver-hook.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FFMPEG = resolve(__dirname, "../runtime/toolchain/ffmpeg/usr/bin/ffmpeg");
@@ -127,13 +142,16 @@ class MultiActorSim {
 
     // LLM decision engine
     this.decisionEngine = this.enableLLM ? new ActorDecisionEngine({
-      baseUrl: process.env.LEMONADE_BASE_URL || "http://127.0.0.1:13307/v1",
+      baseUrl: process.env.ACTOR_LLM_BASE_URL || process.env.LEMONADE_BASE_URL || "http://127.0.0.1:13307/v1",
+      model: process.env.ACTOR_LLM_MODEL,
     }) : null;
 
     // Recording
     this.frames = [];
     this.speechTimeline = []; // { time, actorId, text, audioPath? }
     this.rhfdCharacterGlb = Boolean(options.characterGlb);
+    this.solver = options.solver || CHAMBER_SOLVER_DEFAULT;
+    this.solverResult = null;
   }
 
   buildWorld(sceneCard) {
@@ -248,6 +266,7 @@ class MultiActorSim {
       pose: { armAngle: 0, armSwing: 0, legSpread: 0, legSwing: 0, headTilt: 0, bodyLean: 0 },
       kind: "defect",
       _prevPosition: actorDef.beats?.[0]?.position ? [...actorDef.beats[0].position] : [0, 2, 0, 0],
+      _solverRest: actorDef.beats?.[0]?.position ? [...actorDef.beats[0].position] : [0, 2, 0, 0],
 
       // Avatar primitives (set after first build)
       avatarPrimitives: [],
@@ -309,8 +328,9 @@ class MultiActorSim {
   /**
    * Interpolate between two beat states.
    * Carries forward state from previous beats — each beat only defines what changes.
+   * `positions=false` keeps spawn layout and lets the proto solver own world translation.
    */
-  interpolateBeats(actor, time) {
+  interpolateBeats(actor, time, { positions = true } = {}) {
     const beats = actor.beats;
     if (!beats.length) return;
 
@@ -336,12 +356,12 @@ class MultiActorSim {
     }
 
     // Apply accumulated state
-    if (accumulatedPosition) actor.position = [...accumulatedPosition];
+    if (positions && accumulatedPosition) actor.position = [...accumulatedPosition];
     if (accumulatedEmissive) actor.emissive = [...accumulatedEmissive];
     if (accumulatedScale != null) actor.scale = accumulatedScale;
 
     // Interpolate toward next beat if it exists
-    if (nextBeat && accumulatedPosition && nextBeat.position) {
+    if (positions && nextBeat && accumulatedPosition && nextBeat.position) {
       const beatDuration = nextBeat.time - (time - (time - (nextBeat.time - 1 / this.fps)));
       // Find the previous beat time
       let prevTime = 0;
@@ -384,6 +404,17 @@ class MultiActorSim {
 
     // Pose from action
     actor.pose = poseForBeat(currentAction, time);
+  }
+
+  applyProtoMotion(actor) {
+    if (!this.solverResult?.defectWorldline?.length) return false;
+    if (!actor._solverRest) actor._solverRest = [...(actor.position || [0, 0, 0, 0])];
+    const tNorm = this.duration > 0 ? this.time / this.duration : 0;
+    const defect = sampleWorldline(this.solverResult.defectWorldline, tNorm);
+    const origin = this.solverResult.defectOrigin || this.solverResult.defectWorldline[0];
+    if (!defect || !origin) return false;
+    applyDefectMotionToActors([actor], defect, origin);
+    return true;
   }
 
   /**
@@ -445,15 +476,17 @@ class MultiActorSim {
     }
 
     for (const actor of this.actors) {
-      // 1. Interpolate position/emissive from beats (only if not in LLM mode)
+      // 1. Appearance from beats; world translation from proto solver when active
+      const protoMotion = this.solver === CHAMBER_SOLVER_ID && this.solverResult;
       if (!this.enableLLM) {
-        this.interpolateBeats(actor, this.time);
+        this.interpolateBeats(actor, this.time, { positions: !protoMotion });
+        if (protoMotion) this.applyProtoMotion(actor);
       } else {
         // In LLM mode, still update pose from current action
         actor.pose = poseForBeat(actor.currentAction || "idle", this.time);
       }
-      // RHFD: actor = defect. Motion remains pose interpolation; this only reports a surrogate.
-      attachDefectTick(actor, dt);
+      // RHFD: actor = defect. Proto solver drives world position; pose path reports a surrogate.
+      attachDefectTick(actor, dt, { fromGradV: this.solver === CHAMBER_SOLVER_ID && Boolean(this.solverResult) });
 
       // 2. Director override
       if (this.director.hasOverride(actor.id)) {
@@ -587,6 +620,11 @@ class MultiActorSim {
       characterGlb: this.rhfdCharacterGlb,
       ticks: this.tickCount,
       mapping: "mandala/substrate/MAPPING.md",
+      motionDriverActual:
+        this.solver === CHAMBER_SOLVER_ID && this.solverResult
+          ? MOTION_DRIVER_PROTO
+          : MOTION_DRIVER_POSE,
+      solver: this.solver,
     });
     writeFileSync(
       resolve(outputDir, "rhfd-substrate-report.json"),
@@ -695,6 +733,8 @@ if (args.length === 0) {
   console.error("Usage: node simulation-chamber.mjs <scene-card.json> [output-dir] [options]");
   console.error("Options: --width N --height N --fps N --samples N --maxDepth N --no-tts --llm --llm-interval N");
   console.error("         --character-glb [path]  consume character/models/exports/char_rigged.glb (partial hook)");
+  console.error("         --solver mandala-proto  default: certified −∇φ defect walk drives actors");
+  console.error("         --solver pose           beat lerp / pose_interpolation fallback");
   process.exit(1);
 }
 
@@ -713,8 +753,11 @@ for (let i = 0; i < args.length; i++) {
     if (args[i + 1] && !String(args[i + 1]).startsWith("--")) options.characterGlb = args[++i];
     else options.characterGlb = CHAR_RIGGED_GLB;
   }
+  else if (args[i] === "--solver" && args[i + 1]) { options.solver = args[++i]; }
   else { positionalArgs.push(args[i]); }
 }
+
+if (!options.solver) options.solver = CHAMBER_SOLVER_DEFAULT;
 
 const sceneCardPath = resolve(positionalArgs[0]);
 const outputDir = positionalArgs[1]
@@ -759,10 +802,48 @@ if (hasActors) {
 const rhfdHook = describeChamberSubstrate({
   actors: sim.actors,
   characterGlb: Boolean(options.characterGlb),
+  motionDriver:
+    (options.solver || CHAMBER_SOLVER_DEFAULT) === CHAMBER_SOLVER_POSE
+      ? MOTION_DRIVER_POSE
+      : MOTION_DRIVER_PROTO,
 });
-console.log(`  RHFD substrate: ${rhfdHook.gradVStatus} — motion=${rhfdHook.motionDriverActual}; actors=hex petal defects (not ∇V-integrated)`);
+console.log(`  RHFD substrate: ${rhfdHook.gradVStatus} — motion=${rhfdHook.motionDriverActual}; actors=hex petal defects`);
+if ((options.solver || CHAMBER_SOLVER_DEFAULT) === CHAMBER_SOLVER_POSE) {
+  console.log("  Solver: --solver pose (pose_interpolation / notGradV).");
+}
 
-sim.run().then(result => {
+function maybeProtoSolver() {
+  if ((options.solver || CHAMBER_SOLVER_DEFAULT) === CHAMBER_SOLVER_POSE) {
+    return Promise.resolve(null);
+  }
+  const tEnd = Math.min(63, Math.max(8, Math.ceil(sim.duration || 8)));
+  const solverResult = runCinematicProtoSolver({
+    seed: options.seed || sim.seed || 42,
+    tEnd,
+    beatDuration: sim.duration,
+  });
+  sim.solver = CHAMBER_SOLVER_ID;
+  sim.solverResult = solverResult;
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(
+    resolve(outputDir, "mandala-proto-solver.json"),
+    JSON.stringify(
+      {
+        ...solverResult,
+        receipts: solverResult.receipts,
+      },
+      null,
+      2,
+    ),
+  );
+  const moved = solverResult.actorSample;
+  console.log(
+    `  Solver: mandala-proto — ${solverResult.committedSteps} certified steps; actors follow −∇φ defect walk (Movie Lane ownsTime=false); sample ${moved.rest} → ${moved.position.map((v) => v.toFixed(3))}`,
+  );
+  return Promise.resolve(solverResult);
+}
+
+maybeProtoSolver().then(() => sim.run()).then(result => {
   console.log(`\n  Assembling...`);
   return sim.assemble(outputDir, sceneCard);
 }).then(() => {

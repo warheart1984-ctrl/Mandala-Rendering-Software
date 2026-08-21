@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandala.local/schema/mandala-engine-artifact-receipt.v1.json",
+  "title": "Mandala Engine artifact receipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "type",
+    "abiId",
+    "abiVersion",
+    "status",
+    "stateHash",
+    "constitutionId",
+    "seed",
+    "organs",
+    "artifacts"
+  ],
+  "properties": {
+    "type": { "type": "string", "const": "mandala-engine-receipt" },
+    "abiId": { "type": "string", "const": "mandala-engine-organ.v1" },
+    "abiVersion": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["working", "partial", "skeleton", "declared", "blocked-with-evidence"]
+    },
+    "stateHash": { "type": "string", "minLength": 16 },
+    "constitutionId": { "type": "string" },
+    "seed": { "type": "number" },
+    "t": { "type": "number" },
+    "organs": { "type": "object" },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "path"],
+        "properties": {
+          "kind": { "type": "string" },
+          "path": { "type": "string" },
+          "organ": { "type": "string" }
+        }
+      }
+    },
+    "illegalProposalRejected": { "type": "boolean" },
+    "movieLaneOwnsTime": { "type": "boolean", "const": false },
+    "rendererMutatedCertified": { "type": "boolean", "const": false }
+  }
+}

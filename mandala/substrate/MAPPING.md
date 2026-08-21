@@ -2,7 +2,7 @@
 
 **Law (user-authored):** Mandala is a cinematic renderer of RHFD vacuum physics. Simulation Chamber is the motion organ. Do not invent a competing organ.
 
-**Status of this document:** **partial** — contract + CPU hex lattice + tests + tiny clean plate. Not the RHFD continuum Hamiltonian. Not a “living lattice.”
+**Status of this document:** **partial** — contract + CPU hex lattice + tests + tiny clean plate + discrete lattice Hamiltonian (`hamiltonian.mjs`, Claim A). Not the RHFD continuum Hamiltonian. Not a “living lattice.”
 
 **SoT:** this file + `contract.json`. Existing cousins (not duplicates):
 
@@ -108,5 +108,16 @@ node mandala/substrate/clean-plate.mjs
 | TAA / temporal accumulation / denoise | **absent** (not declared as present) |
 | WGSL Möbius file exists; not dispatched in Chamber/RT4D CPU | **declared** (shader source) |
 | Cloth/hair RHFD | **not claimed** |
-| AI Painter / Mythar / AAIS wiring | **declared** |
+| AI Painter / Mythar / AAIS wiring | **declared** (proto AAIS gate is **partial**, one invariant) |
 | Plugin architecture spec “enforced” rows | **prefer this file** |
+
+## First proto (governed runtime)
+
+Tiny certified universe: `mandala/proto/` (32³ × 64). Extends this mapping (Claim A). Does not fork a second RHFD theory. Cinematic Chamber remains pose interpolation.
+
+```bash
+node --test mandala/proto/test/four-proofs.test.js
+```
+
+Architecture: [`docs/mandala/GOVERNED_SYNTHETIC_WORLD_RUNTIME.md`](../../docs/mandala/GOVERNED_SYNTHETIC_WORLD_RUNTIME.md).
+

@@ -1,0 +1,49 @@
+{
+  "$id": "mandala/proto/contract.json",
+  "id": "mandala-proto-universe-v0",
+  "version": "0.1.0",
+  "title": "First prototype: governed 4D synthetic-world runtime (tiny universe)",
+  "status": "partial",
+  "product": "governed-synthetic-world-runtime",
+  "notAGameEngine": true,
+  "rhfd": {
+    "claimA": "computational analogue in-scope",
+    "claimB": false,
+    "extends": "mandala/substrate/contract.json",
+    "notASecondTheory": true
+  },
+  "shape": { "nx": 32, "ny": 32, "nz": 32, "nt": 64 },
+  "fields": { "scalar": 1, "vector": 1, "defectTypes": ["local_rupture"], "materials": 1, "observers": 1 },
+  "invariant": {
+    "id": "proto.scalar-mass-conservation",
+    "status": "enforced"
+  },
+  "cpuReference": { "status": "enforced", "module": "mandala/proto/cpu-reference.mjs" },
+  "gpu": {
+    "vulkan": "partial if live dispatch agrees; else declared stub + blocked-with-evidence",
+    "opencl": "declared",
+    "cuda": "declared",
+    "hip": "declared",
+    "webgpu": "declared",
+    "truth": "CPU reference sits above backends"
+  },
+  "organs": {
+    "StoryForge": "partial",
+    "SimulationChamber": "partial",
+    "Mandala": "partial",
+    "AIPainter": "declared",
+    "Mythar": "declared",
+    "AAIS": "partial",
+    "MovieLane": "partial"
+  },
+  "skeletons": ["temporal-bvh-dag", "event-surfaces", "persistent-topology-graph"],
+  "doNot": [
+    "overwrite output/simulation/salt-atlas/",
+    "claim cinematic Chamber integrates ∇V",
+    "edit constitution/ or AGENTS.md"
+  ],
+  "commands": {
+    "test": "node --test mandala/proto/test/four-proofs.test.js",
+    "run": "node mandala/proto/run.mjs"
+  }
+}

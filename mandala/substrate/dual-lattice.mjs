@@ -21,8 +21,21 @@ import {
   moebiusParity,
 } from "./moebius.mjs";
 
-function hashNoise(i, j, seed) {
+/** Hashed zero-mean-capable η analogue. Exported so proto reuses this polynomial, not a second theory. */
+export function hashNoise(i, j, seed) {
   let n = Math.imul(i | 0, 374761393) + Math.imul(j | 0, 668265263) + Math.imul(seed | 0, 1274126177);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n >>> 0) / 4294967296) * 2 - 1;
+}
+
+/** 4D extension of hashNoise for proto lattice (x,y,z,t). Same family, extra lattice axes. */
+export function hashNoise4(i, j, k, t, seed) {
+  let n =
+    Math.imul(i | 0, 374761393) +
+    Math.imul(j | 0, 668265263) +
+    Math.imul(k | 0, 3628273133) +
+    Math.imul(t | 0, 1442665583) +
+    Math.imul(seed | 0, 1274126177);
   n = Math.imul(n ^ (n >>> 13), 1274126177);
   return ((n >>> 0) / 4294967296) * 2 - 1;
 }

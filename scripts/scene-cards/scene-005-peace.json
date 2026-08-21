@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-005",
+  "kind": "SceneSpecification",
+  "name": "The Garden",
+  "description": "A 3D torus floats in soft green light, serene and still",
+  "entities": [
+    {
+      "id": "torus-1",
+      "geometry": { "kind": "surface", "surfaceId": "torus-3d" },
+      "transform4d": { "rotate": { "xy": 0.15 } },
+      "materialId": "leaf-mat"
+    }
+  ],
+  "materials": [
+    { "id": "leaf-mat", "color": "#44aa55", "brdf": "lambertian" }
+  ],
+  "camera": {
+    "position4d": [0, 2, 5, 0],
+    "target4d": [0, 0, 0, 0],
+    "fovX": 50, "fovY": 50
+  },
+  "lights": [
+    { "id": "dappled", "center": [2, 8, 1, 0], "radius": 2.0, "emission": [0.8, 1.0, 0.7] }
+  ],
+  "output": { "width": 512, "height": 512, "samples": 32 },
+  "shot": { "shotId": "shot-005", "sceneVersion": "1" },
+  "metadata": {
+    "emotion": "peace",
+    "setting": "garden",
+    "shot_type": "medium",
+    "duration": 4.0,
+    "emotionGenome": { "valence": 0.9, "arousal": 0.1, "dominance": 0.4 }
+  }
+}

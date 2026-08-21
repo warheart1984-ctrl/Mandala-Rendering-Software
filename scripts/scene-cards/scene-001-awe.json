@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-001",
+  "kind": "SceneSpecification",
+  "name": "The Awakening",
+  "description": "A tesseract rotates in void, glowing with inner light",
+  "entities": [
+    {
+      "id": "tesseract-1",
+      "geometry": { "kind": "hypersphere", "center": [0, 0, 0, 0], "radius": 0.8 },
+      "transform4d": { "rotate": { "xy": 0.5, "xz": 0.3 } },
+      "materialId": "glow-mat"
+    }
+  ],
+  "materials": [
+    { "id": "glow-mat", "color": "#00ffcc", "brdf": "ggx", "roughness": 0.2 }
+  ],
+  "camera": {
+    "position4d": [0, 2, 5, 0],
+    "target4d": [0, 0, 0, 0],
+    "fovX": 52, "fovY": 52
+  },
+  "lights": [
+    { "id": "sun", "center": [4, 7, -3, 0], "radius": 0.7, "emission": [1, 0.9, 0.8] }
+  ],
+  "output": { "width": 512, "height": 512, "samples": 32 },
+  "shot": { "shotId": "shot-001", "sceneVersion": "1" },
+  "metadata": {
+    "emotion": "awe",
+    "setting": "void",
+    "shot_type": "medium",
+    "duration": 4.0,
+    "emotionGenome": { "valence": 0.8, "arousal": 0.6, "dominance": 0.7 }
+  }
+}

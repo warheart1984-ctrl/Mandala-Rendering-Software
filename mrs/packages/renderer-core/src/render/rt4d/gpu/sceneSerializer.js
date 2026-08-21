@@ -5,6 +5,11 @@
 import { packBVH4D, flattenBVH4DNodes } from "../accel/gpu/bvh4dPacked.js";
 import { BVH4D } from "../accel/BVH4D.js";
 import { vec4 } from "../math/vec4.js";
+import {
+  resolveCharacterMaterialName,
+  serializeCharacterMaterial,
+  packCharacterMaterialFloats,
+} from "../material/CharacterMaterialRegistry.js";
 
 export const PRIM_TYPE_SPHERE = 0;
 export const PRIM_TYPE_PLANE = 1;
@@ -286,21 +291,32 @@ function packMaterials(scene) {
   const ids = scene.materials?.listIds?.() ?? [];
   const arr = new Float32Array(Math.max(1, ids.length) * 16);
   for (let i = 0; i < ids.length; i++) {
-    const m = scene.materials.get(ids[i]);
+    const id = ids[i];
+    const m = scene.materials.get(id);
     const o = i * 16;
-    const albedo = m.params?.albedo ?? vec4(0.8, 0.8, 0.8, 1);
-    arr[o + 0] = albedo.x; arr[o + 1] = albedo.y; arr[o + 2] = albedo.z; arr[o + 3] = albedo.w;
-    const em = m.emission ?? vec4(0, 0, 0, 0);
-    arr[o + 4] = em.x; arr[o + 5] = em.y; arr[o + 6] = em.z; arr[o + 7] = em.w;
-    const typeCode = m.type === "ggx" ? 1 : m.type === "light" ? 2 : m.type === "volume" ? 3 : 0;
-    arr[o + 8] = typeCode;
-    arr[o + 9] = m.params?.roughness ?? 0;
-    arr[o + 10] = m.params?.f0?.x ?? 1.5;
-    arr[o + 11] = m.sigmaT ?? 0;
-    arr[o + 12] = m.sigmaS ?? 0;
-    arr[o + 13] = m.params?.asymmetry ?? 0;
-    arr[o + 14] = m.isLight ? 1 : 0;
-    arr[o + 15] = m.isVolume ? 1 : 0;
+    
+    // Character materials: id may be "skin" or "skin-char-001"
+    const charName = resolveCharacterMaterialName(id);
+    if (charName) {
+      const serialized = serializeCharacterMaterial(charName, m?.params || {});
+      const packed = packCharacterMaterialFloats(serialized);
+      arr.set(packed, o);
+    } else {
+      // Legacy material serialization
+      const albedo = m.params?.albedo ?? vec4(0.8, 0.8, 0.8, 1);
+      arr[o + 0] = albedo.x; arr[o + 1] = albedo.y; arr[o + 2] = albedo.z; arr[o + 3] = albedo.w;
+      const em = m.emission ?? vec4(0, 0, 0, 0);
+      arr[o + 4] = em.x; arr[o + 5] = em.y; arr[o + 6] = em.z; arr[o + 7] = em.w;
+      const typeCode = m.type === "ggx" ? 1 : m.type === "light" ? 2 : m.type === "volume" ? 3 : 0;
+      arr[o + 8] = typeCode;
+      arr[o + 9] = m.params?.roughness ?? 0;
+      arr[o + 10] = m.params?.f0?.x ?? 1.5;
+      arr[o + 11] = m.sigmaT ?? 0;
+      arr[o + 12] = m.sigmaS ?? 0;
+      arr[o + 13] = m.params?.asymmetry ?? 0;
+      arr[o + 14] = m.isLight ? 1 : 0;
+      arr[o + 15] = m.isVolume ? 1 : 0;
+    }
   }
   return arr;
 }

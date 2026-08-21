@@ -1,0 +1,171 @@
+; Mandala proto ∇φ kernel. CPU SoT: mandala/proto/cpu-reference.mjs computeGradientInto
+; Binding 0: phi[n]  Binding 1: grad[n*3]  Push: uint nx, ny, nz
+; Neumann missing-neighbor=self; dx=2 interior else 1.
+
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %gid
+OpExecutionMode %main LocalSize 64 1 1
+
+OpDecorate %gid BuiltIn GlobalInvocationId
+
+OpDecorate %phi_arr ArrayStride 4
+OpMemberDecorate %PhiBlock 0 Offset 0
+OpDecorate %PhiBlock BufferBlock
+OpDecorate %phi_var DescriptorSet 0
+OpDecorate %phi_var Binding 0
+
+OpDecorate %grad_arr ArrayStride 4
+OpMemberDecorate %GradBlock 0 Offset 0
+OpDecorate %GradBlock BufferBlock
+OpDecorate %grad_var DescriptorSet 0
+OpDecorate %grad_var Binding 1
+
+OpMemberDecorate %PC 0 Offset 0
+OpMemberDecorate %PC 1 Offset 4
+OpMemberDecorate %PC 2 Offset 8
+OpDecorate %PC Block
+
+%void = OpTypeVoid
+%fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%v3uint = OpTypeVector %uint 3
+%ptr_in_v3 = OpTypePointer Input %v3uint
+%gid = OpVariable %ptr_in_v3 Input
+%bool = OpTypeBool
+
+%u0 = OpConstant %uint 0
+%u1 = OpConstant %uint 1
+%u2 = OpConstant %uint 2
+%u3 = OpConstant %uint 3
+
+%phi_arr = OpTypeRuntimeArray %float
+%PhiBlock = OpTypeStruct %phi_arr
+%ptr_phi = OpTypePointer Uniform %PhiBlock
+%phi_var = OpVariable %ptr_phi Uniform
+%ptr_u_float = OpTypePointer Uniform %float
+
+%grad_arr = OpTypeRuntimeArray %float
+%GradBlock = OpTypeStruct %grad_arr
+%ptr_grad = OpTypePointer Uniform %GradBlock
+%grad_var = OpVariable %ptr_grad Uniform
+
+%PC = OpTypeStruct %uint %uint %uint
+%ptr_pc = OpTypePointer PushConstant %PC
+%pc = OpVariable %ptr_pc PushConstant
+%ptr_pc_uint = OpTypePointer PushConstant %uint
+
+%main = OpFunction %void None %fn
+%entry = OpLabel
+
+%gidv = OpLoad %v3uint %gid
+%i = OpCompositeExtract %uint %gidv 0
+
+%nxp = OpAccessChain %ptr_pc_uint %pc %u0
+%nyp = OpAccessChain %ptr_pc_uint %pc %u1
+%nzp = OpAccessChain %ptr_pc_uint %pc %u2
+%nx = OpLoad %uint %nxp
+%ny = OpLoad %uint %nyp
+%nz = OpLoad %uint %nzp
+
+%nxy = OpIMul %uint %nx %ny
+%nall = OpIMul %uint %nxy %nz
+%in_range = OpULessThan %bool %i %nall
+OpSelectionMerge %done None
+OpBranchConditional %in_range %body %done
+
+%body = OpLabel
+%x = OpUMod %uint %i %nx
+%idivnx = OpUDiv %uint %i %nx
+%y = OpUMod %uint %idivnx %ny
+%z = OpUDiv %uint %i %nxy
+
+%x_gt0 = OpULessThan %bool %u0 %x
+%x_plus = OpIAdd %uint %x %u1
+%x_lt_nx = OpULessThan %bool %x_plus %nx
+%xm1 = OpISub %uint %x %u1
+%xm = OpSelect %uint %x_gt0 %xm1 %x
+%xp = OpSelect %uint %x_lt_nx %x_plus %x
+%bothx = OpLogicalAnd %bool %x_gt0 %x_lt_nx
+%dx = OpSelect %uint %bothx %u2 %u1
+
+%y_gt0 = OpULessThan %bool %u0 %y
+%y_plus = OpIAdd %uint %y %u1
+%y_lt_ny = OpULessThan %bool %y_plus %ny
+%ym1 = OpISub %uint %y %u1
+%ym = OpSelect %uint %y_gt0 %ym1 %y
+%yp = OpSelect %uint %y_lt_ny %y_plus %y
+%bothy = OpLogicalAnd %bool %y_gt0 %y_lt_ny
+%dy = OpSelect %uint %bothy %u2 %u1
+
+%z_gt0 = OpULessThan %bool %u0 %z
+%z_plus = OpIAdd %uint %z %u1
+%z_lt_nz = OpULessThan %bool %z_plus %nz
+%zm1 = OpISub %uint %z %u1
+%zm = OpSelect %uint %z_gt0 %zm1 %z
+%zp = OpSelect %uint %z_lt_nz %z_plus %z
+%bothz = OpLogicalAnd %bool %z_gt0 %z_lt_nz
+%dz = OpSelect %uint %bothz %u2 %u1
+
+%nyz = OpIMul %uint %ny %z
+%ynyz = OpIAdd %uint %y %nyz
+%base = OpIMul %uint %nx %ynyz
+
+%ixm = OpIAdd %uint %xm %base
+%ixp = OpIAdd %uint %xp %base
+
+%ym_nyz = OpIAdd %uint %ym %nyz
+%yp_nyz = OpIAdd %uint %yp %nyz
+%nx_ym = OpIMul %uint %nx %ym_nyz
+%nx_yp = OpIMul %uint %nx %yp_nyz
+%iym = OpIAdd %uint %x %nx_ym
+%iyp = OpIAdd %uint %x %nx_yp
+
+%ny_zm = OpIMul %uint %ny %zm
+%ny_zp = OpIMul %uint %ny %zp
+%y_zm = OpIAdd %uint %y %ny_zm
+%y_zp = OpIAdd %uint %y %ny_zp
+%nx_yzm = OpIMul %uint %nx %y_zm
+%nx_yzp = OpIMul %uint %nx %y_zp
+%izm = OpIAdd %uint %x %nx_yzm
+%izp = OpIAdd %uint %x %nx_yzp
+
+%pxm = OpAccessChain %ptr_u_float %phi_var %u0 %ixm
+%pxp = OpAccessChain %ptr_u_float %phi_var %u0 %ixp
+%pym = OpAccessChain %ptr_u_float %phi_var %u0 %iym
+%pyp = OpAccessChain %ptr_u_float %phi_var %u0 %iyp
+%pzm = OpAccessChain %ptr_u_float %phi_var %u0 %izm
+%pzp = OpAccessChain %ptr_u_float %phi_var %u0 %izp
+%vxm = OpLoad %float %pxm
+%vxp = OpLoad %float %pxp
+%vym = OpLoad %float %pym
+%vyp = OpLoad %float %pyp
+%vzm = OpLoad %float %pzm
+%vzp = OpLoad %float %pzp
+
+%dxf = OpConvertUToF %float %dx
+%dyf = OpConvertUToF %float %dy
+%dzf = OpConvertUToF %float %dz
+%subx = OpFSub %float %vxp %vxm
+%suby = OpFSub %float %vyp %vym
+%subz = OpFSub %float %vzp %vzm
+%gx = OpFDiv %float %subx %dxf
+%gy = OpFDiv %float %suby %dyf
+%gz = OpFDiv %float %subz %dzf
+
+%i3 = OpIMul %uint %i %u3
+%i3y = OpIAdd %uint %i3 %u1
+%i3z = OpIAdd %uint %i3 %u2
+
+%ox = OpAccessChain %ptr_u_float %grad_var %u0 %i3
+%oy = OpAccessChain %ptr_u_float %grad_var %u0 %i3y
+%oz = OpAccessChain %ptr_u_float %grad_var %u0 %i3z
+OpStore %ox %gx
+OpStore %oy %gy
+OpStore %oz %gz
+OpBranch %done
+
+%done = OpLabel
+OpReturn
+OpFunctionEnd

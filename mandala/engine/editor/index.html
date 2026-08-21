@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mandala Engine editor (partial)</title>
+  <style>
+    body { font: 15px/1.45 system-ui, sans-serif; margin: 1.5rem; max-width: 52rem; background: #111; color: #eee; }
+    h1 { font-size: 1.2rem; }
+    code, pre { background: #1c1c1c; padding: 0.2rem 0.4rem; }
+    pre { padding: 0.8rem; overflow: auto; }
+    .warn { color: #f6c177; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #333; padding: 0.35rem 0.5rem; text-align: left; }
+    input, button { font: inherit; }
+  </style>
+</head>
+<body>
+  <h1>Mandala Engine editor</h1>
+  <p>Not Unreal Editor. Scrub certified <code>t</code>, inspect hash, switch observation organ. Physics edits require a <strong>proposal</strong> through AAIS.</p>
+  <p class="warn">Movie Lane does not own time. Live shader reload is a CLI stub (<code>--organ</code>).</p>
+  <h2>CLI</h2>
+  <pre>node mandala/engine/editor/cli.mjs list --seed 7 --steps 4
+node mandala/engine/editor/cli.mjs scrub --t 2 --seed 7 --steps 4
+node mandala/engine/editor/cli.mjs hash --seed 7 --steps 4
+node mandala/engine/editor/cli.mjs --organ MovieLane
+node mandala/engine/editor/cli.mjs set-phi          # refused
+node mandala/engine/editor/cli.mjs set-phi --propose  # still needs a real Chamber proposal</pre>
+  <h2>Inspect a receipt</h2>
+  <p>Choose <code>output/mandala-engine-e2e/receipt.json</code>:</p>
+  <input id="file" type="file" accept="application/json" />
+  <div id="out"></div>
+  <script>
+    document.getElementById("file").addEventListener("change", async (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const json = JSON.parse(await f.text());
+      const slices = json.slices || [];
+      const rows = slices.map((s) => `<tr><td>${s.t}</td><td><code>${s.hash}</code></td></tr>`).join("");
+      document.getElementById("out").innerHTML = `
+        <p>abi <code>${json.abiId}</code> · constitution <code>${json.constitutionId}</code> · seed ${json.seed}</p>
+        <p>certified hash <code>${json.stateHash}</code></p>
+        <p>physics edit without proposal: <strong>denied</strong></p>
+        <table><thead><tr><th>t</th><th>hash</th></tr></thead><tbody>${rows}</tbody></table>
+        <pre>${JSON.stringify({ organs: json.organs, artifacts: json.artifacts }, null, 2)}</pre>`;
+    });
+  </script>
+</body>
+</html>
