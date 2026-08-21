@@ -1,151 +1,135 @@
 /**
- * Simulation Chamber Holographic — Raw .bin Streaming
- * No PNG encode, 152ms → 12ms per frame
+ * Official holographic Simulation Chamber recorder — raw Float32 `.bin` streaming.
+ *
+ * Usage:
+ *   node scripts/simulation-chamber-holo.mjs scene-salt-atlas --holo --creature Mythar \
+ *     --mode composite --out output/simulation/holo-mythar-bin/ [--duration 2]
+ *
+ * Path: buildHolographicBuffers → writeBinFrame → meta.json + watch.html
+ * No PNG encode, no sharp, no H.264 by default.
+ * Status: bin streaming partial; GPU shader fps declared until watch.html measures on device.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { runHoloChamber } from "../mandala/engine/chamber/holo-loop.mjs";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO = join(__dirname, "..");
 
-const args = process.argv.slice(2);
-const sceneCardPath = args[0];
-const options = {
-  holo: args.includes('--holo'),
-  creature: args.find(a => a.startsWith('--creature'))?.split('=')[1] || args[args.indexOf('--creature') + 1],
-  out: args.find(a => a.startsWith('--out'))?.split('=')[1] || args[args.indexOf('--out') + 1],
-  record: args.find(a => a.startsWith('--record'))?.split('=')[1] || args[args.indexOf('--record') + 1]
-};
-
-const outDir = options.out || `output/simulation/holo-mythar-${Date.now()}/`;
-fs.mkdirSync(outDir, { recursive: true });
-fs.mkdirSync(path.join(outDir, 'frames'), { recursive: true });
-
-console.log(`Simulation Chamber — holographic path`);
-console.log(`Output: ${outDir}`);
-console.log(`Creature: ${options.creature}`);
-console.log(`Mode: COMPOSITE raw .bin streaming\n`);
-
-// Meta file
-const meta = {
-  created: Date.now(),
-  count: 0,
-  maxNodes: 8192,
-  fps: 60,
-  codec: "raw-float32",
-  attributes: ["position","entanglementDensity","entanglementDirection","curvature","entanglementWeight","governance","baseNormal","h_ij"]
-};
-fs.writeFileSync(path.join(outDir, 'meta.json'), JSON.stringify(meta, null, 2));
-
-// Simulate holographic buffers
-class HolographicRig {
-  constructor() {
-    this.nodes = Array.from({ length: 64 }, (_, i) => ({
-      pos: { x: Math.sin(i), y: Math.cos(i), z: Math.sin(i * 0.5) },
-      entanglementDensity: 0.5,
-      curvature: 0.5,
-      weight: 0.5,
-      direction: { x: 0, y: 1, z: 0 },
-      governance: { intent: 0.8, evidence: 0.8, conformance: 0.868, stewardship: 1.0 }
-    }));
-    this.buffers = null;
-  }
-
-  update(t) {
-    this.nodes.forEach((n, i) => {
-      n.entanglementDensity = 0.3 + 0.7 * Math.abs(Math.sin(t * 0.1 + i * 0.1));
-      n.curvature = 0.5 + 0.5 * Math.cos(t * 0.05 + i * 0.15);
-    });
-  }
-}
-
-const holoRig = new HolographicRig();
-
-function writeBinFrame(t, rig) {
-  const count = rig.nodes.length;
-  
-  // Build buffers
-  const pos = new Float32Array(count * 3);
-  const rho = new Float32Array(count);
-  const dir = new Float32Array(count * 3);
-  const curv = new Float32Array(count);
-  const wij = new Float32Array(count);
-  const gov = new Float32Array(count * 4);
-  const baseN = new Float32Array(count * 3);
-  
-  rig.nodes.forEach((n, i) => {
-    pos[i * 3] = n.pos.x;
-    pos[i * 3 + 1] = n.pos.y;
-    pos[i * 3 + 2] = n.pos.z;
-    rho[i] = n.entanglementDensity;
-    dir[i * 3] = n.direction.x;
-    dir[i * 3 + 1] = n.direction.y;
-    dir[i * 3 + 2] = n.direction.z;
-    curv[i] = n.curvature;
-    wij[i] = 0.5;
-    gov[i * 4] = n.governance.intent;
-    gov[i * 4 + 1] = n.governance.evidence;
-    gov[i * 4 + 2] = n.governance.conformance;
-    gov[i * 4 + 3] = n.governance.stewardship;
-    baseN[i * 3] = 0;
-    baseN[i * 3 + 1] = 1;
-    baseN[i * 3 + 2] = 0;
-  });
-  
-  // Header: count, t, h_ij[9]
-  const header = new Uint32Array(16);
-  header[0] = count;
-  header[1] = t;
-  const h_ij = new Float32Array([1,0,0,0,1,0,0,0,1]);
-  new Float32Array(header.buffer, 8, 9).set(h_ij);
-  
-  const totalFloats = count * 3 + count + count * 3 + count + count + count * 4 + count * 3;
-  const totalBytes = header.byteLength + totalFloats * 4;
-  const out = Buffer.allocUnsafe(totalBytes);
-  
-  Buffer.from(header.buffer).copy(out, 0);
-  let offset = header.byteLength;
-  
-  const write = (arr) => {
-    Buffer.from(arr.buffer).copy(out, offset);
-    offset += arr.byteLength;
+function parseArgs(argv) {
+  const positional = [];
+  const options = {
+    creature: "Mythar",
+    record: "composite",
+    duration: 10,
+    fps: 12,
+    out: null,
+    seed: 21,
+    width: 384,
+    height: 512,
+    sparse: true,
   };
-  
-  write(pos);
-  write(rho);
-  write(dir);
-  write(curv);
-  write(wij);
-  write(gov);
-  write(baseN);
-  
-  const framePath = path.join(outDir, `frames/frame-${String(t).padStart(6, '0')}.bin`);
-  fs.writeFileSync(framePath, out);
-  
-  if (t % 10 === 0) {
-    console.log(`Frame ${t}: ${count} nodes, ${(totalBytes/1024).toFixed(1)}KB`);
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--holo") continue; // accepted for symmetry; this script is always holo
+    if (a === "--creature" && argv[i + 1]) options.creature = argv[++i];
+    else if (a === "--record" && argv[i + 1]) options.record = argv[++i];
+    else if (a === "--mode" && argv[i + 1]) options.record = argv[++i];
+    else if (a === "--out" && argv[i + 1]) options.out = argv[++i];
+    else if (a === "--duration" && argv[i + 1]) options.duration = parseFloat(argv[++i]);
+    else if (a === "--fps" && argv[i + 1]) options.fps = parseInt(argv[++i], 10);
+    else if (a === "--seed" && argv[i + 1]) options.seed = parseInt(argv[++i], 10);
+    else if (a === "--width" && argv[i + 1]) options.width = parseInt(argv[++i], 10);
+    else if (a === "--height" && argv[i + 1]) options.height = parseInt(argv[++i], 10);
+    else if (a === "--no-sparse") options.sparse = false;
+    else if (a.startsWith("-")) {
+      console.error(`Unknown flag: ${a}`);
+      process.exit(2);
+    } else positional.push(a);
   }
+  return { positional, options };
 }
 
-// Run 120 frames
-console.log('Recording 120 frames...\n');
-const start = Date.now();
-
-for (let t = 0; t < 120; t++) {
-  holoRig.update(t);
-  writeBinFrame(t, holoRig);
+function resolveSceneCard(raw) {
+  if (!raw) return null;
+  if (existsSync(raw)) return resolve(raw);
+  const short = String(raw).replace(/\.json$/i, "");
+  const named = join(__dirname, "scene-cards", `${short}.json`);
+  if (existsSync(named)) return named;
+  const asRepo = resolve(REPO, raw);
+  if (existsSync(asRepo)) return asRepo;
+  return resolve(raw);
 }
 
-const elapsed = Date.now() - start;
-const avgMs = elapsed / 120;
+const { positional, options } = parseArgs(process.argv.slice(2));
+if (positional.length === 0) {
+  console.error(
+    "Usage: node scripts/simulation-chamber-holo.mjs <scene-card|scene-salt-atlas> [options]",
+  );
+  console.error("  --creature Mythar --mode composite --out DIR --duration N --fps N");
+  console.error("  Official raw-float32 .bin path (no PNG / no H.264).");
+  process.exit(1);
+}
 
-console.log(`\n=== Complete ===`);
-console.log(`Frames: 120`);
-console.log(`Total time: ${(elapsed/1000).toFixed(2)}s`);
-console.log(`Avg per frame: ${avgMs.toFixed(1)}ms`);
-console.log(`Gen FPS: ${(1000/avgMs).toFixed(1)}`);
-console.log(`Output: ${outDir}`);
-console.log(`\nNo PNG encode. Raw .bin streaming.`);
-console.log(`Watch with: http://127.0.0.1:8765/watch.html`);
+const sceneCardPath = resolveSceneCard(positional[0]);
+if (!existsSync(sceneCardPath)) {
+  console.error(`Scene card not found: ${sceneCardPath}`);
+  process.exit(1);
+}
+const sceneCard = JSON.parse(readFileSync(sceneCardPath, "utf8"));
+const outDir = options.out
+  ? resolve(options.out)
+  : resolve(REPO, "output/simulation", `holo-${basename(sceneCardPath, ".json")}-bin`);
+
+console.log(`\nSimulation Chamber Holo — official raw .bin recorder`);
+console.log("=".repeat(60));
+console.log(`  Scene: ${sceneCard.name || sceneCard.id}`);
+console.log(`  Creature: ${options.creature}`);
+console.log(`  Mode: ${options.record}`);
+console.log(`  Out: ${outDir}`);
+console.log(`  Status: partial bin streaming; GPU shader fps declared until watch measures.`);
+console.log(`  No PNG encode. No H.264.`);
+
+const holo = runHoloChamber({
+  sceneCard,
+  outDir,
+  creature: options.creature,
+  record: options.record,
+  durationSec: Number.isFinite(options.duration) ? options.duration : 10,
+  fps: options.fps || 12,
+  width: options.width,
+  height: options.height,
+  seed: options.seed,
+  recordPng: false,
+  mp4: false,
+  sparse: options.sparse,
+});
+
+const framesDir = join(outDir, "frames");
+const bins = existsSync(framesDir)
+  ? readdirSync(framesDir).filter((f) => f.endsWith(".bin"))
+  : [];
+let totalBytes = 0;
+for (const f of bins) totalBytes += statSync(join(framesDir, f)).size;
+const avgBytes = bins.length ? totalBytes / bins.length : 0;
+const wallMs = holo.receipt.wallMs ?? holo.receipt.ms ?? 0;
+const frameCount = holo.frameCount;
+const msPerFrame = frameCount > 0 ? wallMs / frameCount : 0;
+const genFps = holo.receipt.genFpsEstimate ?? (msPerFrame > 0 ? 1000 / msPerFrame : null);
+
+console.log(`\n=== Measured (this run) ===`);
+console.log(`  Frames: ${frameCount}`);
+console.log(`  Wall: ${wallMs} ms`);
+console.log(`  ms/frame: ${msPerFrame.toFixed(2)}`);
+if (Number.isFinite(genFps)) console.log(`  Gen fps: ${genFps.toFixed(2)}`);
+console.log(`  Avg .bin: ${(avgBytes / 1024).toFixed(2)} KB (${bins.length} files, ${(totalBytes / 1024).toFixed(1)} KB total)`);
+console.log(`  Codec: ${holo.codec || holo.receipt.codec}`);
+console.log(`  Receipt: ${join(outDir, "receipt.json")}`);
+console.log(`  Watch: ${join(outDir, "watch.html")}`);
+console.log(`  Serve: python3 -m http.server 8765  (cwd=${outDir})`);
+console.log(`  URL: http://127.0.0.1:8765/watch.html`);
+console.log(`  Shader fps: open watch overlay on device — not claimed here.`);
+
+process.exit(holo.ok ? 0 : 1);

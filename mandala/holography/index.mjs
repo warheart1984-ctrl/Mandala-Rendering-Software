@@ -86,10 +86,14 @@ export {
 export {
   EFR_STATUS,
   EFR_MODES,
+  COMPOSITE_STATUS,
+  REALISTIC_MESH_STATUS,
   renderEGTHeatmap,
   renderEGTCausal,
   renderEGTEmergentGeometry,
   renderEGTCombined,
+  renderEGTComposite,
+  shadeHolographicFromBuffers,
   renderEFR,
   renderBoundary,
 } from "./efr.mjs";
@@ -115,6 +119,17 @@ export {
 export {
   EntanglementRenderer,
   createEntanglementRenderer,
+  HOLOGRAPHIC_SHADER_STATUS,
+  HOLOGRAPHIC_BUFFER_STATUS,
+  HOLOGRAPHIC_STREAMING_STATUS,
+  HOLOGRAPHIC_GPU_RASTER_STATUS,
+  HOLOGRAPHIC_SHADER_SOT,
+  HOLOGRAPHIC_ATTRIBUTE_NAMES,
+  MYTHAR_BOUNDARY_COLOR,
+  DEFAULT_MAX_HOLO_NODES,
+  createHolographicMaterial,
+  createHolographicUniforms,
+  loadHolographicShaderSources,
 } from "./entanglement-renderer.mjs";
 
 export {

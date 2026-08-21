@@ -155,6 +155,25 @@ export {
 } from "./constitutional-motion.mjs";
 
 export {
+  HOLO_RIG_STATUS,
+  HOLO_RIG_BUFFERS_STATUS,
+  CharacterHolographicRig,
+  createCharacterHolographicRig,
+  packHolographicAttributeBuffers,
+} from "./holo-rig.mjs";
+
+export {
+  BOUNDARY_APPEARANCE_STATUS,
+  JOINT_FLIP_DEG,
+  JOINT_ALIGN_COS,
+  K_LOCK,
+  MUSCLE_BULGE,
+  detectEntanglementJoints,
+  applyBoundaryAppearance,
+  projectRigNodesH,
+} from "./boundary-appearance.mjs";
+
+export {
   TAXONOMY_STATUS,
   FULL_SPECIES_SYSTEM_STATUS,
   BIPEDAL_ENVELOPES,
