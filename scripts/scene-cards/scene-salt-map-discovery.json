@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-salt-map-discovery",
+  "kind": "SceneSpecification",
+  "name": "The Marker in the Mud",
+  "description": "Aven Sarai unearths a buried treaty stone at Harrow Bend — and a dispute begins. From 'A Map Drawn in Salt'.",
+  "duration": 16,
+
+  "actors": [
+    {
+      "id": "aven",
+      "name": "Aven Sarai",
+      "personality": "Precise, methodical, deeply loyal to the Office of Measures. Speaks in measured sentences.",
+      "color": "#5082aa",
+      "voice": "shimmer",
+      "beats": [
+        { "time": 0, "action": "appear", "position": [-8, 2, 6, 0], "emissive": [0.3, 0.5, 0.7], "scale": 0.1 },
+        { "time": 0.5, "action": "move", "position": [-2, 2, 2, 0], "emissive": [0.3, 0.5, 0.7], "scale": 0.45 },
+        { "time": 2.0, "action": "glow", "emissive": [0.4, 0.6, 0.8], "scale": 0.5 },
+        { "time": 3.0, "action": "speak", "speech": "There is a stone here. Buried in the bank. The marks on it — these are survey marks. This is old.", "emissive": [0.4, 0.6, 0.8], "scale": 0.5 },
+        { "time": 6.0, "action": "listen", "emissive": [0.35, 0.55, 0.75], "scale": 0.48 },
+        { "time": 8.0, "action": "move", "position": [2, 2, 0, 0], "emissive": [0.3, 0.5, 0.7], "scale": 0.5 },
+        { "time": 10.0, "action": "speak", "speech": "The Office of Measures recognizes this as a treaty marker. It defines the boundary. If this stone stands, the water rights follow the border.", "emissive": [0.4, 0.6, 0.8], "scale": 0.5 },
+        { "time": 14.0, "action": "listen", "emissive": [0.3, 0.5, 0.7], "scale": 0.48 },
+        { "time": 15.0, "action": "exit", "emissive": [0.1, 0.15, 0.2], "scale": 0.1 }
+      ]
+    },
+    {
+      "id": "pel",
+      "name": "Pel",
+      "personality": "Quiet, watchful irrigation steward. Protects Harrow Bend's people. Doesn't trust the Office of Measures.",
+      "color": "#5a7850",
+      "voice": "alloy",
+      "beats": [
+        { "time": 0.2, "action": "appear", "position": [-3, 2, 0, 0], "emissive": [0.3, 0.45, 0.25], "scale": 0.1 },
+        { "time": 0.8, "action": "glow", "emissive": [0.35, 0.5, 0.3], "scale": 0.45 },
+        { "time": 3.0, "action": "listen", "emissive": [0.3, 0.45, 0.25], "scale": 0.45 },
+        { "time": 5.0, "action": "speak", "speech": "That stone was not there before. Someone buried it recently. The Sel water-rights office has been pushing for new markers.", "emissive": [0.4, 0.55, 0.3], "scale": 0.5 },
+        { "time": 8.0, "action": "listen", "emissive": [0.3, 0.45, 0.25], "scale": 0.45 },
+        { "time": 12.0, "action": "speak", "speech": "If that stone stands, the village loses its water. We have farmed this bend for three generations.", "emissive": [0.4, 0.55, 0.3], "scale": 0.5 },
+        { "time": 14.5, "action": "listen", "emissive": [0.3, 0.45, 0.25], "scale": 0.45 },
+        { "time": 15.0, "action": "exit", "emissive": [0.1, 0.15, 0.08], "scale": 0.1 }
+      ]
+    },
+    {
+      "id": "coren",
+      "name": "Coren Va",
+      "personality": "Provincial judge. Practical, skeptical of both Sel and Talassi claims.",
+      "color": "#8c6450",
+      "voice": "echo",
+      "beats": [
+        { "time": 0.4, "action": "appear", "position": [10, 2, -2, 0], "emissive": [0.55, 0.4, 0.3], "scale": 0.1 },
+        { "time": 1.2, "action": "move", "position": [5, 2, -2, 0], "emissive": [0.55, 0.4, 0.3], "scale": 0.45 },
+        { "time": 2.5, "action": "glow", "emissive": [0.6, 0.45, 0.35], "scale": 0.5 },
+        { "time": 7.0, "action": "speak", "speech": "I heard there was a discovery. Let me see the stone. And let me be clear — I am not here to choose sides.", "emissive": [0.6, 0.45, 0.35], "scale": 0.5 },
+        { "time": 10.0, "action": "listen", "emissive": [0.55, 0.4, 0.3], "scale": 0.48 },
+        { "time": 13.0, "action": "speak", "speech": "Both of you, enough. The stone is real. The question is whether it was placed lawfully. I will need to see the original treaty.", "emissive": [0.6, 0.45, 0.35], "scale": 0.5 },
+        { "time": 15.0, "action": "exit", "emissive": [0.2, 0.15, 0.1], "scale": 0.1 }
+      ]
+    }
+  ],
+
+  "entities": [
+    {
+      "id": "ground",
+      "geometry": { "kind": "box", "center": [0, -0.5, 0, 0], "halfSize": [32, 0.5, 32] },
+      "materialId": "ground-mat"
+    },
+    {
+      "id": "station",
+      "geometry": { "kind": "box", "center": [-6, 1.5, 0, 0], "halfSize": [2, 1.5, 1] },
+      "materialId": "wall-mat"
+    },
+    {
+      "id": "grain-store",
+      "geometry": { "kind": "box", "center": [10, 1, 4, 0], "halfSize": [3, 1, 1.5] },
+      "materialId": "wall-mat"
+    },
+    {
+      "id": "platform",
+      "geometry": { "kind": "box", "center": [0, 0.25, 12, 0], "halfSize": [4, 0.25, 1] },
+      "materialId": "wood-mat"
+    },
+    {
+      "id": "marker-stone",
+      "geometry": { "kind": "box", "center": [4, 0.25, -3, 0], "halfSize": [0.75, 0.25, 0.75] },
+      "materialId": "stone-mat"
+    }
+  ],
+
+  "materials": [
+    { "id": "ground-mat", "color": "#3c4c3c", "brdf": "lambertian", "roughness": 0.9 },
+    { "id": "wall-mat", "color": "#604830", "brdf": "lambertian", "roughness": 0.8 },
+    { "id": "wood-mat", "color": "#504228", "brdf": "lambertian", "roughness": 0.85 },
+    { "id": "stone-mat", "color": "#808070", "brdf": "lambertian", "roughness": 0.6 }
+  ],
+
+  "camera": {
+    "type": "orbit",
+    "center": [2, 1, 0],
+    "radius": 14,
+    "height": 4,
+    "lookAt": [2, 1.5, 0]
+  }
+}

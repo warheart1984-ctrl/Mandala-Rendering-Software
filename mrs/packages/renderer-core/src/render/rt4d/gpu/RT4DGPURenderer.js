@@ -11,6 +11,10 @@ import { RAYGEN_WGSL, SHADE_WGSL, ACCUM_WGSL } from "./shaders.js";
 // BVH WGSL is loaded from the accel/gpu module as a string
 import { BVH4D_WGSL_SOURCE } from "../accel/gpu/index.js";
 import { renderWavefrontFrame } from "../pipeline/WavefrontPipelineAdapter.js";
+import {
+  getCharacterMaterials,
+  CHARACTER_MATERIAL_ENUM,
+} from "../material/CharacterMaterialRegistry.js";
 
 const WORKGROUP_SIZE = 64;
 
@@ -23,6 +27,8 @@ export class RT4DGPURenderer {
     /** @type {"legacy"|"wavefront"} */
     this.engineMode = options.engineMode === "wavefront" ? "wavefront" : "legacy";
     this._wavefrontLast = null;
+    this._postProcessEnabled = options.postProcessEnabled ?? true;
+    this._postProcessor = options.postProcessor || null;
 
     this.device = null;
     this.bindGroupMgr = null;
@@ -36,6 +42,8 @@ export class RT4DGPURenderer {
     this._accumBuffer = null;
     this._outputBuffer = null;
     this._staging = null;
+    /** @type {null|{status:string,materials:Record<string,{shaderHash:string,source:string}>,enum:typeof CHARACTER_MATERIAL_ENUM}} */
+    this._characterMaterialManifest = null;
   }
 
   async init(canvas) {
@@ -56,10 +64,41 @@ export class RT4DGPURenderer {
     this.meshBufferCache = new MeshBufferCache(this.device, this.bufferPool);
     this._staging = new StagingBuffer(this.device, this.bufferPool);
 
+    this._loadCharacterMaterialManifest();
     await this._createPipelines();
     this._allocateRayBuffers();
 
     return this;
+  }
+
+  /**
+   * Phase 1 partial: record character material contracts for provenance.
+   * Does NOT naive-inline character/*.wgsl into SHADE (signature mismatch).
+   * Shade path uses SHADE_WGSL stand-in branches + sceneSerializer pack.
+   */
+  _loadCharacterMaterialManifest() {
+    try {
+      const mats = getCharacterMaterials();
+      const materials = {};
+      for (const [name, mat] of Object.entries(mats)) {
+        materials[name] = {
+          shaderHash: mat.shaderHash,
+          source: mat.provenance?.source,
+          status: mat.status,
+        };
+      }
+      this._characterMaterialManifest = {
+        status: "partial",
+        note: "SHADE_WGSL stand-in BRDFs; character WGSL loaded for hash/provenance only",
+        materials,
+        enum: CHARACTER_MATERIAL_ENUM,
+      };
+    } catch (err) {
+      this._characterMaterialManifest = {
+        status: "blocked-with-evidence",
+        error: err?.message || String(err),
+      };
+    }
   }
 
   async _createPipelines() {
@@ -159,6 +198,27 @@ export class RT4DGPURenderer {
         allowLiveGpu: options.allowLiveGpu !== false,
       });
       this._wavefrontLast = result;
+      
+      // Apply post-processing to wavefront results
+      if (this._postProcessEnabled && this._postProcessor) {
+        const processed = this._postProcessor.processFrame({
+          pixels: result.pixels,
+          width: result.width,
+          height: result.height
+        }, { width: result.width, height: result.height });
+        
+        return {
+          pixels: processed.pixels || result.pixels,
+          width: result.width,
+          height: result.height,
+          engineMode: "wavefront",
+          evidence: result.evidence,
+          conformance: result.conformance,
+          postprocess: processed.postprocess || {},
+          composite: processed.composite || {}
+        };
+      }
+      
       return {
         pixels: result.pixels,
         width: result.width,
@@ -282,6 +342,7 @@ export class RT4DGPURenderer {
     }
 
     return this._readback(width, height);
+  }
   }
 
   _copyScatterToRays(encoder) {

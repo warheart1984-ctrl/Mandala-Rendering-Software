@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-004",
+  "kind": "SceneSpecification",
+  "name": "The Storm Core",
+  "description": "A trefoil knot writhes in violent motion, red and orange",
+  "entities": [
+    {
+      "id": "knot-1",
+      "geometry": { "kind": "surface", "surfaceId": "trefoil-4d" },
+      "transform4d": { "rotate": { "xy": 1.2, "xz": 0.9, "yz": 0.6 } },
+      "materialId": "fire-mat"
+    }
+  ],
+  "materials": [
+    { "id": "fire-mat", "color": "#ff4400", "brdf": "ggx", "roughness": 0.15 }
+  ],
+  "camera": {
+    "position4d": [0, 1, 3, 0],
+    "target4d": [0, 0, 0, 0],
+    "fovX": 70, "fovY": 70
+  },
+  "lights": [
+    { "id": "ember", "center": [0, 2, 0, 0], "radius": 1.5, "emission": [1.0, 0.3, 0.0] },
+    { "id": "spark", "center": [3, -1, 2, 1], "radius": 0.3, "emission": [1.0, 0.8, 0.0] }
+  ],
+  "output": { "width": 512, "height": 512, "samples": 24 },
+  "shot": { "shotId": "shot-004", "sceneVersion": "1" },
+  "metadata": {
+    "emotion": "fury",
+    "setting": "storm",
+    "shot_type": "extreme_close",
+    "duration": 3.0,
+    "emotionGenome": { "valence": 0.2, "arousal": 0.95, "dominance": 0.8 }
+  }
+}

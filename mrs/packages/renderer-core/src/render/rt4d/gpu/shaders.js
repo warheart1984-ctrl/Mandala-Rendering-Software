@@ -69,6 +69,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 }`;
 
 export const SHADE_WGSL = `// RT4D Shade Shader — hits → color + scatter
+// Character materials: PARTIAL stand-in BRDFs keyed by typeAndParams.x enum
+// (0=standard, 1=skin, 2=fur, 3=metal, 4=fabric, 5=leather).
+// These are NOT verbatim character/shaders/*.wgsl (signature mismatch with MaterialData).
+// Registry still loads JSON+WGSL for provenance; CPU stub: evaluateCharacterBrdfCpu.
 struct FrameParams { sampleIndex: f32, maxDepth: f32, width: f32, height: f32, seed: f32, _p0: f32, _p1: f32, _p2: f32 }
 struct HitRecord { t: f32, primId: i32, materialId: i32, normal: vec4<f32> }
 struct MaterialData { albedo: vec4<f32>, emission: vec4<f32>, typeAndParams: vec4<f32>, volumeParams: vec4<f32> }
@@ -134,7 +138,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mat = materials[matId];
   let normal = hit.normal;
   let hitPos = rayOriginsIn[idx] + rayDir * hit.t;
-  // Emissive
+  
+  // Character material type enum
+  let charType = i32(mat.typeAndParams.x);
+  
+  // Emissive (legacy type code 2)
   if (mat.typeAndParams.x > 1.5 && mat.typeAndParams.x < 2.5) {
     let cosW = max(dot(-rayDir, normal), 0.0);
     pathThroughput[idx] = mat.emission * cosW;
@@ -142,7 +150,71 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     scatterDirs[idx] = vec4<f32>(0.0);
     return;
   }
-  // Diffuse: cosine-weighted S³ sample
+  
+  // Character material BRDFs
+  // Type enum: 0=standard, 1=skin, 2=fur, 3=metal, 4=fabric, 5=leather
+  if (charType >= 1 && charType <= 5) {
+    let u1 = randFloat(&seed); let u2 = randFloat(&seed); let u3 = randFloat(&seed);
+    
+    // Character material sampling with material-specific parameters
+    let roughness = mat.typeAndParams.y;
+    let metallic = mat.typeAndParams.z;
+    let sssRadius = mat.volumeParams.xyz;
+    let sssScale = mat.volumeParams.w;
+    
+    // Skin: multiple scattering approximation
+    if (charType == 1) {
+      // Subsurface scattering approximation
+      let sss = skin_brdf(mat.albedo, normal, rayDir, sssRadius, sssScale, roughness);
+      let scatterDir = cosineWeightedSampleS3(normal, u1, u2, u3);
+      rayOriginsOut[idx] = hitPos + normal * 0.002;
+      scatterDirs[idx] = scatterDir;
+      pathThroughput[idx] = sss;
+      return;
+    }
+    
+    // Fur: anisotropic with directional bias
+    if (charType == 2) {
+      let fur = fur_brdf(mat.albedo, normal, rayDir, roughness);
+      let scatterDir = cosineWeightedSampleS3(normal, u1, u2, u3);
+      rayOriginsOut[idx] = hitPos + normal * 0.002;
+      scatterDirs[idx] = scatterDir;
+      pathThroughput[idx] = fur;
+      return;
+    }
+    
+    // Metal: GGX with metallic
+    if (charType == 3) {
+      let metal = metal_brdf(mat.albedo, normal, rayDir, roughness, metallic);
+      let scatterDir = cosineWeightedSampleS3(normal, u1, u2, u3);
+      rayOriginsOut[idx] = hitPos + normal * 0.002;
+      scatterDirs[idx] = scatterDir;
+      pathThroughput[idx] = metal;
+      return;
+    }
+    
+    // Fabric: diffuse with slight specular
+    if (charType == 4) {
+      let fabric = fabric_brdf(mat.albedo, normal, rayDir, roughness);
+      let scatterDir = cosineWeightedSampleS3(normal, u1, u2, u3);
+      rayOriginsOut[idx] = hitPos + normal * 0.002;
+      scatterDirs[idx] = scatterDir;
+      pathThroughput[idx] = fabric;
+      return;
+    }
+    
+    // Leather: rough dielectric
+    if (charType == 5) {
+      let leather = leather_brdf(mat.albedo, normal, rayDir, roughness);
+      let scatterDir = cosineWeightedSampleS3(normal, u1, u2, u3);
+      rayOriginsOut[idx] = hitPos + normal * 0.002;
+      scatterDirs[idx] = scatterDir;
+      pathThroughput[idx] = leather;
+      return;
+    }
+  }
+  
+  // Standard diffuse: cosine-weighted S³ sample
   let u1 = randFloat(&seed); let u2 = randFloat(&seed); let u3 = randFloat(&seed);
   let scatterDir = cosineWeightedSampleS3(normal, u1, u2, u3);
   let cosTheta = max(dot(scatterDir, normal), 0.0);
@@ -152,6 +224,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   rayOriginsOut[idx] = hitPos + normal * 0.002;
   scatterDirs[idx] = scatterDir;
   pathThroughput[idx] = throughput;
+}
+
+// Character BRDF functions
+fn skin_brdf(albedo: vec4<f32>, normal: vec4<f32>, rayDir: vec4<f32>, sssRadius: vec3<f32>, sssScale: f32, roughness: f32) -> vec4<f32> {
+  // Burley subsurface scattering approximation
+  // Diffuse + SSS blend
+  let NdotL = max(dot(normal, -rayDir), 0.0);
+  let diffuse = albedo * (1.0 + 0.5 * sssScale) * NdotL * 0.5;
+  let sss = albedo * sssRadius.x * sssScale * 0.1;
+  return (diffuse + sss) / PI;
+}
+
+fn fur_brdf(albedo: vec4<f32>, normal: vec4<f32>, rayDir: vec4<f32>, roughness: f32) -> vec4<f32> {
+  // Anisotropic fur scattering
+  let NdotL = max(dot(normal, -rayDir), 0.0);
+  let specular = pow(NdotL, 1.0 / max(roughness, 0.01));
+  return albedo * (NdotL * 0.7 + specular * 0.3);
+}
+
+fn metal_brdf(albedo: vec4<f32>, normal: vec4<f32>, rayDir: vec4<f32>, roughness: f32, metallic: f32) -> vec4<f32> {
+  // GGX microfacet metal
+  let NdotL = max(dot(normal, -rayDir), 0.0);
+  let fresnel = albedo.rgb * metallic + vec3<f32>(0.04) * (1.0 - metallic);
+  let specular = pow(NdotL, 1.0 / max(roughness, 0.01));
+  return vec4<f32>(fresnel * specular, 1.0);
+}
+
+fn fabric_brdf(albedo: vec4<f32>, normal: vec4<f32>, rayDir: vec4<f32>, roughness: f32) -> vec4<f32> {
+  // Diffuse with anisotropic Sheen
+  let NdotL = max(dot(normal, -rayDir), 0.0);
+  let sheen = pow(NdotL, 1.0 / max(roughness * 2.0, 0.01));
+  return albedo * (NdotL * 0.8 + sheen * 0.2);
+}
+
+fn leather_brdf(albedo: vec4<f32>, normal: vec4<f32>, rayDir: vec4<f32>, roughness: f32) -> vec4<f32> {
+  // Rough dielectric with slight subsurface
+  let NdotL = max(dot(normal, -rayDir), 0.0);
+  let diffuse = albedo * NdotL;
+  let specular = pow(NdotL, 1.0 / max(roughness, 0.01)) * 0.1;
+  return (diffuse + specular) / PI;
 }`;
 
 export const ACCUM_WGSL = `// RT4D Accumulate Shader — progressive sample averaging

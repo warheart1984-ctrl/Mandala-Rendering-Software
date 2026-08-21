@@ -1,0 +1,11 @@
+{
+  "name": "@mandala/engine-sdk",
+  "version": "0.9.0",
+  "private": true,
+  "type": "module",
+  "description": "Mandala Engine SDK (partial) — createUniverse / propose / project / observe / paint / speak",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  }
+}

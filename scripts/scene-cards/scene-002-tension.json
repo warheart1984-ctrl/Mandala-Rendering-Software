@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-002",
+  "kind": "SceneSpecification",
+  "name": "The Lattice Prison",
+  "description": "A lattice grid closes in, claustrophobic and tense",
+  "entities": [
+    {
+      "id": "lattice-1",
+      "geometry": { "kind": "surface", "surfaceId": "clifford-torus" },
+      "transform4d": { "rotate": { "yz": 0.8, "xw": 0.2 } },
+      "materialId": "cold-mat"
+    }
+  ],
+  "materials": [
+    { "id": "cold-mat", "color": "#3344aa", "brdf": "lambertian" }
+  ],
+  "camera": {
+    "position4d": [1, 1, 3, 0],
+    "target4d": [0, 0, 0, 0],
+    "fovX": 60, "fovY": 60
+  },
+  "lights": [
+    { "id": "harsh", "center": [2, 5, -1, 0], "radius": 0.3, "emission": [0.6, 0.6, 1.0] }
+  ],
+  "output": { "width": 512, "height": 512, "samples": 24 },
+  "shot": { "shotId": "shot-002", "sceneVersion": "1" },
+  "metadata": {
+    "emotion": "tension",
+    "setting": "lattice",
+    "shot_type": "close",
+    "duration": 3.0,
+    "emotionGenome": { "valence": 0.3, "arousal": 0.8, "dominance": 0.4 }
+  }
+}

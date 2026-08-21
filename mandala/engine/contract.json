@@ -1,0 +1,56 @@
+{
+  "$id": "mandala/engine/contract.json",
+  "id": "mandala-engine-organ.v1",
+  "version": "0.9.0",
+  "title": "Mandala Engine — constitutional 4D simulation and rendering platform",
+  "status": "partial",
+  "product": "governed-synthetic-world-runtime",
+  "identity": "The Mandala Engine — not a renderer with extra organs bolted on",
+  "extends": [
+    "docs/mandala/GOVERNED_SYNTHETIC_WORLD_RUNTIME.md",
+    "mandala/proto/contract.json",
+    "mandala/substrate/contract.json"
+  ],
+  "abi": {
+    "organAbi": "mandala-engine-organ.v1",
+    "supersedes": "mandala-engine-organ.v0",
+    "aaisUlV20": "not-found-in-repo",
+    "freeze": "v0.7 working — mandala-engine-organ.v1",
+    "physicsAbi": "mandala-engine-physics.v0.2"
+  },
+  "v0_1": {
+    "goal": "substrate + 4D scene graph skeleton",
+    "gpuSubstrate": "partial — proto ∇φ kernel + documented async queue with CPU fallback",
+    "sceneGraph": "skeleton",
+    "exit": [
+      "scene graph exists",
+      "deterministic graph hash",
+      "projection node does not change certified hash",
+      "proto four proofs still pass"
+    ]
+  },
+  "organs": {
+    "StoryForge": "partial",
+    "SimulationChamber": "partial",
+    "Mandala": "partial",
+    "AIPainter": "partial",
+    "Mythar": "partial",
+    "AAIS": "working",
+    "MovieLane": "partial"
+  },
+  "doNot": [
+    "rewrite the renderer",
+    "claim Unreal/Unity/Blender parity",
+    "implement mesh shaders / bindless / full physics / full PBR",
+    "invent AAIS-UL v20",
+    "edit constitution/CHARTER.md or engine/governance/policies without authorization",
+    "overwrite output/simulation/salt-atlas/",
+    "declare v1.0 full engine release"
+  ],
+  "commands": {
+    "test": "node --test mandala/engine/test/*.test.js",
+    "fourProofs": "node --test mandala/proto/test/four-proofs.test.js",
+    "e2e": "node mandala/engine/run-e2e.mjs",
+    "editor": "node mandala/engine/editor/cli.mjs list --seed 7 --steps 4"
+  }
+}

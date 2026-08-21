@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-salt-atlas",
+  "kind": "SceneSpecification",
+  "name": "A Map Drawn in Salt",
+  "description": "Ves Adran workroom, first hard frost. Aven Sarai mixes Talass Depression salt into ink and draws the contested watershed as a line that rain can renew. From the novel A Map Drawn in Salt.",
+  "duration": 18,
+  "characterPipeline": {
+    "id": "aven",
+    "species": "human",
+    "assetDir": "character/renders/aven",
+    "stages": ["char_wire.glb", "char_rigged.glb", "char_final.glb"]
+  },
+  "organ": {
+    "storyForge": "law",
+    "mandala": "pixels",
+    "simulationChamber": "motion",
+    "aiPainter": "emotion",
+    "mythar": "breath",
+    "aais": "contracts",
+    "movieLane": "assemble"
+  },
+  "actors": [
+    {
+      "id": "aven",
+      "name": "Aven Sarai",
+      "personality": "Precise surveyor. Speaks in measured sentences. Loyal to accuracy after office.",
+      "color": "#6a8eb0",
+      "voice": "shimmer",
+      "characterId": "aven",
+      "beats": [
+        { "time": 0, "action": "appear", "position": [-1.2, 1.35, 0.6, 0], "emissive": [0.35, 0.48, 0.62], "scale": 0.12 },
+        { "time": 0.6, "action": "mix", "position": [-1.2, 1.35, 0.6, 0], "emissive": [0.40, 0.52, 0.68], "scale": 0.48 },
+        { "time": 2.0, "action": "listen", "emissive": [0.38, 0.50, 0.65], "scale": 0.48 },
+        { "time": 3.2, "action": "speak", "speech": "It is an old surveyor's fix. Salt-set ink resists rain if mixed properly.", "emissive": [0.45, 0.58, 0.72], "scale": 0.5 },
+        { "time": 7.0, "action": "listen", "emissive": [0.38, 0.50, 0.65], "scale": 0.48 },
+        { "time": 8.4, "action": "speak", "speech": "It blooms and ruins the line.", "emissive": [0.45, 0.58, 0.72], "scale": 0.5 },
+        { "time": 10.5, "action": "draw", "position": [-0.4, 1.35, 0.3, 0], "emissive": [0.42, 0.55, 0.70], "scale": 0.5 },
+        { "time": 13.5, "action": "speak", "speech": "Disputed borders are drawn in salt-set ink on purpose, so rain and time will force renewal.", "emissive": [0.48, 0.60, 0.75], "scale": 0.5 },
+        { "time": 17.2, "action": "draw", "emissive": [0.35, 0.48, 0.62], "scale": 0.48 }
+      ]
+    },
+    {
+      "id": "sava",
+      "name": "Sava",
+      "personality": "Talassi broker. Dry, watchful, allergic to cheap certainty.",
+      "color": "#c4a05a",
+      "voice": "nova",
+      "characterId": "sava",
+      "beats": [
+        { "time": 0.3, "action": "appear", "position": [2.4, 1.4, -0.8, 0], "emissive": [0.55, 0.42, 0.22], "scale": 0.12 },
+        { "time": 1.0, "action": "walk", "position": [1.4, 1.4, 0.2, 0], "emissive": [0.60, 0.46, 0.24], "scale": 0.48 },
+        { "time": 2.2, "action": "speak", "speech": "That is expensive sentiment.", "emissive": [0.70, 0.52, 0.28], "scale": 0.5 },
+        { "time": 6.0, "action": "listen", "emissive": [0.58, 0.44, 0.22], "scale": 0.48 },
+        { "time": 7.2, "action": "speak", "speech": "And if mixed improperly?", "emissive": [0.68, 0.50, 0.26], "scale": 0.5 },
+        { "time": 9.8, "action": "speak", "speech": "Subtle.", "emissive": [0.62, 0.48, 0.24], "scale": 0.5 },
+        { "time": 11.5, "action": "listen", "position": [1.6, 1.4, 0.4, 0], "emissive": [0.55, 0.42, 0.22], "scale": 0.48 },
+        { "time": 16.0, "action": "speak", "speech": "Ugly maps are harder to worship.", "emissive": [0.70, 0.52, 0.28], "scale": 0.5 },
+        { "time": 17.5, "action": "listen", "emissive": [0.50, 0.38, 0.20], "scale": 0.48 }
+      ]
+    }
+  ],
+  "entities": [
+    { "id": "floor", "geometry": { "kind": "plane", "offset": 0 }, "materialId": "floor-mat" },
+    { "id": "atlas-table", "geometry": { "kind": "box", "center": [0, 0.85, 0.4, 0], "halfSize": [1.4, 0.06, 0.55] }, "materialId": "wood-mat" },
+    { "id": "table-leg", "geometry": { "kind": "capsule", "a": [0, 0.1, 0.4, 0], "b": [0, 0.82, 0.4, 0], "radius": 0.08 }, "materialId": "wood-mat" },
+    { "id": "salt-dish", "geometry": { "kind": "hypersphere", "center": [0.15, 0.98, 0.35, 0], "radius": 0.12 }, "materialId": "salt-mat" },
+    { "id": "lamp", "geometry": { "kind": "hypersphere", "center": [-0.8, 1.55, 0.2, 0], "radius": 0.14 }, "materialId": "lamp-mat" },
+    { "id": "window", "geometry": { "kind": "box", "center": [3.2, 1.6, -1.4, 0], "halfSize": [0.08, 0.7, 0.9] }, "materialId": "window-mat" },
+    { "id": "back-wall", "geometry": { "kind": "box", "center": [0, 1.4, -2.6, 0], "halfSize": [3.5, 1.4, 0.08] }, "materialId": "wall-mat" }
+  ],
+  "materials": [
+    { "id": "floor-mat", "color": "#2a2420", "brdf": "lambertian", "roughness": 0.92 },
+    { "id": "wood-mat", "color": "#5a3c28", "brdf": "lambertian", "roughness": 0.78 },
+    { "id": "salt-mat", "color": "#d8d0c4", "brdf": "ggx", "roughness": 0.35 },
+    { "id": "lamp-mat", "color": "#f0c878", "brdf": "lambertian", "roughness": 0.4 },
+    { "id": "window-mat", "color": "#88aacc", "brdf": "ggx", "roughness": 0.15 },
+    { "id": "wall-mat", "color": "#3a342e", "brdf": "lambertian", "roughness": 0.88 }
+  ],
+  "camera": {
+    "type": "orbit",
+    "center": [0.2, 1.2, 0.2],
+    "radius": 3.4,
+    "height": 2.2,
+    "lookAt": [0.2, 1.3, 0.2]
+  },
+  "metadata": {
+    "source": "A Map Drawn in Salt DRAFT v2",
+    "sourcePassage": "One evening near the first hard frost, Sava found her mixing ink with salt from the Talass Depression in a shallow dish.",
+    "emotion": "quiet-craft",
+    "setting": "ves-adran-workroom",
+    "shot_type": "medium",
+    "duration": 18.0
+  }
+}

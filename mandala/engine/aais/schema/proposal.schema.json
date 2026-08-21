@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandala.local/schema/mandala-engine-proposal.v1.json",
+  "title": "Mandala Engine gated proposal envelope",
+  "description": "JSON-serializable envelope. Field buffers stay in-memory; this schema gates identity, organ, and kind.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["source", "kind", "previous_state_hash", "provenance"],
+  "properties": {
+    "source": {
+      "type": "string",
+      "enum": [
+        "StoryForge",
+        "SimulationChamber",
+        "Mandala",
+        "AIPainter",
+        "Mythar",
+        "AAIS",
+        "MovieLane"
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["physics", "appearance", "acoustic", "observation", "intent", "gate"]
+    },
+    "previous_state_hash": { "type": "string", "minLength": 16 },
+    "numerical_error_bound": { "type": "number" },
+    "causality_bounds": {
+      "type": "object",
+      "properties": { "maxDefectStep": { "type": "number" } }
+    },
+    "proposed_delta": {
+      "type": "object",
+      "properties": {
+        "t": { "type": "number" },
+        "defect": {
+          "type": "object",
+          "required": ["x", "y", "z"],
+          "properties": {
+            "type": { "type": "string" },
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "z": { "type": "number" }
+          }
+        }
+      }
+    },
+    "provenance": { "type": "object" }
+  }
+}

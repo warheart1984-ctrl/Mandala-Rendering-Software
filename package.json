@@ -9,6 +9,8 @@
     "test:fmce": "jest --config jest.config.cjs",
     "test:governance": "node --test engine/governance/test/*.test.js",
     "test:conformance": "node scripts/test-conformance.mjs",
+    "test:mandala-proto": "node scripts/test-mandala-proto.mjs",
+    "test:mandala-engine": "node scripts/test-mandala-engine.mjs",
     "test:runtime-provenance": "node --test engine/runtime/test/*.test.js",
     "test:gpu": "node --test mrs/packages/renderer-core/test/gpu/gpu-core.test.js engine/constitution/test/gpu-constitution.test.js",
     "test:gpu-live": "node --test mrs/packages/renderer-core/test/gpu/gpu-live-*.test.js",
