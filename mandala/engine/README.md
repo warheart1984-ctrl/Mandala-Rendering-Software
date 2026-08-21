@@ -12,7 +12,7 @@
 | Governance Hamiltonian (`hamiltonian/governance.mjs`) | **working** (demo 6D graph); real CAR/CDR **declared** |
 | Materials (`materials/`) | **partial** |
 | AAIS Organ ABI v1 (`aais/`) | **working** freeze |
-| AI Painter (`painter/`) | **partial** (CPU; SD may be blocked-with-evidence) |
+| AI Painter (`painter/`) | **partial** (CPU; SD may be blocked-with-evidence; pro uncensored gated — see [`docs/mandala/AI_PAINTER_PRO_TIER.md`](../../docs/mandala/AI_PAINTER_PRO_TIER.md)) |
 | Mythar (`mythar/`) | **partial** (sound lattice; edge-tts if present) |
 | Editor CLI/HTML (`editor/`) | **partial** |
 | SDK (`sdk/`) | **partial** |
