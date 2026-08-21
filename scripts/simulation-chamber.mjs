@@ -75,6 +75,8 @@ import {
 import {
   runCinematicProtoSolver,
   applyDefectMotionToActors,
+  applyLocalGradientMotionToActors,
+  createFieldSampler,
   sampleWorldline,
   CHAMBER_SOLVER_ID,
   CHAMBER_SOLVER_POSE,
@@ -169,6 +171,15 @@ class MultiActorSim {
     this.rhfdCharacterGlb = Boolean(options.characterGlb);
     this.solver = options.solver || CHAMBER_SOLVER_DEFAULT;
     this.solverResult = null;
+
+    // Certified-field bindings (opt-in). `--field-volume` composites the
+    // certified φ/∇φ/η field as a primary-ray volume; `--per-actor-grad`
+    // moves each actor by the local −∇φ at its own lattice cell. Default is
+    // preserved (shared defect delta, no volume) unless these are set.
+    this.enableFieldVolume = options.fieldVolume || false;
+    this.perActorGrad = options.perActorGrad || false;
+    this.gradMotionScale = options.gradMotionScale ?? 6.0;
+    this._fieldSampler = null;
   }
 
   buildWorld(sceneCard) {
@@ -426,6 +437,13 @@ class MultiActorSim {
   applyProtoMotion(actor) {
     if (!this.solverResult?.defectWorldline?.length) return false;
     if (!actor._solverRest) actor._solverRest = [...(actor.position || [0, 0, 0, 0])];
+    // PRIORITY 1: per-actor local −∇φ — each actor samples the certified
+    // gradient at ITS OWN lattice cell (trilinear) and steps by local −∇φ.
+    // The shared defect-delta path is kept as the back-compat fallback.
+    if (this.perActorGrad && this._fieldSampler) {
+      applyLocalGradientMotionToActors([actor], this._fieldSampler, { scale: this.gradMotionScale });
+      return true;
+    }
     const tNorm = this.duration > 0 ? this.time / this.duration : 0;
     const defect = sampleWorldline(this.solverResult.defectWorldline, tNorm);
     const origin = this.solverResult.defectOrigin || this.solverResult.defectWorldline[0];
@@ -441,6 +459,14 @@ class MultiActorSim {
     const dt = 1 / this.fps;
     this.time += dt;
     this.tickCount++;
+
+    // Build the certified-field sampler once per tick (shared by per-actor
+    // −∇φ motion and the FieldVolume composite). Slice-interpolated by tNorm.
+    this._fieldSampler = null;
+    if ((this.enableFieldVolume || this.perActorGrad) && this.solverResult?.field) {
+      const tNorm = this.duration > 0 ? this.time / this.duration : 0;
+      this._fieldSampler = createFieldSampler(this.solverResult.field, tNorm);
+    }
 
     const tickSpeech = [];
 
@@ -611,6 +637,7 @@ class MultiActorSim {
       maxDepth: this.maxDepth,
       seed: this.seed + this.tickCount,
       palette: this.descriptor?.palette || { albedo: [0.5, 0.5, 0.6] },
+      fieldVolume: this.enableFieldVolume ? this._fieldSampler : null,
     });
 
     this.frames.push(png);
@@ -781,6 +808,9 @@ if (args.length === 0) {
   console.error("         --cam-az-min R --cam-az-max R  azimuth arc (radians) for the eased ping-pong sweep (default 0.7..1.8)");
   console.error("         --cam-sweeps N          number of smooth there-and-back sweeps over the take (default 1)");
   console.error("         --cam-orbit-360         legacy: continuous one-way orbit (may pan off the lit scene)");
+  console.error("         --field-volume          composite certified φ/∇φ/η as a primary-ray field volume (partial)");
+  console.error("         --per-actor-grad        each actor steps by local −∇φ at its own lattice cell");
+  console.error("         --grad-scale N          world-space gain for --per-actor-grad (default 6.0)");
   process.exit(1);
 }
 
@@ -804,6 +834,9 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === "--cam-az-max" && args[i + 1]) { options.camAzMax = parseFloat(args[++i]); }
   else if (args[i] === "--cam-sweeps" && args[i + 1]) { options.camSweeps = parseFloat(args[++i]); }
   else if (args[i] === "--cam-orbit-360") { options.camOrbit360 = true; }
+  else if (args[i] === "--field-volume") { options.fieldVolume = true; }
+  else if (args[i] === "--per-actor-grad") { options.perActorGrad = true; }
+  else if (args[i] === "--grad-scale" && args[i + 1]) { options.gradMotionScale = parseFloat(args[++i]); }
   else { positionalArgs.push(args[i]); }
 }
 
@@ -875,11 +908,14 @@ function maybeProtoSolver() {
   sim.solver = CHAMBER_SOLVER_ID;
   sim.solverResult = solverResult;
   mkdirSync(outputDir, { recursive: true });
+  // Strip the large field caches (Float32Array subarray refs) before
+  // serialising the solver receipt — they belong in memory, not JSON.
+  const { field: _field, ...serializableSolver } = solverResult;
   writeFileSync(
     resolve(outputDir, "mandala-proto-solver.json"),
     JSON.stringify(
       {
-        ...solverResult,
+        ...serializableSolver,
         receipts: solverResult.receipts,
       },
       null,
@@ -890,6 +926,12 @@ function maybeProtoSolver() {
   console.log(
     `  Solver: mandala-proto — ${solverResult.committedSteps} certified steps; actors follow −∇φ defect walk (Movie Lane ownsTime=false); sample ${moved.rest} → ${moved.position.map((v) => v.toFixed(3))}`,
   );
+  if (options.perActorGrad) {
+    console.log(`  Field bind: --per-actor-grad ON — actors step by local −∇φ (trilinear, own cell); shared-delta is the fallback.`);
+  }
+  if (options.fieldVolume) {
+    console.log(`  Field bind: --field-volume ON — certified φ/∇φ/η composited as a primary-ray volume (partial; not multiple-scattering media).`);
+  }
   return Promise.resolve(solverResult);
 }
 
