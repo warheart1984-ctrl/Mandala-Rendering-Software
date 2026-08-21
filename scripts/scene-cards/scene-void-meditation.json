@@ -1,0 +1,89 @@
+{
+  "id": "scene-void-meditation",
+  "name": "The Void Meditation",
+  "description": "Four explorers stand at the edge of an infinite void in 4D space. The geometry is minimal — dark planes and soft light. The mood is contemplative, mysterious, philosophical.",
+  "duration": 12,
+  "scene": {
+    "objects": [
+      {
+        "type": "plane",
+        "material": { "albedo": [0.05, 0.05, 0.08], "roughness": 0.9 },
+        "position": [0, 0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [10, 10, 10]
+      }
+    ],
+    "lights": [
+      {
+        "type": "point",
+        "position": [0, 5, 0, 0],
+        "color": [0.15, 0.15, 0.2],
+        "intensity": 0.8
+      },
+      {
+        "type": "directional",
+        "direction": [0.3, -1, 0.2],
+        "color": [0.1, 0.1, 0.15],
+        "intensity": 0.4
+      }
+    ]
+  },
+  "palette": {
+    "albedo": [0.08, 0.08, 0.12],
+    "ambient": [0.02, 0.02, 0.04]
+  },
+  "actors": [
+    {
+      "id": "echo",
+      "name": "Echo",
+      "personality": "A silent observer who speaks only in fragments. Reflects what others say back to them, distorted.",
+      "color": "#8888aa",
+      "voice": "echo",
+      "beats": [
+        { "time": 0, "action": "listen", "position": [-2.5, 2, -1, 0], "emissive": [0.3, 0.3, 0.5], "scale": 0.45 },
+        { "time": 3, "action": "speak", "position": [-2.5, 2, -0.5, 0], "emissive": [0.4, 0.4, 0.6], "scale": 0.45, "speech": "The void... remembers." },
+        { "time": 6, "action": "listen", "position": [-2.5, 2, 0, 0], "emissive": [0.35, 0.35, 0.55], "scale": 0.45 },
+        { "time": 9, "action": "speak", "position": [-2.5, 2, 0.5, 0], "emissive": [0.45, 0.45, 0.65], "scale": 0.45, "speech": "Every answer... creates a new question." }
+      ]
+    },
+    {
+      "id": "null",
+      "name": "Null",
+      "personality": "A nihilist who finds beauty in emptiness. Speaks in paradoxes and contradictions.",
+      "color": "#444466",
+      "voice": "onyx",
+      "beats": [
+        { "time": 0, "action": "idle", "position": [0, 2, -2, 0], "emissive": [0.2, 0.2, 0.3], "scale": 0.5 },
+        { "time": 2, "action": "speak", "position": [0, 2, -1.5, 0], "emissive": [0.3, 0.3, 0.4], "scale": 0.5, "speech": "Nothing is everything. Everything is nothing." },
+        { "time": 5, "action": "walk", "position": [0.5, 2, -1, 0], "emissive": [0.25, 0.25, 0.35], "scale": 0.5 },
+        { "time": 8, "action": "speak", "position": [1, 2, -0.5, 0], "emissive": [0.35, 0.35, 0.45], "scale": 0.5, "speech": "The emptiness speaks louder than words." }
+      ]
+    },
+    {
+      "id": "drift",
+      "name": "Drift",
+      "personality": "A wanderer who moves through dimensions aimlessly. Finds meaning in the journey, not the destination.",
+      "color": "#668899",
+      "voice": "shimmer",
+      "beats": [
+        { "time": 0, "action": "walk", "position": [2.5, 2, 1, 0], "emissive": [0.3, 0.4, 0.45], "scale": 0.48 },
+        { "time": 4, "action": "speak", "position": [2, 2, 0.5, 0], "emissive": [0.35, 0.45, 0.5], "scale": 0.48, "speech": "I have walked through seventeen dimensions today. None of them were home." },
+        { "time": 7, "action": "walk", "position": [1.5, 2, 0, 0], "emissive": [0.4, 0.5, 0.55], "scale": 0.48 },
+        { "time": 10, "action": "speak", "position": [1, 2, -0.5, 0], "emissive": [0.45, 0.55, 0.6], "scale": 0.48, "speech": "Home is not a place. It is a frequency." }
+      ]
+    },
+    {
+      "id": "knot",
+      "name": "Knot",
+      "personality": "A mathematician obsessed with topology. Sees the universe as interconnected loops and knots.",
+      "color": "#996688",
+      "voice": "alloy",
+      "beats": [
+        { "time": 0, "action": "idle", "position": [0, 3, 0, 0], "emissive": [0.4, 0.3, 0.4], "scale": 0.52 },
+        { "time": 1, "action": "speak", "position": [0, 3, 0, 0], "emissive": [0.5, 0.35, 0.45], "scale": 0.52, "speech": "The void is a knot in spacetime. Untie it, and everything unravels." },
+        { "time": 5, "action": "gesture", "position": [0, 3.2, 0.2, 0], "emissive": [0.45, 0.35, 0.45], "scale": 0.52 },
+        { "time": 8, "action": "speak", "position": [0, 3.4, 0.4, 0], "emissive": [0.55, 0.4, 0.5], "scale": 0.52, "speech": "We are all loops in the same fabric." }
+      ]
+    }
+  ]
+}
