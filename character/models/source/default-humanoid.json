@@ -1,0 +1,39 @@
+{
+  "id": "default-humanoid",
+  "name": "MRS Default Humanoid",
+  "status": "partial",
+  "note": "One character asset driving three stage views. Procedural CPU mesh (no ZBrush, no Blender). Joint layout aligned with scripts/humanoid-avatar.mjs proportions so Simulation Chamber can consume char_rigged.glb later instead of a third character system.",
+  "units": "meters",
+  "height": 1.05,
+  "pose": {
+    "armAngle": 0.35,
+    "armSwing": 0.12,
+    "legSpread": 0.08,
+    "legSwing": 0.05,
+    "headTilt": 0.04,
+    "bodyLean": 0.03,
+    "tailCurl": 0.25
+  },
+  "proportions": {
+    "headRadius": 0.15,
+    "neckLength": 0.08,
+    "torsoTop": 0.35,
+    "torsoBottom": 0.0,
+    "shoulderWidth": 0.22,
+    "upperArmLength": 0.2,
+    "lowerArmLength": 0.18,
+    "handRadius": 0.06,
+    "hipWidth": 0.12,
+    "upperLegLength": 0.22,
+    "lowerLegLength": 0.2,
+    "footRadius": 0.07,
+    "limbRadius": 0.04,
+    "tailLength": 0.28
+  },
+  "topology": {
+    "radial": 8,
+    "limbSegs": 5,
+    "headLat": 6,
+    "headLon": 8
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "sovereign-skin-layer/1.0",
+  "id": "anthro-anime-whole-body-skin-v1",
+  "version": "1.0.0",
+  "bodyCoverage": "whole-body",
+  "rigId": "anthro-standard-v1",
+  "sculptDocumentId": "anthro-fixture-v1",
+  "topologyDigest": "351b3632f7dcb1ae8fa69f4adaf9a316ba05c052d991dc09e684e1d9d990d420",
+  "uvDigest": "6a028e3cbe2b40d15fa4731014b0d3f4cf3436a4c1eff182927c133a8e6bd64b",
+  "materialRegions": [
+    {
+      "id": "whole-body",
+      "sculptRegionId": "body",
+      "materialId": "anime-cel-body"
+    }
+  ],
+  "textureChannels": {
+    "baseColor": {
+      "assetRef": "asset://non-production/anthro/base-color.png",
+      "digest": "6063710fe74a8c43fbe364a018cbc2dc3fb4ef156eddb89f2115536a61e8347c",
+      "mimeType": "image/png",
+      "colorSpace": "srgb"
+    },
+    "celShade": {
+      "assetRef": "asset://non-production/anthro/cel-shade.png",
+      "digest": "8e728422fa4d372704b8f076936ffeaf0b4f3f7e2d94590e869c35f06eefec02",
+      "mimeType": "image/png",
+      "colorSpace": "srgb"
+    },
+    "normalDetail": {
+      "assetRef": "asset://non-production/anthro/normal-detail.png",
+      "digest": "fee66e9534a74b9938b02a5307c808fbfd90c086eaf8dcb69099305415719f5a",
+      "mimeType": "image/png",
+      "colorSpace": "linear"
+    },
+    "roughness": {
+      "assetRef": "asset://non-production/anthro/roughness.png",
+      "digest": "48b655a5654d94de109425d0e900776bea58e11c9c3c7d606fe2342fb5e29585",
+      "mimeType": "image/png",
+      "colorSpace": "linear"
+    },
+    "fur": {
+      "assetRef": "asset://non-production/anthro/fur.png",
+      "digest": "801691bbeb6c4c165f2c3a20ebeccb3b61278e47c4fb2fae0ad96709012a733d",
+      "mimeType": "image/png",
+      "colorSpace": "srgb"
+    },
+    "marking": {
+      "assetRef": "asset://non-production/anthro/marking.png",
+      "digest": "3943ff9cd8bf973682a916c2a85134f5d46f773be882fda9964c4c78c787f6ae",
+      "mimeType": "image/png",
+      "colorSpace": "srgb"
+    }
+  },
+  "generationProvenance": {
+    "method": "governed-model",
+    "generatorId": "mandala-anime-surface-painter-fixture",
+    "generatorVersion": "1.0.0",
+    "authorityRef": "authority://fixture-operator",
+    "rightsRef": "rights://non-production-original-fixture",
+    "inputDigests": [
+      "132b43a0b7230f9f70ec13a16f77a6bd04ea832a530bb381755325a30773a156"
+    ]
+  },
+  "surfaceOnly": true,
+  "anatomyMutationAllowed": false
+}

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "sovereign-pose-frame/1.0",
+  "frameId": "fox-dialogue-pose-frame-0001",
+  "rigId": "fox-quadruped-v1",
+  "rigVersion": "character-rig/1.0",
+  "frameIndex": 1,
+  "timeSeconds": 0.041666666666666664,
+  "boneTransforms": [
+    {
+      "boneId": "root",
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "blendshapeWeights": [
+    {
+      "blendshapeId": "jawOpen",
+      "weight": 0.35
+    }
+  ],
+  "provenance": {
+    "intentId": "intent://end-to-end-workflow-demo",
+    "operatorId": "operator://fixture",
+    "sourcePoseId": "dialogue-viseme://demo-ah"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@mrs/sovereign-sculptor",
+  "version": "0.1.0",
+  "description": "Deterministic governed face and body sculpt authority for Mandala and Engine3D",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "bin": {
+    "sovereign-sculptor": "./dist/src/cli.js"
+  },
+  "files": [
+    "dist",
+    "fixtures",
+    "blender",
+    "schemas",
+    "studio",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "studio": "npm run build && node dist/src/cli.js studio"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.9.2"
+  },
+  "license": "MIT"
+}

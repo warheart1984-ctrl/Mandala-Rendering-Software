@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "sovereign-sculptor-workflow-demo/1.0",
+  "status": "deterministic-fixture-not-production-character",
+  "species": "fox",
+  "stages": [
+    {
+      "stage": "sculpt-locked",
+      "artifact": "fox-character-fixture.sculpt.json",
+      "digest": "5798ae2121d66a86061fbbdc0de28d35af7fea246ca5115404982a7c4843de88"
+    },
+    {
+      "stage": "rig-validated",
+      "artifact": "fox-character-fixture.rig.json",
+      "digest": "d7987cae23fa404da08b5afe509afc3afe27736d332d5c57e5bda2f55d9d2457"
+    },
+    {
+      "stage": "glb-exported-and-validated",
+      "artifact": "fox-character-fixture.glb",
+      "digest": "353471d33ee456d5cea3dc51ff2a4ee692d231b133a8988543424d93e6eec0e4"
+    },
+    {
+      "stage": "whole-body-skin-bound",
+      "artifact": "fox-character-fixture.skin.json",
+      "digest": "95593a1f73769795d05aa9de7a61efb8a161c6f50607b5cc8556f9e4a17a6c5e"
+    },
+    {
+      "stage": "constitutional-record-sealed",
+      "artifact": "fox-character-fixture.constitutional.json",
+      "digest": "a7a10229ea6c76ca6b44534382d30482765352a7dffced6ab7d871af530ba938"
+    },
+    {
+      "stage": "engine3d-mandala-bound",
+      "artifact": "fox-character-fixture.binding.json",
+      "digest": "6855bfba932918942847c29e6d01226da9472f3b1a20c3b2777ae4abcfd032f0"
+    },
+    {
+      "stage": "pose-replayed",
+      "artifact": "fox-character-fixture.pose-application.json",
+      "digest": "49fb8361dc1e30ad74b4a05cd446c106e0dd26ec6e6a05df4ebd29d51cdfb5b3"
+    }
+  ]
+}

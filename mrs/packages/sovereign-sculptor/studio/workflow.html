@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Sovereign Sculptor — End-to-End Proof</title>
+    <link rel="stylesheet" href="workflow.css">
+  </head>
+  <body>
+    <header class="hero">
+      <nav>
+        <a class="brand" href="index.html"><span>S</span> Sovereign Sculptor</a>
+        <a class="ghost" href="index.html">Open sculpt pane</a>
+      </nav>
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">Deterministic workflow evidence</p>
+          <h1>One character. Seven governed stages. Zero anatomy guesses.</h1>
+          <p class="lead">From locked geometry to a replayable dialogue pose, every hand-off carries a content digest and every surface model stays outside the anatomy boundary.</p>
+        </div>
+        <div class="seal">
+          <span class="pulse"></span>
+          <strong id="seal-title">Loading evidence</strong>
+          <small id="seal-detail">Reading local fixture bundle…</small>
+        </div>
+      </div>
+      <figure class="hero-art">
+        <img class="actual-render" src="/fixtures/blender-anthro-v1/anthro-blender-preview.png" alt="Actual locally rendered Blender anthro character">
+        <figcaption><b>Actual local Blender 5.2 output.</b><span>Procedural integration proof · governed geometry, rig, face controls, animation, GLB, and evidence—not concept art.</span></figcaption>
+      </figure>
+      <div class="actual-proof" aria-label="Actual Blender proof metrics">
+        <article><span>Geometry</span><strong id="blender-geometry">Loading…</strong><small>strict GLB primitives</small></article>
+        <article><span>Skeleton</span><strong id="blender-bones">Loading…</strong><small>named governed bones</small></article>
+        <article><span>Face controls</span><strong id="blender-morphs">Loading…</strong><small>dialogue blendshapes</small></article>
+        <article><span>Replay</span><strong id="blender-replay">Loading…</strong><small id="blender-digest">checking local digest</small></article>
+      </div>
+      <div class="species" role="group" aria-label="Character profile">
+        <button data-species="human" class="active">Human</button>
+        <button data-species="fox">Fox</button>
+        <button data-species="anthro">Anthro</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="summary" aria-label="Workflow summary">
+        <article><span>Topology</span><strong id="topology">—</strong><small>locked before GLB export</small></article>
+        <article><span>Skin policy</span><strong>Surface only</strong><small>topology + UV pinned</small></article>
+        <article><span>Diffusion</span><strong>Polish only</strong><small>no geometry mutation</small></article>
+        <article><span>Replay</span><strong id="replay">—</strong><small>same inputs → same digest</small></article>
+      </section>
+
+      <section class="pipeline-section">
+        <div class="section-title">
+          <div><p class="eyebrow">Live local artifacts</p><h2>Constitutional character pipeline</h2></div>
+          <p>Choose any stage to inspect the exact evidence emitted by the previous stage.</p>
+        </div>
+        <div id="pipeline" class="pipeline" aria-live="polite"></div>
+      </section>
+
+      <section class="evidence-grid">
+        <article class="evidence-card">
+          <div class="card-head"><div><p class="eyebrow">Selected stage</p><h2 id="artifact-title">Artifact</h2></div><span id="artifact-status" class="verified-chip">Verified</span></div>
+          <div class="stage-picture">
+            <img id="artifact-image" src="assets/workflow-triptych.png" alt="Visual character workflow stage">
+            <div><b id="artifact-human-title">What happens here</b><p id="artifact-human-copy">Select a workflow stage.</p></div>
+          </div>
+          <details class="technical-proof">
+            <summary>Inspect technical evidence</summary>
+            <div class="proof-actions"><span>For engineers, validators, and replay audits</span><a id="artifact-link" class="ghost" target="_blank" rel="noopener">Open raw file</a></div>
+            <pre id="artifact-body">Select a workflow stage.</pre>
+          </details>
+        </article>
+        <aside class="rules">
+          <p class="eyebrow">What the demo proves</p>
+          <h2>The skin can change. The person underneath does not drift.</h2>
+          <ul>
+            <li><b>Face and body</b><span>come from the locked sculpt and rig.</span></li>
+            <li><b>Anime painting</b><span>binds to exact topology and UV hashes.</span></li>
+            <li><b>Mandala intent</b><span>references governed IDs instead of imagining anatomy.</span></li>
+            <li><b>Dialogue motion</b><span>targets declared bones and blendshapes.</span></li>
+            <li><b>RT4D/diffusion</b><span>may polish pixels, never rewrite geometry.</span></li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <footer>Actual Blender integration proof + non-production conformance fixtures · generated and validated locally · no network required</footer>
+    <script src="workflow.js"></script>
+  </body>
+</html>

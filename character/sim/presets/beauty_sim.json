@@ -1,0 +1,23 @@
+{
+  "id": "beauty_sim",
+  "status": "partial",
+  "description": "Full materials + sim motion. Pose rig, run cloth/hair sim, then beauty raster (CPU stand-in for Cycles/RT4D).",
+  "frame": 0,
+  "sim": {
+    "clothAmplitude": 0.028,
+    "hairAmplitude": 0.038,
+    "wind": [0.08, 0.01, 0.03],
+    "gravity": -0.1
+  },
+  "lighting": {
+    "key": { "dir": [0.45, 0.75, 0.5], "color": [1.0, 0.96, 0.9], "intensity": 1.15 },
+    "fill": { "dir": [-0.6, 0.25, 0.3], "color": [0.45, 0.55, 0.75], "intensity": 0.35 },
+    "rim": { "dir": [-0.2, 0.15, -0.9], "color": [0.7, 0.85, 1.0], "intensity": 0.55 },
+    "hdri": { "status": "declared", "note": "Soft HDRI not sampled in CPU raster; rim+fill stand in." }
+  },
+  "materials": ["fur", "skin", "leather", "metal"],
+  "render": {
+    "output": "char_final.png",
+    "turntable": { "status": "partial", "output": "char_final.mp4", "frames": 8 }
+  }
+}

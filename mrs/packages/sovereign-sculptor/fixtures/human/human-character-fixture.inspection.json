@@ -1,0 +1,1441 @@
+{
+  "ok": true,
+  "species": "human",
+  "status": "core-enforced-fixture-not-production-glb",
+  "issues": [],
+  "primitives": [
+    {
+      "id": "human-fixture-v1:whole-body:0",
+      "meshIndex": 0,
+      "primitiveIndex": 0,
+      "vertexCount": 4,
+      "indexCount": 12,
+      "vertexIds": [
+        "vertex:0",
+        "vertex:1",
+        "vertex:2",
+        "vertex:3"
+      ],
+      "morphIds": [
+        "blink.L",
+        "blink.R",
+        "browUp.L",
+        "browUp.R",
+        "jawOpen",
+        "smile",
+        "frown"
+      ],
+      "materialId": "material:human:fixture",
+      "positionSha256": "f4bc3a2b5ee1a39153a44eeb8f890f3e180c9f11cc3a55b1e768bca28841144c",
+      "indexSha256": "af6a7a106872fe661e853136e995d99d0b5a4ad3f65159b83ea063a4dced7838",
+      "uvSha256": "74ad9b87d26a81177cef97c3bb0172922f195c6f78e65c90dc877ce4b660ab12"
+    }
+  ],
+  "boneIds": [
+    "root",
+    "pelvis",
+    "spine",
+    "chest",
+    "neck",
+    "head",
+    "jaw",
+    "eye.L",
+    "eye.R",
+    "ear.L",
+    "ear.R",
+    "arm.LUpper",
+    "arm.LLower",
+    "arm.LEnd",
+    "arm.RUpper",
+    "arm.RLower",
+    "arm.REnd",
+    "leg.LUpper",
+    "leg.LLower",
+    "leg.LEnd",
+    "leg.RUpper",
+    "leg.RLower",
+    "leg.REnd"
+  ],
+  "materialIds": [
+    "material:human:fixture"
+  ],
+  "digests": {
+    "glbSha256": "5052f585f677e582fd342ec7449bcb1f7eedd5cd61d69622e6da3fcac9285f42",
+    "meshSha256": "23277b136fb729440dcf17b71ea3367b4221a499e1dd5ab8725433621bbc3902",
+    "topologySha256": "47821682a91f14f5ae5af2e99436b78c61965091229b4272b5711704847ac100",
+    "vertexOrderSha256": "5fc11fcb2bdef58d13a546e2ec4a84168a76d077935cc6805fa1bdfd34dde9e7",
+    "uvSha256": "d8154e595751aa0e8add48eed7f74b52f1e22e88d52ae407a212fb5675d3c0a7",
+    "armatureSha256": "2620c57cee6087ab5c9cd6534dc8b3f649d121407a96a1c4e150f1d36c133312",
+    "blendshapeSha256": "58459621f931c4de8638e147ff9b63159bd1023c6f54463ad814a61c9f85f8cb",
+    "materialSha256": "165017c1abab02d1f3e95c132c73a4de40a065ecac58b99cfc4f3ca6a9bb640b",
+    "accessorSha256": {
+      "meshes.0.primitives.0.NORMAL": "c4ba96be03978cf08dbb8ab83735d9d763eec28f1bcdf217108b45c1fbf53f59",
+      "meshes.0.primitives.0.morph.blink.L": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.blink.R": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.browUp.L": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.browUp.R": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.jawOpen": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.smile": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.frown": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.POSITION": "f4bc3a2b5ee1a39153a44eeb8f890f3e180c9f11cc3a55b1e768bca28841144c",
+      "meshes.0.primitives.0.indices": "af6a7a106872fe661e853136e995d99d0b5a4ad3f65159b83ea063a4dced7838",
+      "meshes.0.primitives.0.TEXCOORD_0": "74ad9b87d26a81177cef97c3bb0172922f195c6f78e65c90dc877ce4b660ab12",
+      "meshes.0.primitives.0.JOINTS_0": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "meshes.0.primitives.0.WEIGHTS_0": "145add6557f34985f6e13a72d06620a658135893938f6da48a9023cc70e9720c",
+      "skins.0.inverseBindMatrices": "27b608ffc1c05198d205d51f496cc0c9d027300fd8c3ceac73124220f6af5d71"
+    }
+  },
+  "json": {
+    "accessors": [
+      {
+        "bufferView": 0,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 1,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 2,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC2"
+      },
+      {
+        "bufferView": 3,
+        "byteOffset": 0,
+        "componentType": 5123,
+        "count": 4,
+        "type": "VEC4"
+      },
+      {
+        "bufferView": 4,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC4"
+      },
+      {
+        "bufferView": 5,
+        "byteOffset": 0,
+        "componentType": 5125,
+        "count": 12,
+        "type": "SCALAR"
+      },
+      {
+        "bufferView": 6,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 23,
+        "type": "MAT4"
+      },
+      {
+        "bufferView": 7,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 8,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 9,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 10,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 11,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 12,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 13,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      }
+    ],
+    "asset": {
+      "extras": {
+        "sovereignDocumentId": "human-fixture-v1",
+        "sovereignFixtureStatus": "core-enforced-fixture-not-production-glb",
+        "sovereignIdentity": {
+          "displayName": "human non-production fixture",
+          "gender": {
+            "attribution": "creator-authored",
+            "identity": "creator-specified"
+          },
+          "id": "human-fixture-character"
+        },
+        "sovereignRigId": "human-standard-v1",
+        "sovereignSourceSha256": "6dac5152b65138454ccfa7e104004e47e1bbf67bdf411e1d501288a514aee271",
+        "sovereignSpecies": "human"
+      },
+      "generator": "MRS Sovereign Sculptor deterministic fixture exporter",
+      "version": "2.0"
+    },
+    "bufferViews": [
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 0,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 48,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 32,
+        "byteOffset": 96,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 32,
+        "byteOffset": 128,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 64,
+        "byteOffset": 160,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 224,
+        "target": 34963
+      },
+      {
+        "buffer": 0,
+        "byteLength": 1472,
+        "byteOffset": 272
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 1744,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 1792,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 1840,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 1888,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 1936,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 1984,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2032,
+        "target": 34962
+      }
+    ],
+    "buffers": [
+      {
+        "byteLength": 2080
+      }
+    ],
+    "materials": [
+      {
+        "extras": {
+          "diffusionAnatomyAllowed": false,
+          "sovereignMaterialId": "material:human:fixture",
+          "sovereignMaterialRole": "whole-body-skin"
+        },
+        "name": "material:human:fixture",
+        "pbrMetallicRoughness": {
+          "baseColorFactor": [
+            0.58,
+            0.44,
+            0.36,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.72
+        }
+      }
+    ],
+    "meshes": [
+      {
+        "extras": {
+          "sovereignMeshId": "human-fixture-v1",
+          "sovereignSpecies": "human"
+        },
+        "name": "human-fixture-v1",
+        "primitives": [
+          {
+            "attributes": {
+              "JOINTS_0": 3,
+              "NORMAL": 1,
+              "POSITION": 0,
+              "TEXCOORD_0": 2,
+              "WEIGHTS_0": 4
+            },
+            "extras": {
+              "sovereignFixtureZeroDeltas": true,
+              "sovereignMorphIds": [
+                "blink.L",
+                "blink.R",
+                "browUp.L",
+                "browUp.R",
+                "jawOpen",
+                "smile",
+                "frown"
+              ],
+              "sovereignPrimitiveId": "human-fixture-v1:whole-body:0",
+              "sovereignRegionIds": [
+                "body",
+                "body",
+                "body",
+                "body"
+              ],
+              "sovereignTriangleIds": [
+                "triangle:0",
+                "triangle:1",
+                "triangle:2",
+                "triangle:3"
+              ],
+              "sovereignVertexIds": [
+                "vertex:0",
+                "vertex:1",
+                "vertex:2",
+                "vertex:3"
+              ]
+            },
+            "indices": 5,
+            "material": 0,
+            "mode": 4,
+            "targets": [
+              {
+                "POSITION": 7
+              },
+              {
+                "POSITION": 8
+              },
+              {
+                "POSITION": 9
+              },
+              {
+                "POSITION": 10
+              },
+              {
+                "POSITION": 11
+              },
+              {
+                "POSITION": 12
+              },
+              {
+                "POSITION": 13
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "children": [
+          1
+        ],
+        "extras": {
+          "sovereignFixtureStatus": "core-enforced-fixture-not-production-rig",
+          "sovereignRigCapabilities": {
+            "body": true,
+            "digitigrade": false,
+            "ears": false,
+            "face": true,
+            "hands": true,
+            "paws": false,
+            "tail": false
+          },
+          "sovereignRigId": "human-standard-v1",
+          "sovereignSpecies": "human"
+        },
+        "name": "Armature"
+      },
+      {
+        "children": [
+          2
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0,
+                0,
+                0
+              ],
+              "min": [
+                0,
+                0,
+                0
+              ]
+            },
+            "scaleLocked": false,
+            "translationLocked": false
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "name": "root"
+      },
+      {
+        "children": [
+          3,
+          18,
+          21
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.95,
+          0,
+          1
+        ],
+        "name": "pelvis"
+      },
+      {
+        "children": [
+          4
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.22,
+          0,
+          1
+        ],
+        "name": "spine"
+      },
+      {
+        "children": [
+          5,
+          12,
+          15
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.28,
+          0,
+          1
+        ],
+        "name": "chest"
+      },
+      {
+        "children": [
+          6
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.28,
+          0,
+          1
+        ],
+        "name": "neck"
+      },
+      {
+        "children": [
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.18,
+          0,
+          1
+        ],
+        "name": "head"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.1,
+                0.1
+              ],
+              "min": [
+                -0.1,
+                -0.1,
+                -0.1
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.1,
+          0.05,
+          1
+        ],
+        "name": "jaw"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.5,
+                0.5,
+                0
+              ],
+              "min": [
+                -0.5,
+                -0.5,
+                0
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.08,
+          0.05,
+          0.1,
+          1
+        ],
+        "name": "eye.L"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.5,
+                0.5,
+                0
+              ],
+              "min": [
+                -0.5,
+                -0.5,
+                0
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -0.08,
+          0.05,
+          0.1,
+          1
+        ],
+        "name": "eye.R"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.7,
+                0.7,
+                0.7
+              ],
+              "min": [
+                -0.7,
+                -0.7,
+                -0.7
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.12,
+          0.18,
+          0,
+          1
+        ],
+        "name": "ear.L"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.7,
+                0.7,
+                0.7
+              ],
+              "min": [
+                -0.7,
+                -0.7,
+                -0.7
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -0.12,
+          0.18,
+          0,
+          1
+        ],
+        "name": "ear.R"
+      },
+      {
+        "children": [
+          13
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.4,
+                1.5,
+                2.4
+              ],
+              "min": [
+                -2.4,
+                -1.5,
+                -2.4
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.24,
+          0.18,
+          0,
+          1
+        ],
+        "name": "arm.LUpper"
+      },
+      {
+        "children": [
+          14
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.7,
+                0.1,
+                0.1
+              ],
+              "min": [
+                0,
+                -0.1,
+                -0.1
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.42,
+          0,
+          1
+        ],
+        "name": "arm.LLower"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.8,
+                0.8
+              ],
+              "min": [
+                -0.8,
+                -0.8,
+                -0.8
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.38,
+          0,
+          1
+        ],
+        "name": "arm.LEnd"
+      },
+      {
+        "children": [
+          16
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.4,
+                1.5,
+                2.4
+              ],
+              "min": [
+                -2.4,
+                -1.5,
+                -2.4
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -0.24,
+          0.18,
+          0,
+          1
+        ],
+        "name": "arm.RUpper"
+      },
+      {
+        "children": [
+          17
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.7,
+                0.1,
+                0.1
+              ],
+              "min": [
+                0,
+                -0.1,
+                -0.1
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.42,
+          0,
+          1
+        ],
+        "name": "arm.RLower"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.8,
+                0.8
+              ],
+              "min": [
+                -0.8,
+                -0.8,
+                -0.8
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.38,
+          0,
+          1
+        ],
+        "name": "arm.REnd"
+      },
+      {
+        "children": [
+          19
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.4,
+                1.5,
+                2.4
+              ],
+              "min": [
+                -2.4,
+                -1.5,
+                -2.4
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.12,
+          -0.12,
+          0,
+          1
+        ],
+        "name": "leg.LUpper"
+      },
+      {
+        "children": [
+          20
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.7,
+                0.1,
+                0.1
+              ],
+              "min": [
+                0,
+                -0.1,
+                -0.1
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.42,
+          0,
+          1
+        ],
+        "name": "leg.LLower"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.8,
+                0.8
+              ],
+              "min": [
+                -0.8,
+                -0.8,
+                -0.8
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.38,
+          0,
+          1
+        ],
+        "name": "leg.LEnd"
+      },
+      {
+        "children": [
+          22
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.4,
+                1.5,
+                2.4
+              ],
+              "min": [
+                -2.4,
+                -1.5,
+                -2.4
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -0.12,
+          -0.12,
+          0,
+          1
+        ],
+        "name": "leg.RUpper"
+      },
+      {
+        "children": [
+          23
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.7,
+                0.1,
+                0.1
+              ],
+              "min": [
+                0,
+                -0.1,
+                -0.1
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.42,
+          0,
+          1
+        ],
+        "name": "leg.RLower"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.8,
+                0.8
+              ],
+              "min": [
+                -0.8,
+                -0.8,
+                -0.8
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.38,
+          0,
+          1
+        ],
+        "name": "leg.REnd"
+      },
+      {
+        "extras": {
+          "sovereignDocumentId": "human-fixture-v1",
+          "sovereignMeshRole": "whole-body"
+        },
+        "mesh": 0,
+        "name": "human-fixture-v1",
+        "skin": 0
+      }
+    ],
+    "scene": 0,
+    "scenes": [
+      {
+        "nodes": [
+          0,
+          24
+        ]
+      }
+    ],
+    "skins": [
+      {
+        "extras": {
+          "sovereignRigSchemaVersion": "character-rig/1.0"
+        },
+        "inverseBindMatrices": 6,
+        "joints": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "name": "human-standard-v1",
+        "skeleton": 1
+      }
+    ]
+  }
+}

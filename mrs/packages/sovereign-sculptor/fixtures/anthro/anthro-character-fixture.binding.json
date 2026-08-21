@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "engine3d-mandala-character-binding/1.0",
+  "status": "governed-fixture-binding",
+  "bindingId": "binding:99ee268dbee950df3a0322e1762cb548cb53a630f74887429e2eb4199baad482",
+  "characterId": "anthro-fixture-character",
+  "rigId": "anthro-standard-v1",
+  "sculptDocumentId": "anthro-fixture-v1",
+  "constitutionalRecordDigest": "41e8955d591d1a94ef875910eede0d7fc05da172c3ee0e48f2bdff7b6d247cae",
+  "engine3dRecordRef": "sha256:41e8955d591d1a94ef875910eede0d7fc05da172c3ee0e48f2bdff7b6d247cae",
+  "mandalaRecordRef": "sha256:41e8955d591d1a94ef875910eede0d7fc05da172c3ee0e48f2bdff7b6d247cae",
+  "glbDigest": "0ea25d0614b1a99a0ee86df6c8d263b7f7dc7537240e5a382a3983a88da5cef0",
+  "topologyDigest": "351b3632f7dcb1ae8fa69f4adaf9a316ba05c052d991dc09e684e1d9d990d420",
+  "vertexOrderDigest": "28ec98f34c6e8483072e231b5607b9d5f824cf4eb7282448d4ff40c865fd957c",
+  "uvDigest": "6a028e3cbe2b40d15fa4731014b0d3f4cf3436a4c1eff182927c133a8e6bd64b",
+  "armatureDigest": "e4d277b937c4e5970e7e0b6e45ca2845d7bbead7a74c831e27a7544bf81baa52",
+  "blendshapeDigest": "4590c5c201f9d48d4213f746c8ea23c3ad53a1e00f7235da84afb9c73d542147",
+  "materialTextureBindings": [
+    {
+      "skinLayerId": "anthro-anime-whole-body-skin-v1",
+      "skinLayerDigest": "38cd259041fc2610dd7cc3e20c55a6769ab2fcc3f54298315c2e6ea1da883ec5",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "baseColor",
+      "assetRef": "asset://non-production/anthro/base-color.png",
+      "textureSha256": "6063710fe74a8c43fbe364a018cbc2dc3fb4ef156eddb89f2115536a61e8347c",
+      "topologyDigest": "351b3632f7dcb1ae8fa69f4adaf9a316ba05c052d991dc09e684e1d9d990d420",
+      "uvDigest": "6a028e3cbe2b40d15fa4731014b0d3f4cf3436a4c1eff182927c133a8e6bd64b",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "anthro-anime-whole-body-skin-v1",
+      "skinLayerDigest": "38cd259041fc2610dd7cc3e20c55a6769ab2fcc3f54298315c2e6ea1da883ec5",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "celShade",
+      "assetRef": "asset://non-production/anthro/cel-shade.png",
+      "textureSha256": "8e728422fa4d372704b8f076936ffeaf0b4f3f7e2d94590e869c35f06eefec02",
+      "topologyDigest": "351b3632f7dcb1ae8fa69f4adaf9a316ba05c052d991dc09e684e1d9d990d420",
+      "uvDigest": "6a028e3cbe2b40d15fa4731014b0d3f4cf3436a4c1eff182927c133a8e6bd64b",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "anthro-anime-whole-body-skin-v1",
+      "skinLayerDigest": "38cd259041fc2610dd7cc3e20c55a6769ab2fcc3f54298315c2e6ea1da883ec5",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "normalDetail",
+      "assetRef": "asset://non-production/anthro/normal-detail.png",
+      "textureSha256": "fee66e9534a74b9938b02a5307c808fbfd90c086eaf8dcb69099305415719f5a",
+      "topologyDigest": "351b3632f7dcb1ae8fa69f4adaf9a316ba05c052d991dc09e684e1d9d990d420",
+      "uvDigest": "6a028e3cbe2b40d15fa4731014b0d3f4cf3436a4c1eff182927c133a8e6bd64b",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "anthro-anime-whole-body-skin-v1",
+      "skinLayerDigest": "38cd259041fc2610dd7cc3e20c55a6769ab2fcc3f54298315c2e6ea1da883ec5",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "roughness",
+      "assetRef": "asset://non-production/anthro/roughness.png",
+      "textureSha256": "48b655a5654d94de109425d0e900776bea58e11c9c3c7d606fe2342fb5e29585",
+      "topologyDigest": "351b3632f7dcb1ae8fa69f4adaf9a316ba05c052d991dc09e684e1d9d990d420",
+      "uvDigest": "6a028e3cbe2b40d15fa4731014b0d3f4cf3436a4c1eff182927c133a8e6bd64b",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "anthro-anime-whole-body-skin-v1",
+      "skinLayerDigest": "38cd259041fc2610dd7cc3e20c55a6769ab2fcc3f54298315c2e6ea1da883ec5",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "fur",
+      "assetRef": "asset://non-production/anthro/fur.png",
+      "textureSha256": "801691bbeb6c4c165f2c3a20ebeccb3b61278e47c4fb2fae0ad96709012a733d",
+      "topologyDigest": "351b3632f7dcb1ae8fa69f4adaf9a316ba05c052d991dc09e684e1d9d990d420",
+      "uvDigest": "6a028e3cbe2b40d15fa4731014b0d3f4cf3436a4c1eff182927c133a8e6bd64b",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "anthro-anime-whole-body-skin-v1",
+      "skinLayerDigest": "38cd259041fc2610dd7cc3e20c55a6769ab2fcc3f54298315c2e6ea1da883ec5",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "marking",
+      "assetRef": "asset://non-production/anthro/marking.png",
+      "textureSha256": "3943ff9cd8bf973682a916c2a85134f5d46f773be882fda9964c4c78c787f6ae",
+      "topologyDigest": "351b3632f7dcb1ae8fa69f4adaf9a316ba05c052d991dc09e684e1d9d990d420",
+      "uvDigest": "6a028e3cbe2b40d15fa4731014b0d3f4cf3436a4c1eff182927c133a8e6bd64b",
+      "surfaceOnly": true
+    }
+  ],
+  "diffusionPolicy": {
+    "purpose": "surface-polish-only",
+    "anatomyMutationAllowed": false,
+    "topologyMutationAllowed": false,
+    "geometryDisplacementAllowed": false,
+    "runtimeRetopologyAllowed": false
+  },
+  "geometryMutationAllowed": false
+}

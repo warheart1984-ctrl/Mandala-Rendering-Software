@@ -1,0 +1,32 @@
+{
+  "status": "partial",
+  "note": "Sim hooks for the default humanoid. CPU stand-in (not Blender cloth/hair). Always applied from frame 0, including wireframe renders.",
+  "vertexGroups": {
+    "cloth_cape": {
+      "purpose": "Cape / back-cloth verts for cloth sim",
+      "bind": "shoulders + upper chest"
+    },
+    "hair_scalp": {
+      "purpose": "Hair curve roots / fur cards",
+      "bind": "head crown"
+    },
+    "finger_cloth": {
+      "purpose": "Optional glove/cloth on fingers",
+      "bind": "hands"
+    }
+  },
+  "collisionVolumes": {
+    "hips": { "type": "capsule", "bones": ["Hips", "UpperLeg_L", "UpperLeg_R"] },
+    "shoulders": { "type": "capsule", "bones": ["Shoulder_L", "Shoulder_R", "Chest"] },
+    "chest": { "type": "capsule", "bones": ["Chest", "Spine"] }
+  },
+  "hairCurves": {
+    "count": 8,
+    "segments": 5,
+    "length": 0.22
+  },
+  "presets": {
+    "wire_sim": "sim/presets/wire_sim.json",
+    "beauty_sim": "sim/presets/beauty_sim.json"
+  }
+}

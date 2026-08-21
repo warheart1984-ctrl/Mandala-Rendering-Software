@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mrs://sovereign-sculptor/schemas/pose-frame.schema.json",
+  "title": "Sovereign Sculptor Pose Frame",
+  "description": "One deterministic pose frame pinned to a character rig version and validated by the Sovereign Sculptor adapter.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "frameId",
+    "rigId",
+    "rigVersion",
+    "frameIndex",
+    "timeSeconds",
+    "boneTransforms",
+    "blendshapeWeights",
+    "provenance"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "sovereign-pose-frame/1.0" },
+    "frameId": { "$ref": "#/$defs/nonEmptyId" },
+    "rigId": { "$ref": "#/$defs/nonEmptyId" },
+    "rigVersion": { "const": "character-rig/1.0" },
+    "frameIndex": { "type": "integer", "minimum": 0 },
+    "timeSeconds": { "type": "number", "minimum": 0 },
+    "boneTransforms": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/boneTransform" }
+    },
+    "blendshapeWeights": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/blendshapeWeight" }
+    },
+    "provenance": { "$ref": "#/$defs/provenance" }
+  },
+  "$defs": {
+    "nonEmptyId": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "vec3": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "quat": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }, { "type": "number" }],
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "boneTransform": {
+      "type": "object",
+      "required": ["boneId", "translation", "rotation", "scale"],
+      "additionalProperties": false,
+      "properties": {
+        "boneId": { "$ref": "#/$defs/nonEmptyId" },
+        "translation": { "$ref": "#/$defs/vec3" },
+        "rotation": { "$ref": "#/$defs/quat" },
+        "scale": { "$ref": "#/$defs/vec3" }
+      }
+    },
+    "blendshapeWeight": {
+      "type": "object",
+      "required": ["blendshapeId", "weight"],
+      "additionalProperties": false,
+      "properties": {
+        "blendshapeId": { "$ref": "#/$defs/nonEmptyId" },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["intentId", "operatorId"],
+      "additionalProperties": false,
+      "properties": {
+        "intentId": { "type": ["string", "null"], "maxLength": 256 },
+        "operatorId": { "$ref": "#/$defs/nonEmptyId" },
+        "sourcePoseId": { "type": ["string", "null"], "maxLength": 256 }
+      }
+    }
+  }
+}

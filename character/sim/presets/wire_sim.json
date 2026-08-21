@@ -1,0 +1,17 @@
+{
+  "id": "wire_sim",
+  "status": "partial",
+  "description": "Wires + sim motion. Run sim on the rigged mesh from frame 0, then draw topology + energy curves.",
+  "frame": 0,
+  "sim": {
+    "clothAmplitude": 0.035,
+    "hairAmplitude": 0.045,
+    "wind": [0.12, 0.02, 0.04],
+    "gravity": -0.08
+  },
+  "render": {
+    "passA": "pure_wireframe",
+    "passB": "wireframe_plus_energy",
+    "composite": "char_wire_render.png"
+  }
+}

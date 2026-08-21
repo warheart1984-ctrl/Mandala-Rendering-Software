@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "engine3d-mandala-character-binding/1.0",
+  "status": "governed-fixture-binding",
+  "bindingId": "binding:6855bfba932918942847c29e6d01226da9472f3b1a20c3b2777ae4abcfd032f0",
+  "characterId": "fox-fixture-character",
+  "rigId": "fox-quadruped-v1",
+  "sculptDocumentId": "fox-fixture-v1",
+  "constitutionalRecordDigest": "a7a10229ea6c76ca6b44534382d30482765352a7dffced6ab7d871af530ba938",
+  "engine3dRecordRef": "sha256:a7a10229ea6c76ca6b44534382d30482765352a7dffced6ab7d871af530ba938",
+  "mandalaRecordRef": "sha256:a7a10229ea6c76ca6b44534382d30482765352a7dffced6ab7d871af530ba938",
+  "glbDigest": "353471d33ee456d5cea3dc51ff2a4ee692d231b133a8988543424d93e6eec0e4",
+  "topologyDigest": "d3db553ea7bfa0379d707c31d70d4cf433de82fb7ee09f790da76e48f4836696",
+  "vertexOrderDigest": "4f5da02a0cf9019695a12e7116758e9e3d9707c5887c6111383a6c3e3b85b2df",
+  "uvDigest": "2ad2d350c554666077e69f0ab0ba5b0b7662982060e39040a508525b97bce65d",
+  "armatureDigest": "1a0c374b7d8cfbca6baaf20e6272327a702d80f3b8f2b477172cf716e19f39ce",
+  "blendshapeDigest": "bdbd374408dc85c34f11aeef27f54ca12b0bd72271e6057ac366a37f33b6877b",
+  "materialTextureBindings": [
+    {
+      "skinLayerId": "fox-anime-whole-body-skin-v1",
+      "skinLayerDigest": "95593a1f73769795d05aa9de7a61efb8a161c6f50607b5cc8556f9e4a17a6c5e",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "baseColor",
+      "assetRef": "asset://non-production/fox/base-color.png",
+      "textureSha256": "9a16f0a2c6fe273ed082a38324b06b1972b023632c3ab8a653cfafad65368857",
+      "topologyDigest": "d3db553ea7bfa0379d707c31d70d4cf433de82fb7ee09f790da76e48f4836696",
+      "uvDigest": "2ad2d350c554666077e69f0ab0ba5b0b7662982060e39040a508525b97bce65d",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "fox-anime-whole-body-skin-v1",
+      "skinLayerDigest": "95593a1f73769795d05aa9de7a61efb8a161c6f50607b5cc8556f9e4a17a6c5e",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "celShade",
+      "assetRef": "asset://non-production/fox/cel-shade.png",
+      "textureSha256": "0f8bf81ce7c72c4ae4638156bf3704573ff3d2e7f0b41f24abc78870171f1a83",
+      "topologyDigest": "d3db553ea7bfa0379d707c31d70d4cf433de82fb7ee09f790da76e48f4836696",
+      "uvDigest": "2ad2d350c554666077e69f0ab0ba5b0b7662982060e39040a508525b97bce65d",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "fox-anime-whole-body-skin-v1",
+      "skinLayerDigest": "95593a1f73769795d05aa9de7a61efb8a161c6f50607b5cc8556f9e4a17a6c5e",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "normalDetail",
+      "assetRef": "asset://non-production/fox/normal-detail.png",
+      "textureSha256": "a441cdefcaa5b8afeb21e13a27bef06d5a7567be4560a952b43d8b94964dd839",
+      "topologyDigest": "d3db553ea7bfa0379d707c31d70d4cf433de82fb7ee09f790da76e48f4836696",
+      "uvDigest": "2ad2d350c554666077e69f0ab0ba5b0b7662982060e39040a508525b97bce65d",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "fox-anime-whole-body-skin-v1",
+      "skinLayerDigest": "95593a1f73769795d05aa9de7a61efb8a161c6f50607b5cc8556f9e4a17a6c5e",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "roughness",
+      "assetRef": "asset://non-production/fox/roughness.png",
+      "textureSha256": "ed67e1dbbc460fbfdd76c60b37fa5c03d36e9c52f56f1d12a98fb9353addf8c7",
+      "topologyDigest": "d3db553ea7bfa0379d707c31d70d4cf433de82fb7ee09f790da76e48f4836696",
+      "uvDigest": "2ad2d350c554666077e69f0ab0ba5b0b7662982060e39040a508525b97bce65d",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "fox-anime-whole-body-skin-v1",
+      "skinLayerDigest": "95593a1f73769795d05aa9de7a61efb8a161c6f50607b5cc8556f9e4a17a6c5e",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "fur",
+      "assetRef": "asset://non-production/fox/fur.png",
+      "textureSha256": "1e0c9fecfed0abf3264e56d1057ce421436ee117b2299cdfc81cb10ac00f7f2e",
+      "topologyDigest": "d3db553ea7bfa0379d707c31d70d4cf433de82fb7ee09f790da76e48f4836696",
+      "uvDigest": "2ad2d350c554666077e69f0ab0ba5b0b7662982060e39040a508525b97bce65d",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "fox-anime-whole-body-skin-v1",
+      "skinLayerDigest": "95593a1f73769795d05aa9de7a61efb8a161c6f50607b5cc8556f9e4a17a6c5e",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "marking",
+      "assetRef": "asset://non-production/fox/marking.png",
+      "textureSha256": "2d95381dd88d874dada13744192dce4a639946026dd0f785800a7a7de95552f1",
+      "topologyDigest": "d3db553ea7bfa0379d707c31d70d4cf433de82fb7ee09f790da76e48f4836696",
+      "uvDigest": "2ad2d350c554666077e69f0ab0ba5b0b7662982060e39040a508525b97bce65d",
+      "surfaceOnly": true
+    }
+  ],
+  "diffusionPolicy": {
+    "purpose": "surface-polish-only",
+    "anatomyMutationAllowed": false,
+    "topologyMutationAllowed": false,
+    "geometryDisplacementAllowed": false,
+    "runtimeRetopologyAllowed": false
+  },
+  "geometryMutationAllowed": false
+}

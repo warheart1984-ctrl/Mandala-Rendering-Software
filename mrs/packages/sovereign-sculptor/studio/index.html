@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Sovereign Sculptor — Local Character Pane</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">S</span>
+        <div>
+          <h1>Sovereign Sculptor</h1>
+          <p>Governed character surface editor · partial vertical slice</p>
+        </div>
+      </div>
+      <div class="file-actions" aria-label="Project actions">
+        <a class="button secondary" href="workflow.html">Workflow demo</a>
+        <label class="button secondary" for="project-file">Load JSON</label>
+        <input id="project-file" type="file" accept="application/json,.json">
+        <button id="save-local" class="button secondary" type="button">Save snapshot</button>
+        <button id="restore-local" class="button secondary" type="button">Restore snapshot</button>
+        <button id="export-json" class="button primary" type="button">Export project JSON</button>
+      </div>
+    </header>
+
+    <div id="fixture-banner" class="fixture-banner" role="status">
+      Preview fixture only — load an operator-governed SculptDocument to enable save and export.
+    </div>
+
+    <main class="workspace">
+      <aside class="tool-panel" aria-label="Sculpt controls">
+        <section>
+          <div class="section-heading">
+            <h2>Orthographic view</h2>
+            <span id="view-readout" class="value-chip">Front</span>
+          </div>
+          <div class="segmented" role="group" aria-label="View axis">
+            <button type="button" data-view="front" class="active">Front</button>
+            <button type="button" data-view="side">Side</button>
+            <button type="button" data-view="top">Top</button>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-heading">
+            <h2>Topology-safe brush</h2>
+            <span class="status-dot safe">positions only</span>
+          </div>
+          <label class="control-label" for="radius">
+            Radius
+            <output id="radius-value">0.45</output>
+          </label>
+          <input id="radius" type="range" min="0.05" max="1.50" step="0.01" value="0.45">
+
+          <label class="control-label" for="strength">
+            Strength
+            <output id="strength-value">0.55</output>
+          </label>
+          <input id="strength" type="range" min="0" max="1" step="0.01" value="0.55">
+
+          <p class="hint">Select a vertex, then drag. Falloff is deterministic; vertex IDs and triangle indices never change.</p>
+        </section>
+
+        <section>
+          <h2>Masks & symmetry</h2>
+          <label class="toggle-row">
+            <input id="symmetry" type="checkbox" checked>
+            <span>Explicit symmetry pairs</span>
+          </label>
+          <label class="toggle-row">
+            <input id="region-mask" type="checkbox">
+            <span>Respect region mask</span>
+          </label>
+          <label class="field-label" for="active-region">Active region</label>
+          <select id="active-region"></select>
+          <label class="toggle-row">
+            <input id="locked-mask" type="checkbox" checked>
+            <span>Respect locked vertices</span>
+          </label>
+          <label class="toggle-row">
+            <input id="show-masks" type="checkbox" checked>
+            <span>Show masked/locked vertices</span>
+          </label>
+        </section>
+
+        <section class="guardrail-card">
+          <h2>Guardrails</h2>
+          <ul>
+            <li>No diffusion anatomy</li>
+            <li>No runtime retopology</li>
+            <li>No browser GLB export</li>
+            <li>No texture-pixel synthesis</li>
+          </ul>
+        </section>
+      </aside>
+
+      <section class="viewport-panel" aria-label="Sculpt viewport">
+        <div class="viewport-toolbar">
+          <div>
+            <strong id="document-title">Preview Character Fixture</strong>
+            <span id="document-meta">fixture · draft</span>
+          </div>
+          <div class="viewport-stats">
+            <span><b id="vertex-count">0</b> vertices</span>
+            <span><b id="triangle-count">0</b> triangles</span>
+            <span>Selected <b id="selected-id">none</b></span>
+          </div>
+        </div>
+        <div id="canvas-wrap" class="canvas-wrap">
+          <canvas id="viewport" aria-label="Orthographic fixed-topology character preview"></canvas>
+          <div class="axis-widget" aria-hidden="true">
+            <span id="axis-v">Y</span>
+            <i></i>
+            <span id="axis-h">X</span>
+          </div>
+          <div id="empty-state" class="empty-state" hidden>
+            <h2>No mesh available</h2>
+            <p>Load a SculptDocument containing stable vertices and triangle indices.</p>
+          </div>
+        </div>
+        <footer class="viewport-footer">
+          <span id="operation-status">Ready · preview fixture is not exportable</span>
+          <span id="document-digest">Project SHA-256: unavailable</span>
+        </footer>
+      </section>
+
+      <aside class="inspector" aria-label="Character inspector">
+        <nav class="tabs" aria-label="Inspector sections">
+          <button type="button" data-pane="project" class="active">Project</button>
+          <button type="button" data-pane="rig">Rig</button>
+          <button type="button" data-pane="blendshapes">Shapes</button>
+          <button type="button" data-pane="skin">Skin</button>
+          <button type="button" data-pane="record">Record</button>
+        </nav>
+
+        <section id="pane-project" class="pane active" aria-labelledby="Project">
+          <h2>Character identity</h2>
+          <dl id="project-summary" class="property-list"></dl>
+          <h3>Morphology profile</h3>
+          <pre id="morphology-json" class="json-block"></pre>
+          <h3>Source policy</h3>
+          <div id="source-policy" class="policy-list"></div>
+        </section>
+
+        <section id="pane-rig" class="pane" aria-labelledby="Rig">
+          <div class="section-heading">
+            <h2>Character rig</h2>
+            <span id="rig-version" class="value-chip">none</span>
+          </div>
+          <div id="rig-summary"></div>
+          <h3>Bones</h3>
+          <div id="bone-list" class="item-list"></div>
+        </section>
+
+        <section id="pane-blendshapes" class="pane" aria-labelledby="Blendshapes">
+          <h2>Blendshapes</h2>
+          <p class="hint">Inspection values do not rewrite governed delta arrays.</p>
+          <div id="blendshape-list" class="item-list"></div>
+        </section>
+
+        <section id="pane-skin" class="pane" aria-labelledby="Skin">
+          <div class="section-heading">
+            <h2>Whole-body skin</h2>
+            <span class="status-dot safe">surface only</span>
+          </div>
+          <p class="hint">Edit material metadata and governed texture references. This pane never reads, paints, generates, or rewrites texture pixels.</p>
+          <div id="skin-editor"></div>
+        </section>
+
+        <section id="pane-record" class="pane" aria-labelledby="Record">
+          <h2>Anatomy & provenance</h2>
+          <div id="record-status" class="record-status"></div>
+          <pre id="record-json" class="json-block tall"></pre>
+        </section>
+      </aside>
+    </main>
+
+    <dialog id="message-dialog">
+      <form method="dialog">
+        <h2 id="dialog-title">Project message</h2>
+        <pre id="dialog-message"></pre>
+        <button class="button primary" value="close">Close</button>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
