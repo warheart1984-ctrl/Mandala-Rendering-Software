@@ -1,7 +1,7 @@
 {
   "name": "@mrs/engine3d-core",
-  "version": "1.5.0",
-  "description": "Deterministic Engine3D host loop: gather \u2192 bridge \u2192 forces \u2192 physics \u2192 substrate \u2192 render \u2192 replay",
+  "version": "1.6.0",
+  "description": "Deterministic Engine3D host loop: gather → bridge → forces → physics → substrate → render → replay",
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",

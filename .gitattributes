@@ -1,0 +1,27 @@
+# Normalize line endings to LF for all text files
+* text=auto eol=lf
+
+# Binary files - do not normalize
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.glb binary
+*.gltf binary
+*.fbx binary
+*.blend binary
+*.spv binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.wasm binary
+*.onnx binary
+*.bin binary
+*.hip binary
+*.pyc binary
+*.egg-info/** binary

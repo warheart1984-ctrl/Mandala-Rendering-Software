@@ -91,6 +91,7 @@ import {
   safeRenderFileName,
   type PngImagePayload,
 } from "./render-jobs.js";
+import { handleMandalaActionRequest } from "./action-gateway.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** Widget HTML: mrs/apps/chatgpt-mrs/assets/ (Vite web build target) */
@@ -871,10 +872,15 @@ const httpServer = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
 
   if (req.method === "OPTIONS") {
-    res.writeHead(204, { ...CORS_HEADERS });
+    res.writeHead(204, {
+      ...CORS_HEADERS,
+      "Access-Control-Allow-Headers": `${CORS_HEADERS["Access-Control-Allow-Headers"]}, authorization`,
+    });
     res.end();
     return;
   }
+
+  if (await handleMandalaActionRequest(req, res, PORT, url)) return;
 
   if (req.method === "GET" && url.pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -967,6 +973,7 @@ httpServer.listen(PORT, () => {
     `  Legacy POST:     http://127.0.0.1:${PORT}${ssePostPath}?sessionId=...`
   );
   console.log(`  Health: GET http://127.0.0.1:${PORT}/health`);
+  console.log(`  GPT Action schema: GET http://127.0.0.1:${PORT}/actions/openapi.json`);
   console.log(
     `  Primary tools: render_4d_to_3d_pipeline, render_governed_anime_pipeline, render_4d_prompt, render_scene_spec_rt4d`
   );

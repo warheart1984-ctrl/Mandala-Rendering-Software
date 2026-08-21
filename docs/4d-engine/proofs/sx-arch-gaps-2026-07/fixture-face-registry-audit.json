@@ -27,7 +27,7 @@
         "vertexCount": 117
       },
       "issues": [],
-      "path": "E:\\Mandala-Rendering-Software\\mrs\\assets\\human\\HumanFaceRigged.glb"
+      "path": "/media/jon/New Volume/Mandala Rendering Software/mrs/assets/human/HumanFaceRigged.glb"
     },
     {
       "logicalName": "HumanFaceNeutral",
@@ -53,7 +53,7 @@
         "aabb-invalid",
         "aabb-empty"
       ],
-      "path": "E:\\Mandala-Rendering-Software\\mrs\\assets\\human\\HumanFaceNeutral.glb"
+      "path": "/media/jon/New Volume/Mandala Rendering Software/mrs/assets/human/HumanFaceNeutral.glb"
     }
   ]
 }

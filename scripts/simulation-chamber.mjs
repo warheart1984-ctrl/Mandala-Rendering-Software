@@ -41,6 +41,21 @@ import {
   poseForBeat,
 } from "./humanoid-avatar.mjs";
 import { ActorDecisionEngine } from "./actor-decision-engine.mjs";
+import {
+  CHAR_RIGGED_GLB,
+  describeCharacterHook,
+} from "../character/tools/simulation-chamber-hook.mjs";
+import {
+  Hypersphere,
+  Hyperplane,
+  OrientedCapsule,
+} from "../mrs/packages/renderer-core/src/render/rt4d/geometry/hypersurface.js";
+import { characterMetadata } from "../character/tools/chamber-bridge.mjs";
+import {
+  describeChamberSubstrate,
+  attachDefectTick,
+  writeChamberReport,
+} from "../mandala/substrate/chamber-hook.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FFMPEG = resolve(__dirname, "../runtime/toolchain/ffmpeg/usr/bin/ffmpeg");
@@ -118,6 +133,7 @@ class MultiActorSim {
     // Recording
     this.frames = [];
     this.speechTimeline = []; // { time, actorId, text, audioPath? }
+    this.rhfdCharacterGlb = Boolean(options.characterGlb);
   }
 
   buildWorld(sceneCard) {
@@ -146,8 +162,57 @@ class MultiActorSim {
       lookAtZ: camera.lookAt?.z || 0,
     };
 
+    this.addWorldProps(sceneCard);
+    this.sceneCardCamera = sceneCard.camera || null;
+    const cp = characterMetadata(sceneCard);
+    if (cp) {
+      console.log(`  Character pipeline: ${cp.id} (${cp.species}) — same armature as character/`);
+    }
     console.log(`  World: ${scene.primitives.length} primitives, ${scene.lights.length} lights`);
     return this;
+  }
+
+  /**
+   * Add scene-card entities (workroom, table, salt dish) as RT4D primitives.
+   */
+  addWorldProps(sceneCard) {
+    for (const mat of sceneCard.materials || []) {
+      const hex = (mat.color || "#888888").replace("#", "");
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      const type = mat.brdf === "ggx" ? "ggx" : "lambertian";
+      this.scene.materials.createMaterial(mat.id, type, {
+        albedo: vec4(r, g, b, 1),
+        roughness: mat.roughness ?? 0.7,
+      });
+    }
+    for (const ent of sceneCard.entities || []) {
+      const g = ent.geometry || {};
+      const mid = ent.materialId || "default";
+      if (g.kind === "hypersphere") {
+        const c = g.center || [0, 0, 0, 0];
+        this.scene.addPrimitive(new Hypersphere(vec4(c[0], c[1], c[2], c[3] || 0), g.radius || 0.3), mid);
+      } else if (g.kind === "plane") {
+        this.scene.addPrimitive(new Hyperplane(vec4(0, 1, 0, 0), g.offset ?? 0), mid);
+      } else if (g.kind === "box") {
+        const c = g.center || [0, 0, 0, 0];
+        const h = g.halfSize || [0.5, 0.5, 0.5];
+        this.scene.addPrimitive(new OrientedCapsule(
+          vec4(c[0] - h[0], c[1], c[2], c[3] || 0),
+          vec4(c[0] + h[0], c[1], c[2], c[3] || 0),
+          Math.max(h[1], 0.08),
+        ), mid);
+      } else if (g.kind === "capsule") {
+        const a = g.a || [0, 0, 0, 0];
+        const b = g.b || [0, 1, 0, 0];
+        this.scene.addPrimitive(new OrientedCapsule(
+          vec4(a[0], a[1], a[2], a[3] || 0),
+          vec4(b[0], b[1], b[2], b[3] || 0),
+          g.radius || 0.2,
+        ), mid);
+      }
+    }
   }
 
   /**
@@ -181,13 +246,16 @@ class MultiActorSim {
       emissive: [...(actorDef.beats?.[0]?.emissive || [0.5, 0.5, 0.5])],
       scale: actorDef.beats?.[0]?.scale || 0.5,
       pose: { armAngle: 0, armSwing: 0, legSpread: 0, legSwing: 0, headTilt: 0, bodyLean: 0 },
+      kind: "defect",
+      _prevPosition: actorDef.beats?.[0]?.position ? [...actorDef.beats[0].position] : [0, 2, 0, 0],
 
       // Avatar primitives (set after first build)
       avatarPrimitives: [],
     };
 
+    actor.kind = "defect";
     this.actors.push(actor);
-    console.log(`  Actor "${actor.name}" (${actorDef.color}) — ${actor.beats.length} beats`);
+    console.log(`  Actor "${actor.name}" (${actorDef.color}) — ${actor.beats.length} beats [RHFD defect / petal rupture]`);
     return actor;
   }
 
@@ -199,7 +267,8 @@ class MultiActorSim {
       const { primitives } = buildHumanoidPrimitives(
         actor.pose,
         actor.materialId,
-        actor.position[1]
+        actor.position[1],
+        actor.position,
       );
       actor.avatarPrimitives = primitives;
 
@@ -217,7 +286,8 @@ class MultiActorSim {
    */
   updateActorAvatar(actor) {
     // Remove old primitives
-    for (const prim of actor.avatarPrimitives) {
+    for (const part of actor.avatarPrimitives) {
+      const prim = part.primitive || part;
       const idx = this.scene.primitives.indexOf(prim);
       if (idx >= 0) this.scene.primitives.splice(idx, 1);
     }
@@ -226,7 +296,8 @@ class MultiActorSim {
     const { primitives } = buildHumanoidPrimitives(
       actor.pose,
       actor.materialId,
-      actor.position[1]
+      actor.position[1],
+      actor.position,
     );
     actor.avatarPrimitives = primitives;
 
@@ -381,6 +452,8 @@ class MultiActorSim {
         // In LLM mode, still update pose from current action
         actor.pose = poseForBeat(actor.currentAction || "idle", this.time);
       }
+      // RHFD: actor = defect. Motion remains pose interpolation; this only reports a surrogate.
+      attachDefectTick(actor, dt);
 
       // 2. Director override
       if (this.director.hasOverride(actor.id)) {
@@ -398,9 +471,9 @@ class MultiActorSim {
       const mat = this.scene.materials.get(actor.materialId);
       if (mat) {
         mat.albedo = vec4(
-          actor.emissive[0] * 0.4,
-          actor.emissive[1] * 0.4,
-          actor.emissive[2] * 0.4,
+          Math.min(1, actor.emissive[0] * 0.85),
+          Math.min(1, actor.emissive[1] * 0.85),
+          Math.min(1, actor.emissive[2] * 0.85),
           1
         );
       }
@@ -412,8 +485,10 @@ class MultiActorSim {
       if (!this.enableLLM) {
         for (const beat of actor.beats) {
           if (beat.speech && beat.action === "speak") {
-            const speakEnd = beat.time + 0.15;
-            if (this.time >= beat.time && this.time < speakEnd) {
+            const already = this.speechTimeline.some(
+              (s) => s.actorId === actor.id && s.text === beat.speech,
+            );
+            if (!already && this.time >= beat.time && this.time < beat.time + 1 / this.fps) {
               tickSpeech.push({ actorId: actor.id, text: beat.speech, time: this.time });
             }
           }
@@ -430,10 +505,10 @@ class MultiActorSim {
       const centerY = this.actors.reduce((sum, a) => sum + a.position[1], 0) / this.actors.length;
       const centerZ = this.actors.reduce((sum, a) => sum + a.position[2], 0) / this.actors.length;
       
-      const orbitAngle = this.time * 0.3; // slow orbit
-      const orbitRadius = 8;
+      const orbitAngle = this.time * 0.18;
+      const orbitRadius = this.sceneCardCamera?.radius || 3.6;
       const cameraX = centerX + Math.sin(orbitAngle) * orbitRadius;
-      const cameraY = centerY + 1.5;
+      const cameraY = centerY + 0.85;
       const cameraZ = centerZ + Math.cos(orbitAngle) * orbitRadius;
       
       // Update camera position and look-at
@@ -444,8 +519,11 @@ class MultiActorSim {
       }
       if (this.camera.lookAt) {
         this.camera.lookAt.x = centerX;
-        this.camera.lookAt.y = centerY;
+        this.camera.lookAt.y = centerY + 0.35;
         this.camera.lookAt.z = centerZ;
+      }
+      if (typeof this.camera._buildBasis === "function") {
+        this.camera._buildBasis();
       }
     }
 
@@ -504,6 +582,17 @@ class MultiActorSim {
 
   async assemble(outputDir, sceneCard) {
     mkdirSync(outputDir, { recursive: true });
+
+    const rhfdReport = writeChamberReport(this.actors, {
+      characterGlb: this.rhfdCharacterGlb,
+      ticks: this.tickCount,
+      mapping: "mandala/substrate/MAPPING.md",
+    });
+    writeFileSync(
+      resolve(outputDir, "rhfd-substrate-report.json"),
+      JSON.stringify(rhfdReport, null, 2) + "\n",
+    );
+    console.log(`  RHFD substrate report: ${rhfdReport.gradVStatus} motion=${rhfdReport.motionDriverActual} meanSurrogate=${rhfdReport.meanSurrogateMag.toFixed(4)}`);
 
     // Save frames
     const framesDir = resolve(outputDir, "frames");
@@ -605,6 +694,7 @@ const args = process.argv.slice(2);
 if (args.length === 0) {
   console.error("Usage: node simulation-chamber.mjs <scene-card.json> [output-dir] [options]");
   console.error("Options: --width N --height N --fps N --samples N --maxDepth N --no-tts --llm --llm-interval N");
+  console.error("         --character-glb [path]  consume character/models/exports/char_rigged.glb (partial hook)");
   process.exit(1);
 }
 
@@ -619,6 +709,10 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === "--no-tts") { options.enableTTS = false; }
   else if (args[i] === "--llm") { options.enableLLM = true; }
   else if (args[i] === "--llm-interval" && args[i + 1]) { options.llmInterval = parseFloat(args[++i]); }
+  else if (args[i] === "--character-glb") {
+    if (args[i + 1] && !String(args[i + 1]).startsWith("--")) options.characterGlb = args[++i];
+    else options.characterGlb = CHAR_RIGGED_GLB;
+  }
   else { positionalArgs.push(args[i]); }
 }
 
@@ -635,6 +729,13 @@ const hasActors = sceneCard.actors && sceneCard.actors.length > 0;
 
 console.log(`\nSimulation Chamber v3 — "${sceneCard.name || sceneCard.id}"`);
 console.log("=".repeat(60));
+
+const characterHook = describeCharacterHook(options.characterGlb || CHAR_RIGGED_GLB);
+console.log(`  Character pipeline: ${characterHook.path}`);
+console.log(`  Hook: ${characterHook.status} — ${characterHook.note}`);
+if (options.characterGlb) {
+  console.log("  --character-glb set; RT4D still uses humanoid-avatar primitives until mesh consume lands (no third character system).");
+}
 
 const sim = new MultiActorSim(options);
 sim.buildWorld(sceneCard);
@@ -654,6 +755,12 @@ if (hasActors) {
   });
   sim.buildAvatars();
 }
+
+const rhfdHook = describeChamberSubstrate({
+  actors: sim.actors,
+  characterGlb: Boolean(options.characterGlb),
+});
+console.log(`  RHFD substrate: ${rhfdHook.gradVStatus} — motion=${rhfdHook.motionDriverActual}; actors=hex petal defects (not ∇V-integrated)`);
 
 sim.run().then(result => {
   console.log(`\n  Assembling...`);

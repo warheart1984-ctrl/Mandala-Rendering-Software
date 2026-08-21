@@ -1,9 +1,9 @@
 {
   "name": "MRS RT4D Sovereign Renderer",
-  "version": "1.5.0",
-  "rendererCoreVersion": "1.5.0",
-  "engine3dCoreVersion": "1.5.0",
-  "dateReleased": "2026-08-06",
+  "version": "1.6.0",
+  "rendererCoreVersion": "1.6.0",
+  "engine3dCoreVersion": "1.6.0",
+  "dateReleased": "2026-08-18",
   "license": "MIT",
   "tests": {
     "total": 83,
