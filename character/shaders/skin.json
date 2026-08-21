@@ -2,7 +2,7 @@
   "id": "skin",
   "status": "partial",
   "type": "pbr-sss-standin",
-  "note": "Subsurface scattering is declared. CPU beauty uses Lambert + warm wrap. Not a measured skin BSDF.",
+  "note": "Subsurface scattering is declared. CPU beauty uses Lambert + warm wrap. Not a measured skin BSDF. Holography fields (rho, w_sum, K) modulate tint/SSS/bulge hints — partial, not RT4D anatomical reconstruct.",
   "pbr": {
     "baseColor": [0.72, 0.52, 0.42, 1],
     "metallic": 0.0,
@@ -13,6 +13,24 @@
     "status": "declared",
     "radius": [1.0, 0.35, 0.2],
     "scale": 0.012
+  },
+  "holography": {
+    "status": "partial",
+    "fields": ["rho", "w_sum", "K"],
+    "tint": {
+      "rhoWarm": [0.15, 0.04, 0.02],
+      "note": "Higher rho → warmer albedo bias (CPU/EFR proof); higher K → tighter/shinier hint"
+    },
+    "bulgeHint": {
+      "status": "partial",
+      "scaleFromRho": 0.03,
+      "note": "Displacement comes from muscle deform; shader may amplify normal by rho"
+    },
+    "sssMod": {
+      "status": "declared",
+      "wSumScale": 0.01,
+      "note": "w_sum / epsilon may thicken SSS — declared until GPU path binds buffers"
+    }
   },
   "wgsl": "skin.wgsl"
 }
