@@ -1,3 +1,11 @@
+import {
+  Projector4DTo3D,
+  Camera4D,
+  ProjectionPolicy,
+  PROJECTION_MODES,
+} from "./Projector4DTo3D.js";
+import { CertifiedProjector } from "./CertifiedProjection.js";
+
 export {
   Projector4DTo3D,
   Camera4D,

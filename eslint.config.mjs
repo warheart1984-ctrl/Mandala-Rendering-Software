@@ -75,6 +75,8 @@ export default [
       globals: {
         ...globals.node,
         ...globals.browser,
+        // Bun runtime global (used by tool-lemonade-client.mjs's Bun.file()).
+        Bun: 'readonly',
       },
     },
     rules: {
