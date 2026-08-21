@@ -392,3 +392,14 @@ by default, matching the Director's `DIRECTOR_MEMORYBOARD_BASE_URL`.
 - Efficiency-layer / GPU-path work is intended to hook through the Sovereign X router (`sovereign-x/`).
 - Constitutional Reality Engine Phase 1 scaffold work has used `G:\cre\` as a top-level Drive-G project path.
 - GitHub remote for this product line includes `warheart1984-ctrl/Mandala-Rendering-System-MRS-`.
+
+## Cursor Cloud specific instructions
+
+Scope note: this section is operational guidance for Cloud Agents and does not alter the constitutional charter above.
+
+- **Dependencies** are refreshed automatically on VM startup by the environment update script (mirrors the `install` in `.cursor/environment.json`): root `npm ci`, `mrs/packages/renderer-core` `npm install`, and a repo-root `.venv` with FastAPI/uvicorn/pydantic/httpx/pytest. You should not need to reinstall manually.
+- **Primary dev service:** Infinity Director (`mrs/apps/infinity-director`, FastAPI) on port 8080. Start it with the repo-root venv active: `. .venv/bin/activate && cd mrs/apps/infinity-director && python -m uvicorn app.main:app --host 0.0.0.0 --port 8080` (the committed `.cursor/environment.json` `terminals` entry does this). The README uses port 8791 locally; Cloud uses 8080.
+- **Python venv lives at repo root `.venv`** (not inside the app). Always `. .venv/bin/activate` before running the service or `pytest`.
+- **Genblaze (`:8787`) is optional.** `/health` returns `status: ok` even when downstream lanes show `available: false` / connection-refused. Self-contained CPU endpoints that need no downstream: `GET /health`, `GET /api/speed-profiles`, `POST /api/atcm/plan`, `GET /api/idac/charter/status`, `GET /api/idac/learning/status`. `POST /api/direct`, `/api/warmup`, and live IDAC dispatch require Genblaze on `:8787`.
+- **Tests:** infinity-director suite → `. .venv/bin/activate && cd mrs/apps/infinity-director && pytest` (CPU-only; live/perf tests self-skip unless `IDAC_LIVE_*` / `IDAC_PERF_*` env vars are set). Canonical math check (R6) → `node mrs/packages/renderer-core/src/render/rt4d/test/normalization.test.js` (23 pass). Conformance → `npm run test:conformance` (16/16). Standard commands are in root `package.json`, `mrs/package.json`, and `README.md`.
+- **Known caveat:** `npm test` (`scripts/test-all.mjs`) currently has 3 suites failing (`4d-renderer`, `visual-regression`, `solid-play`) because `mrs/packages/renderer-core/src/render/rt4d/gpu/RT4DGPURenderer.js` has a `SyntaxError` (a stray duplicate `}` around the `_copyScatterToRays` method) that breaks any import of `renderer-core`. This is a source-code defect, not an environment problem; the conformance/host-probe/ckl suites still pass.
