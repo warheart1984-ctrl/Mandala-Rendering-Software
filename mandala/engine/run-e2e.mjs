@@ -3,6 +3,10 @@
  * End-to-end Mandala Engine demo (organs wired, honest tags).
  *
  *   node mandala/engine/run-e2e.mjs
+ *   node mandala/engine/run-e2e.mjs --pro-uncensored-painter
+ *     Local: also set AI_PAINTER_UNCENSORED=1 (single opt-in; no pro key).
+ *     Billing stub: MANDALA_BILLING_ENFORCE=1 requires dual pro+uncensored.
+ *   Prefer open golden: node scripts/golden-painter.mjs
  *
  * Output: output/mandala-engine-e2e/  (does not touch salt-atlas or character exports)
  */
@@ -45,6 +49,10 @@ export async function runE2E({
   tryGpu = false,
   width = 64,
   height = 64,
+  requestUncensored = false,
+  cliProUncensored = false,
+  localOpen = false,
+  theme = "",
 } = {}) {
   mkdirSync(outDir, { recursive: true });
   const universe = createUniverse({ seed });
@@ -74,7 +82,13 @@ export async function runE2E({
   const proj = project(universe, image, { accumulate: true });
   const hashAfterProject = universe.state.hash;
 
-  const painted = await paint(universe, image, { trySd });
+  const painted = await paint(universe, image, {
+    trySd,
+    requestUncensored,
+    cliProUncensored,
+    localOpen,
+    theme,
+  });
   const spoken = speak(universe, {
     caption: `Mandala Engine e2e. Constitution ${constitutionId}. t=${universe.state.t}.`,
     tryTts,
@@ -85,7 +99,8 @@ export async function runE2E({
   writeFileSync(pngPath, png);
   let sdPngPath = null;
   if (painted.sd?.pngBytes?.length) {
-    sdPngPath = join(outDir, "sd-turbo.png");
+    const sdName = image.painter?.uncensored ? "sd-pro-uncensored.png" : "sd-turbo.png";
+    sdPngPath = join(outDir, sdName);
     writeFileSync(sdPngPath, painted.sd.pngBytes);
   }
   const mytharPaths = writeMytharFiles(outDir, spoken);
@@ -176,7 +191,12 @@ export async function runE2E({
       liveHash: proj.liveHash,
       renderDidNotMutate: hashBeforeProject === hashAfterProject,
     },
-    painter: image.painter,
+    painter: {
+      ...image.painter,
+      tier: image.painter?.tier ?? "free",
+      uncensored: Boolean(image.painter?.uncensored),
+      backend: image.painter?.backend ?? "cpu-field-tint",
+    },
     mythar: {
       status: spoken.status,
       tts: spoken.tts,
@@ -222,9 +242,21 @@ export async function runE2E({
   };
 }
 
+function parseE2EArgs(argv = process.argv.slice(2)) {
+  const cliProUncensored = argv.includes("--pro-uncensored-painter");
+  const themeIdx = argv.indexOf("--theme");
+  const theme = themeIdx >= 0 && argv[themeIdx + 1] ? argv[themeIdx + 1] : "";
+  return {
+    cliProUncensored,
+    requestUncensored: cliProUncensored,
+    theme,
+  };
+}
+
 const isMain = process.argv[1] && String(process.argv[1]).replace(/\\/g, "/").endsWith("run-e2e.mjs");
 if (isMain) {
-  runE2E({}).then((r) => {
+  const args = parseE2EArgs();
+  runE2E(args).then((r) => {
     console.log("Mandala Engine e2e");
     console.log(`  out: ${r.outDir}`);
     console.log(`  png: ${r.pngPath}`);
@@ -233,9 +265,15 @@ if (isMain) {
     console.log(`  receipt: ${r.receiptPath}`);
     console.log(`  illegal rejected: ${r.illegalRejected}`);
     console.log(`  render did not mutate: ${r.renderDidNotMutate}`);
-    console.log(`  painter backend: ${r.receipt.painter?.backend}`);
+    console.log(
+      `  painter.tier=${r.receipt.painter?.tier} uncensored=${r.receipt.painter?.uncensored} backend=${r.receipt.painter?.backend} model=${r.receipt.painter?.model || r.receipt.painter?.sd?.model || "n/a"}`,
+    );
     console.log(`  painter sd: ${r.receipt.painter?.sd?.status} via=${r.receipt.painter?.sd?.via || "n/a"} http=${r.receipt.painter?.sd?.http ?? "n/a"} ms=${r.receipt.painter?.sd?.ms ?? "n/a"}`);
+    if (r.receipt.painter?.uncensoredDenied) {
+      console.log(`  painter uncensored denied: ${r.receipt.painter.uncensoredDenialReason}`);
+    }
     if (r.receipt.painter?.sd?.reason) console.log(`  painter sd reason: ${r.receipt.painter.sd.reason}`);
+    if (r.receipt.painter?.sd?.note) console.log(`  painter sd note: ${r.receipt.painter.sd.note}`);
     console.log(`  mythar tts: ${r.receipt.mythar?.tts?.status}`);
     console.log(`  receipt schema errors: ${r.schemaErrors.length}`);
   });

@@ -107,7 +107,7 @@ v0.2–v0.9 are **partial** or **working** at tiny CPU scale. v1.0 stays **parti
 | **Depends on** | v0.3 materials, v0.1 graph `AIPainter` tags |
 | **Reuse** | Proto albedo modulation; Lemonade local image path if needed (not cloud by default) |
 | **Exit criteria** | Painter node on graph; gated proposal; still not a trained production look |
-| **Status** | **partial** — CPU field-tint working; Lemonade :13307 64×64/4-step/90s attempted (currently `model_load_error` while sd-server already occupies :13306); local SD-Turbo overlay via :13306 **working** with evidence |
+| **Status** | **partial** — CPU field-tint working; free path SD-Turbo 64×64/4-step via Lemonade `:13307` / sd-server `:13306`; **pro uncensored** Anything-V5 gated by dual env key (`docs/mandala/AI_PAINTER_PRO_TIER.md`) |
 
 ### v0.6 — mythar audio
 
