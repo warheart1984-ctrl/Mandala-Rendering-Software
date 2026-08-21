@@ -45,7 +45,7 @@ export const CREATURE_CONTRACT = Object.freeze({
       id: "constitutional-motion-primitives",
       meaning: "motion = Intent→Evidence→Conformance→Stewardship state evolution updating E,ρ,K,positions,CIEMS trace",
       status: "partial",
-      primitives: Object.freeze({ breathe: "partial", reach: "partial", walk: "stub" }),
+      primitives: Object.freeze({ breathe: "partial", reach: "partial", walk: "partial" }),
     }),
     Object.freeze({
       id: "holographic-species-taxonomy",

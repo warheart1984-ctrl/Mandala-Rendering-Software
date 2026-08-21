@@ -22,7 +22,9 @@ export const BIN_FRAME_CODEC = "raw-float32";
 export const BIN_FRAME_HEADER_BYTES = 64;
 export const BIN_FRAME_STATUS = "partial";
 export const BIN_SPARSE_STATUS = "partial";
-export const BIN_VACUUM_RHO_DEFAULT = 0.05;
+/** Canonical sparse ρ threshold (alias RHO_SPARSE). */
+export const RHO_SPARSE = 0.05;
+export const BIN_VACUUM_RHO_DEFAULT = RHO_SPARSE;
 
 export const BIN_FRAME_ATTRIBUTES = Object.freeze([
   { name: "position", components: 3 },
@@ -295,6 +297,10 @@ export function buildBinMeta({
   maxWrittenCount = 0,
   genWallMs = null,
   genFpsEstimate = null,
+  nodeCountFull = null,
+  nodeCountSparse = null,
+  avgBinBytes = null,
+  sparseEnabled = true,
 } = {}) {
   return {
     created: new Date().toISOString(),
@@ -312,10 +318,20 @@ export function buildBinMeta({
       h_ij: "float32[9] @ byte 8 — row-major 3×3; Float32Array(header, 8, 9)",
       pad: "bytes 44–63 zero",
     },
+    sparseRhoThreshold: vacuumRho,
+    nodeCountFull,
+    nodeCountSparse,
+    avgBinBytes,
     sparse: {
+      enabled: sparseEnabled,
       vacuumRho,
+      sparseRhoThreshold: vacuumRho,
       status: BIN_SPARSE_STATUS,
-      note: "Nodes with ρ < vacuumRho omitted from .bin when compact is safe; bone/joint topology stays on full rig",
+      nodeCountFull,
+      nodeCountSparse,
+      avgBinBytes,
+      note:
+        "Pre-induced cull (ρ/K/w/joints) + write compact; bone/joint keep policy; full EGT kept for walk",
     },
     status: {
       binStreaming: BIN_FRAME_STATUS,

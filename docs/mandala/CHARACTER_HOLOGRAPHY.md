@@ -126,7 +126,7 @@ CPU dual views: boundary heatmap / warped / combined PNGs (**partial**).
 | Organ | Link |
 |-------|------|
 | **Mandala** | Pixels — EFR heatmaps / beauty tint from \(\rho,K\) |
-| **Simulation Chamber** | Motion — muscle/breath as entanglement evolution (partial); still not ∇V |
+| **Simulation Chamber** | Motion — `--holo` COMPOSITE path (partial); default still 15-part capsules |
 | **tools** | Character export / procedural humanoid as mesh source |
 
 RHFD framing: mesh as lattice defect in Mandala substrate — see character README.
@@ -142,7 +142,8 @@ RHFD framing: mesh as lattice defect in Mandala substrate — see character READ
 | Rig entanglement \(E_i\) + CIEMS gov | **partial** |
 | Boundary anatomy synthesis | **partial** / toy |
 | Creature templates / Mythar | **partial** |
-| Constitutional breathe/reach | **partial** |
+| Constitutional breathe/reach/walk | **partial** |
+| Chamber `--holo` COMPOSITE record | **partial** (boundary density, not photoreal) |
 | Face patch expressions | **partial** |
 | Full-body breathing sequence | **partial** |
 | Production biomechanics | **declared** |

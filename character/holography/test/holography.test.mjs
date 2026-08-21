@@ -227,6 +227,21 @@ describe("character holography", () => {
     assert.equal(ind.speciesId, "mythar-humanoid");
   });
 
+  it("walk primitive is partial (not stub) and changes ρ", () => {
+    const inst = instantiateTemplate("mythar-humanoid", {
+      individualId: "walk-t",
+      synthesizeBulk: false,
+    });
+    const loop = runConstitutionalLoop(inst.egt, "walk", 4, { amp: 0.12 });
+    assert.equal(loop.primitive, "walk");
+    assert.ok(!loop.traces[0].stages.stub);
+    let d = 0;
+    const a = loop.frames[0];
+    const b = loop.frames[loop.frames.length - 1];
+    for (let i = 0; i < a.rho.length; i++) d += Math.abs(a.rho[i] - b.rho[i]);
+    assert.ok(d > 1e-6);
+  });
+
   it("spawn(signature) is mesh-free and deterministic", () => {
     const a = spawn("mythar-humanoid", { individualId: "spawn-t", synthesizeBulk: true });
     const b = spawnMythar({ individualId: "spawn-t", synthesizeBulk: true });

@@ -4,7 +4,7 @@
  * Per frame: Intent → Evidence → Conformance → Stewardship
  *            → update E, ρ, K, positions, CIEMS trace
  *
- * Primitives: breathe + reach (solid); walk + snarl (stubs).
+ * Primitives: breathe + reach + walk (partial); snarl (stub).
  * Status: **partial** — soft CIEMS trace, not CHARTER enforcement.
  */
 
@@ -86,7 +86,9 @@ export function constitutionalFrameStep(egt0, primitive, t, opts = {}) {
       ? 0.5 + 0.5 * Math.sin(Math.PI * 2 * (t + phase))
       : primitive === "reach"
         ? clamp01(t)
-        : 0;
+        : primitive === "walk"
+          ? 0.55 + 0.45 * Math.sin(Math.PI * 2 * (t + phase))
+          : 0;
   trace.stages.intent = { signal: intentSignal };
 
   // 2. Evidence — observe current ρ / K means on target verts
@@ -173,10 +175,33 @@ export function constitutionalFrameStep(egt0, primitive, t, opts = {}) {
       }
     }
     verts = target;
-  } else if (primitive === "walk" || primitive === "snarl") {
+  } else if (primitive === "walk") {
+    const walkAmp = opts.amp ?? flow.amp ?? 0.12;
+    for (let i = 0; i < egt.nodes.length; i++) {
+      const p = egt.nodes[i].position;
+      const y = p.y;
+      if (y > 0.02 && y < 1.08) {
+        const side = p.x >= 0 ? 1 : -1;
+        const gait = Math.sin(Math.PI * 2 * (2 * t + phase + (side > 0 ? 0 : 0.5)));
+        egt.rho[i] = clamp01(0.2 + 0.35 * Math.max(0, gait) + 0.1 * t);
+        p.z += 0.03 * gait * walkAmp * 8;
+        p.y += 0.006 * Math.abs(gait);
+        egt.nodes[i].x = p.x + 0.55;
+        egt.nodes[i].y = p.y;
+      } else if (y >= 1.1 && y < 1.55) {
+        p.z += 0.004 * intentSignal;
+        egt.nodes[i].x = p.x + 0.55;
+        egt.nodes[i].y = p.y;
+      }
+    }
+    verts = selectFlowVerts(egt, { torsoYMin: 0.12, torsoYMax: 1.08 });
+    if (!verts.length) {
+      verts = Array.from({ length: Math.min(24, egt.nodes.length) }, (_, i) => i);
+    }
+  } else if (primitive === "snarl") {
     trace.stages.stub = {
       status: "stub",
-      note: `${primitive} declared stub — not implemented`,
+      note: "snarl declared stub — not implemented",
     };
   } else {
     throw new Error(`Unknown motion primitive: ${primitive}`);

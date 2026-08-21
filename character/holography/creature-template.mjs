@@ -48,7 +48,7 @@ export const MYTHAR_HUMANOID_TEMPLATE = Object.freeze({
   behavioralFlows: {
     breathe: { torsoYMin: 1.32, torsoYMax: 1.58, amp: 0.12 },
     reach: { armYMin: 1.15, armYMax: 1.55, amp: 0.2 },
-    walk: { status: "stub" },
+    walk: { status: "partial", note: "leg ρ/z wave — not production locomotion" },
     snarl: { status: "stub" },
   },
   governanceProfile: {

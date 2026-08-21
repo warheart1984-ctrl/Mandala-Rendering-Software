@@ -4,8 +4,8 @@
  * BulkSpacetimeEngine.t → t+1
  *   → character EGT (ρ, K, w_ij) coupled to certified defect
  *   → BoundaryDrivenAnatomySynthesis
- *   → CharacterHolographicRig
- *   → HolographicEncoder P / h_ij
+ *   → [optional sparse cull] → CharacterHolographicRig
+ *   → HolographicEncoder P / h_ij + boundary appearance
  *   → EntanglementRenderer COMPOSITE buffers
  *   → Movie Lane records projected boundary (does not own time)
  *
@@ -13,6 +13,11 @@
  * Optional `--record-png` keeps CPU COMPOSITE PNG path for regression.
  * Capsules / RT4D humanoid-avatar are skipped on this path.
  * Appearance is boundary information density — not photoreal mesh.
+ *
+ * Timing (performance.now):
+ *   streaming_io_ms  = writeBinFrame only
+ *   end_to_end_ms    = bulk+rig+induced+build+write (full frame)
+ *   shader_fps       = declared until watch.html overlay measures on device
  */
 
 import { createHash } from "node:crypto";
@@ -25,6 +30,7 @@ import {
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { performance } from "node:perf_hooks";
 import { rgbToPng } from "../png.mjs";
 import {
   BulkSpacetimeEngine,
@@ -73,6 +79,15 @@ import {
   writeBinFrame,
   buildBinMeta,
 } from "./bin-frame.mjs";
+import {
+  RHO_SPARSE,
+  K_SPARSE,
+  W_JOINT_KEEP,
+  SPARSE_CULL_STATUS,
+  selectSparseKeepMask,
+  compactEgtByMask,
+  remapAnatomyForSparse,
+} from "./sparse-cull.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, "../../..");
@@ -83,6 +98,60 @@ const WATCH_TEMPLATE = join(__dirname, "watch-holo.html");
 export const HOLO_CHAMBER_STATUS = "partial";
 export const HOLO_CHAMBER_CLAIM =
   "Holographic chamber path — COMPOSITE boundary / raw-float32 bin record; not Unreal/PBR; capsules skipped";
+
+/** Per-run timing buckets (ms). Filled by runHoloChamber. */
+export const TIMING = {
+  frame: [],
+  bulk_ms: [],
+  sparse_ms: [],
+  rig_ms: [],
+  induced_ms: [],
+  build_ms: [],
+  write_ms: [],
+  total_ms: [],
+  count: [],
+  nodeCountFull: [],
+  nodeCountSparse: [],
+};
+
+function resetTiming() {
+  for (const k of Object.keys(TIMING)) TIMING[k].length = 0;
+}
+
+function avg(arr) {
+  if (!arr.length) return 0;
+  let s = 0;
+  for (let i = 0; i < arr.length; i++) s += arr[i];
+  return s / arr.length;
+}
+
+/**
+ * Aggregate timing report for receipt / console.table.
+ * Honest Zenodo-style fields: streaming_io_ms, end_to_end_ms, shader_fps declared.
+ */
+export function getTimingReport() {
+  return {
+    frames: TIMING.frame.length,
+    avg_bulk_ms: +avg(TIMING.bulk_ms).toFixed(3),
+    avg_sparse_ms: +avg(TIMING.sparse_ms).toFixed(3),
+    avg_rig_ms: +avg(TIMING.rig_ms).toFixed(3),
+    avg_induced_ms: +avg(TIMING.induced_ms).toFixed(3),
+    avg_build_ms: +avg(TIMING.build_ms).toFixed(3),
+    avg_write_ms: +avg(TIMING.write_ms).toFixed(3),
+    avg_total_ms: +avg(TIMING.total_ms).toFixed(3),
+    avg_count: +avg(TIMING.count).toFixed(1),
+    avg_nodeCountFull: +avg(TIMING.nodeCountFull).toFixed(1),
+    avg_nodeCountSparse: +avg(TIMING.nodeCountSparse).toFixed(1),
+    /** writeBinFrame only — not e2e gen. */
+    streaming_io_ms: +avg(TIMING.write_ms).toFixed(3),
+    /** Full frame: bulk+sparse+rig+induced+build+write. */
+    end_to_end_ms: +avg(TIMING.total_ms).toFixed(3),
+    /** Declared until watch.html overlay measures on device. */
+    shader_fps: "declared",
+    note:
+      "induced_ms = inducedMetricHij + applyBoundaryAppearance + projectRigNodesH (not O(1) metric alone). Measure — do not invent.",
+  };
+}
 
 function resolveRecordMode(record) {
   const r = String(record || "composite").toLowerCase();
@@ -126,8 +195,8 @@ function installWatchArtifacts(outDir) {
  * @param {object} opts
  * @param {boolean} [opts.recordPng=false] keep old PNG path
  * @param {boolean} [opts.mp4=false] ffmpeg H.264 (PNG path only unless forced)
- * @param {boolean} [opts.sparse=true] compact vacuum ρ in .bin writes
- * @returns {{ ok: boolean, outDir: string, receipt: object, frameCount: number }}
+ * @param {boolean} [opts.sparse=true] cull vacuum before induced/build (and compact .bin)
+ * @returns {{ ok: boolean, outDir: string, receipt: object, frameCount: number, timing: object }}
  */
 export function runHoloChamber({
   sceneCard = null,
@@ -144,6 +213,7 @@ export function runHoloChamber({
   sparse = true,
   vacuumRho = BIN_VACUUM_RHO_DEFAULT,
 } = {}) {
+  resetTiming();
   mkdirSync(outDir, { recursive: true });
   const framesDir = join(outDir, "frames");
   mkdirSync(framesDir, { recursive: true });
@@ -190,10 +260,16 @@ export function runHoloChamber({
   let lastAppeared = null;
   let lastWrittenCount = 0;
   let maxWrittenCount = 0;
-  const t0 = Date.now();
+  let lastNodeCountFull = egt.nodes.length;
+  let lastNodeCountSparse = egt.nodes.length;
+  let totalBinBytes = 0;
+  const t0 = performance.now();
 
   for (let f = 0; f < frameCount; f++) {
-    const frameWall0 = Date.now();
+    const frameT0 = performance.now();
+
+    // --- bulk / walk / anatomy (full EGT; walk needs topology) ---
+    const bulkT0 = performance.now();
     const tNorm = f / Math.max(1, frameCount - 1);
     let bulkStep = null;
     if (bulk.state.t + 1 < nt) {
@@ -214,66 +290,150 @@ export function runHoloChamber({
         bone: { jointThresh: 0.5 },
       });
     }
+    const bulkMs = performance.now() - bulkT0;
 
-    holoRig.update(egt, anatomy, {
+    // --- sparse cull BEFORE induced / rig / build ---
+    const sparseT0 = performance.now();
+    let frameEgt = egt;
+    let frameAnatomy = anatomy;
+    let sourceIndices = null;
+    let nodeCountFull = egt.nodes.length;
+    let nodeCountSparse = nodeCountFull;
+    if (sparse) {
+      const keep = selectSparseKeepMask(egt, anatomy, {
+        rhoThresh: vacuumRho ?? RHO_SPARSE,
+        kThresh: K_SPARSE,
+        wKeep: W_JOINT_KEEP,
+      });
+      const compacted = compactEgtByMask(egt, keep);
+      frameEgt = compacted.egt;
+      sourceIndices = compacted.sourceIndices;
+      frameAnatomy = remapAnatomyForSparse(anatomy, sourceIndices);
+      nodeCountFull = compacted.nodeCountFull;
+      nodeCountSparse = compacted.nodeCountSparse;
+    }
+    const sparseMs = performance.now() - sparseT0;
+    lastNodeCountFull = nodeCountFull;
+    lastNodeCountSparse = nodeCountSparse;
+
+    // --- rig pack (buildRigNodes + attribute buffers) ---
+    const govOverride = {
       intent: walked.trace.stages.intent?.signal,
       evidence: Math.min(1, walked.trace.stages.evidence?.meanRho || 0.5),
       conformance: walked.trace.stages.conformance?.score ?? 0.868,
       stewardship: 1,
-    });
-    egt.h_ij = egt.h_ij || inducedMetricHij(g_munu);
-    holoRig.bulk = bulk;
-    holoRig.h_ij = egt.h_ij;
-    renderer.buildHolographicBuffers(holoRig);
-    if (renderer.material?.uniforms?.uTime) {
-      renderer.material.uniforms.uTime.value = bulk.state?.t ?? bulk.t ?? 0;
-    }
+    };
+    const rigT0 = performance.now();
+    holoRig.update(frameEgt, frameAnatomy, govOverride);
+    const rigMs = performance.now() - rigT0;
 
-    const appeared = applyBoundaryAppearance(egt, anatomy, {
-      prevK,
+    // --- induced / appearance prep (metric + boundary + project) ---
+    // Note: inducedMetricHij alone is O(1); bucket includes appearance clone/joints.
+    const inducedT0 = performance.now();
+    frameEgt.h_ij = frameEgt.h_ij || inducedMetricHij(g_munu);
+    holoRig.bulk = bulk;
+    holoRig.h_ij = frameEgt.h_ij;
+    holoRig.egt = frameEgt;
+    let framePrevK = prevK;
+    if (sparse && sourceIndices) {
+      framePrevK = new Float64Array(sourceIndices.length);
+      for (let k = 0; k < sourceIndices.length; k++) {
+        framePrevK[k] = prevK[sourceIndices[k]] ?? 0;
+      }
+    }
+    const appeared = applyBoundaryAppearance(frameEgt, frameAnatomy, {
+      prevK: framePrevK,
       vacuumRho,
     });
     lastAppeared = appeared;
     prevK = Float64Array.from(egt.K);
     const boundary = projectRigNodesH(appeared);
     appeared.h_ij = appeared.h_ij || inducedMetricHij(g_munu);
+    const inducedMs = performance.now() - inducedT0;
 
+    // --- build holographic streaming buffers ---
+    const buildT0 = performance.now();
+    renderer.buildHolographicBuffers(holoRig);
+    if (renderer.material?.uniforms?.uTime) {
+      renderer.material.uniforms.uTime.value = bulk.state?.t ?? bulk.t ?? 0;
+    }
+    const buildMs = performance.now() - buildT0;
+
+    // --- write / optional PNG ---
     let name;
+    let writeMs = 0;
     if (codec === BIN_FRAME_CODEC) {
-      // Skip CPU COMPOSITE + PNG encode — write count-bounded / sparsified bins.
+      const writeT0 = performance.now();
       const enc = writeBinFrame(
         join(framesDir, `frame-${String(f).padStart(6, "0")}.bin`),
         {
           buffers: renderer.holoBuffers,
           t: f,
+          // Already culled pre-induced; write-time compact is cheap no-op if dense-active.
           sparse,
           vacuumRho,
         },
       );
+      writeMs = performance.now() - writeT0;
       name = `frame-${String(f).padStart(6, "0")}.bin`;
       lastWrittenCount = enc.count;
+      totalBinBytes += enc.byteLength;
       if (enc.count > maxWrittenCount) maxWrittenCount = enc.count;
     } else {
+      const writeT0 = performance.now();
       const img = renderer.renderBoundary(appeared, boundary, mode);
       const png = rgbToPng(img.width, img.height, img.rgb);
       name = `frame-${String(f).padStart(4, "0")}.png`;
       writeFileSync(join(framesDir, name), png);
+      writeMs = performance.now() - writeT0;
       lastWrittenCount = renderer.holoBuffers?.count ?? 0;
       if (lastWrittenCount > maxWrittenCount) maxWrittenCount = lastWrittenCount;
     }
     frameFiles.push(name);
 
-    const wallMs = Date.now() - frameWall0;
-    if (f % 10 === 0 || f === frameCount - 1) {
+    const totalMs = performance.now() - frameT0;
+
+    TIMING.frame.push(f);
+    TIMING.bulk_ms.push(bulkMs);
+    TIMING.sparse_ms.push(sparseMs);
+    TIMING.rig_ms.push(rigMs);
+    TIMING.induced_ms.push(inducedMs);
+    TIMING.build_ms.push(buildMs);
+    TIMING.write_ms.push(writeMs);
+    TIMING.total_ms.push(totalMs);
+    TIMING.count.push(lastWrittenCount);
+    TIMING.nodeCountFull.push(nodeCountFull);
+    TIMING.nodeCountSparse.push(nodeCountSparse);
+
+    const shouldLog = f === 0 || f % 12 === 0 || totalMs > 100 || f === frameCount - 1;
+    if (shouldLog) {
+      const line =
+        `frame ${String(f).padStart(4, "0")} | total ${totalMs.toFixed(1)}ms | ` +
+        `bulk ${bulkMs.toFixed(1)}ms | sparse ${sparseMs.toFixed(1)}ms | ` +
+        `rig ${rigMs.toFixed(1)}ms | induced ${inducedMs.toFixed(1)}ms | ` +
+        `build ${buildMs.toFixed(1)}ms | write ${writeMs.toFixed(1)}ms | ` +
+        `count ${lastWrittenCount} | full ${nodeCountFull} | sparse ${nodeCountSparse}`;
+      console.log(line);
       const sample = {
         t: f,
         count: lastWrittenCount,
-        wallMs,
+        nodeCountFull,
+        nodeCountSparse,
+        totalMs: +totalMs.toFixed(3),
+        bulkMs: +bulkMs.toFixed(3),
+        sparseMs: +sparseMs.toFixed(3),
+        rigMs: +rigMs.toFixed(3),
+        inducedMs: +inducedMs.toFixed(3),
+        buildMs: +buildMs.toFixed(3),
+        writeMs: +writeMs.toFixed(3),
         codec,
       };
       timingSamples.push(sample);
       writeFileSync(
-        join(framesDir, `frame-${String(f).padStart(codec === BIN_FRAME_CODEC ? 6 : 4, "0")}.json`),
+        join(
+          framesDir,
+          `frame-${String(f).padStart(codec === BIN_FRAME_CODEC ? 6 : 4, "0")}.json`,
+        ),
         JSON.stringify(sample),
       );
     }
@@ -310,9 +470,12 @@ export function runHoloChamber({
     }
   }
 
-  const wallMsTotal = Date.now() - t0;
+  const wallMsTotal = performance.now() - t0;
   const genFpsEstimate =
     wallMsTotal > 0 ? (frameFiles.length * 1000) / wallMsTotal : null;
+  const timingReport = getTimingReport();
+  console.log("\n=== Timing report (avg ms) ===");
+  console.table(timingReport);
 
   let mp4Name = null;
   const wantMp4 = mp4 && codec === "png";
@@ -337,6 +500,11 @@ export function runHoloChamber({
     if (r.status === 0) mp4Name = "composite.mp4";
   }
 
+  const avgBinBytes =
+    frameFiles.length > 0 && codec === BIN_FRAME_CODEC
+      ? totalBinBytes / frameFiles.length
+      : 0;
+
   if (codec === BIN_FRAME_CODEC) {
     installWatchArtifacts(outDir);
     const meta = buildBinMeta({
@@ -349,6 +517,10 @@ export function runHoloChamber({
       maxWrittenCount,
       genWallMs: wallMsTotal,
       genFpsEstimate,
+      nodeCountFull: lastNodeCountFull,
+      nodeCountSparse: lastNodeCountSparse,
+      avgBinBytes,
+      sparseEnabled: sparse,
     });
     writeFileSync(join(outDir, "meta.json"), JSON.stringify(meta, null, 2));
   }
@@ -365,15 +537,22 @@ export function runHoloChamber({
     codec,
     pngEncode: codec === "png",
     sparseRho: {
-      vacuumRho,
-      status: BIN_SPARSE_STATUS,
-      enabled: sparse && codec === BIN_FRAME_CODEC,
+      sparseRhoThreshold: vacuumRho ?? RHO_SPARSE,
+      kThresh: K_SPARSE,
+      wKeep: W_JOINT_KEEP,
+      status: SPARSE_CULL_STATUS,
+      enabled: sparse,
+      nodeCountFull: lastNodeCountFull,
+      nodeCountSparse: lastNodeCountSparse,
+      avgBinBytes,
     },
     holographicShaders: HOLOGRAPHIC_SHADER_SOT,
     holographicBuffers: {
-      count: renderer.holoBuffers?.count ?? renderer.holoBuffers?.entanglementDensity?.length ?? 0,
+      count: renderer.holoBuffers?.count ?? 0,
       writtenCount: lastWrittenCount,
       maxWrittenCount,
+      nodeCountFull: lastNodeCountFull,
+      nodeCountSparse: lastNodeCountSparse,
       attributes: renderer.geometry ? Object.keys(renderer.geometry.attributes || {}) : [],
       streaming: HOLOGRAPHIC_STREAMING_STATUS,
       binStreaming: codec === BIN_FRAME_CODEC ? BIN_FRAME_STATUS : "n/a",
@@ -386,9 +565,10 @@ export function runHoloChamber({
     ms: wallMsTotal,
     wallMs: wallMsTotal,
     genFpsEstimate,
+    timing: timingReport,
     timingSamples,
     note:
-      "genFpsEstimate = frames / wall seconds for this run. shader fps is measured in watch.html on device — not claimed here.",
+      "genFpsEstimate = frames / wall seconds for this run. streaming_io_ms = write only; end_to_end_ms = full frame. shader_fps declared until watch.html measures on device.",
     organs: {
       simulationChamber: HOLO_CHAMBER_STATUS,
       bulkSpacetimeEngine: BULK_ENGINE_STATUS,
@@ -445,9 +625,10 @@ export function runHoloChamber({
       movieLane: "movie-lane.json",
     },
     fingerprint: createHash("sha256")
-      .update("holo-chamber.v2-bin")
+      .update("holo-chamber.v3-timing-sparse")
       .update(templateId)
       .update(codec)
+      .update(String(sparse))
       .update(String(frameCount))
       .update(bulk.state.hash || "")
       .digest("hex"),
@@ -476,5 +657,6 @@ export function runHoloChamber({
     frameCount: frameFiles.length,
     mp4: mp4Name,
     codec,
+    timing: timingReport,
   };
 }

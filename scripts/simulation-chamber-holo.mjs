@@ -43,6 +43,7 @@ function parseArgs(argv) {
     else if (a === "--seed" && argv[i + 1]) options.seed = parseInt(argv[++i], 10);
     else if (a === "--width" && argv[i + 1]) options.width = parseInt(argv[++i], 10);
     else if (a === "--height" && argv[i + 1]) options.height = parseInt(argv[++i], 10);
+    else if (a === "--sparse") options.sparse = true;
     else if (a === "--no-sparse") options.sparse = false;
     else if (a.startsWith("-")) {
       console.error(`Unknown flag: ${a}`);
@@ -69,6 +70,7 @@ if (positional.length === 0) {
     "Usage: node scripts/simulation-chamber-holo.mjs <scene-card|scene-salt-atlas> [options]",
   );
   console.error("  --creature Mythar --mode composite --out DIR --duration N --fps N");
+  console.error("  --sparse (default) | --no-sparse  pre-induced ρ/K cull A/B");
   console.error("  Official raw-float32 .bin path (no PNG / no H.264).");
   process.exit(1);
 }
@@ -90,6 +92,7 @@ console.log(`  Creature: ${options.creature}`);
 console.log(`  Mode: ${options.record}`);
 console.log(`  Out: ${outDir}`);
 console.log(`  Status: partial bin streaming; GPU shader fps declared until watch measures.`);
+console.log(`  Sparse: ${options.sparse ? "ON (pre-induced cull)" : "OFF (dense A/B)"}`);
 console.log(`  No PNG encode. No H.264.`);
 
 const holo = runHoloChamber({
@@ -125,6 +128,16 @@ console.log(`  Wall: ${wallMs} ms`);
 console.log(`  ms/frame: ${msPerFrame.toFixed(2)}`);
 if (Number.isFinite(genFps)) console.log(`  Gen fps: ${genFps.toFixed(2)}`);
 console.log(`  Avg .bin: ${(avgBytes / 1024).toFixed(2)} KB (${bins.length} files, ${(totalBytes / 1024).toFixed(1)} KB total)`);
+const sr = holo.receipt.sparseRho || {};
+if (sr.nodeCountFull != null) {
+  console.log(
+    `  Nodes: full=${sr.nodeCountFull} sparse=${sr.nodeCountSparse} thresh=${sr.sparseRhoThreshold}`,
+  );
+}
+if (holo.timing) {
+  console.log(`  streaming_io_ms (write): ${holo.timing.streaming_io_ms}`);
+  console.log(`  end_to_end_ms: ${holo.timing.end_to_end_ms}`);
+}
 console.log(`  Codec: ${holo.codec || holo.receipt.codec}`);
 console.log(`  Receipt: ${join(outDir, "receipt.json")}`);
 console.log(`  Watch: ${join(outDir, "watch.html")}`);

@@ -12,7 +12,12 @@ import {
   encodeBinFrame,
   parseBinFrame,
   buildBinHeader,
+  RHO_SPARSE,
 } from "../chamber/bin-frame.mjs";
+import {
+  selectSparseKeepMask,
+  compactEgtByMask,
+} from "../chamber/sparse-cull.mjs";
 import {
   spawnMythar,
   constitutionalFrameStep,
@@ -110,17 +115,51 @@ describe("holo chamber loop", () => {
     assert.equal(r.receipt.tags.binStreaming, "partial");
     assert.equal(r.receipt.tags.sparseRho, "partial");
     assert.ok(Number.isFinite(r.receipt.genFpsEstimate));
+    assert.ok(r.receipt.timing);
+    assert.ok(Number.isFinite(r.receipt.timing.end_to_end_ms));
+    assert.ok(Number.isFinite(r.receipt.timing.streaming_io_ms));
+    assert.equal(r.receipt.timing.shader_fps, "declared");
     assert.ok(existsSync(join(outDir, "meta.json")));
     assert.ok(existsSync(join(outDir, "watch.html")));
     assert.ok(existsSync(join(outDir, "shaders", "holographic.vert")));
     const meta = JSON.parse(readFileSync(join(outDir, "meta.json"), "utf8"));
     assert.equal(meta.codec, BIN_FRAME_CODEC);
+    assert.equal(meta.sparseRhoThreshold, RHO_SPARSE);
+    assert.ok(meta.nodeCountFull >= meta.nodeCountSparse);
     const bins = readdirSync(join(outDir, "frames")).filter((f) => f.endsWith(".bin"));
     assert.ok(bins.length >= 2);
     const parsed = parseBinFrame(readFileSync(join(outDir, "frames", bins[0])));
     assert.ok(parsed.count >= 0);
     assert.equal(parsed.t, 0);
     assert.ok(r.ok);
+  });
+
+  it("sparse cull reduces count vs full; ρ=0 excluded unless structural", () => {
+    const n = 6;
+    const egt = {
+      nodes: Array.from({ length: n }, (_, i) => ({
+        id: i,
+        position: { x: i, y: 0, z: 0 },
+      })),
+      rho: Float64Array.from([0, 0.9, 0.01, 0.2, 0, 0.8]),
+      K: Float64Array.from([0, 0.1, 0, 0.5, 0, 0.1]),
+      edges: [
+        { i: 1, j: 3, w_ij: 0.05 },
+        { i: 3, j: 5, w_ij: 0.2 }, // keeps 3 and 5 structural
+      ],
+    };
+    const keep = selectSparseKeepMask(egt, null);
+    assert.equal(keep[0], 0, "ρ=0 K=0 non-structural excluded");
+    assert.equal(keep[1], 1);
+    assert.equal(keep[2], 0, "ρ=0.01 below thresh, low K");
+    assert.equal(keep[3], 1, "K>0.3 or structural");
+    assert.equal(keep[4], 0);
+    assert.equal(keep[5], 1);
+    const { nodeCountFull, nodeCountSparse, egt: c } = compactEgtByMask(egt, keep);
+    assert.equal(nodeCountFull, 6);
+    assert.ok(nodeCountSparse < nodeCountFull);
+    assert.equal(c.nodes.length, nodeCountSparse);
+    assert.deepEqual(Array.from(c.rho), [0.9, 0.2, 0.8]);
   });
 
   it("--record-png still writes PNG frames for regression", () => {

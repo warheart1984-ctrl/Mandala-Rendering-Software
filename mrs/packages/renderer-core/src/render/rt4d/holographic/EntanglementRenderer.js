@@ -1,14 +1,10 @@
 /**
  * Entanglement Field Renderer (EFR)
- * 
- * Visualizes 3D boundary entanglement graph as holographic screen
- * 
- * Render modes:
- * - Entanglement Heatmap
- * - Causal Flow Field
- * - Emergent Geometry
- * 
- * Status: enforced
+ *
+ * NOT SoT. The streaming holographic renderer is
+ * mandala/holography/entanglement-renderer.mjs
+ *
+ * Status: leftover sketch — do not treat "enforced" as GPU proof.
  */
 
 export class EntanglementRenderer {

@@ -29,7 +29,7 @@ Per frame: **Intent → Evidence → Conformance → Stewardship** → update \(
 |-----------|-----|
 | `breathe` | **partial** |
 | `reach` | **partial** |
-| `walk` | **stub** |
+| `walk` | **partial** (leg ρ/z wave in chamber `--holo`; not production locomotion) |
 
 ### 3. Holographic Species Taxonomy
 
@@ -51,6 +51,8 @@ Full multi-species system = **declared**.
 node character/holography/creature-demo.mjs
 # or
 node scripts/spawn-mythar.mjs
+# chamber (skip capsules; COMPOSITE boundary record):
+node scripts/simulation-chamber.mjs scripts/scene-cards/scene-salt-atlas.json --holo --creature Mythar --record composite --out output/simulation/holo-mythar-001/
 ```
 
 Writes `output/character-holography/creature/`:
@@ -81,8 +83,7 @@ node character/holography/rig-ciems-demo.mjs   # → output/character-holography
 | Curvature → muscle activation | **partial** |
 | Per-node CIEMS gov + frame I/E/C/S | **partial** (audit receipt) |
 | Boundary anatomy synthesis | **partial** / toy |
-| Constitutional `breathe` / `reach` | **partial** |
-| `walk` stub | **stub** |
+| Constitutional `breathe` / `reach` / `walk` | **partial** |
 | Taxonomy skeleton (bipedal → Mythar) | **partial** |
 | Full species / living taxonomy | **declared** |
 | Living constitutional ecosystem | **declared** (not enforced) |
