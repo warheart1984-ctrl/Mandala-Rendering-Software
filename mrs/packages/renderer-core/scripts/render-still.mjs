@@ -63,6 +63,21 @@ const MAX_SAMPLES = 512;
 const MAX_DEPTH_CAP = 12;
 
 // ---------------------------------------------------------------------------
+// Mythar Natural Voice configuration (loaded at module level).
+// Falls back to defaults if the config file is not available.
+let mytharVoiceConfig = {
+  baselineF0: 180,
+  f0StdDev: 25,
+  timbre: { spectralCentroid: 2800, hnr: 22, breathiness: 0.3 },
+  cadence: { rate: 5.0, melodicContour: 'rising-falling' },
+};
+try {
+  const configPath = join(dirname, '../scripts/mythar-voice.json');
+  const loaded = JSON.parse(readFileSync(configPath, 'utf8'));
+  Object.assign(mytharVoiceConfig, loaded);
+} catch (e) {
+  console.warn('[render-still] Using default Mythar voice config.');
+}
 // Deterministic RNG + prompt hashing
 // ---------------------------------------------------------------------------
 
@@ -921,6 +936,7 @@ export function renderStill(options = {}) {
   // tesseract-lattice sits lower than the diffuse archetypes because its beams
   // and core are emissive; the default 2.4 blows them to flat white.
   const exposure = SCENE_EXPOSURE[descriptor.scene] ?? 2.4;
+  // Mythar voice config available via mytharVoiceConfig
   let lumSum = 0;
   let darkPixels = 0;
   // Center ROI excludes ground band (bottom 25%) so grey floor cannot alone pass.
@@ -1116,6 +1132,54 @@ function main() {
     }
   }
   process.stdout.write(JSON.stringify(provenance) + "\n");
+}
+
+// ---------------------------------------------------------------------------
+// Simulation Chamber support — export internals for persistent-world rendering
+// ---------------------------------------------------------------------------
+
+export { buildScene, buildCamera, mulberry32, toByte, backgroundColor };
+
+/**
+ * Render a pre-built Scene4D with a camera. Unlike renderStill(), this does NOT
+ * rebuild the scene — it uses the scene object as-is, which is essential for
+ * the Simulation Chamber's persistent-world tick loop.
+ */
+export function renderSceneFrame(scene, camera, options = {}) {
+  const width = options.width ?? 128;
+  const height = options.height ?? 128;
+  const samples = options.samples ?? 4;
+  const maxDepth = options.maxDepth ?? 3;
+  const seed = options.seed ?? 42;
+  const palette = options.palette ?? { albedo: [0.5, 0.5, 0.6] };
+
+  const rng = mulberry32(seed);
+  const tracer = new PathTracer4D({ maxDepth, samplesPerPixel: samples, rng });
+
+  const rgba = Buffer.alloc(width * height * 4);
+  const exposure = options.exposure ?? 2.4;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let r = 0, g = 0, b = 0;
+      for (let s = 0; s < samples; s++) {
+        const u1 = rng();
+        const u2 = rng();
+        const ray = camera.generateRay(x, y, u1, u2, 0.5, 0.5);
+        const hit = scene.intersect(ray);
+        const L = hit ? tracer.trace(ray, scene) : backgroundColor(ray.direction, palette);
+        r += L.x; g += L.y; b += L.z;
+      }
+      const inv = 1 / samples;
+      const idx = (y * width + x) * 4;
+      rgba[idx]     = toByte(r * inv, exposure);
+      rgba[idx + 1] = toByte(g * inv, exposure);
+      rgba[idx + 2] = toByte(b * inv, exposure);
+      rgba[idx + 3] = 255;
+    }
+  }
+
+  return encodePNG(width, height, rgba);
 }
 
 const isMain = (() => {

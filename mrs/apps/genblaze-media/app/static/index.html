@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3116,3 +3117,3123 @@
   </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MRS · Genblaze Concept Media</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #091018;
+      --bg1: #111e26;
+      --bg2: #182b31;
+      --ink: #e8f0ea;
+      --muted: #9cb4b6;
+      --accent: #7ce0b1;
+      --accent-strong: #d9fff0;
+      --accent-deep: #163c33;
+      --gold: #f4c76a;
+      --warn: #c9a227;
+      --err: #c45c5c;
+      --line: rgba(151, 221, 191, 0.18);
+      --panel: rgba(8, 14, 19, 0.68);
+      --panel-strong: rgba(9, 17, 24, 0.86);
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+      --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+      --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(1200px 600px at 8% -10%, rgba(74, 178, 131, 0.28) 0%, transparent 55%),
+        radial-gradient(920px 540px at 92% 0%, rgba(113, 195, 210, 0.16) 0%, transparent 52%),
+        radial-gradient(640px 420px at 50% 18%, rgba(244, 199, 106, 0.08) 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg0), var(--bg1) 58%, var(--bg2));
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: clamp(1.75rem, 4vw, 2.35rem);
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.35rem;
+      margin: 0 0 0.5rem;
+    }
+    .lede {
+      color: var(--muted);
+      margin: 0 0 1.75rem;
+      line-height: 1.45;
+      max-width: 38rem;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .tips {
+      color: var(--muted);
+      margin: -0.75rem 0 1.5rem;
+      padding: 0.75rem 0.9rem;
+      border-left: 3px solid var(--accent);
+      background: rgba(0, 0, 0, 0.22);
+      font-size: 0.92rem;
+      line-height: 1.45;
+      max-width: 40rem;
+    }
+    .tips strong { color: var(--ink); font-weight: 600; }
+    section.path {
+      margin-top: 2rem;
+      padding: 1.4rem;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%),
+        var(--panel);
+      box-shadow: var(--shadow);
+      scroll-margin-top: 1.25rem;
+      backdrop-filter: blur(14px);
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 6rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--ink);
+      font: inherit;
+      resize: vertical;
+    }
+    .row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.85rem;
+    }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 0.7rem 1.15rem;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #05130f;
+      box-shadow: 0 10px 25px rgba(124, 224, 177, 0.2);
+    }
+    button.secondary {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    button:hover {
+      transform: translateY(-1px);
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+    }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    .status {
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+    }
+    .status.err { color: var(--err); }
+    .status.warn { color: var(--warn); }
+    .result, .assets {
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+    }
+    .result img, .result video {
+      display: block;
+      max-width: 100%;
+      margin-top: 0.75rem;
+      border-radius: 4px;
+    }
+    .meta {
+      font-size: 0.85rem;
+      color: var(--muted);
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .asset {
+      padding: 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .asset img, .asset video {
+      width: 100%;
+      margin-top: 0.7rem;
+      border-radius: 14px;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+    }
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .side-by-side {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+      margin-top: 0.75rem;
+    }
+    @media (max-width: 640px) {
+      .side-by-side { grid-template-columns: 1fr; }
+    }
+    .side-by-side figure { margin: 0; }
+    .side-by-side figcaption {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--ink);
+      font: inherit;
+    }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      background: rgba(0, 0, 0, 0.25);
+    }
+    .badge.ok { border-color: var(--accent); color: var(--ink); }
+    .badge.warn { border-color: var(--warn); }
+    .cap-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem 1rem;
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 640px) {
+      .cap-grid { grid-template-columns: 1fr; }
+    }
+    .cap-grid dt { color: var(--muted); margin: 0; }
+    .cap-grid dd { margin: 0 0 0.35rem; }
+    .market-list {
+      list-style: none;
+      padding: 0;
+      margin: 0.75rem 0 0;
+    }
+    .market-list li {
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.92rem;
+    }
+    .market-list button.linkish {
+      background: transparent;
+      border: 0;
+      color: var(--accent);
+      padding: 0;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .quick-steps {
+      margin: 0.75rem 0 0;
+      padding-left: 1.2rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .quick-steps strong { color: var(--ink); }
+    select, input[type="number"] {
+      width: 100%;
+      padding: 0.7rem 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--ink);
+      font: inherit;
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.75rem;
+      padding: 1.6rem;
+      border: 1px solid rgba(217, 255, 240, 0.14);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top left, rgba(124, 224, 177, 0.16), transparent 34%),
+        radial-gradient(circle at top right, rgba(244, 199, 106, 0.14), transparent 36%),
+        linear-gradient(145deg, rgba(9, 20, 26, 0.96), rgba(12, 27, 31, 0.86));
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -30% 38%;
+      height: 220px;
+      background: radial-gradient(circle, rgba(124, 224, 177, 0.16), transparent 65%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(290px, 0.95fr);
+      gap: 1.3rem;
+      align-items: start;
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 0.45rem;
+      align-items: center;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid rgba(217, 255, 240, 0.14);
+      border-radius: 999px;
+      color: var(--accent-strong);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .mrs-brand-mark {
+      display: block;
+      width: min(420px, 86vw);
+      height: auto;
+      margin: 0 0 0.85rem;
+      filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.34));
+    }
+    .hero-copy h1 {
+      margin-top: 0.85rem;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      line-height: 0.98;
+    }
+    .hero-copy .lede {
+      margin: 0.9rem 0 1.1rem;
+      max-width: 44rem;
+      font-size: 1.05rem;
+    }
+    .hero-actions,
+    .jump-links,
+    .hero-seals,
+    .curated-grid,
+    .story-grid,
+    .rail-grid {
+      display: grid;
+      gap: 0.8rem;
+    }
+    .hero-actions {
+      grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
+      margin: 1rem 0 1rem;
+    }
+    .jump-links {
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      margin-top: 1rem;
+    }
+    .jump-card,
+    .seal,
+    .curated-card,
+    .story-card,
+    .rail-card {
+      padding: 0.95rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+    .jump-card {
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .jump-card strong,
+    .seal strong,
+    .curated-card strong,
+    .story-card strong,
+    .rail-card strong {
+      display: block;
+      margin-bottom: 0.2rem;
+      color: var(--accent-strong);
+    }
+    .jump-card span,
+    .seal span,
+    .curated-card span,
+    .story-card span,
+    .rail-card span {
+      color: var(--muted);
+      font-size: 0.93rem;
+      line-height: 1.4;
+    }
+    .hero-seals {
+      grid-template-columns: 1fr;
+    }
+    .seal-stack {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .hero-status {
+      min-height: 4.7rem;
+      border-left-color: var(--gold);
+      background: rgba(244, 199, 106, 0.07);
+    }
+    .hero-status strong { color: var(--accent-strong); }
+    .curated-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-top: 1rem;
+    }
+    .curated-card {
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
+        rgba(9, 17, 24, 0.72);
+    }
+    .curated-card::before {
+      content: attr(data-scene-tag);
+      display: inline-block;
+      margin-bottom: 0.55rem;
+      padding: 0.22rem 0.55rem;
+      border: 1px solid rgba(217, 255, 240, 0.14);
+      border-radius: 999px;
+      color: var(--gold);
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .curated-card p {
+      margin: 0.35rem 0 0.7rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .curated-card code {
+      display: block;
+      color: var(--accent-strong);
+      font-size: 0.85rem;
+      line-height: 1.4;
+      white-space: normal;
+    }
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .section-head p {
+      margin: 0;
+      max-width: 36rem;
+      color: var(--muted);
+    }
+    .story-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 1rem 0 1.2rem;
+    }
+    .story-card strong::before {
+      content: attr(data-step);
+      display: block;
+      margin-bottom: 0.4rem;
+      color: var(--gold);
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .prompt-lab {
+      display: grid;
+      gap: 1rem;
+    }
+    .prompt-lab textarea {
+      min-height: 7.8rem;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .inline-note {
+      margin-top: 0.7rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .result,
+    .assets {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 18px;
+      padding: 1.1rem 1rem 0;
+    }
+    .preview-frame {
+      padding: 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .preview-frame img,
+    .preview-frame video,
+    .side-by-side img {
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .rail-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 1.1rem;
+    }
+    .recent-shell {
+      display: grid;
+      gap: 1rem;
+    }
+    .playlist-strip {
+      display: grid;
+      gap: 0.8rem;
+    }
+    .playlist-strip[hidden] {
+      display: none;
+    }
+    .playlist-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.24rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(217, 255, 240, 0.14);
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(255, 255, 255, 0.04);
+      width: max-content;
+    }
+    .playlist-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+    .playlist-card {
+      display: grid;
+      gap: 0.55rem;
+      padding: 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .playlist-card-media {
+      aspect-ratio: 4 / 3;
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .playlist-card-media img,
+    .playlist-card-media video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+    .playlist-card h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      color: var(--accent-strong);
+    }
+    .playlist-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .playlist-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .presentation-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      background: rgba(3, 8, 12, 0.82);
+      backdrop-filter: blur(12px);
+    }
+    .presentation-shell[hidden] {
+      display: none;
+    }
+    .presentation-panel {
+      width: min(1200px, 100%);
+      max-height: calc(100vh - 3rem);
+      overflow: auto;
+      display: grid;
+      gap: 1rem;
+      padding: 1.25rem;
+      border: 1px solid rgba(217, 255, 240, 0.14);
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at top right, rgba(124, 224, 177, 0.12), transparent 28%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+        rgba(6, 12, 18, 0.96);
+      box-shadow: 0 32px 90px rgba(0, 0, 0, 0.42);
+    }
+    .presentation-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+    }
+    .presentation-top h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      color: var(--accent-strong);
+    }
+    .presentation-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 1rem;
+      align-items: start;
+    }
+    .presentation-media {
+      min-height: 420px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .presentation-media img,
+    .presentation-media video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .presentation-notes {
+      display: grid;
+      gap: 0.85rem;
+    }
+    .presentation-copy,
+    .presentation-note-card {
+      padding: 0.95rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+    .presentation-copy p,
+    .presentation-note-card p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .presentation-copy strong,
+    .presentation-note-card strong {
+      color: var(--accent-strong);
+      display: block;
+    }
+    .presentation-note-input {
+      min-height: 9rem;
+      margin-top: 0.7rem;
+      resize: vertical;
+    }
+    .presentation-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .presentation-controls {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+    .presentation-progress {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .recent-feature {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid rgba(217, 255, 240, 0.12);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at top right, rgba(124, 224, 177, 0.1), transparent 32%),
+        rgba(255, 255, 255, 0.035);
+    }
+    .recent-feature-media {
+      min-height: 260px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .recent-feature-media img,
+    .recent-feature-media video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .recent-feature-copy {
+      display: grid;
+      gap: 0.75rem;
+      align-content: start;
+    }
+    .recent-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+    .recent-kicker,
+    .asset-ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.24rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(217, 255, 240, 0.14);
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .recent-feature-copy h3,
+    .asset-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      color: var(--accent-strong);
+    }
+    .recent-feature-copy p,
+    .asset-prompt {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .recent-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+    .recent-meta-grid div,
+    .asset-stat {
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+    .recent-meta-grid strong,
+    .asset-stat strong {
+      display: block;
+      margin-bottom: 0.2rem;
+      color: var(--ink);
+      font-size: 0.82rem;
+    }
+    .recent-meta-grid span,
+    .asset-stat span {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .asset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1rem;
+    }
+    .asset {
+      display: grid;
+      gap: 0.7rem;
+      align-content: start;
+    }
+    .asset-topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: start;
+    }
+    .asset-caption {
+      display: grid;
+      gap: 0.5rem;
+    }
+    .asset-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+    }
+    .asset-key {
+      color: var(--muted);
+      font-size: 0.81rem;
+      word-break: break-all;
+      line-height: 1.35;
+    }
+    .asset-empty {
+      padding: 1rem;
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      color: var(--muted);
+      text-align: center;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    @media (max-width: 860px) {
+      .hero-grid,
+      .story-grid,
+      .rail-grid,
+      .recent-feature,
+      .playlist-grid,
+      .presentation-body {
+        grid-template-columns: 1fr;
+      }
+      .section-head {
+        display: block;
+      }
+      main {
+        padding-top: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero" aria-labelledby="hero-heading">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <img class="mrs-brand-mark" src="/assets/mrs-logo.png" alt="MRS logo" />
+          <div class="eyebrow">Genblaze Demo Surface · MRS Concept Pipeline</div>
+          <h1 id="hero-heading">Prompt, reveal, and stage a 4D world worth showing off.</h1>
+          <p class="lede">
+            Genblaze is strongest when it feels like a guided transformation, not just a form.
+            Start with a curated concept still, push it into an interpreted MRS scene, and keep the
+            provenance visible so the demo reads as a system instead of a lucky image.
+          </p>
+          <div class="hero-actions">
+            <button type="button" id="hero-start">Launch curated prompt</button>
+            <button type="button" class="secondary" id="hero-scene-flow">Jump to scene reveal</button>
+          </div>
+          <div class="jump-links">
+            <a class="jump-card" href="#stills">
+              <strong>Concept stills</strong>
+              <span>Fastest wow path for judges and first-time visitors.</span>
+            </a>
+            <a class="jump-card" href="#image-to-scene">
+              <strong>Scene reveal</strong>
+              <span>Show the interpreted MRS frame, not just the source still.</span>
+            </a>
+            <a class="jump-card" href="#engine3d-still">
+              <strong>Structure lane</strong>
+              <span>Engine3D portrait structure plus optional polish and composite.</span>
+            </a>
+          </div>
+        </div>
+        <div class="hero-seals">
+          <div class="seal-stack">
+            <div class="seal">
+              <strong>Default story</strong>
+              <span>Prompt → concept still → scene interpretation → full-frame reveal.</span>
+            </div>
+            <div class="seal">
+              <strong>Showmanship tip</strong>
+              <span>Keep the dual preview visible so the room sees concept and governed render together.</span>
+            </div>
+            <p id="hero-health" class="tips hero-status" role="status">
+              <strong>Checking live capabilities…</strong><br />
+              Waiting on <code>/health</code> before naming the active backend.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="path" id="demo-picks" aria-labelledby="demo-picks-heading">
+      <div class="section-head">
+        <div>
+          <h2 id="demo-picks-heading">Curated Launch Prompts</h2>
+          <p>One click should produce something unmistakably “Mandala Rendering System,” not a generic AI still.</p>
+        </div>
+      </div>
+      <div class="curated-grid" id="curated-prompts">
+        <button type="button" class="curated-card" data-scene-tag="Signature" data-prompt="translucent tesseract mandala cathedral, luminous glass lattice, volumetric gold haze, sacred geometry, cinematic wide shot">
+          <strong>Tesseract Cathedral</strong>
+          <p>The strongest all-purpose hero still: scale, symmetry, and dramatic light.</p>
+          <code>glass lattice + cathedral scale + volumetric haze</code>
+        </button>
+        <button type="button" class="curated-card" data-scene-tag="Realtime Look" data-prompt="neural lattice observatory suspended in midnight teal fog, radiant energy core, isometric render, polished alloy petals, depth-rich atmosphere">
+          <strong>Neural Lattice Observatory</strong>
+          <p>Leans into the RT4D archetype language and reads as intentionally technical.</p>
+          <code>neural lattice + energy core + isometric atmosphere</code>
+        </button>
+        <button type="button" class="curated-card" data-scene-tag="Character Adjacent" data-prompt="oracle mask grown from metallic mandala petals, ceremonial portrait bust, dramatic rim light, abstract face silhouette, no photoreal skin">
+          <strong>Oracle Mask Portrait</strong>
+          <p>Keeps the emotional pull of a portrait while avoiding weak photoreal face behavior.</p>
+          <code>portrait silhouette + metallic petals + no photoreal skin</code>
+        </button>
+      </div>
+    </section>
+
+    <p class="lede">
+      Render governance reference: <a href="/cros">CROS invariants, lineage &amp; replay profiles →</a>
+      <br />
+      <span style="font-size:0.9em">
+        Documentation only — this service does <strong>not</strong> implement CROS.
+      </span>
+    </p>
+
+    <section class="path" id="byok-quickstart" aria-labelledby="byok-quickstart-heading">
+      <h2 id="byok-quickstart-heading">BYOK Quickstart</h2>
+      <p class="tips" role="note">
+        Local-first. Keys stay in <code>sessionStorage</code>. Scope: <strong>stills + assist</strong>.
+        Hosted BYOK stays off unless an operator sets <code>GENBLAZE_ALLOW_BYOK=1</code>.
+        Charter: <a href="/docs/genblaze/security/byok-security-charter.md">byok-security-charter</a>
+        (docs path in repo — not served unless mounted).
+      </p>
+      <ol class="quick-steps">
+        <li><strong>Paste</strong> your NIM key below (never committed).</li>
+        <li><strong>Pick</strong> a model id from the marketplace list or type one.</li>
+        <li><strong>Save to session</strong> — tab lifetime only.</li>
+        <li><strong>Generate</strong> a still; video/polish paths reject BYOK headers.</li>
+      </ol>
+    </section>
+
+    <section class="path" id="byok-settings" aria-labelledby="byok-heading">
+      <h2 id="byok-heading">Settings · Local BYOK</h2>
+      <p class="tips" role="note">
+        <strong>Session-only key.</strong> Stored in <code>sessionStorage</code> for this tab.
+        Never written to disk by Genblaze. Hosted Render rejects BYOK unless
+        <code>GENBLAZE_ALLOW_BYOK=1</code>. Scope: stills + assist (not video/polish).
+        Keys are never sent to Digital Printer evidence.
+      </p>
+      <p id="byok-xss-warn" class="tips" role="alert" hidden style="border-left-color:var(--warn)">
+        <strong>Hosted XSS warning.</strong> This deployment is not loopback-only.
+        A browser XSS could read session keys. Prefer local Genblaze, or accept the risk
+        only with <code>GENBLAZE_ALLOW_BYOK=1</code> and a trusted origin.
+      </p>
+      <label for="byok-key">API Key (local-only)</label>
+      <input id="byok-key" type="password" autocomplete="off"
+        placeholder="nvapi-… (session only)" />
+      <label for="byok-model" style="margin-top:0.75rem">Model ID</label>
+      <input id="byok-model" type="text" list="byok-model-catalog"
+        placeholder="black-forest-labs/flux.1-schnell" />
+      <datalist id="byok-model-catalog">
+        <option value="black-forest-labs/flux.1-schnell"></option>
+        <option value="black-forest-labs/flux.1-dev"></option>
+        <option value="black-forest-labs/flux.1-pro"></option>
+        <option value="meta/llama-3.2-11b-vision-instruct"></option>
+      </datalist>
+      <div class="row">
+        <button type="button" id="byok-save">Save to session</button>
+        <button type="button" class="secondary" id="byok-clear">Clear session key</button>
+      </div>
+      <p id="byok-diag" class="tips" style="margin-top:1rem" role="status">BYOK: loading…</p>
+    </section>
+
+    <section class="path" id="model-marketplace" aria-labelledby="market-heading">
+      <h2 id="market-heading">Model Marketplace</h2>
+      <p class="tips" role="note">
+        <strong>Catalog disclosure only.</strong> Availability depends on your NIM key and
+        upstream quotas — this list is not a live inventory API.
+      </p>
+      <ul class="market-list" id="model-market-list">
+        <li>
+          <button type="button" class="linkish" data-model="black-forest-labs/flux.1-schnell">FLUX.1 schnell</button>
+          — fast stills (common default)
+        </li>
+        <li>
+          <button type="button" class="linkish" data-model="black-forest-labs/flux.1-dev">FLUX.1 dev</button>
+          — higher quality / slower
+        </li>
+        <li>
+          <button type="button" class="linkish" data-model="black-forest-labs/flux.1-pro">FLUX.1 pro</button>
+          — paid tier when your key allows
+        </li>
+        <li>
+          <button type="button" class="linkish" data-model="meta/llama-3.2-11b-vision-instruct">Llama 3.2 vision</button>
+          — assist / vision paths when wired
+        </li>
+      </ul>
+    </section>
+
+    <section class="path" id="compliance-badge" aria-labelledby="badge-heading">
+      <h2 id="badge-heading">Compliance Badge</h2>
+      <p class="tips" role="note">
+        Honest seals from <code>/health</code> + session state — not a third-party certification.
+      </p>
+      <div class="badge-row" id="compliance-badges" aria-live="polite">
+        <span class="badge">Loading…</span>
+      </div>
+    </section>
+
+    <section class="path" id="capability-registry" aria-labelledby="cap-heading">
+      <h2 id="cap-heading">Capability Registry Browser</h2>
+      <p class="tips" role="note">
+        Live disclosure from <code>GET /health</code>.
+        <code>available: false</code> means not ready on this deploy — do not treat as “implemented live.”
+      </p>
+      <dl class="cap-grid" id="cap-registry"></dl>
+    </section>
+
+    <section class="path" id="stills">
+      <div class="section-head">
+        <div>
+          <h2>Stills · NIM FLUX or RT4D</h2>
+          <p>Use this as the public demo entrypoint: start from a strong concept plate, then optionally trigger the scene reveal lane below.</p>
+        </div>
+      </div>
+      <div class="story-grid" aria-label="Concept to scene flow">
+        <div class="story-card" data-step="Step 1">
+          <strong>Pick a visual thesis</strong>
+          <span>Choose a prompt that emphasizes geometry, light, material, and scale before narrative detail.</span>
+        </div>
+        <div class="story-card" data-step="Step 2">
+          <strong>Generate the concept still</strong>
+          <span>FLUX sells mood fast; RT4D sells deterministic structure and a stronger technical story.</span>
+        </div>
+        <div class="story-card" data-step="Step 3">
+          <strong>Reveal the scene interpretation</strong>
+          <span>Turn on the dual path so the audience sees concept art and the MRS frame side by side.</span>
+        </div>
+      </div>
+      <p class="tips" role="note">
+        <strong>Prompt tips (FLUX.1-schnell):</strong>
+        abstract geometry, mandalas, tesseracts, neon grids, and studio-lit objects usually work.
+        Photoreal people / faces / skin often return blank black stills on this NIM path — describe the
+        object and light, not a portrait. If a people-like prompt blanks, the service retries once with an
+        abstract rewrite (disable with <code>GENBLAZE_ABSTRACT_RETRY=0</code>). Do not append feedback like
+        “ok this not good” into the prompt.
+      </p>
+      <p class="tips" role="note">
+        <strong>RT4D renderer backend</strong>
+        (<code>GENBLAZE_IMAGE_BACKEND=rt4d</code>, or NVIDIA fallback via
+        <code>GENBLAZE_IMAGE_FALLBACK_TO_RT4D=1</code>):
+        the prompt selects a <em>procedural</em> 4D scene archetype (keyword → surface /
+        palette / camera), then the MRS RT4D CPU path tracer renders a deterministic PNG.
+        Mandala / neural-lattice / sovereign / glyph prompts map to the
+        <code>neural-lattice</code> archetype (radial lattice + energy core primitives) —
+        still not photoreal diffusion. Same prompt → same seed → same bytes. Requires
+        Node.js + <code>renderer-core/scripts/render-still.mjs</code>; see
+        <code>rt4d.available</code> in <code>/health</code> for whether this
+        running image has them. Default quality is <strong>draft</strong> (safe on
+        shared CPU); choose <strong>final</strong> only when you can wait longer.
+      </p>
+
+      <form id="gen-form" class="prompt-lab">
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" name="prompt" required maxlength="2000"
+          placeholder="e.g. isometric concept of a translucent 4D torus mandala, cool studio light"></textarea>
+        <div class="inline-note">
+          Recommended structure: subject + material + light + camera angle. If you want a full demo moment, check the scene-interpret option before you hit Generate.
+        </div>
+        <label for="still-quality" style="margin-top:0.75rem">Still render quality</label>
+        <select id="still-quality">
+          <option value="draft" selected>Draft (fast — smaller / noisier)</option>
+          <option value="final">Final (slower — RT4D profile)</option>
+        </select>
+        <label for="media-style" style="margin-top:0.75rem">Look lane</label>
+        <select id="media-style">
+          <option value="default">Default (no anime steer)</option>
+          <option value="anime" selected>Anime (partial — FLUX/polish prompt steer)</option>
+        </select>
+        <div class="inline-note">
+          Anime steers diffusion prompts toward cel-shaded look. Not Full Photoreal;
+          Cycles photoreal remains optional. RT4D structure stills ignore anime pixels —
+          use NVIDIA/Lemonade/polish for the look.
+        </div>
+        <div class="row">
+          <button type="submit" id="go">Generate</button>
+          <button type="button" class="secondary" id="refresh">Refresh assets</button>
+          <button type="button" class="secondary" id="send-rt4d-nvidia" hidden disabled>
+            Send RT4D still → NVIDIA
+          </button>
+          <button type="button" class="secondary" id="polish-still" hidden disabled>
+            Polish with FLUX (img2img)
+          </button>
+        </div>
+        <label style="margin-top:0.75rem;font-weight:400;display:flex;gap:0.5rem;align-items:center;">
+          <input type="checkbox" id="then-scene" />
+          <span id="then-scene-label">Also interpret → MRS full frame (keeps concept still; dual previews)</span>
+        </label>
+        <div id="polish-controls" hidden style="margin-top:0.75rem;padding:0.75rem;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,0.18);">
+          <label for="polish-prompt">Polish prompt (optional; default = same as generate)</label>
+          <textarea id="polish-prompt" maxlength="2000" placeholder="e.g. enhance materials, add dramatic lighting, refine contrast"></textarea>
+          <label for="polish-strength" style="margin-top:0.5rem">Strength: <span id="polish-strength-val">0.45</span></label>
+          <input type="range" id="polish-strength" min="0" max="100" value="45" style="width:100%" />
+          <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--muted);margin-top:-0.25rem">
+            <span>0.00 (identical)</span>
+            <span>1.00 (fully new)</span>
+          </div>
+          <div style="margin-top:0.5rem;font-size:0.85rem;color:var(--muted)">
+            Structure pass = MRS; polish = diffusion edit. Strength 0.35–0.55 recommended for lattice/abstract.
+          </div>
+        </div>
+      </form>
+
+      <div id="status" class="status"></div>
+
+      <section class="result" id="result" hidden>
+        <h2>Latest still</h2>
+        <div class="meta" id="result-meta"></div>
+        <div class="preview-frame">
+          <img id="preview" alt="Generated concept" hidden />
+        </div>
+        <div class="side-by-side" id="dual-previews" hidden>
+          <figure>
+            <figcaption id="preview-flux-caption">Concept / RT4D still</figcaption>
+            <img id="preview-flux" alt="Concept or RT4D still" />
+          </figure>
+          <figure>
+            <figcaption>MRS path-traced full frame (NVIDIA scene interpretation)</figcaption>
+            <img id="preview-mrs" alt="MRS scene interpretation" />
+          </figure>
+        </div>
+      </section>
+    </section>
+
+    <section class="path" id="image-to-scene">
+      <div class="section-head">
+        <div>
+          <h2>Image → MRS scene</h2>
+          <p>This is the reveal lane. Use the generated still above or your own source image, then let the app show the interpreted MRS frame as the second act.</p>
+        </div>
+      </div>
+      <p class="tips" role="note">
+        <strong>Scene interpretation + path-traced full frame.</strong>
+        Upload a photo or paste a prior generate <code>run_id</code>. The service
+        emits a SceneSpecification (NIM vision when configured, else heuristic),
+        validates it, then MRS path-traces a full PNG.
+        This is <strong>not</strong> geometric reconstruction, depth recovery, or mesh from photo.
+        Default quality is <strong>draft</strong> (smaller / noisier, typically tens of
+        seconds on CPU) — choose <strong>final</strong> only when you can wait longer
+        for a nicer still.
+        After an RT4D generate, use <strong>Send RT4D still → NVIDIA</strong> (or
+        <code>POST /api/rt4d-to-nvidia</code>) to require NIM vision with no silent
+        heuristic fallback — if NVIDIA is down, the RT4D still stays usable.
+      </p>
+      <form id="scene-form">
+        <label for="scene-file">Image upload</label>
+        <input type="file" id="scene-file" accept="image/jpeg,image/png,image/webp,image/gif" />
+        <label for="scene-run-id" style="margin-top:0.75rem">Or generate run_id</label>
+        <input type="text" id="scene-run-id" maxlength="64" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <label for="scene-quality" style="margin-top:0.75rem">Image→MRS render quality</label>
+        <select id="scene-quality">
+          <option value="draft" selected>Draft (fast — smaller / noisier)</option>
+          <option value="final">Final (slower — RT4D profile)</option>
+        </select>
+        <label style="margin-top:0.75rem;font-weight:400;display:flex;gap:0.5rem;align-items:center;">
+          <input type="checkbox" id="scene-require-nvidia" />
+          Require NVIDIA NIM vision (no heuristic fallback)
+        </label>
+        <div class="row">
+          <button type="submit" id="scene-go">Interpret + render</button>
+        </div>
+      </form>
+      <div id="scene-status" class="status"></div>
+      <div class="rail-grid" aria-label="Scene reveal guidance">
+        <div class="rail-card">
+          <strong>Best live demo move</strong>
+          <span>Generate a concept above, keep the same run id, and immediately interpret it here so the audience sees the bridge between image and structured scene output.</span>
+        </div>
+        <div class="rail-card">
+          <strong>What to say aloud</strong>
+          <span>This is scene interpretation, not mesh reconstruction: the point is governed structure plus render continuity, not fake geometry claims.</span>
+        </div>
+      </div>
+      <section class="result" id="scene-result" hidden>
+        <h2>MRS scene frame</h2>
+        <div class="meta" id="scene-result-meta"></div>
+        <img id="scene-preview" alt="MRS path-traced scene" hidden />
+      </section>
+    </section>
+
+    <section class="path" id="engine3d-still">
+      <h2>Engine3D structure → polish</h2>
+      <p class="tips" role="note">
+        <strong>Portrait structure path.</strong>
+        Soft-raster Engine3D triangles (demo head/shoulders or optional HumanRig GLB)
+        produce a beauty PNG (+ depth/normal AOVs). Optional RT4D background
+        composite, then optional fal FLUX img2img polish.
+        Faces/skin come from <em>polish</em> — not RT4D sphere-bridge.
+        Requires <code>/health.engine3d_still.available</code> and (for polish)
+        <code>GENBLAZE_POLISH_ENABLED=1</code> + <code>FAL_KEY</code>.
+      </p>
+      <form id="e3d-form">
+        <label for="e3d-width">Width</label>
+        <input type="number" id="e3d-width" min="64" max="1024" value="256" />
+        <label for="e3d-height" style="margin-top:0.5rem">Height</label>
+        <input type="number" id="e3d-height" min="64" max="1024" value="256" />
+        <label for="e3d-bg-run" style="margin-top:0.75rem">Optional RT4D background run_id</label>
+        <input type="text" id="e3d-bg-run" maxlength="64" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <label style="margin-top:0.75rem;font-weight:400;display:flex;gap:0.5rem;align-items:center;">
+          <input type="checkbox" id="e3d-polish" />
+          Also polish with FLUX img2img
+        </label>
+        <label for="e3d-prompt" style="margin-top:0.5rem">Polish prompt</label>
+        <textarea id="e3d-prompt" maxlength="2000"
+          placeholder="cinematic portrait, dramatic rim light, detailed skin"></textarea>
+        <div class="row">
+          <button type="submit" id="e3d-go">Render Engine3D structure</button>
+        </div>
+      </form>
+      <div id="e3d-status" class="status"></div>
+      <section class="result" id="e3d-result" hidden>
+        <h2>Engine3D / composite / polish</h2>
+        <div class="meta" id="e3d-result-meta"></div>
+        <img id="e3d-preview" alt="Engine3D structure or polish" hidden />
+      </section>
+    </section>
+
+    <section class="path" id="nim-cosmos" hidden>
+      <h2>Video · local frames flipbook</h2>
+      <p class="tips" role="note">
+        <strong>Default path (GENBLAZE_VIDEO_BACKEND=frames):</strong> generates
+        N seeded stills locally (deterministic RT4D render-still by default, or
+        Lemonade SD-Turbo when <code>GENBLAZE_FRAMES_SOURCE=lemonade</code>), then
+        stitches them into an MP4 with ffmpeg. This is a <strong>flipbook of
+        independent stills</strong> — not a motion/generative-video model. Output
+        is honest: receipts carry provider <code>rt4d-local-frames</code> (or
+        <code>lemonade-local-frames</code>) and a per-frame provenance list.
+        Cloud alternatives: <code>GENBLAZE_VIDEO_BACKEND=seedance</code> (fal,
+        billed) or <code>nvidia</code> (NIM Cosmos). This section is hidden by
+        default (stills-only demo); it appears only when the operator sets
+        <code>GENBLAZE_VIDEO_ENABLED=1</code>.
+      </p>
+
+      <form id="video-form">
+        <label for="video-prompt">Video prompt</label>
+        <textarea id="video-prompt" name="prompt" required maxlength="2000"
+          placeholder="e.g. slow orbit around a translucent mandala torus in cool studio light"></textarea>
+        <div class="row">
+          <button type="submit" id="video-go">Generate video</button>
+        </div>
+      </form>
+
+      <div id="video-status" class="status"></div>
+
+      <section class="result" id="video-result" hidden>
+        <h2>Latest video</h2>
+        <div class="meta" id="video-result-meta"></div>
+        <video id="video-preview" controls hidden></video>
+      </section>
+    </section>
+
+    <section class="path" id="chat">
+      <h2>Chat · text (Lemonade local)</h2>
+      <p class="tips" role="note">
+        Local text inference via <strong>Lemonade Server</strong> on this machine
+        (default <code>Llama-3.2-1B-Instruct</code>). No cloud key required.
+        Scoped as <strong>assist</strong> — not a print/SoT surface.
+      </p>
+      <div id="chat-log" class="chat-log" style="max-height:20rem;overflow-y:auto;border:1px solid var(--line);border-radius:6px;padding:0.75rem;background:rgba(0,0,0,0.22);margin-bottom:0.75rem">
+        <p class="tips" style="margin:0">Chat will appear here.</p>
+      </div>
+      <form id="chat-form">
+        <label for="chat-input">Message</label>
+        <div class="row">
+          <textarea id="chat-input" maxlength="2000"
+            placeholder="Ask something — local inference, e.g. 'describe a mandala scene'" style="min-height:3rem"></textarea>
+          <button type="submit" id="chat-go">Send</button>
+        </div>
+      </form>
+      <div id="chat-status" class="status"></div>
+    </section>
+
+    <section class="path" id="voice">
+      <h2>Voice · speech (Lemonade local)</h2>
+      <p class="tips" role="note">
+        Local TTS (default <code>kokoro-v1</code>) and STT (default Whisper).
+        <strong>On this host STT may report unavailable</strong> until the local
+        whisper backend starts; TTS is the verified path.
+      </p>
+      <h3 style="font-size:1.05rem;margin-top:0.25rem">Text to speech</h3>
+      <form id="tts-form">
+        <label for="tts-text">Text to speak</label>
+        <textarea id="tts-text" maxlength="4000"
+          placeholder="e.g. Welcome to the Mandala. This voice is generated locally."></textarea>
+        <div class="row">
+          <button type="submit" id="tts-go">Speak</button>
+        </div>
+      </form>
+      <div id="tts-status" class="status"></div>
+      <audio id="tts-audio" controls hidden style="margin-top:0.6rem"></audio>
+
+      <h3 style="font-size:1.05rem;margin-top:1.4rem">Speech to text</h3>
+      <form id="stt-form">
+        <label for="stt-file">Audio file</label>
+        <input type="file" id="stt-file" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/*" />
+        <div class="row">
+          <button type="submit" id="stt-go">Transcribe</button>
+        </div>
+      </form>
+      <div id="stt-status" class="status"></div>
+      <div id="stt-result" class="meta" hidden></div>
+    </section>
+
+    <section class="assets">
+      <div class="section-head">
+        <div>
+          <h2>Recent</h2>
+          <p>The latest run gets a featured stage, with the rest presented as a compact showcase instead of a raw log.</p>
+        </div>
+      </div>
+      <div id="assets-list" class="recent-shell">
+        <div id="playlist-strip" class="playlist-strip" hidden></div>
+        <div class="asset-empty">Loading recent showcase…</div>
+      </div>
+    </section>
+
+    <section id="presentation-shell" class="presentation-shell" hidden aria-hidden="true">
+      <div class="presentation-panel" role="dialog" aria-modal="true" aria-labelledby="presentation-title">
+        <div class="presentation-top">
+          <div>
+            <span class="playlist-label">Presentation mode</span>
+            <h3 id="presentation-title">Pinned demo walkthrough</h3>
+          </div>
+          <button type="button" class="secondary" id="presentation-close">Close</button>
+        </div>
+        <div class="presentation-body">
+          <div id="presentation-media" class="presentation-media"></div>
+          <div class="presentation-notes">
+            <div class="presentation-copy">
+              <strong id="presentation-run-title">Demo run</strong>
+              <p id="presentation-run-prompt">Prompt summary</p>
+            </div>
+            <div class="presentation-note-card">
+              <strong>Operator notes</strong>
+              <p>Session-local notes for this pinned slide.</p>
+              <textarea
+                id="presentation-operator-note-input"
+                class="presentation-note-input"
+                placeholder="Add your judge-day cues for this slide..."
+              ></textarea>
+            </div>
+            <div class="presentation-note-card">
+              <strong>Talk track</strong>
+              <p id="presentation-talk-track">Talk track</p>
+            </div>
+          </div>
+        </div>
+        <div class="presentation-bottom">
+          <div class="presentation-controls">
+            <button type="button" class="secondary" id="presentation-prev">Previous</button>
+            <button type="button" id="presentation-next">Next</button>
+            <button type="button" class="secondary" id="presentation-reuse">Reuse prompt</button>
+            <button type="button" class="secondary" id="presentation-reveal">Send to scene reveal</button>
+          </div>
+          <div id="presentation-progress" class="presentation-progress">Slide 1 of 1</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="assets" aria-labelledby="search-heading">
+      <h2 id="search-heading">Semantic search</h2>
+      <p class="lede">
+        Uses NVIDIA <code>nv-embedcode-7b-v1</code> embeddings over recent prompts
+        (not chat). Generate at least one live asset first so vectors are indexed.
+      </p>
+      <form id="search-form">
+        <label for="search-q">Query</label>
+        <textarea id="search-q" name="query" maxlength="2000"
+          placeholder="e.g. translucent mandala torus"></textarea>
+        <div class="row">
+          <button type="submit" id="search-go">Search</button>
+        </div>
+      </form>
+      <div id="search-results" class="meta"></div>
+    </section>
+
+    <footer>
+      Storage: Backblaze B2 (private bucket → presigned GET). Orchestration: Genblaze.
+      Image: NVIDIA NIM FLUX (stills) or optional MRS RT4D renderer
+      (<code>GENBLAZE_IMAGE_BACKEND=rt4d</code> — deterministic procedural 4D, not diffusion).
+      Video: NVIDIA NIM Cosmos (optional; off by default — set
+      <code>GENBLAZE_VIDEO_ENABLED=1</code> to re-enable).
+      Embeddings: NVIDIA nv-embedcode. Operator readiness ≠ commercial self-serve.
+      Anchors: <code>/media/stills</code> · <code>/media/nim-cosmos</code> (video when enabled).
+      Render governance reference (docs only, not implemented here): <a href="/cros">/cros</a>.
+    </footer>
+  </main>
+  <script>
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+    const resultMeta = document.getElementById("result-meta");
+    const preview = document.getElementById("preview");
+    const assetsList = document.getElementById("assets-list");
+    const goBtn = document.getElementById("go");
+    const searchResults = document.getElementById("search-results");
+    const videoStatusEl = document.getElementById("video-status");
+    const videoResultEl = document.getElementById("video-result");
+    const videoResultMeta = document.getElementById("video-result-meta");
+    const videoPreview = document.getElementById("video-preview");
+    const videoGoBtn = document.getElementById("video-go");
+    const sceneStatusEl = document.getElementById("scene-status");
+    const sceneResultEl = document.getElementById("scene-result");
+    const sceneResultMeta = document.getElementById("scene-result-meta");
+    const scenePreview = document.getElementById("scene-preview");
+    const sceneGoBtn = document.getElementById("scene-go");
+    const dualPreviews = document.getElementById("dual-previews");
+    const previewFlux = document.getElementById("preview-flux");
+    const previewMrs = document.getElementById("preview-mrs");
+    const sendRt4dNvidiaBtn = document.getElementById("send-rt4d-nvidia");
+    const polishBtn = document.getElementById("polish-still");
+    const polishControls = document.getElementById("polish-controls");
+    const polishPrompt = document.getElementById("polish-prompt");
+    const polishStrength = document.getElementById("polish-strength");
+    const polishStrengthVal = document.getElementById("polish-strength-val");
+    const previewFluxCaption = document.getElementById("preview-flux-caption");
+    const thenSceneLabel = document.getElementById("then-scene-label");
+    const heroHealth = document.getElementById("hero-health");
+    const playlistStrip = document.getElementById("playlist-strip");
+    const presentationShell = document.getElementById("presentation-shell");
+    const presentationMedia = document.getElementById("presentation-media");
+    const presentationRunTitle = document.getElementById("presentation-run-title");
+    const presentationRunPrompt = document.getElementById("presentation-run-prompt");
+    const presentationOperatorNoteInput = document.getElementById("presentation-operator-note-input");
+    const presentationTalkTrack = document.getElementById("presentation-talk-track");
+    const presentationProgress = document.getElementById("presentation-progress");
+    const presentationPrev = document.getElementById("presentation-prev");
+    const presentationNext = document.getElementById("presentation-next");
+    const presentationClose = document.getElementById("presentation-close");
+    const presentationReuse = document.getElementById("presentation-reuse");
+    const presentationReveal = document.getElementById("presentation-reveal");
+
+    // Populated by the /health fetch below. Until it resolves, treat the backend
+    // as unknown and avoid naming FLUX or RT4D in progress copy.
+    let health = null;
+    let latestStill = null; // { run_id, preview_url, provider }
+    const isRt4dBackend = () => health && health.image_backend === "rt4d";
+
+    const BYOK_KEY = "genblaze_api_key";
+    const BYOK_MODEL = "genblaze_model_override";
+    const PINNED_RUNS_KEY = "genblaze_pinned_run_ids";
+    const PRESENTATION_NOTES_KEY = "genblaze_presentation_notes";
+    const MAX_PINNED_RUNS = 3;
+    let playlistPresentationItems = [];
+    let playlistPresentationIndex = 0;
+
+    function byokHeaders(extra) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, extra || {});
+      const key = sessionStorage.getItem(BYOK_KEY);
+      const model = sessionStorage.getItem(BYOK_MODEL);
+      if (key) {
+        headers["X-NVIDIA-API-Key"] = key;
+        headers["Authorization"] = "Bearer " + key;
+      }
+      if (model) headers["X-Genblaze-Model"] = model;
+      return headers;
+    }
+
+    function refreshByokDiag() {
+      const el = document.getElementById("byok-diag");
+      if (!el) return;
+      const keyPresent = !!sessionStorage.getItem(BYOK_KEY);
+      const model = sessionStorage.getItem(BYOK_MODEL) || "None";
+      const server = health && health.byok ? health.byok : null;
+      const permitted = server ? server.permitted_for_this_request : "?";
+      const flag = server ? (server.allow_byok_flag ? "Enabled" : "Disabled (local-only default)") : "?";
+      const xss = document.getElementById("byok-xss-warn");
+      if (xss) {
+        const localHost =
+          location.hostname === "127.0.0.1" || location.hostname === "localhost";
+        xss.hidden = localHost && !(server && server.hosted_render_detected);
+      }
+      el.replaceChildren();
+      const title = document.createElement("strong");
+      title.textContent = "BYOK diagnostics";
+      el.appendChild(title);
+      el.appendChild(document.createElement("br"));
+      const lines = [
+        "Key present: " + (keyPresent ? "Yes (session)" : "No"),
+        "Model override: " + model,
+        "Scope: stills + assist",
+        "Hosted BYOK flag: " + flag,
+        "Permitted for this host: " + String(permitted),
+      ];
+      lines.forEach(function (line) {
+        el.appendChild(document.createTextNode(line));
+        el.appendChild(document.createElement("br"));
+      });
+      const note = document.createElement("span");
+      note.style.fontSize = "0.9em";
+      note.textContent =
+        "Keys are never logged, never persisted server-side, never sent to Digital Printer.";
+      el.appendChild(note);
+      refreshComplianceBadges();
+      refreshCapabilityRegistry();
+    }
+
+    function refreshComplianceBadges() {
+      const row = document.getElementById("compliance-badges");
+      if (!row) return;
+      const server = health && health.byok ? health.byok : null;
+      const keyPresent = !!sessionStorage.getItem(BYOK_KEY);
+      const badges = [];
+      badges.push({
+        ok: server && server.printSoT === false,
+        text: "printSoT: false",
+      });
+      badges.push({
+        ok: !!(server && Array.isArray(server.scope) && server.scope.indexOf("stills") >= 0),
+        text: "BYOK scope: stills+assist",
+      });
+      badges.push({
+        ok: !!(server && server.permitted_for_this_request),
+        text: server && server.permitted_for_this_request ? "BYOK permitted here" : "BYOK not permitted",
+        warn: !(server && server.permitted_for_this_request),
+      });
+      badges.push({
+        ok: keyPresent,
+        text: keyPresent ? "session key present" : "no session key",
+        warn: !keyPresent,
+      });
+      badges.push({
+        ok: true,
+        text: "disclosure ≠ certification",
+        warn: true,
+      });
+      row.replaceChildren();
+      badges.forEach(function (b) {
+        const span = document.createElement("span");
+        span.className = b.warn ? "badge warn" : b.ok ? "badge ok" : "badge";
+        span.textContent = b.text;
+        row.appendChild(span);
+      });
+    }
+
+    function refreshCapabilityRegistry() {
+      const dl = document.getElementById("cap-registry");
+      if (!dl) return;
+      dl.replaceChildren();
+      if (!health) {
+        const dt = document.createElement("dt");
+        dt.textContent = "status";
+        const dd = document.createElement("dd");
+        dd.textContent = "waiting for /health";
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+        return;
+      }
+      function avail(obj) {
+        if (obj == null) return "n/a";
+        if (typeof obj === "boolean") return obj ? "true" : "false";
+        if (typeof obj === "object" && "available" in obj) {
+          return obj.available ? "available" : "unavailable";
+        }
+        return String(obj);
+      }
+      const entries = [
+        ["image_backend", health.image_backend],
+        ["byok.permitted", health.byok && health.byok.permitted_for_this_request],
+        ["rt4d", avail(health.rt4d)],
+        ["scene_spec", avail(health.scene_spec)],
+        ["image_to_scene", avail(health.image_to_scene)],
+        ["polish", avail(health.polish)],
+        ["engine3d_still", avail(health.engine3d_still)],
+        ["proton_raster", avail(health.proton_raster)],
+        ["printer", avail(health.printer)],
+        ["face_creation_assist", avail(health.face_creation_assist)],
+        ["prompt_scene", avail(health.prompt_scene)],
+        ["video_enabled", health.video_enabled],
+      ];
+      entries.forEach(function (pair) {
+        const dt = document.createElement("dt");
+        dt.textContent = String(pair[0]);
+        const dd = document.createElement("dd");
+        dd.textContent = String(pair[1]);
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      });
+    }
+
+    function warnByokModelIfNeeded(model) {
+      const catalog = Array.from(
+        document.querySelectorAll("#byok-model-catalog option"),
+      ).map(function (o) { return o.value; });
+      if (!model || catalog.indexOf(model) >= 0) return;
+      setStatus(
+        statusEl,
+        "Model id not in disclosed catalog (soft warn): " + model,
+        "warn",
+      );
+    }
+
+    document.getElementById("model-market-list")?.addEventListener("click", (ev) => {
+      const btn = ev.target && ev.target.closest ? ev.target.closest("[data-model]") : null;
+      if (!btn) return;
+      const model = btn.getAttribute("data-model");
+      const input = document.getElementById("byok-model");
+      if (input) input.value = model;
+      sessionStorage.setItem(BYOK_MODEL, model);
+      refreshByokDiag();
+    });
+
+    document.getElementById("byok-save")?.addEventListener("click", () => {
+      const key = document.getElementById("byok-key")?.value?.trim() || "";
+      const model = document.getElementById("byok-model")?.value?.trim() || "";
+      if (key) sessionStorage.setItem(BYOK_KEY, key);
+      else sessionStorage.removeItem(BYOK_KEY);
+      if (model) sessionStorage.setItem(BYOK_MODEL, model);
+      else sessionStorage.removeItem(BYOK_MODEL);
+      if (document.getElementById("byok-key")) document.getElementById("byok-key").value = "";
+      warnByokModelIfNeeded(model);
+      refreshByokDiag();
+      setStatus(statusEl, "BYOK session updated (key not shown).", "");
+    });
+    document.getElementById("byok-clear")?.addEventListener("click", () => {
+      sessionStorage.removeItem(BYOK_KEY);
+      sessionStorage.removeItem(BYOK_MODEL);
+      if (document.getElementById("byok-model")) document.getElementById("byok-model").value = "";
+      refreshByokDiag();
+      setStatus(statusEl, "BYOK session cleared.", "");
+    });
+    (function loadByokForm() {
+      const model = sessionStorage.getItem(BYOK_MODEL);
+      if (model && document.getElementById("byok-model")) {
+        document.getElementById("byok-model").value = model;
+      }
+      refreshByokDiag();
+    })();
+
+    function nvidiaVisionReady() {
+      return !!(health && (health.nvidia_configured || sessionStorage.getItem(BYOK_KEY)));
+    }
+
+    function updateRt4dNvidiaControls() {
+      if (!sendRt4dNvidiaBtn) return;
+      const hasStill = !!(latestStill && latestStill.run_id);
+      const show = hasStill && (isRt4dBackend() || latestStill.provider === "rt4d-render");
+      sendRt4dNvidiaBtn.hidden = !show;
+      sendRt4dNvidiaBtn.disabled = !show;
+      const polishAvailable = health && health.polish && health.polish.available;
+      if (polishBtn) {
+        const showPolish = !!polishAvailable && hasStill;
+        polishBtn.hidden = !showPolish;
+        polishBtn.disabled = !showPolish;
+      }
+      if (polishControls) {
+        const showPolishControls = !!polishAvailable;
+        polishControls.hidden = !showPolishControls;
+      }
+      if (thenSceneLabel) {
+        thenSceneLabel.textContent = isRt4dBackend()
+          ? "Also interpret with NVIDIA → MRS full frame (keeps RT4D still; dual previews)"
+          : "Also interpret → MRS full frame (keeps concept still; dual previews)";
+      }
+      if (previewFluxCaption) {
+        previewFluxCaption.textContent = isRt4dBackend()
+          ? "RT4D still"
+          : "Concept / FLUX still";
+      }
+    }
+
+    // Polish strength slider live value.
+    if (polishStrength && polishStrengthVal) {
+      polishStrength.addEventListener("input", () => {
+        const v = parseInt(polishStrength.value, 10) / 100;
+        polishStrengthVal.textContent = v.toFixed(2);
+      });
+    }
+
+    function rememberLatestStill(data) {
+      latestStill = {
+        run_id: data.run_id || null,
+        preview_url: data.preview_url || null,
+        provider: data.provider || null,
+      };
+      const runInput = document.getElementById("scene-run-id");
+      if (runInput && latestStill.run_id) {
+        runInput.value = latestStill.run_id;
+      }
+      updateRt4dNvidiaControls();
+    }
+
+    function nvidiaUnavailableMessage(detail) {
+      if (detail && typeof detail === "object") {
+        const msg = detail.message || JSON.stringify(detail);
+        return msg;
+      }
+      return typeof detail === "string" ? detail : JSON.stringify(detail || "NVIDIA unavailable");
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error("read failed"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function setStatus(el, msg, kind) {
+      el.textContent = msg || "";
+      el.className = "status" + (kind ? " " + kind : "");
+    }
+
+    function setHeroHealth(msg) {
+      if (!heroHealth) return;
+      heroHealth.replaceChildren();
+      const title = document.createElement("strong");
+      title.textContent = "Live demo state";
+      heroHealth.appendChild(title);
+      heroHealth.appendChild(document.createElement("br"));
+      heroHealth.appendChild(document.createTextNode(msg));
+    }
+
+    function renderEntry(el, entry) {
+      const lines = [
+        "run: " + (entry.run_id || "—"),
+        "modality: " + (entry.modality || "—"),
+        "model: " + (entry.model || "—"),
+        "provider: " + (entry.provider || "—"),
+        "asset: " + (entry.asset_key || "—"),
+        "manifest: " + (entry.manifest_key || "—"),
+        "sha256: " + (entry.asset_sha256 || "—"),
+        "created: " + (entry.created_at || "—"),
+      ];
+      if (entry.duration_seconds != null) lines.push("duration_s: " + entry.duration_seconds);
+      if (entry.resolution) lines.push("resolution: " + entry.resolution);
+      if (entry.cmm_id) lines.push("cmm: " + entry.cmm_id);
+      if (entry.embedding) {
+        lines.push(
+          "embed: " + (entry.embedding.model || "") +
+          " · dims " + (entry.embedding.dims || "—")
+        );
+      }
+      if (entry.embedding_error) lines.push("embed error: " + entry.embedding_error);
+      if (entry.dry_run) lines.push("mode: dry-run (not live NIM)");
+      if (entry.detail) lines.push(entry.detail);
+      el.textContent = lines.join("\n");
+    }
+
+    function previewFailMessage(isVideo) {
+      return (
+        "Preview failed to load. Often Backblaze free-tier transaction cap " +
+        "(AccessDenied), or local cache pruned after Render restart. " +
+        "Wait for daily B2 reset, or generate again so /api/preview can serve the " +
+        (isVideo ? "clip" : "still") + "."
+      );
+    }
+
+    function summarizePrompt(text) {
+      if (!text) return "No prompt recorded.";
+      return text.length > 180 ? (text.slice(0, 177) + "...") : text;
+    }
+
+    function shortValue(text, fallback) {
+      if (!text) return fallback || "—";
+      return String(text).length > 48 ? (String(text).slice(0, 45) + "...") : String(text);
+    }
+
+    function assetRibbonText(entry) {
+      const provider = entry.provider || "provider";
+      const modality = entry.modality || "image";
+      return modality + " · " + provider;
+    }
+
+    function loadPromptIntoGenerator(promptText, message) {
+      const promptEl = document.getElementById("prompt");
+      if (promptEl && promptText) {
+        promptEl.value = promptText;
+        promptEl.focus();
+        promptEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      setStatus(statusEl, message, "");
+    }
+
+    function loadRunIntoSceneReveal(runId, message) {
+      const runInput = document.getElementById("scene-run-id");
+      if (runInput && runId) {
+        runInput.value = runId;
+        runInput.focus();
+        document.getElementById("image-to-scene")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      setStatus(sceneStatusEl, message, "");
+    }
+
+    async function copyTextValue(text, message, target) {
+      const value = (text || "").trim();
+      if (!value) {
+        setStatus(target || statusEl, "Nothing available to copy yet.", "warn");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(value);
+        setStatus(target || statusEl, message, "");
+      } catch (_err) {
+        setStatus(target || statusEl, "Clipboard copy failed in this browser context.", "err");
+      }
+    }
+
+    function pinnedRunIds() {
+      const raw = sessionStorage.getItem(PINNED_RUNS_KEY);
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, MAX_PINNED_RUNS) : [];
+      } catch (_err) {
+        return [];
+      }
+    }
+
+    function presentationNotesMap() {
+      const raw = sessionStorage.getItem(PRESENTATION_NOTES_KEY);
+      if (!raw) return {};
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch (_err) {
+        return {};
+      }
+    }
+
+    function presentationNoteFor(runId, fallback) {
+      if (!runId) return fallback || "";
+      const notes = presentationNotesMap();
+      const saved = typeof notes[runId] === "string" ? notes[runId] : "";
+      return saved || (fallback || "");
+    }
+
+    function setPresentationNoteFor(runId, note) {
+      if (!runId) return;
+      const notes = presentationNotesMap();
+      const normalized = String(note || "").trim();
+      if (normalized) {
+        notes[runId] = normalized;
+        sessionStorage.setItem(PRESENTATION_NOTES_KEY, JSON.stringify(notes));
+        return;
+      }
+      delete notes[runId];
+      if (Object.keys(notes).length) {
+        sessionStorage.setItem(PRESENTATION_NOTES_KEY, JSON.stringify(notes));
+      } else {
+        sessionStorage.removeItem(PRESENTATION_NOTES_KEY);
+      }
+    }
+
+    function isPinnedRun(runId) {
+      return !!runId && pinnedRunIds().indexOf(runId) >= 0;
+    }
+
+    function togglePinnedRun(runId) {
+      if (!runId) {
+        setStatus(statusEl, "Nothing available to pin yet.", "warn");
+        return;
+      }
+      const current = pinnedRunIds();
+      const index = current.indexOf(runId);
+      if (index >= 0) {
+        current.splice(index, 1);
+        if (current.length) {
+          sessionStorage.setItem(PINNED_RUNS_KEY, JSON.stringify(current));
+        } else {
+          sessionStorage.removeItem(PINNED_RUNS_KEY);
+        }
+        setStatus(statusEl, "Run removed from the demo playlist.", "");
+      } else {
+        const next = [runId].concat(current).slice(0, MAX_PINNED_RUNS);
+        sessionStorage.setItem(PINNED_RUNS_KEY, JSON.stringify(next));
+        setStatus(
+          statusEl,
+          "Run added to the demo playlist (" + next.length + "/" + MAX_PINNED_RUNS + ").",
+          "",
+        );
+      }
+      loadAssets();
+    }
+
+    function sortAssetsForShowcase(assets) {
+      const pinned = pinnedRunIds();
+      if (!pinned.length) return assets.slice();
+      const items = assets.slice();
+      items.sort(function (a, b) {
+        const aIndex = a && a.run_id ? pinned.indexOf(a.run_id) : -1;
+        const bIndex = b && b.run_id ? pinned.indexOf(b.run_id) : -1;
+        if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
+        if (aIndex >= 0) return -1;
+        if (bIndex >= 0) return 1;
+        return 0;
+      });
+      return items;
+    }
+
+    function playlistPresentationNote(entry) {
+      const provider = entry.provider || "provider";
+      if (provider === "rt4d-render") {
+        return "Lead with determinism: this still is procedural RT4D, not diffusion, so the same scene recipe can be replayed consistently.";
+      }
+      if (provider === "engine3d-still") {
+        return "Call out that this is the structure lane: Engine3D geometry first, polish second, with no fake RT4D face claim.";
+      }
+      return "Lead with concept-to-system framing: this asset is a fast concept still that can feed the scene reveal lane immediately.";
+    }
+
+    function playlistTalkTrack(entry) {
+      const provider = entry.provider || "provider";
+      if (provider === "rt4d-render") {
+        return "This is the deterministic branch of the demo: concept surface, replayable structure, and then optional interpretation into a governed scene frame.";
+      }
+      return "This starts as a concept still, then we show that it can bridge into scene interpretation rather than stopping at a nice-looking image.";
+    }
+
+    function closePresentationMode() {
+      if (!presentationShell) return;
+      presentationShell.hidden = true;
+      presentationShell.setAttribute("aria-hidden", "true");
+    }
+
+    function renderPresentationSlide() {
+      if (!presentationShell || !playlistPresentationItems.length) {
+        closePresentationMode();
+        return;
+      }
+      const entry = playlistPresentationItems[playlistPresentationIndex];
+      if (!entry) {
+        closePresentationMode();
+        return;
+      }
+      presentationMedia.innerHTML = "";
+      appendPreview(presentationMedia, entry);
+      presentationRunTitle.textContent = entry.model || "Pinned demo run";
+      presentationRunPrompt.textContent = summarizePrompt(entry.prompt);
+      if (presentationOperatorNoteInput) {
+        presentationOperatorNoteInput.value = presentationNoteFor(
+          entry.run_id,
+          playlistPresentationNote(entry),
+        );
+      }
+      presentationTalkTrack.textContent = playlistTalkTrack(entry);
+      presentationProgress.textContent =
+        "Slide " + (playlistPresentationIndex + 1) + " of " + playlistPresentationItems.length +
+        " · run " + shortValue(entry.run_id);
+      if (presentationPrev) presentationPrev.disabled = playlistPresentationIndex === 0;
+      if (presentationNext) presentationNext.disabled = playlistPresentationIndex >= playlistPresentationItems.length - 1;
+      if (presentationReuse) {
+        presentationReuse.onclick = function () {
+          loadPromptIntoGenerator(entry.prompt, "Presentation prompt loaded into the still generator.");
+        };
+      }
+      if (presentationReveal) {
+        presentationReveal.onclick = function () {
+          loadRunIntoSceneReveal(entry.run_id, "Presentation run loaded into the scene reveal form. Interpret when ready.");
+        };
+      }
+    }
+
+    function openPresentationMode(items, startIndex) {
+      if (!presentationShell) return;
+      playlistPresentationItems = items.slice();
+      playlistPresentationIndex = Math.max(0, Math.min(startIndex || 0, playlistPresentationItems.length - 1));
+      presentationShell.hidden = false;
+      presentationShell.setAttribute("aria-hidden", "false");
+      renderPresentationSlide();
+    }
+
+    presentationOperatorNoteInput?.addEventListener("input", function () {
+      const entry = playlistPresentationItems[playlistPresentationIndex];
+      if (!entry) return;
+      setPresentationNoteFor(entry.run_id, presentationOperatorNoteInput.value);
+    });
+
+    function appendPreview(container, entry) {
+      if (!entry.preview_url) return;
+      if ((entry.modality || "image") === "video") {
+        const vid = document.createElement("video");
+        vid.src = entry.preview_url;
+        vid.controls = true;
+        vid.onerror = () => {
+          vid.replaceWith(
+            Object.assign(document.createElement("div"), {
+              className: "meta",
+              textContent: previewFailMessage(true),
+            })
+          );
+        };
+        container.appendChild(vid);
+        return;
+      }
+      const img = document.createElement("img");
+      img.src = entry.preview_url;
+      img.alt = "asset preview";
+      img.onerror = () => {
+        img.replaceWith(
+          Object.assign(document.createElement("div"), {
+            className: "meta",
+            textContent: previewFailMessage(false),
+          })
+        );
+      };
+      container.appendChild(img);
+    }
+
+    function renderFeaturedAsset(entry) {
+      const wrap = document.createElement("article");
+      wrap.className = "recent-feature";
+
+      const media = document.createElement("div");
+      media.className = "recent-feature-media";
+      appendPreview(media, entry);
+      wrap.appendChild(media);
+
+      const copy = document.createElement("div");
+      copy.className = "recent-feature-copy";
+
+      const kicker = document.createElement("span");
+      kicker.className = "recent-kicker";
+      kicker.textContent = (isPinnedRun(entry.run_id) ? "Playlist pick" : "Latest run") + " · " + assetRibbonText(entry);
+      copy.appendChild(kicker);
+
+      const title = document.createElement("h3");
+      title.textContent = entry.model || "Recent generation";
+      copy.appendChild(title);
+
+      const prompt = document.createElement("p");
+      prompt.textContent = summarizePrompt(entry.prompt);
+      copy.appendChild(prompt);
+
+      const actions = document.createElement("div");
+      actions.className = "recent-actions";
+
+      const reuseBtn = document.createElement("button");
+      reuseBtn.type = "button";
+      reuseBtn.textContent = "Reuse this prompt";
+      reuseBtn.addEventListener("click", () => {
+        loadPromptIntoGenerator(entry.prompt, "Recent prompt loaded into the still generator.");
+      });
+      actions.appendChild(reuseBtn);
+
+      const revealBtn = document.createElement("button");
+      revealBtn.type = "button";
+      revealBtn.className = "secondary";
+      revealBtn.textContent = "Send to scene reveal";
+      revealBtn.addEventListener("click", () => {
+        loadRunIntoSceneReveal(
+          entry.run_id,
+          "Recent run loaded into the scene reveal form. Interpret when ready.",
+        );
+      });
+      actions.appendChild(revealBtn);
+
+      const pinBtn = document.createElement("button");
+      pinBtn.type = "button";
+      pinBtn.className = "secondary";
+      pinBtn.textContent = isPinnedRun(entry.run_id) ? "Remove from playlist" : "Add to playlist";
+      pinBtn.addEventListener("click", () => {
+        togglePinnedRun(entry.run_id);
+      });
+      actions.appendChild(pinBtn);
+
+      const copyPromptBtn = document.createElement("button");
+      copyPromptBtn.type = "button";
+      copyPromptBtn.className = "secondary";
+      copyPromptBtn.textContent = "Copy prompt";
+      copyPromptBtn.addEventListener("click", () => {
+        copyTextValue(entry.prompt, "Recent prompt copied to clipboard.", statusEl);
+      });
+      actions.appendChild(copyPromptBtn);
+
+      const copyRunBtn = document.createElement("button");
+      copyRunBtn.type = "button";
+      copyRunBtn.className = "secondary";
+      copyRunBtn.textContent = "Copy run id";
+      copyRunBtn.addEventListener("click", () => {
+        copyTextValue(entry.run_id, "Recent run id copied to clipboard.", sceneStatusEl);
+      });
+      actions.appendChild(copyRunBtn);
+
+      copy.appendChild(actions);
+
+      const stats = document.createElement("div");
+      stats.className = "recent-meta-grid";
+      [
+        ["Run ID", shortValue(entry.run_id)],
+        ["Created", shortValue(entry.created_at)],
+        ["SHA-256", shortValue(entry.asset_sha256)],
+        ["Manifest", shortValue(entry.manifest_key || entry.asset_key)],
+      ].forEach(function (pair) {
+        const stat = document.createElement("div");
+        const strong = document.createElement("strong");
+        strong.textContent = pair[0];
+        const span = document.createElement("span");
+        span.textContent = pair[1];
+        stat.appendChild(strong);
+        stat.appendChild(span);
+        stats.appendChild(stat);
+      });
+      copy.appendChild(stats);
+
+      wrap.appendChild(copy);
+      return wrap;
+    }
+
+    function renderAssetCard(entry) {
+      const card = document.createElement("article");
+      card.className = "asset";
+
+      const topline = document.createElement("div");
+      topline.className = "asset-topline";
+
+      const caption = document.createElement("div");
+      caption.className = "asset-caption";
+
+      const ribbon = document.createElement("span");
+      ribbon.className = "asset-ribbon";
+      ribbon.textContent = assetRibbonText(entry);
+      caption.appendChild(ribbon);
+
+      const title = document.createElement("h3");
+      title.className = "asset-title";
+      title.textContent = entry.model || "Generated asset";
+      caption.appendChild(title);
+
+      const prompt = document.createElement("p");
+      prompt.className = "asset-prompt";
+      prompt.textContent = summarizePrompt(entry.prompt);
+      caption.appendChild(prompt);
+
+      if (isPinnedRun(entry.run_id)) {
+        const pinnedNote = document.createElement("span");
+        pinnedNote.className = "asset-ribbon";
+        pinnedNote.textContent = "Demo playlist pick";
+        caption.appendChild(pinnedNote);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "recent-actions";
+
+      const reuseBtn = document.createElement("button");
+      reuseBtn.type = "button";
+      reuseBtn.textContent = "Reuse";
+      reuseBtn.addEventListener("click", () => {
+        loadPromptIntoGenerator(entry.prompt, "Gallery prompt loaded into the still generator.");
+      });
+      actions.appendChild(reuseBtn);
+
+      const revealBtn = document.createElement("button");
+      revealBtn.type = "button";
+      revealBtn.className = "secondary";
+      revealBtn.textContent = "Reveal";
+      revealBtn.addEventListener("click", () => {
+        loadRunIntoSceneReveal(
+          entry.run_id,
+          "Gallery run loaded into the scene reveal form. Interpret when ready.",
+        );
+      });
+      actions.appendChild(revealBtn);
+
+      const pinBtn = document.createElement("button");
+      pinBtn.type = "button";
+      pinBtn.className = "secondary";
+      pinBtn.textContent = isPinnedRun(entry.run_id) ? "Unpin" : "Pin";
+      pinBtn.addEventListener("click", () => {
+        togglePinnedRun(entry.run_id);
+      });
+      actions.appendChild(pinBtn);
+
+      const copyPromptBtn = document.createElement("button");
+      copyPromptBtn.type = "button";
+      copyPromptBtn.className = "secondary";
+      copyPromptBtn.textContent = "Copy prompt";
+      copyPromptBtn.addEventListener("click", () => {
+        copyTextValue(entry.prompt, "Gallery prompt copied to clipboard.", statusEl);
+      });
+      actions.appendChild(copyPromptBtn);
+
+      const copyRunBtn = document.createElement("button");
+      copyRunBtn.type = "button";
+      copyRunBtn.className = "secondary";
+      copyRunBtn.textContent = "Copy run id";
+      copyRunBtn.addEventListener("click", () => {
+        copyTextValue(entry.run_id, "Gallery run id copied to clipboard.", sceneStatusEl);
+      });
+      actions.appendChild(copyRunBtn);
+
+      caption.appendChild(actions);
+
+      topline.appendChild(caption);
+      card.appendChild(topline);
+
+      appendPreview(card, entry);
+
+      const stats = document.createElement("div");
+      stats.className = "asset-stats";
+      [
+        ["Run", shortValue(entry.run_id)],
+        ["Created", shortValue(entry.created_at)],
+        ["SHA", shortValue(entry.asset_sha256)],
+        ["Asset", shortValue(entry.asset_key)],
+      ].forEach(function (pair) {
+        const stat = document.createElement("div");
+        stat.className = "asset-stat";
+        const strong = document.createElement("strong");
+        strong.textContent = pair[0];
+        const span = document.createElement("span");
+        span.textContent = pair[1];
+        stat.appendChild(strong);
+        stat.appendChild(span);
+        stats.appendChild(stat);
+      });
+      card.appendChild(stats);
+
+      const key = document.createElement("div");
+      key.className = "asset-key";
+      key.textContent = entry.manifest_key || entry.asset_key || "";
+      card.appendChild(key);
+
+      return card;
+    }
+
+    function renderPlaylistCard(entry) {
+      const card = document.createElement("article");
+      card.className = "playlist-card";
+
+      const label = document.createElement("span");
+      label.className = "asset-ribbon";
+      label.textContent = "Pinned demo pick";
+      card.appendChild(label);
+
+      const media = document.createElement("div");
+      media.className = "playlist-card-media";
+      appendPreview(media, entry);
+      card.appendChild(media);
+
+      const title = document.createElement("h3");
+      title.textContent = entry.model || "Pinned run";
+      card.appendChild(title);
+
+      const prompt = document.createElement("p");
+      prompt.textContent = summarizePrompt(entry.prompt);
+      card.appendChild(prompt);
+
+      const actions = document.createElement("div");
+      actions.className = "playlist-actions";
+
+      const presentBtn = document.createElement("button");
+      presentBtn.type = "button";
+      presentBtn.textContent = "Present";
+      presentBtn.addEventListener("click", () => {
+        const pinned = playlistPresentationItems.length ? playlistPresentationItems : [];
+        const source = pinned.length ? pinned : [entry];
+        const startIndex = Math.max(0, source.findIndex(function (item) { return item.run_id === entry.run_id; }));
+        openPresentationMode(source, startIndex);
+      });
+      actions.appendChild(presentBtn);
+
+      const reuseBtn = document.createElement("button");
+      reuseBtn.type = "button";
+      reuseBtn.textContent = "Reuse";
+      reuseBtn.addEventListener("click", () => {
+        loadPromptIntoGenerator(entry.prompt, "Playlist prompt loaded into the still generator.");
+      });
+      actions.appendChild(reuseBtn);
+
+      const revealBtn = document.createElement("button");
+      revealBtn.type = "button";
+      revealBtn.className = "secondary";
+      revealBtn.textContent = "Reveal";
+      revealBtn.addEventListener("click", () => {
+        loadRunIntoSceneReveal(
+          entry.run_id,
+          "Playlist run loaded into the scene reveal form. Interpret when ready.",
+        );
+      });
+      actions.appendChild(revealBtn);
+
+      const unpinBtn = document.createElement("button");
+      unpinBtn.type = "button";
+      unpinBtn.className = "secondary";
+      unpinBtn.textContent = "Unpin";
+      unpinBtn.addEventListener("click", () => {
+        togglePinnedRun(entry.run_id);
+      });
+      actions.appendChild(unpinBtn);
+
+      card.appendChild(actions);
+      return card;
+    }
+
+    function renderPlaylistStrip(assets) {
+      if (!playlistStrip) return;
+      const pinned = assets.filter(function (entry) {
+        return isPinnedRun(entry.run_id);
+      }).slice(0, MAX_PINNED_RUNS);
+      playlistPresentationItems = pinned.slice();
+      playlistStrip.innerHTML = "";
+      playlistStrip.hidden = pinned.length === 0;
+      if (!pinned.length) return;
+
+      const label = document.createElement("div");
+      label.className = "playlist-label";
+      label.textContent = "Demo playlist · " + pinned.length + "/" + MAX_PINNED_RUNS;
+      playlistStrip.appendChild(label);
+
+      if (pinned.length) {
+        const launch = document.createElement("button");
+        launch.type = "button";
+        launch.className = "secondary";
+        launch.textContent = "Play presentation mode";
+        launch.addEventListener("click", () => {
+          openPresentationMode(pinned, 0);
+        });
+        playlistStrip.appendChild(launch);
+      }
+
+      const grid = document.createElement("div");
+      grid.className = "playlist-grid";
+      pinned.forEach(function (entry) {
+        grid.appendChild(renderPlaylistCard(entry));
+      });
+      playlistStrip.appendChild(grid);
+    }
+
+    async function loadAssets() {
+      try {
+        const res = await fetch("/api/assets?limit=12");
+        const data = await res.json();
+        const assets = sortAssetsForShowcase(data.assets || []);
+        renderPlaylistStrip(assets);
+        if (!assets.length) {
+          assetsList.innerHTML = "";
+          if (playlistStrip) {
+            assetsList.appendChild(playlistStrip);
+          }
+          const empty = document.createElement("div");
+          empty.className = "asset-empty";
+          empty.textContent = "No local index entries yet.";
+          assetsList.appendChild(empty);
+          return;
+        }
+        assetsList.innerHTML = "";
+        if (playlistStrip) {
+          assetsList.appendChild(playlistStrip);
+        }
+        const featured = assets[0];
+        assetsList.appendChild(renderFeaturedAsset(featured));
+
+        const grid = document.createElement("div");
+        grid.className = "asset-grid";
+        assets.slice(1).forEach(function (a) {
+          grid.appendChild(renderAssetCard(a));
+        });
+        if (assets.length > 1) {
+          assetsList.appendChild(grid);
+        }
+      } catch (err) {
+        assetsList.innerHTML = "";
+        if (playlistStrip) {
+          playlistStrip.hidden = true;
+          assetsList.appendChild(playlistStrip);
+        }
+        const fail = document.createElement("div");
+        fail.className = "asset-empty";
+        fail.textContent = "Failed to load assets: " + err;
+        assetsList.appendChild(fail);
+      }
+    }
+
+    document.getElementById("gen-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const prompt = document.getElementById("prompt").value.trim();
+      if (!prompt) return;
+      const peopleHint = /\b(person|people|human|man|woman|girl|boy|face|skin|portrait|photoreal)\b/i.test(prompt);
+      goBtn.disabled = true;
+      // Three-way progress copy (matches the health===null comment above):
+      // unknown → neutral; RT4D → path-trace wording; NVIDIA → FLUX cold-start.
+      let progressMsg;
+      const stillQuality = document.getElementById("still-quality")?.value || "draft";
+      if (health === null) {
+        progressMsg = "Generating…";
+      } else if (isRt4dBackend()) {
+        progressMsg =
+          "Rendering… MRS RT4D deterministic path trace (procedural 4D scene " +
+          "selection — not diffusion, not text-to-image). Quality=" +
+          stillQuality +
+          (stillQuality === "draft"
+            ? " — typically tens of seconds on a shared CPU."
+            : " — may take longer; reduce if the request times out.");
+      } else if (peopleHint) {
+        progressMsg =
+          "Generating… people/faces often blank on FLUX.1-schnell — will auto-retry abstract if needed (1–3+ min)";
+      } else {
+        progressMsg = "Generating… (FLUX may take 1–3 min on cold start)";
+      }
+      setStatus(statusEl, progressMsg, "");
+      preview.hidden = true;
+      if (dualPreviews) dualPreviews.hidden = true;
+      try {
+        const thenScene = document.getElementById("then-scene")?.checked === true;
+        const modelOverride = sessionStorage.getItem(BYOK_MODEL);
+        const mediaStyle = document.getElementById("media-style")?.value || "default";
+        const genBody = {
+          prompt,
+          embed: true,
+          then_scene: thenScene,
+          quality: stillQuality,
+          style: mediaStyle,
+        };
+        if (modelOverride) genBody.model = modelOverride;
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: byokHeaders(),
+          body: JSON.stringify(genBody),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = data.detail || res.statusText;
+          let msg = typeof detail === "string" ? detail : JSON.stringify(detail);
+          if (/504/i.test(msg) && (/_raw/i.test(msg) || /empty 504/i.test(msg))) {
+            msg +=
+              " — Wait 30–60s, then retry once. Auto-retry is off by default to avoid double NIM billing.";
+          }
+          setStatus(statusEl, msg, "err");
+          return;
+        }
+        resultEl.hidden = false;
+        renderEntry(resultMeta, data);
+        rememberLatestStill(data);
+        dualPreviews.hidden = true;
+        preview.hidden = true;
+        if (data.then_scene && data.then_scene.render && data.then_scene.render.preview_url) {
+          dualPreviews.hidden = false;
+          previewFlux.src = data.preview_url || "";
+          previewMrs.src = data.then_scene.render.preview_url;
+          preview.hidden = true;
+        } else if (data.preview_url) {
+          preview.src = data.preview_url;
+          preview.hidden = false;
+          preview.onerror = () => {
+            setStatus(
+              statusEl,
+              "Image metadata OK but preview failed — usually B2 free-tier " +
+                "transaction cap (AccessDenied on download). Caps reset ~00:00 GMT; " +
+                "after that, generate once and keep the tab open.",
+              "err"
+            );
+          };
+        }
+        let doneMsg = data.dry_run ? "Dry-run complete (not live NIM)." : "Done.";
+        if (data.provider === "rt4d-render") {
+          const p = data.provenance || {};
+          doneMsg +=
+            " MRS RT4D render · scene " + (p.scene || "—") +
+            " · seed " + (p.seed != null ? p.seed : "—") +
+            " · quality " + (p.quality || "—") +
+            " (deterministic procedural 4D — not diffusion).";
+          if (nvidiaVisionReady()) {
+            doneMsg += " Use \u201cSend RT4D still \u2192 NVIDIA\u201d to interpret with NIM vision.";
+            if (health && health.polish && health.polish.available) {
+              doneMsg += " Also \u201cPolish with FLUX (img2img)\u201d for diffusion cleanup.";
+            }
+          } else if (health && !health.nvidia_configured) {
+            doneMsg += " NVIDIA_API_KEY missing — RT4D still is usable; NVIDIA interpret unavailable.";
+            if (health && health.polish && health.polish.available) {
+              doneMsg += " \u201cPolish with FLUX (img2img)\u201d available for diffusion cleanup.";
+            }
+          }
+        }
+        if (data.then_scene) {
+          doneMsg += isRt4dBackend()
+            ? " Dual path: RT4D concept + MRS scene interpretation frame."
+            : " Dual path: FLUX concept + MRS scene interpretation frame.";
+        } else if (data.then_scene_error) {
+          doneMsg += " then_scene skipped: " + (
+            typeof data.then_scene_error === "string"
+              ? data.then_scene_error
+              : JSON.stringify(data.then_scene_error)
+          );
+        }
+        setStatus(statusEl, doneMsg, data.dry_run ? "warn" : "");
+        await loadAssets();
+      } catch (err) {
+        setStatus(statusEl, String(err), "err");
+      } finally {
+        goBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("scene-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const fileInput = document.getElementById("scene-file");
+      const runId = document.getElementById("scene-run-id").value.trim();
+      const file = fileInput.files && fileInput.files[0];
+      if (!file && !runId) {
+        setStatus(sceneStatusEl, "Choose an image or paste a run_id.", "warn");
+        return;
+      }
+      sceneGoBtn.disabled = true;
+      const quality = document.getElementById("scene-quality").value || "draft";
+      setStatus(
+        sceneStatusEl,
+        quality === "final"
+          ? "Interpreting image → SceneSpecification → MRS full-frame (final quality; may take longer)…"
+          : "Interpreting image → SceneSpecification → MRS draft still (fast / noisier)…",
+        ""
+      );
+      scenePreview.hidden = true;
+      try {
+        const body = { render: true, quality };
+        if (file) {
+          body.image_base64 = await fileToDataUrl(file);
+        } else {
+          body.run_id = runId;
+        }
+        if (document.getElementById("scene-require-nvidia")?.checked) {
+          body.require_nvidia = true;
+        }
+        const res = await fetch("/api/image-to-scene", {
+          method: "POST",
+          headers: byokHeaders(),
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = data.detail || res.statusText;
+          setStatus(
+            sceneStatusEl,
+            typeof detail === "string" ? detail : JSON.stringify(detail),
+            "err"
+          );
+          return;
+        }
+        sceneResultEl.hidden = false;
+        const render = data.render || {};
+        renderEntry(sceneResultMeta, {
+          ...render,
+          analysis_mode: data.analysis_mode,
+          scene_source: data.source,
+          note: data.note,
+          image_sha256: data.image_sha256,
+        });
+        const lines = (sceneResultMeta.textContent || "").split("\n");
+        lines.push("analysis_mode: " + (data.analysis_mode || "—"));
+        lines.push("scene_source: " + (data.source || "—"));
+        if (data.note) lines.push(data.note);
+        sceneResultMeta.textContent = lines.join("\n");
+        if (render.preview_url) {
+          scenePreview.src = render.preview_url;
+          scenePreview.hidden = false;
+        }
+        setStatus(
+          sceneStatusEl,
+          "Done · " + (data.source || "—") + " · scene interpretation (not reconstruction).",
+          ""
+        );
+        await loadAssets();
+      } catch (err) {
+        setStatus(sceneStatusEl, String(err), "err");
+      } finally {
+        sceneGoBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("video-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const prompt = document.getElementById("video-prompt").value.trim();
+      if (!prompt) return;
+      videoGoBtn.disabled = true;
+      setStatus(
+        videoStatusEl,
+        "Generating video… (local frames flipbook: seeded stills → ffmpeg). " +
+          "This can take a while for many frames; keep this tab open.",
+        ""
+      );
+      videoPreview.hidden = true;
+      videoPreview.removeAttribute("src");
+      try {
+        const res = await fetch("/api/generate-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, embed: true }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = data.detail || res.statusText;
+          let msg = typeof detail === "string" ? detail : JSON.stringify(detail);
+          if (res.status === 503) {
+            msg += "\n(Video disabled, backend unavailable, or model not available.)";
+          } else if (res.status === 502) {
+            msg +=
+              "\n(Upstream/transfer failure — local sd-server down, cold start, or B2 caps are common causes.)";
+          }
+          setStatus(videoStatusEl, msg, "err");
+          return;
+        }
+        videoResultEl.hidden = false;
+        renderEntry(videoResultMeta, data);
+        if (data.preview_url) {
+          videoPreview.src = data.preview_url;
+          videoPreview.hidden = false;
+          videoPreview.onerror = () => {
+            setStatus(
+              videoStatusEl,
+              "Video metadata OK but preview failed — local cache pruned or B2 free-tier " +
+                "transaction cap. Caps reset ~00:00 GMT; regenerate after deploy so " +
+                "/api/preview can serve the mp4.",
+              "err"
+            );
+          };
+        }
+        setStatus(
+          videoStatusEl,
+          (data.dry_run ? "Dry-run video stub (not live generation)." : "Video done.") +
+            " Model: " + (data.model || "—") + " · provider: " + (data.provider || "—"),
+          data.dry_run ? "warn" : ""
+        );
+        await loadAssets();
+      } catch (err) {
+        setStatus(videoStatusEl, String(err), "err");
+      } finally {
+        videoGoBtn.disabled = false;
+      }
+    });
+
+    // Chat (Lemonade local text)
+    const chatLog = document.getElementById("chat-log");
+    const chatStatusEl = document.getElementById("chat-status");
+    const chatGoBtn = document.getElementById("chat-go");
+    const chatInput = document.getElementById("chat-input");
+    const chatHistory = [];
+    function appendChat(role, text) {
+      const row = document.createElement("div");
+      row.style.cssText =
+        "margin:0.35rem 0;padding:0.5rem 0.7rem;border-radius:6px;white-space:pre-wrap;font-size:0.95rem;";
+      row.style.background =
+        role === "assistant"
+          ? "rgba(124,224,177,0.08)"
+          : "rgba(255,255,255,0.04)";
+      row.style.border =
+        role === "assistant" ? "1px solid rgba(124,224,177,0.25)" : "1px solid var(--line)";
+      const who = document.createElement("strong");
+      who.textContent = role === "assistant" ? "MRS · " : "You · ";
+      who.style.color = role === "assistant" ? "var(--accent)" : "var(--muted)";
+      row.appendChild(who);
+      row.appendChild(document.createTextNode(text));
+      chatLog.appendChild(row);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+    document.getElementById("chat-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+      chatGoBtn.disabled = true;
+      chatHistory.push({ role: "user", content: text });
+      appendChat("user", text);
+      setStatus(chatStatusEl, "Thinking… (local inference)", "");
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: chatHistory, max_tokens: 256 }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setStatus(chatStatusEl, String(data.detail || res.statusText), "err");
+          chatHistory.pop();
+          return;
+        }
+        const reply = data.text || "(no text)";
+        chatHistory.push({ role: "assistant", content: reply });
+        appendChat("assistant", reply);
+        setStatus(chatStatusEl, "", "");
+        chatInput.value = "";
+      } catch (err) {
+        setStatus(chatStatusEl, String(err), "err");
+        chatHistory.pop();
+      } finally {
+        chatGoBtn.disabled = false;
+      }
+    });
+
+    // TTS (Lemonade local kokoro)
+    const ttsStatusEl = document.getElementById("tts-status");
+    const ttsAudio = document.getElementById("tts-audio");
+    const ttsGoBtn = document.getElementById("tts-go");
+    document.getElementById("tts-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const text = document.getElementById("tts-text").value.trim();
+      if (!text) return;
+      ttsGoBtn.disabled = true;
+      setStatus(ttsStatusEl, "Synthesizing speech… (local kokoro)", "");
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setStatus(ttsStatusEl, String(data.detail || res.statusText), "err");
+          return;
+        }
+        if (!data.audio_base64) {
+          setStatus(ttsStatusEl, "TTS succeeded but no audio returned.", "warn");
+          return;
+        }
+        const bytes = atob(data.audio_base64);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const blob = new Blob([arr], { type: "audio/mpeg" });
+        ttsAudio.src = URL.createObjectURL(blob);
+        ttsAudio.hidden = false;
+        setStatus(
+          ttsStatusEl,
+          "Speech ready. Model: " + (data.model || "—") + " · " + (data.bytes_len || 0) + " bytes",
+          ""
+        );
+        ttsAudio.play().catch(() => {});
+      } catch (err) {
+        setStatus(ttsStatusEl, String(err), "err");
+      } finally {
+        ttsGoBtn.disabled = false;
+      }
+    });
+
+    // STT (Lemonade local Whisper)
+    const sttStatusEl = document.getElementById("stt-status");
+    const sttResultEl = document.getElementById("stt-result");
+    const sttGoBtn = document.getElementById("stt-go");
+    document.getElementById("stt-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const file = document.getElementById("stt-file").files[0];
+      if (!file) return;
+      sttGoBtn.disabled = true;
+      setStatus(sttStatusEl, "Transcribing… (local Whisper)", "");
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/stt", { method: "POST", body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setStatus(sttStatusEl, String(data.detail || res.statusText), "err");
+          return;
+        }
+        sttResultEl.hidden = false;
+        sttResultEl.textContent = data.text || "(no transcription)";
+        setStatus(sttStatusEl, "Transcribed. Model: " + (data.model || "—"), "");
+      } catch (err) {
+        setStatus(sttStatusEl, String(err), "err");
+      } finally {
+        sttGoBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("search-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const query = document.getElementById("search-q").value.trim();
+      if (!query) return;
+      searchResults.textContent = "Searching…";
+      try {
+        const res = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, limit: 8 }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = data.detail || res.statusText;
+          searchResults.textContent = typeof detail === "string" ? detail : JSON.stringify(detail);
+          return;
+        }
+        const rows = data.results || [];
+        if (!rows.length) {
+          searchResults.textContent = "No embedded assets yet — generate live first.";
+          return;
+        }
+        searchResults.textContent = rows
+          .map((r) => (
+            r.score.toFixed(3) + "  [" + (r.modality || "?") + "]  " +
+            (r.prompt || "").slice(0, 100)
+          ))
+          .join("\n");
+      } catch (err) {
+        searchResults.textContent = String(err);
+      }
+    });
+
+    document.getElementById("refresh").addEventListener("click", () => loadAssets());
+    document.getElementById("hero-start")?.addEventListener("click", () => {
+      const firstCard = document.querySelector(".curated-card[data-prompt]");
+      if (firstCard) firstCard.click();
+    });
+    document.getElementById("hero-scene-flow")?.addEventListener("click", () => {
+      document.getElementById("image-to-scene")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    document.getElementById("curated-prompts")?.addEventListener("click", (ev) => {
+      const card = ev.target && ev.target.closest ? ev.target.closest(".curated-card[data-prompt]") : null;
+      if (!card) return;
+      const nextPrompt = card.getAttribute("data-prompt") || "";
+      const promptEl = document.getElementById("prompt");
+      if (promptEl) {
+        promptEl.value = nextPrompt;
+        promptEl.focus();
+        promptEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      const thenScene = document.getElementById("then-scene");
+      if (thenScene) thenScene.checked = true;
+      setStatus(statusEl, "Curated prompt loaded. Generate to show the concept still and the scene reveal lane together.", "");
+    });
+    presentationClose?.addEventListener("click", () => closePresentationMode());
+    presentationPrev?.addEventListener("click", () => {
+      if (playlistPresentationIndex > 0) {
+        playlistPresentationIndex -= 1;
+        renderPresentationSlide();
+      }
+    });
+    presentationNext?.addEventListener("click", () => {
+      if (playlistPresentationIndex < playlistPresentationItems.length - 1) {
+        playlistPresentationIndex += 1;
+        renderPresentationSlide();
+      }
+    });
+    document.addEventListener("keydown", (ev) => {
+      if (!presentationShell || presentationShell.hidden) return;
+      if (ev.key === "Escape") {
+        closePresentationMode();
+      } else if (ev.key === "ArrowRight") {
+        if (playlistPresentationIndex < playlistPresentationItems.length - 1) {
+          playlistPresentationIndex += 1;
+          renderPresentationSlide();
+        }
+      } else if (ev.key === "ArrowLeft") {
+        if (playlistPresentationIndex > 0) {
+          playlistPresentationIndex -= 1;
+          renderPresentationSlide();
+        }
+      }
+    });
+
+    if (sendRt4dNvidiaBtn) {
+      sendRt4dNvidiaBtn.addEventListener("click", async () => {
+        if (!latestStill || !latestStill.run_id) {
+          setStatus(statusEl, "Generate an RT4D still first.", "warn");
+          return;
+        }
+        if (health && !health.nvidia_configured) {
+          setStatus(
+            statusEl,
+            "NVIDIA unavailable: NVIDIA_API_KEY not configured. RT4D still is unchanged.",
+            "err"
+          );
+          return;
+        }
+        sendRt4dNvidiaBtn.disabled = true;
+        goBtn.disabled = true;
+        const quality = document.getElementById("still-quality")?.value || "draft";
+        setStatus(
+          statusEl,
+          "Sending RT4D still to NVIDIA NIM vision → SceneSpecification → MRS frame…",
+          ""
+        );
+        try {
+          const res = await fetch("/api/rt4d-to-nvidia", {
+            method: "POST",
+            headers: byokHeaders(),
+            body: JSON.stringify({
+              run_id: latestStill.run_id,
+              render: true,
+              quality,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            setStatus(statusEl, nvidiaUnavailableMessage(data.detail), "err");
+            // Keep the RT4D preview visible.
+            if (latestStill.preview_url) {
+              preview.src = latestStill.preview_url;
+              preview.hidden = false;
+              dualPreviews.hidden = true;
+            }
+            return;
+          }
+          resultEl.hidden = false;
+          const render = data.render || {};
+          renderEntry(resultMeta, {
+            ...render,
+            source_run_id: data.source_run_id || latestStill.run_id,
+            scene_source: data.source,
+            analysis_mode: data.analysis_mode,
+          });
+          if (render.preview_url && latestStill.preview_url) {
+            dualPreviews.hidden = false;
+            preview.hidden = true;
+            previewFlux.src = latestStill.preview_url;
+            previewMrs.src = render.preview_url;
+            if (previewFluxCaption) previewFluxCaption.textContent = "RT4D still (source)";
+          } else if (render.preview_url) {
+            dualPreviews.hidden = true;
+            preview.src = render.preview_url;
+            preview.hidden = false;
+          }
+          setStatus(
+            statusEl,
+            "Done · NVIDIA NIM vision (" +
+              (data.source || "—") +
+              ") from run " +
+              (data.source_run_id || latestStill.run_id) +
+              " · not img2img, not reconstruction.",
+            ""
+          );
+          await loadAssets();
+        } catch (err) {
+          setStatus(statusEl, String(err), "err");
+        } finally {
+          goBtn.disabled = false;
+          updateRt4dNvidiaControls();
+        }
+      });
+    }
+
+    if (polishBtn) {
+      polishBtn.addEventListener("click", async () => {
+        if (!latestStill || !latestStill.run_id) {
+          setStatus(statusEl, "Generate an RT4D still first.", "warn");
+          return;
+        }
+        polishBtn.disabled = true;
+        goBtn.disabled = true;
+        const polishPromptVal = (polishPrompt && polishPrompt.value.trim()) || "";
+        const strength = polishStrength
+          ? parseInt(polishStrength.value, 10) / 100
+          : 0.45;
+        setStatus(
+          statusEl,
+          "Polishing RT4D still with FLUX img2img (diffusion cleanup)…",
+          ""
+        );
+        try {
+          const body = {
+            run_id: latestStill.run_id,
+            prompt: polishPromptVal || "enhance materials, refine contrast and lighting",
+            strength,
+            style: document.getElementById("media-style")?.value || "default",
+          };
+          const res = await fetch("/api/polish-still", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const msg = data.detail && typeof data.detail === "object"
+              ? (data.detail.message || JSON.stringify(data.detail))
+              : (typeof data.detail === "string" ? data.detail : "Polish failed");
+            setStatus(statusEl, msg, "err");
+            if (latestStill.preview_url) {
+              preview.src = latestStill.preview_url;
+              preview.hidden = false;
+              dualPreviews.hidden = true;
+            }
+            return;
+          }
+          resultEl.hidden = false;
+          dualPreviews.hidden = true;
+          preview.hidden = false;
+          preview.src = data.preview_url || latestStill.preview_url;
+          renderEntry(resultMeta, {
+            run_id: data.run_id,
+            model: data.model,
+            provider: data.provider,
+            asset_sha256: data.asset_sha256,
+            source_run_id: data.structure_run_id,
+            strength: data.strength,
+            img2img: true,
+          });
+          setStatus(
+            statusEl,
+            "Done · Polish via " + (data.provider || "—") +
+              " (strength=" + data.strength + ") · " +
+              "Structure pass = MRS; polish = diffusion edit.",
+            ""
+          );
+          await loadAssets();
+        } catch (err) {
+          setStatus(statusEl, String(err), "err");
+        } finally {
+          goBtn.disabled = false;
+          updateRt4dNvidiaControls();
+        }
+      });
+    }
+
+    const e3dForm = document.getElementById("e3d-form");
+    const e3dStatus = document.getElementById("e3d-status");
+    const e3dResult = document.getElementById("e3d-result");
+    const e3dMeta = document.getElementById("e3d-result-meta");
+    const e3dPreview = document.getElementById("e3d-preview");
+    const e3dGo = document.getElementById("e3d-go");
+    if (e3dForm) {
+      e3dForm.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        e3dGo.disabled = true;
+        const doPolish = document.getElementById("e3d-polish")?.checked;
+        const polishPrompt = document.getElementById("e3d-prompt")?.value.trim() || "";
+        if (doPolish && !polishPrompt) {
+          setStatus(e3dStatus, "Polish prompt required when polish is checked.", "warn");
+          e3dGo.disabled = false;
+          return;
+        }
+        setStatus(e3dStatus, "Rendering Engine3D structure still…", "");
+        try {
+          const body = {
+            width: Number(document.getElementById("e3d-width").value) || 256,
+            height: Number(document.getElementById("e3d-height").value) || 256,
+            aov_depth: true,
+            aov_normal: true,
+            polish: !!doPolish,
+          };
+          const bg = document.getElementById("e3d-bg-run")?.value.trim();
+          if (bg) body.rt4d_background_run_id = bg;
+          if (doPolish) {
+            body.prompt = polishPrompt;
+            body.polish_strength = 0.45;
+            body.style = document.getElementById("media-style")?.value || "default";
+          }
+          const res = await fetch("/api/engine3d-still", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const detail = data.detail || res.statusText;
+            setStatus(
+              e3dStatus,
+              typeof detail === "string" ? detail : JSON.stringify(detail),
+              "err"
+            );
+            return;
+          }
+          e3dResult.hidden = false;
+          const show =
+            (data.polish && data.polish.preview_url) ||
+            (data.composite && data.composite.preview_url) ||
+            (data.structure && data.structure.preview_url);
+          const metaSrc = data.polish || data.composite || data.structure || {};
+          renderEntry(e3dMeta, {
+            ...metaSrc,
+            structure_source:
+              (data.composite && "engine3d_composite") ||
+              (data.structure && data.structure.structure_source) ||
+              "engine3d_raster",
+            note: data.note,
+          });
+          if (show) {
+            e3dPreview.src = show;
+            e3dPreview.hidden = false;
+          }
+          setStatus(
+            e3dStatus,
+            "Done · Engine3D structure" +
+              (data.composite ? " + RT4D composite" : "") +
+              (data.polish ? " + polish" : "") +
+              " · not RT4D sphere-bridge for faces.",
+            ""
+          );
+          await loadAssets();
+        } catch (err) {
+          setStatus(e3dStatus, String(err), "err");
+        } finally {
+          e3dGo.disabled = false;
+        }
+      });
+    }
+
+    fetch("/health").then(r => r.json()).then(h => {
+      health = h;
+      updateRt4dNvidiaControls();
+      refreshByokDiag();
+      const cosmosSection = document.getElementById("nim-cosmos");
+      const videoOn = h.video_enabled === true;
+      if (cosmosSection) {
+        cosmosSection.hidden = !videoOn;
+      }
+      const sessionKey = !!sessionStorage.getItem(BYOK_KEY);
+      if (!h.nvidia_configured && !sessionKey && !h.dry_run && h.image_backend !== "rt4d") {
+        setHeroHealth("NVIDIA key not configured on the server. Use Local BYOK or run RT4D-backed concept stills.");
+        setStatus(statusEl, h.nvidia_help || "NVIDIA_API_KEY not configured — set server env or use Settings · Local BYOK.", "warn");
+      } else if (h.image_backend === "rt4d" && h.rt4d && !h.rt4d.available) {
+        setHeroHealth("RT4D backend is selected, but this deploy is missing the required Node/script path.");
+        setStatus(
+          statusEl,
+          "RT4D backend selected but Node/script unavailable — " +
+            (h.rt4d_note || "see README for Node + render-still.mjs setup."),
+          "warn",
+        );
+      } else if (h.b2_error) {
+        setHeroHealth("Storage is reachable enough to boot, but the B2 probe reported an operator-visible error.");
+        setStatus(statusEl, "B2 probe error: " + h.b2_error, "err");
+      } else if (h.b2_configured) {
+        const backendLabel =
+          h.image_backend === "rt4d"
+            ? "rt4d-render"
+            : ("image " + h.image_model);
+        // Operators read "not pulling NIM" as a wiring bug; when the NIM probe
+        // reports unavailable it is upstream, so say it in the ready line.
+        const nimDown =
+          h.nvidia_nim_status && h.nvidia_nim_status.status === "unavailable"
+            ? " · NIM FLUX unavailable (" +
+              (h.nvidia_nim_status.http_status || "no status") + ")"
+            : "";
+        const visionNote =
+          h.rt4d_to_nvidia && h.rt4d_to_nvidia.available
+            ? " · RT4D→NVIDIA vision ready"
+            : (h.image_backend === "rt4d" && !h.nvidia_configured
+              ? " · RT4D→NVIDIA vision needs NVIDIA_API_KEY"
+              : "");
+        setStatus(
+          statusEl,
+          "Ready · B2 " + h.b2_bucket +
+            " · " + backendLabel +
+            nimDown +
+            visionNote +
+            (h.polish && h.polish.available ? " · polish ready" : "") +
+            (h.image_fallback_to_rt4d ? " · RT4D fallback on" : "") +
+            (videoOn
+              ? (" · video " + (h.video_model || "—"))
+              : " · video off (stills demo)") +
+            " · embed " + h.embed_model
+        );
+        setHeroHealth(
+          "Ready on " +
+          (h.image_backend === "rt4d" ? "RT4D deterministic stills" : "NVIDIA still generation") +
+          " with " +
+          (h.prompt_scene && h.prompt_scene.available ? "prompt-to-scene disclosure live" : "scene interpretation available via image lane") +
+          "."
+        );
+      } else if (!h.dry_run) {
+        const backendLabel =
+          h.image_backend === "rt4d" ? "rt4d-render" : ("image " + h.image_model);
+        setHeroHealth("Ready without B2 persistence. Use the live forms for local previews and operator validation.");
+        setStatus(statusEl, "Ready · " + backendLabel + (videoOn ? "" : " · video off"), "");
+      }
+    }).catch(() => {
+      setHeroHealth("Could not read /health yet. The UI will stay conservative until the service answers.");
+    });
+
+    loadAssets();
+  </script>
+</body>
+</html>
+>>>>>>> Stashed changes

@@ -11,7 +11,7 @@ import { EventEmitter } from 'events';
 class MytharLexicon extends EventEmitter {
   constructor(options = {}) {
     super();
-    this.mytharPath = options.mytharPath || 'G:\\Mythar\\sovereign-reconstruction-engine';
+    this.mytharPath = options.mytharPath || '/media/jon/New Volume/Mandala Rendering Software/mrs/narrative/sre';
     this.pythonExe = options.pythonExe || 'python';
     this.cache = {
       roots: null,
@@ -33,6 +33,8 @@ class MytharLexicon extends EventEmitter {
       this.cache.clusters = await this.loadClusters();
       // Load PGC contract
       this.cache.pgcContract = await this.loadPGCContract();
+      // Load Mythar Natural Voice config
+      this.cache.voiceConfig = await this.loadVoiceConfig();
       this.emit('ready', this.cache);
     } catch (error) {
       console.warn('[MytharLexicon] Failed to load from Python, using embedded fallback:', error.message);
@@ -290,7 +292,7 @@ print(json.dumps({
 class MytharGovernance extends EventEmitter {
   constructor(options = {}) {
     super();
-    this.mytharPath = options.mytharPath || 'G:\\Mythar\\sovereign-reconstruction-engine';
+    this.mytharPath = options.mytharPath || '/media/jon/New Volume/Mandala Rendering Software/mrs/narrative/sre';
     this.pythonExe = options.pythonExe || 'python';
   }
 
@@ -442,7 +444,7 @@ class MytharRegistry extends EventEmitter {
 class MytharTransducers extends EventEmitter {
   constructor(options = {}) {
     super();
-    this.mytharPath = options.mytharPath || 'G:\\Mythar\\sovereign-reconstruction-engine';
+    this.mytharPath = options.mytharPath || '/media/jon/New Volume/Mandala Rendering Software/mrs/narrative/sre';
     this.pythonExe = options.pythonExe || 'python';
   }
 

@@ -1,6 +1,6 @@
 {
-  "name": "mandala-rendering-software",
-  "version": "1.5.0",
+  "name": "Mandala Rendering Software",
+  "version": "1.6.0",
   "private": true,
   "type": "module",
   "main": "index.js",

@@ -19,7 +19,7 @@ import { Hypersphere, OrientedCapsule } from "../mrs/packages/renderer-core/src/
 import { vec4 } from "../mrs/packages/renderer-core/src/render/rt4d/math/vec4.js";
 
 // Default proportions (relative to height)
-const PROPORTIONS = {
+export const PROPORTIONS = {
   headRadius: 0.15,
   neckLength: 0.08,
   torsoTop: 0.35,      // y offset from base
@@ -41,7 +41,7 @@ const PROPORTIONS = {
  * @param {number} baseY - vertical base position
  * @returns {Object} joint positions as vec4-compatible {x,y,z,w}
  */
-function computeJoints(pose, baseY = 0) {
+export function computeJoints(pose, baseY = 0, origin = [0, 0, 0, 0]) {
   const p = PROPORTIONS;
   const armAngle = pose.armAngle || 0;       // radians from body
   const armSwing = pose.armSwing || 0;        // forward/back swing
@@ -49,31 +49,33 @@ function computeJoints(pose, baseY = 0) {
   const legSwing = pose.legSwing || 0;        // forward/back swing
   const headTilt = pose.headTilt || 0;        // radians tilt forward
   const bodyLean = pose.bodyLean || 0;        // lean forward
-  const w = pose.w || 0;                      // 4th dimension offset
+  const ox = origin[0] || 0;
+  const oz = origin[2] || 0;
+  const w = (origin[3] ?? pose.w) || 0;       // 4th dimension offset
 
-  // Torso
-  const torsoTop = { x: Math.sin(bodyLean) * 0.05, y: baseY + p.torsoTop, z: 0, w };
-  const torsoBottom = { x: 0, y: baseY + p.torsoBottom, z: 0, w };
+  // Torso (origin.x/z place the actor in the world)
+  const torsoTop = { x: ox + Math.sin(bodyLean) * 0.05, y: baseY + p.torsoTop, z: oz, w };
+  const torsoBottom = { x: ox, y: baseY + p.torsoBottom, z: oz, w };
 
   // Neck and head
-  const neckTop = { x: torsoTop.x, y: torsoTop.y + p.neckLength, z: 0, w };
-  const head = { x: neckTop.x + Math.sin(headTilt) * 0.05, y: neckTop.y + p.headRadius * 1.2, z: 0, w };
+  const neckTop = { x: torsoTop.x, y: torsoTop.y + p.neckLength, z: oz, w };
+  const head = { x: neckTop.x + Math.sin(headTilt) * 0.05, y: neckTop.y + p.headRadius * 1.2, z: oz, w };
 
   // Shoulders
-  const lShoulder = { x: torsoTop.x - p.shoulderWidth, y: torsoTop.y - 0.02, z: 0, w };
-  const rShoulder = { x: torsoTop.x + p.shoulderWidth, y: torsoTop.y - 0.02, z: 0, w };
+  const lShoulder = { x: torsoTop.x - p.shoulderWidth, y: torsoTop.y - 0.02, z: oz, w };
+  const rShoulder = { x: torsoTop.x + p.shoulderWidth, y: torsoTop.y - 0.02, z: oz, w };
 
   // Upper arms
   const lElbow = {
     x: lShoulder.x - Math.sin(armAngle) * p.upperArmLength,
     y: lShoulder.y - Math.cos(armAngle) * p.upperArmLength * 0.3 + armSwing * 0.1,
-    z: armSwing * p.upperArmLength * 0.5,
+    z: oz + armSwing * p.upperArmLength * 0.5,
     w,
   };
   const rElbow = {
     x: rShoulder.x + Math.sin(armAngle) * p.upperArmLength,
     y: rShoulder.y - Math.cos(armAngle) * p.upperArmLength * 0.3 - armSwing * 0.1,
-    z: -armSwing * p.upperArmLength * 0.5,
+    z: oz - armSwing * p.upperArmLength * 0.5,
     w,
   };
 
@@ -92,20 +94,20 @@ function computeJoints(pose, baseY = 0) {
   };
 
   // Hips
-  const lHip = { x: torsoBottom.x - p.hipWidth, y: torsoBottom.y, z: 0, w };
-  const rHip = { x: torsoBottom.x + p.hipWidth, y: torsoBottom.y, z: 0, w };
+  const lHip = { x: torsoBottom.x - p.hipWidth, y: torsoBottom.y, z: oz, w };
+  const rHip = { x: torsoBottom.x + p.hipWidth, y: torsoBottom.y, z: oz, w };
 
   // Upper legs
   const lKnee = {
     x: lHip.x - Math.sin(legSpread) * p.upperLegLength * 0.3,
     y: lHip.y - p.upperLegLength * 0.9,
-    z: legSwing * p.upperLegLength * 0.3,
+    z: oz + legSwing * p.upperLegLength * 0.3,
     w,
   };
   const rKnee = {
     x: rHip.x + Math.sin(legSpread) * p.upperLegLength * 0.3,
     y: rHip.y - p.upperLegLength * 0.9,
-    z: -legSwing * p.upperLegLength * 0.3,
+    z: oz - legSwing * p.upperLegLength * 0.3,
     w,
   };
 
@@ -136,8 +138,8 @@ function v4(j) { return vec4(j.x, j.y, j.z, j.w); }
  * Build all primitives for a humanoid at a given pose.
  * Returns { primitives: [{primitive, materialId}], joints: {...} }
  */
-export function buildHumanoidPrimitives(pose, materialId, baseY = 0) {
-  const j = computeJoints(pose, baseY);
+export function buildHumanoidPrimitives(pose, materialId, baseY = 0, origin = [0, 0, 0, 0]) {
+  const j = computeJoints(pose, baseY, origin);
   const r = PROPORTIONS.limbRadius;
   const primitives = [];
 
@@ -307,6 +309,8 @@ export function poseForBeat(action, time) {
     case "listen": return listenPose(time);
     case "gesture": return gesturePose(time, "right");
     case "reach": return reachPose(time);
+    case "draw": return reachPose(time, 1);
+    case "mix": return gesturePose(time, "right");
     case "dramatic": return dramaticPose(time);
     case "curious": return curiousPose(time);
     case "exit": return standPose(time);

@@ -630,6 +630,112 @@ def execute_rt4d(
     )
 
 
+def execute_rt4d_bridge(
+    req: dict[str, Any],
+    *,
+    out_dir: Path | None = None,
+    run_fn: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+) -> dict[str, Any]:
+    """RT4D bridge: produce MandalaShotArtifact + GLB via sovereign-sculptor bridge.
+
+    Runs the JavaScript bridge script, then post-validates the GLB output
+    using sovereign-sculptor inspectGlb + validateGlb for integrity digests.
+    """
+    out_root = (out_dir or default_output_dir()).resolve()
+    out_root.mkdir(parents=True, exist_ok=True)
+    req_id = req["requestId"]
+
+    # Write the request to a temp file for the bridge script
+    req_path = out_root / f"{req_id}-rt4d-bridge-req.json"
+    req_path.write_text(json.dumps(req), encoding="utf-8")
+
+    # Run the bridge script via node
+    node = _ensure_node()
+    bridge_script = Path(__file__).parent / "bridge" / "rt4d-bridge.js.cjs"
+    runner = run_fn or _run
+    proc = runner(
+        [node, str(bridge_script), "--read-request", str(req_path), "--out-dir", str(out_root)],
+    )
+    if proc.returncode != 0:
+        raise ExecuteError(
+            f"rt4d-bridge script failed ({proc.returncode}): {proc.stderr[-2000:]}"
+        )
+
+    # Read the bridge output artifacts
+    artifact_path = out_root / f"{req_id}-mandala-shot-artifact.json"
+    glb_path = out_root / f"{req_id}-character.glb"
+    if not artifact_path.is_file():
+        raise ExecuteError(f"rt4d-bridge did not write artifact: {artifact_path}")
+    if not glb_path.is_file():
+        raise ExecuteError(f"rt4d-bridge did not write GLB: {glb_path}")
+
+    artifact_data = json.loads(artifact_path.read_text(encoding="utf-8"))
+
+    # ---- Post-export validation via sovereign-sculptor ----
+    # Run inspectGlb + validateGlb to produce full integrity digests
+    glb_validation: dict[str, Any] = {}
+    validate_script = (
+        Path(__file__).parent.parent.parent
+        / "packages"
+        / "sovereign-sculptor"
+        / "scripts"
+        / "validate-glb.mjs"
+    )
+    if validate_script.is_file():
+        val_proc = runner(
+            [node, str(validate_script), str(glb_path)],
+            timeout=30,
+        )
+        if val_proc.returncode == 0 and val_proc.stdout.strip():
+            try:
+                glb_validation = json.loads(val_proc.stdout)
+            except json.JSONDecodeError:
+                glb_validation = {"ok": False, "issues": [{"code": "json-parse-error", "message": "failed to parse validation output"}]}
+        else:
+            glb_validation = {
+                "ok": False,
+                "issues": [{"code": "validation-script-error", "message": val_proc.stderr[-500:] if val_proc.stderr else "unknown"}],
+            }
+    else:
+        glb_validation = {
+            "ok": False,
+            "issues": [{"code": "validation-script-missing", "message": str(validate_script)}],
+        }
+
+    # Build RenderResult with validation digests
+    result: dict[str, Any] = {
+        "schemaVersion": "1.0",
+        "requestId": req_id,
+        "status": "ok",
+        "provenance": {"intentId": req.get("intentId"), "worldId": req.get("worldId")},
+        "artifacts": [
+            {
+                "role": "mandala-shot-artifact",
+                "uri": str(artifact_path.as_posix()),
+                "sha256": artifact_data["geometry"]["meshHash"],
+                "mediaType": "application/json",
+            },
+            {
+                "role": "character-glb",
+                "uri": str(glb_path.as_posix()),
+                "sha256": artifact_data["geometry"]["glbHash"],
+                "mediaType": "model/gltf-binary",
+            },
+        ],
+        "hashes": {
+            "requestSha256": sha256_json(req),
+            "meshHash": artifact_data["geometry"]["meshHash"],
+            "rigHash": artifact_data["geometry"]["rigHash"],
+            "glbHash": artifact_data["geometry"]["glbHash"],
+        },
+        "glbValidation": glb_validation,
+        "mappedTo": "rt4d-bridge (sovereign-sculptor bridge + post-validation)",
+        "statusTag": "partial" if not glb_validation.get("ok") else "enforced",
+        "sceneSpecification": req["payload"].get("sceneSpecification"),
+    }
+    return result
+
+
 def execute_route(
     req: dict[str, Any],
     *,
@@ -645,4 +751,7 @@ def execute_route(
         return execute_engine3d_world(req, out_dir=out_dir, run_fn=run_fn)
     if route == "rt4d":
         return execute_rt4d(req, out_dir=out_dir, run_fn=run_fn)
+    if route == "rt4d-bridge":
+        return execute_rt4d_bridge(req, out_dir=out_dir, run_fn=run_fn)
     raise ExecuteError(f"unhandled route for execute: {route}")
+

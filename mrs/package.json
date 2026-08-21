@@ -1,7 +1,62 @@
 {
   "name": "mrs",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
+  "description": "MRS monorepo — renderer-core, scene-schema, renderer-web, ChatGPT App",
+  "packageManager": "pnpm@10.24.0",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
-  "main": "index.js"
+  "scripts": {
+    "setup": "pnpm install && pnpm rebuild canvas esbuild",
+    "rebuild:native": "pnpm rebuild canvas esbuild",
+    "build": "pnpm -r --filter @mrs/chatgpt-app-web build",
+    "build:web": "pnpm --filter @mrs/chatgpt-app-web build",
+    "start:server": "pnpm --filter @mrs/chatgpt-app-server start",
+    "test:renderer": "pnpm --filter @mrs/renderer-core test",
+    "test": "pnpm run test:workspace",
+    "test:workspace": "pnpm run test:renderer && pnpm run test:engine3d && pnpm run test:sovereign-x-router && pnpm run test:chatgpt-app-server && pnpm run test:rt4d-engine && pnpm run test:rt4d-plugin && pnpm run test:rt4d-metering && pnpm run test:genblaze-prompt-scene && pnpm run test:genblaze-engine3d-still",
+    "test:rt4d-metering": "pnpm --filter @mrs/rt4d-metering test",
+    "test:engine3d": "pnpm --filter @mrs/engine3d-core run test:engine3d",
+    "test:sovereign-x-router": "pnpm --filter @mrs/sovereign-x-router test",
+    "test:chatgpt-app-server": "pnpm --filter @mrs/chatgpt-app-server test && pnpm --filter @mrs/chatgpt-app-web run typecheck",
+    "test:rt4d-engine": "pnpm --filter @mrs/rt4d-engine test",
+    "test:rt4d-plugin": "pnpm --filter @mrs/rt4d-chatgpt-plugin test && pnpm --filter @mrs/rt4d-chatgpt-plugin run typecheck",
+    "test:genblaze-prompt-scene": "pytest apps/genblaze-media/tests/test_prompt_to_scene.py -k \"run_bridge_expand or render_true_real_bridge or post_prompt_to_scene_render_true_real_api or prompt_to_scene\"",
+    "test:genblaze-engine3d-still": "pytest apps/genblaze-media/tests/test_engine3d_still.py -k \"engine3d_still_real_route or api_engine3d_still or health_exposes_engine3d_still or availability_shape\"",
+    "test:deploy-smoke": "pnpm run test:deploy-smoke:prompt-scene && pnpm run test:deploy-smoke:engine3d-still",
+    "test:deploy-smoke:prompt-scene": "pytest apps/genblaze-media/tests/test_prompt_to_scene_smoke.py -k live_server_smoke",
+    "test:deploy-smoke:engine3d-still": "pytest apps/genblaze-media/tests/test_engine3d_still_smoke.py -k live_server_smoke",
+    "dev:server": "pnpm --filter @mrs/chatgpt-app-server start"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "canvas",
+      "esbuild"
+    ],
+    "overrides": {
+      "lodash": "4.18.1",
+      "@hono/node-server": "2.0.11",
+      "hono": "4.12.34",
+      "ip-address": "10.3.1",
+      "fast-uri": "3.1.5",
+      "postcss": "8.5.23"
+    }
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "ref-napi": "^3.0.3",
+    "uuid": "^14.0.1"
+  },
+  "devDependencies": {
+    "node-addon-api": "^8.9.2"
+  },
+  "main": "test-bind.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

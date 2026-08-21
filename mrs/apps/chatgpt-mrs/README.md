@@ -41,6 +41,40 @@ pnpm --filter @mrs/chatgpt-app-server start
 - Health: `GET /health`
 - MCP: `POST /mcp` (Streamable HTTP)
 - Legacy SSE: `GET /sse` + `POST /mcp/messages`
+- Custom GPT Action schema: `GET /actions/openapi.json`
+- Custom GPT Action privacy page: `GET /actions/privacy`
+
+## Custom GPT Action — every governed Mandala tool
+
+The same Linux server now exposes a small REST Action gateway over the live MCP
+catalog. It does not copy tool implementations: `listMandalaTools` discovers all
+currently registered Mandala tools and `useMandalaTool` invokes the selected tool
+through MCP. Future governed tools therefore appear automatically.
+
+```bash
+export MRS_ACTION_API_KEY="$(openssl rand -hex 32)"
+export MRS_ACTION_PUBLIC_BASE_URL="https://<your-https-host>"
+pnpm --filter @mrs/chatgpt-app-server start
+```
+
+Expose port 8000 through an operator-controlled HTTPS host or tunnel, then in the
+Custom GPT editor:
+
+1. **Actions → Create new action → Import from URL**:
+   `https://<your-https-host>/actions/openapi.json`
+2. **Authentication → API Key → Bearer**: paste the value of
+   `MRS_ACTION_API_KEY` (never commit it).
+3. **Privacy policy**: `https://<your-https-host>/actions/privacy`
+4. Paste `actions/mandala-gpt-instructions.md` into the GPT instructions.
+5. Test `getMandalaStatus`, then `listMandalaTools`, then invoke
+   `describe_4drs_capabilities`.
+
+Security is fail-closed: discovery and execution return 401 without the Bearer
+key, or 503 when no key is configured. Every invocation requires a declared
+intent and emits stable input/result evidence digests. Tools marked destructive
+also require `confirmDestructive=true` after explicit user approval. To narrow a
+deployment, set `MRS_ACTION_TOOL_ALLOWLIST` to comma-separated tool names; the
+default `*` means every tool registered by this governed MCP server.
 
 ## Primary tools
 
