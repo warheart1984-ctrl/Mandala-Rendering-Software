@@ -37,4 +37,3 @@ export class OIDNDenoiser {
 }
 
 export { TemporalDenoiser } from './TemporalDenoiser.js';
-export { OIDNDenoiser };

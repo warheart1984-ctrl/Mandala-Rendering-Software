@@ -38,7 +38,7 @@ function saveEvidence(evidence, outputDir) {
 }
 
 // Scene Card Worker
-export function sceneCardWorker(sceneCardPath, outputDir) {
+export async function sceneCardWorker(sceneCardPath, outputDir) {
   console.log("[AAIS:scene_card_worker] Validating scene card...");
 
   const raw = readFileSync(sceneCardPath, "utf8");
@@ -203,7 +203,7 @@ export function soundWorker(sceneCard, outputDir) {
 }
 
 // Assembly Worker
-export function assemblyWorker(framesDir, audioPath, outputDir, fps = 24) {
+export async function assemblyWorker(framesDir, audioPath, outputDir, fps = 24) {
   console.log("[AAIS:assembly_worker] Assembling scene...");
 
   const { readdirSync } = await import("node:fs");

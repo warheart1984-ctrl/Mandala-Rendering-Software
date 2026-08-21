@@ -10,7 +10,7 @@
  */
 
 const { isValidProductionRequest, validateProductionRequest } = require("./contracts")
-const { canonicalHash } = require("./contracts")
+const { canonicalHash, worldStateHash, characterStateHash, isValidShotArtifact } = require("./contracts")
 const { WireMesh4D } = require("../../../apps/rt4d-chatgpt-plugin/server/src/wire-mesh-4d.js")
 const { wireMesh4DToGLB } = require("../../../packages/sovereign-sculptor/src/rt4d-to-rig-bridge.js")
 const { exportSculptDocumentToGlb } = require("../../../packages/sovereign-sculptor/src/glb.js")
@@ -59,7 +59,7 @@ async function processShot({
   const wireMeshes = []
 
   for (const actor of actors) {
-    const wireMesh = WireMesh4d.buildEnergyWireMesh4d({
+    const wireMesh = WireMesh4D.buildEnergyWireMesh4d({
       sceneSeedHex: sceneSeed,
       rigBinding: actor.rigBinding,
     })
@@ -267,8 +267,9 @@ if (require.main === module) {
           )}... meshHash=${r.meshHash.slice(0, 16)}... rigHash=${r.rigHash.slice(
             0,
             16
-          )...}`
+          )}...`
         )
       }
     })
   })()
+}
