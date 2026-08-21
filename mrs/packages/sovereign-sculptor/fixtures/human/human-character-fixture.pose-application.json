@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "engine3d-mandala-pose-application/1.0",
+  "status": "deterministic-fixture-pose-application",
+  "characterId": "human-fixture-character",
+  "rigId": "human-standard-v1",
+  "bindingId": "binding:e96862fef821038cc774d2976448c1229255c3879a4fe010f0aef621886458c6",
+  "constitutionalRecordDigest": "315d3e63397ea6d683fd34cdb5c443e79731cb811eddf7c5c88da552c8ffc440",
+  "frame": {
+    "schemaVersion": "sovereign-pose-frame/1.0",
+    "frameId": "human-dialogue-pose-frame-0001",
+    "rigId": "human-standard-v1",
+    "rigVersion": "character-rig/1.0",
+    "frameIndex": 1,
+    "timeSeconds": 0.041666666666666664,
+    "boneTransforms": [
+      {
+        "boneId": "root",
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    ],
+    "blendshapeWeights": [
+      {
+        "blendshapeId": "jawOpen",
+        "weight": 0.35
+      }
+    ],
+    "provenance": {
+      "intentId": "intent://end-to-end-workflow-demo",
+      "operatorId": "operator://fixture",
+      "sourcePoseId": "dialogue-viseme://demo-ah"
+    }
+  },
+  "frameDigest": "683ea67f529310d84608bccc809105a13d26201ce19293ed8a0bce98683d6076",
+  "materialTextureBindings": [
+    {
+      "skinLayerId": "human-anime-whole-body-skin-v1",
+      "skinLayerDigest": "a0a21ac9213228743123bfbbdee83eb08fab1da61b684938fbed8d7c529a33e8",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "baseColor",
+      "assetRef": "asset://non-production/human/base-color.png",
+      "textureSha256": "8585e2a600795872cb41d6eda8dd4274e7259361948f908521258cb81ab74434",
+      "topologyDigest": "47821682a91f14f5ae5af2e99436b78c61965091229b4272b5711704847ac100",
+      "uvDigest": "d8154e595751aa0e8add48eed7f74b52f1e22e88d52ae407a212fb5675d3c0a7",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "human-anime-whole-body-skin-v1",
+      "skinLayerDigest": "a0a21ac9213228743123bfbbdee83eb08fab1da61b684938fbed8d7c529a33e8",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "celShade",
+      "assetRef": "asset://non-production/human/cel-shade.png",
+      "textureSha256": "4e7a2a67590c357be245d5d457e581a118a89b8fc3290137b43dd38458333394",
+      "topologyDigest": "47821682a91f14f5ae5af2e99436b78c61965091229b4272b5711704847ac100",
+      "uvDigest": "d8154e595751aa0e8add48eed7f74b52f1e22e88d52ae407a212fb5675d3c0a7",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "human-anime-whole-body-skin-v1",
+      "skinLayerDigest": "a0a21ac9213228743123bfbbdee83eb08fab1da61b684938fbed8d7c529a33e8",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "normalDetail",
+      "assetRef": "asset://non-production/human/normal-detail.png",
+      "textureSha256": "fd55291074dce5b683cb82ad75e76eb8c1ceef7ba56546c1222f934076869a95",
+      "topologyDigest": "47821682a91f14f5ae5af2e99436b78c61965091229b4272b5711704847ac100",
+      "uvDigest": "d8154e595751aa0e8add48eed7f74b52f1e22e88d52ae407a212fb5675d3c0a7",
+      "surfaceOnly": true
+    },
+    {
+      "skinLayerId": "human-anime-whole-body-skin-v1",
+      "skinLayerDigest": "a0a21ac9213228743123bfbbdee83eb08fab1da61b684938fbed8d7c529a33e8",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "channel": "roughness",
+      "assetRef": "asset://non-production/human/roughness.png",
+      "textureSha256": "030204eaace7782c56a06edede9369af9d4d2a49dea45e48e4b362e216eb479d",
+      "topologyDigest": "47821682a91f14f5ae5af2e99436b78c61965091229b4272b5711704847ac100",
+      "uvDigest": "d8154e595751aa0e8add48eed7f74b52f1e22e88d52ae407a212fb5675d3c0a7",
+      "surfaceOnly": true
+    }
+  ],
+  "geometryMutation": {
+    "allowed": false,
+    "operations": []
+  },
+  "diffusionPolicy": {
+    "purpose": "surface-polish-only",
+    "anatomyMutationAllowed": false,
+    "topologyMutationAllowed": false,
+    "geometryDisplacementAllowed": false,
+    "runtimeRetopologyAllowed": false
+  },
+  "replayDigest": "cf06fc0e65eb1da18cb006ea9aaa129f7270712336e2a35c7c4c9da5b948e511"
+}

@@ -1,0 +1,11 @@
+# Generated pipeline binaries (keep source JSON / WGSL / JS tracked)
+models/exports/*.glb
+models/exports/*.fbx
+renders/*.png
+renders/*.mp4
+renders/turntable-frames/
+renders/export-receipt.md
+*.blend
+*.zpr
+*.ztl
+*.obj

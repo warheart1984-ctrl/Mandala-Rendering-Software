@@ -63,18 +63,22 @@ export function selectRig(species: Species): CharacterRigSchema {
 
 export function ensureEnergyMesh(
   scene: Rt4dSceneRecord,
-  intendedSpecies: Species = scene.characterPipeline?.intendedSpecies ?? "anthro"
+  intendedSpecies: Species = scene.characterPipeline?.intendedSpecies ?? "anthro",
+  topology?: "tesseract" | "moebius"
 ): CharacterPipeline {
   const existing = scene.characterPipeline;
   const meshSeedHex = existing?.meshSeedHex ?? scene.provenance.hashes.sceneSha256;
+  const effectiveTopology = topology ?? existing?.topology ?? "tesseract";
   const mesh = buildEnergyWireMesh4d({
     sceneSeedHex: meshSeedHex,
     rigBinding: existing?.rigBinding,
+    topology: effectiveTopology,
   });
   const now = new Date().toISOString();
   const pipeline: CharacterPipeline = {
     intendedSpecies,
     meshSeedHex,
+    topology: effectiveTopology,
     wireMesh: mesh,
     rigBinding: existing?.rigBinding,
     stages: {
@@ -88,10 +92,11 @@ export function ensureEnergyMesh(
 
 export function attachEnergyMeshToScene(
   sceneId: string,
-  intendedSpecies: Species
+  intendedSpecies: Species,
+  topology?: "tesseract" | "moebius"
 ): Rt4dSceneRecord {
   const scene = getSceneOrThrow(sceneId);
-  ensureEnergyMesh(scene, intendedSpecies);
+  ensureEnergyMesh(scene, intendedSpecies, topology);
   scene.continuityState = {
     ...scene.continuityState,
     characterState: {

@@ -1,0 +1,13 @@
+{
+  "id": "fabric",
+  "status": "partial",
+  "type": "cloth-dielectric",
+  "note": "Cape/cloth shading. Pairs with sim vertex group cloth_cape.",
+  "pbr": {
+    "baseColor": [0.12, 0.16, 0.28, 1],
+    "metallic": 0.0,
+    "roughness": 0.82,
+    "emissive": [0.01, 0.02, 0.05]
+  },
+  "wgsl": "fabric.wgsl"
+}

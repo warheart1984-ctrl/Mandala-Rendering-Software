@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mrs://sovereign-sculptor/schemas/character-rig.schema.json",
+  "title": "Sovereign Sculptor Character Rig",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "id", "species", "bones", "blendshapes", "capabilities"],
+  "properties": {
+    "schemaVersion": { "const": "character-rig/1.0" },
+    "status": { "const": "core-enforced-fixture-not-production-rig" },
+    "id": { "$ref": "#/$defs/id" },
+    "species": { "enum": ["human", "fox", "anthro"] },
+    "bones": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/bone" } },
+    "blendshapes": { "type": "array", "items": { "$ref": "#/$defs/blendshape" } },
+    "capabilities": { "$ref": "#/$defs/capabilities" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "vec3": { "type": "array", "prefixItems": [{"type":"number"},{"type":"number"},{"type":"number"}], "minItems":3, "maxItems":3 },
+    "mat4": { "type": "array", "items": {"type":"number"}, "minItems":16, "maxItems":16 },
+    "constraint": {
+      "type":"object", "additionalProperties":false,
+      "required":["rotationRadians","translationLocked","scaleLocked"],
+      "properties": {
+        "rotationRadians": { "type":"object", "additionalProperties":false, "required":["min","max"], "properties":{"min":{"$ref":"#/$defs/vec3"},"max":{"$ref":"#/$defs/vec3"}} },
+        "translationLocked":{"type":"boolean"}, "scaleLocked":{"type":"boolean"}
+      }
+    },
+    "bone": { "type":"object", "additionalProperties":false, "required":["id","parentId","bindTransform","constraint"], "properties":{"id":{"$ref":"#/$defs/id"},"parentId":{"type":["string","null"],"maxLength":256},"bindTransform":{"$ref":"#/$defs/mat4"},"constraint":{"$ref":"#/$defs/constraint"}} },
+    "blendshape": { "type":"object", "additionalProperties":false, "required":["id","regionId","minWeight","maxWeight"], "properties":{"id":{"$ref":"#/$defs/id"},"regionId":{"$ref":"#/$defs/id"},"minWeight":{"type":"number"},"maxWeight":{"type":"number"},"symmetricPartnerId":{"$ref":"#/$defs/id"}} },
+    "capabilities": { "type":"object", "additionalProperties":false, "required":["face","body","tail","ears","digitigrade","hands","paws"], "properties":{"face":{"type":"boolean"},"body":{"type":"boolean"},"tail":{"type":"boolean"},"ears":{"type":"boolean"},"digitigrade":{"type":"boolean"},"hands":{"type":"boolean"},"paws":{"type":"boolean"}} }
+  }
+}

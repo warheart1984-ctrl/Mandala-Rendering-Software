@@ -1,0 +1,102 @@
+{
+  "id": "scene-storm-chaos",
+  "name": "The Storm",
+  "description": "Five explorers trapped in a violent 4D storm. Geometry tears and reforms. Light flashes. The mood is intense, chaotic, desperate.",
+  "duration": 10,
+  "scene": {
+    "objects": [
+      {
+        "type": "plane",
+        "material": { "albedo": [0.1, 0.05, 0.05], "roughness": 0.7 },
+        "position": [0, 0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [12, 12, 12]
+      }
+    ],
+    "lights": [
+      {
+        "type": "point",
+        "position": [0, 6, 0, 0],
+        "color": [0.3, 0.1, 0.05],
+        "intensity": 1.5
+      },
+      {
+        "type": "directional",
+        "direction": [0.5, -1, 0.3],
+        "color": [0.2, 0.05, 0.05],
+        "intensity": 0.8
+      }
+    ]
+  },
+  "palette": {
+    "albedo": [0.15, 0.06, 0.06],
+    "ambient": [0.04, 0.02, 0.02]
+  },
+  "actors": [
+    {
+      "id": "blaze",
+      "name": "Blaze",
+      "personality": "A fierce warrior who thrives in chaos. Speaks in commands and battle cries.",
+      "color": "#ff3322",
+      "voice": "onyx",
+      "beats": [
+        { "time": 0, "action": "dramatic", "position": [-2, 2, 1, 0], "emissive": [0.9, 0.2, 0.1], "scale": 0.55 },
+        { "time": 1, "action": "speak", "position": [-2, 2.2, 1, 0], "emissive": [1.0, 0.3, 0.1], "scale": 0.55, "speech": "Hold the line! The storm cannot break us!" },
+        { "time": 4, "action": "walk", "position": [-1.5, 2, 0.5, 0], "emissive": [0.95, 0.25, 0.15], "scale": 0.55 },
+        { "time": 7, "action": "speak", "position": [-1, 2, 0, 0], "emissive": [1.0, 0.35, 0.15], "scale": 0.55, "speech": "Together! Push through the fourth axis!" }
+      ]
+    },
+    {
+      "id": "spark",
+      "name": "Spark",
+      "personality": "A nervous engineer trying to stabilize the geometry. Speaks in technical jargon.",
+      "color": "#ffaa22",
+      "voice": "shimmer",
+      "beats": [
+        { "time": 0, "action": "curious", "position": [2, 2, -1, 0], "emissive": [0.8, 0.6, 0.1], "scale": 0.45 },
+        { "time": 2, "action": "speak", "position": [2, 2.2, -0.5, 0], "emissive": [0.9, 0.7, 0.15], "scale": 0.45, "speech": "The manifold is destabilizing! I need thirty seconds!" },
+        { "time": 5, "action": "gesture", "position": [1.5, 2, 0, 0], "emissive": [0.85, 0.65, 0.12], "scale": 0.45 },
+        { "time": 8, "action": "speak", "position": [1, 2, 0.5, 0], "emissive": [0.95, 0.75, 0.18], "scale": 0.45, "speech": "Almost... got it... the tensors are aligning!" }
+      ]
+    },
+    {
+      "id": "calm",
+      "name": "Calm",
+      "personality": "A stoic philosopher who remains peaceful in chaos. Speaks in calm, measured tones.",
+      "color": "#3388cc",
+      "voice": "echo",
+      "beats": [
+        { "time": 0, "action": "listen", "position": [0, 2.5, 0, 0], "emissive": [0.2, 0.5, 0.8], "scale": 0.5 },
+        { "time": 3, "action": "speak", "position": [0, 2.5, 0.2, 0], "emissive": [0.25, 0.55, 0.85], "scale": 0.5, "speech": "The storm is not our enemy. It is our teacher." },
+        { "time": 6, "action": "listen", "position": [0, 2.5, 0.4, 0], "emissive": [0.3, 0.6, 0.9], "scale": 0.5 },
+        { "time": 9, "action": "speak", "position": [0, 2.5, 0.6, 0], "emissive": [0.35, 0.65, 0.95], "scale": 0.5, "speech": "Breathe. The chaos has its own rhythm." }
+      ]
+    },
+    {
+      "id": "wraith",
+      "name": "Wraith",
+      "personality": "A ghostly figure who phases between dimensions. Speaks in whispers and riddles.",
+      "color": "#8844aa",
+      "voice": "alloy",
+      "beats": [
+        { "time": 0, "action": "idle", "position": [-1, 3, -2, 1], "emissive": [0.5, 0.2, 0.7], "scale": 0.4 },
+        { "time": 2, "action": "speak", "position": [-1, 3.2, -1.5, 1], "emissive": [0.6, 0.25, 0.8], "scale": 0.4, "speech": "I see... other versions of us. Fighting. Losing." },
+        { "time": 5, "action": "walk", "position": [0, 3, -1, 1.5], "emissive": [0.55, 0.22, 0.75], "scale": 0.4 },
+        { "time": 8, "action": "speak", "position": [0, 3, -0.5, 2], "emissive": [0.65, 0.28, 0.85], "scale": 0.4, "speech": "In one timeline... we survive. In another... we are already ghosts." }
+      ]
+    },
+    {
+      "id": "forge",
+      "name": "Forge",
+      "personality": "A blacksmith of dimensions, hammering reality into shape. Speaks in metaphors of fire and metal.",
+      "color": "#cc4411",
+      "voice": "onyx",
+      "beats": [
+        { "time": 0, "action": "dramatic", "position": [1.5, 2, 1, -1], "emissive": [0.8, 0.3, 0.1], "scale": 0.52 },
+        { "time": 1, "action": "speak", "position": [1.5, 2.2, 1, -1], "emissive": [0.9, 0.35, 0.12], "scale": 0.52, "speech": "This storm is raw material! We forge our escape!" },
+        { "time": 4, "action": "gesture", "position": [1, 2, 0.5, -0.5], "emissive": [0.85, 0.32, 0.11], "scale": 0.52 },
+        { "time": 7, "action": "speak", "position": [0.5, 2, 0, 0], "emissive": [0.95, 0.38, 0.14], "scale": 0.52, "speech": "Strike while the geometry is hot!" }
+      ]
+    }
+  ]
+}

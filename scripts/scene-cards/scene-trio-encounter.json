@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-trio-encounter",
+  "kind": "SceneSpecification",
+  "name": "The Encounter",
+  "description": "Three beings meet in the void between dimensions. Each carries a different light.",
+
+  "actors": [
+    {
+      "id": "ember",
+      "name": "Ember",
+      "personality": "Bold, curious, speaks first. Draws others in with warmth.",
+      "color": "#ff6633",
+      "avatarRadius": 0.45,
+      "voice": "shimmer",
+      "beats": [
+        { "time": 0, "action": "appear", "position": [-2, 2, 0, 0], "emissive": [1.0, 0.4, 0.2], "scale": 0.1 },
+        { "time": 0.5, "action": "glow", "emissive": [1.0, 0.4, 0.2], "scale": 0.45 },
+        { "time": 1.5, "action": "speak", "speech": "You came. I wasn't sure you would.", "emissive": [1.0, 0.6, 0.3], "scale": 0.5 },
+        { "time": 3.0, "action": "move", "position": [-0.5, 2, 0, 0], "emissive": [1.0, 0.5, 0.25], "scale": 0.5 },
+        { "time": 5.0, "action": "speak", "speech": "We don't have much time. The lattice is shifting.", "emissive": [1.0, 0.3, 0.1], "scale": 0.5 },
+        { "time": 7.0, "action": "listen", "emissive": [0.8, 0.3, 0.15], "scale": 0.45 },
+        { "time": 9.0, "action": "speak", "speech": "Then we move together. All three of us.", "emissive": [1.0, 0.5, 0.2], "scale": 0.5 },
+        { "time": 10.5, "action": "exit", "emissive": [0.2, 0.08, 0.04], "scale": 0.1 }
+      ]
+    },
+    {
+      "id": "vex",
+      "name": "Vex",
+      "personality": "Cautious, analytical, speaks second. Questions everything.",
+      "color": "#3366ff",
+      "avatarRadius": 0.4,
+      "voice": "alloy",
+      "beats": [
+        { "time": 0.3, "action": "appear", "position": [2, 2, 1, 0], "emissive": [0.2, 0.4, 1.0], "scale": 0.1 },
+        { "time": 1.0, "action": "glow", "emissive": [0.2, 0.4, 1.0], "scale": 0.4 },
+        { "time": 2.0, "action": "speak", "speech": "I came because the math demanded it. Not curiosity.", "emissive": [0.3, 0.5, 1.0], "scale": 0.45 },
+        { "time": 3.5, "action": "move", "position": [0.5, 2, 0.5, 0], "emissive": [0.25, 0.45, 1.0], "scale": 0.45 },
+        { "time": 5.5, "action": "speak", "speech": "Shifting how? Show me the coordinates.", "emissive": [0.2, 0.3, 0.8], "scale": 0.4 },
+        { "time": 7.5, "action": "listen", "emissive": [0.15, 0.3, 0.9], "scale": 0.4 },
+        { "time": 9.5, "action": "speak", "speech": "Together, then. But I'm watching the fourth axis.", "emissive": [0.3, 0.5, 1.0], "scale": 0.45 },
+        { "time": 10.5, "action": "exit", "emissive": [0.04, 0.08, 0.2], "scale": 0.1 }
+      ]
+    },
+    {
+      "id": "sage",
+      "name": "Sage",
+      "personality": "Wise, quiet, speaks last. Holds the memory of what was.",
+      "color": "#33ff99",
+      "avatarRadius": 0.5,
+      "voice": "echo",
+      "beats": [
+        { "time": 0.6, "action": "appear", "position": [0, 3, -1, 0], "emissive": [0.2, 1.0, 0.6], "scale": 0.1 },
+        { "time": 1.2, "action": "glow", "emissive": [0.2, 1.0, 0.6], "scale": 0.5 },
+        { "time": 2.5, "action": "speak", "speech": "I have been here before. In another iteration.", "emissive": [0.3, 0.9, 0.5], "scale": 0.55 },
+        { "time": 4.0, "action": "move", "position": [0, 2.5, 0, 0], "emissive": [0.25, 0.95, 0.55], "scale": 0.5 },
+        { "time": 6.0, "action": "speak", "speech": "The lattice remembers every path. Every choice.", "emissive": [0.2, 0.8, 0.5], "scale": 0.5 },
+        { "time": 8.0, "action": "listen", "emissive": [0.15, 0.7, 0.4], "scale": 0.45 },
+        { "time": 10.0, "action": "speak", "speech": "Then let us write a new one.", "emissive": [0.3, 1.0, 0.6], "scale": 0.55 },
+        { "time": 10.5, "action": "exit", "emissive": [0.04, 0.2, 0.1], "scale": 0.1 }
+      ]
+    }
+  ],
+
+  "entities": [
+    {
+      "id": "tesseract-1",
+      "geometry": { "kind": "hypersphere", "center": [0, 0, 0, 0], "radius": 0.8 },
+      "transform4d": { "rotate": { "xy": 0.5, "xz": 0.3 } },
+      "materialId": "glow-mat"
+    }
+  ],
+
+  "materials": [
+    { "id": "glow-mat", "color": "#888899", "brdf": "lambertian", "roughness": 0.5 }
+  ],
+
+  "camera": {
+    "position4d": [0, 3, 6, 0],
+    "target4d": [0, 2, 0, 0],
+    "fovX": 55,
+    "fovY": 55,
+    "fovZ": 8,
+    "fovW": 8
+  },
+
+  "lights": [
+    { "center": [4, 7, -3, 0], "radius": 0.7, "color": [1, 0.95, 0.9], "intensity": 1.0 },
+    { "center": [-5, 5, 4, 0], "radius": 0.55, "color": [0.8, 0.85, 1], "intensity": 0.7 }
+  ],
+
+  "output": { "width": 128, "height": 128, "samples": 4, "maxDepth": 3 },
+
+  "metadata": {
+    "duration": 11,
+    "title": "The Encounter",
+    "subtitle": "Three beings meet in the void between dimensions",
+    "animation": { "type": "actor-driven" }
+  },
+
+  "shot": {
+    "keyframes": [
+      { "time": 0, "position": [0, 3, 6], "target": [0, 2, 0], "fov": 55 },
+      { "time": 5, "position": [1, 3.5, 5.5], "target": [0, 2.2, 0], "fov": 50 },
+      { "time": 10, "position": [0, 3, 6], "target": [0, 2, 0], "fov": 55 }
+    ]
+  }
+}

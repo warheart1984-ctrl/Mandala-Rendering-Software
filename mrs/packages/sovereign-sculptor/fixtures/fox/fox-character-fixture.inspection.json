@@ -1,0 +1,1636 @@
+{
+  "ok": true,
+  "species": "fox",
+  "status": "core-enforced-fixture-not-production-glb",
+  "issues": [],
+  "primitives": [
+    {
+      "id": "fox-fixture-v1:whole-body:0",
+      "meshIndex": 0,
+      "primitiveIndex": 0,
+      "vertexCount": 4,
+      "indexCount": 12,
+      "vertexIds": [
+        "vertex:0",
+        "vertex:1",
+        "vertex:2",
+        "vertex:3"
+      ],
+      "morphIds": [
+        "blink.L",
+        "blink.R",
+        "browUp.L",
+        "browUp.R",
+        "jawOpen",
+        "smile",
+        "frown",
+        "muzzleSneer"
+      ],
+      "materialId": "material:fox:fixture",
+      "positionSha256": "f4bc3a2b5ee1a39153a44eeb8f890f3e180c9f11cc3a55b1e768bca28841144c",
+      "indexSha256": "af6a7a106872fe661e853136e995d99d0b5a4ad3f65159b83ea063a4dced7838",
+      "uvSha256": "74ad9b87d26a81177cef97c3bb0172922f195c6f78e65c90dc877ce4b660ab12"
+    }
+  ],
+  "boneIds": [
+    "root",
+    "pelvis",
+    "spine",
+    "chest",
+    "neck",
+    "head",
+    "muzzle",
+    "jaw",
+    "eye.L",
+    "eye.R",
+    "ear.L",
+    "ear.R",
+    "tail.0",
+    "tail.1",
+    "tail.2",
+    "foreleg.L.upper",
+    "foreleg.L.lower",
+    "foreleg.L.paw",
+    "foreleg.R.upper",
+    "foreleg.R.lower",
+    "foreleg.R.paw",
+    "hindleg.L.upper",
+    "hindleg.L.lower",
+    "hindleg.L.paw",
+    "hindleg.R.upper",
+    "hindleg.R.lower",
+    "hindleg.R.paw"
+  ],
+  "materialIds": [
+    "material:fox:fixture"
+  ],
+  "digests": {
+    "glbSha256": "353471d33ee456d5cea3dc51ff2a4ee692d231b133a8988543424d93e6eec0e4",
+    "meshSha256": "b1ea2d1360cb182d31ed904017a04157e5c43ce8612533cec4a5413e75407eb1",
+    "topologySha256": "d3db553ea7bfa0379d707c31d70d4cf433de82fb7ee09f790da76e48f4836696",
+    "vertexOrderSha256": "4f5da02a0cf9019695a12e7116758e9e3d9707c5887c6111383a6c3e3b85b2df",
+    "uvSha256": "2ad2d350c554666077e69f0ab0ba5b0b7662982060e39040a508525b97bce65d",
+    "armatureSha256": "1a0c374b7d8cfbca6baaf20e6272327a702d80f3b8f2b477172cf716e19f39ce",
+    "blendshapeSha256": "bdbd374408dc85c34f11aeef27f54ca12b0bd72271e6057ac366a37f33b6877b",
+    "materialSha256": "13bdc33feca5bd7f98601d66a3efb4ecf681b9e5c04da65304ce7f3ebd34666e",
+    "accessorSha256": {
+      "meshes.0.primitives.0.NORMAL": "c4ba96be03978cf08dbb8ab83735d9d763eec28f1bcdf217108b45c1fbf53f59",
+      "meshes.0.primitives.0.morph.blink.L": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.blink.R": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.browUp.L": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.browUp.R": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.jawOpen": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.smile": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.frown": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.morph.muzzleSneer": "17b0761f87b081d5cf10757ccc89f12be355c70e2e29df288b65b30710dcbcd1",
+      "meshes.0.primitives.0.POSITION": "f4bc3a2b5ee1a39153a44eeb8f890f3e180c9f11cc3a55b1e768bca28841144c",
+      "meshes.0.primitives.0.indices": "af6a7a106872fe661e853136e995d99d0b5a4ad3f65159b83ea063a4dced7838",
+      "meshes.0.primitives.0.TEXCOORD_0": "74ad9b87d26a81177cef97c3bb0172922f195c6f78e65c90dc877ce4b660ab12",
+      "meshes.0.primitives.0.JOINTS_0": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "meshes.0.primitives.0.WEIGHTS_0": "145add6557f34985f6e13a72d06620a658135893938f6da48a9023cc70e9720c",
+      "skins.0.inverseBindMatrices": "a3df8f1ad7750c7429995fb5e4eba51f53443fa53a3369d6b48de313f8336cdc"
+    }
+  },
+  "json": {
+    "accessors": [
+      {
+        "bufferView": 0,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 1,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 2,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC2"
+      },
+      {
+        "bufferView": 3,
+        "byteOffset": 0,
+        "componentType": 5123,
+        "count": 4,
+        "type": "VEC4"
+      },
+      {
+        "bufferView": 4,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC4"
+      },
+      {
+        "bufferView": 5,
+        "byteOffset": 0,
+        "componentType": 5125,
+        "count": 12,
+        "type": "SCALAR"
+      },
+      {
+        "bufferView": 6,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 27,
+        "type": "MAT4"
+      },
+      {
+        "bufferView": 7,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 8,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 9,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 10,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 11,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 12,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 13,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      },
+      {
+        "bufferView": 14,
+        "byteOffset": 0,
+        "componentType": 5126,
+        "count": 4,
+        "type": "VEC3"
+      }
+    ],
+    "asset": {
+      "extras": {
+        "sovereignDocumentId": "fox-fixture-v1",
+        "sovereignFixtureStatus": "core-enforced-fixture-not-production-glb",
+        "sovereignIdentity": {
+          "displayName": "fox non-production fixture",
+          "gender": {
+            "attribution": "creator-authored",
+            "identity": "creator-specified"
+          },
+          "id": "fox-fixture-character"
+        },
+        "sovereignRigId": "fox-quadruped-v1",
+        "sovereignSourceSha256": "4e511f5a5d52d87e9f793516a689918412c16d67a9cd6bca3d8ccec0ce690c41",
+        "sovereignSpecies": "fox"
+      },
+      "generator": "MRS Sovereign Sculptor deterministic fixture exporter",
+      "version": "2.0"
+    },
+    "bufferViews": [
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 0,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 48,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 32,
+        "byteOffset": 96,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 32,
+        "byteOffset": 128,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 64,
+        "byteOffset": 160,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 224,
+        "target": 34963
+      },
+      {
+        "buffer": 0,
+        "byteLength": 1728,
+        "byteOffset": 272
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2000,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2048,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2096,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2144,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2192,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2240,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2288,
+        "target": 34962
+      },
+      {
+        "buffer": 0,
+        "byteLength": 48,
+        "byteOffset": 2336,
+        "target": 34962
+      }
+    ],
+    "buffers": [
+      {
+        "byteLength": 2384
+      }
+    ],
+    "materials": [
+      {
+        "extras": {
+          "diffusionAnatomyAllowed": false,
+          "sovereignMaterialId": "material:fox:fixture",
+          "sovereignMaterialRole": "whole-body-skin"
+        },
+        "name": "material:fox:fixture",
+        "pbrMetallicRoughness": {
+          "baseColorFactor": [
+            0.82,
+            0.31,
+            0.08,
+            1
+          ],
+          "metallicFactor": 0,
+          "roughnessFactor": 0.72
+        }
+      }
+    ],
+    "meshes": [
+      {
+        "extras": {
+          "sovereignMeshId": "fox-fixture-v1",
+          "sovereignSpecies": "fox"
+        },
+        "name": "fox-fixture-v1",
+        "primitives": [
+          {
+            "attributes": {
+              "JOINTS_0": 3,
+              "NORMAL": 1,
+              "POSITION": 0,
+              "TEXCOORD_0": 2,
+              "WEIGHTS_0": 4
+            },
+            "extras": {
+              "sovereignFixtureZeroDeltas": true,
+              "sovereignMorphIds": [
+                "blink.L",
+                "blink.R",
+                "browUp.L",
+                "browUp.R",
+                "jawOpen",
+                "smile",
+                "frown",
+                "muzzleSneer"
+              ],
+              "sovereignPrimitiveId": "fox-fixture-v1:whole-body:0",
+              "sovereignRegionIds": [
+                "body",
+                "body",
+                "body",
+                "body"
+              ],
+              "sovereignTriangleIds": [
+                "triangle:0",
+                "triangle:1",
+                "triangle:2",
+                "triangle:3"
+              ],
+              "sovereignVertexIds": [
+                "vertex:0",
+                "vertex:1",
+                "vertex:2",
+                "vertex:3"
+              ]
+            },
+            "indices": 5,
+            "material": 0,
+            "mode": 4,
+            "targets": [
+              {
+                "POSITION": 7
+              },
+              {
+                "POSITION": 8
+              },
+              {
+                "POSITION": 9
+              },
+              {
+                "POSITION": 10
+              },
+              {
+                "POSITION": 11
+              },
+              {
+                "POSITION": 12
+              },
+              {
+                "POSITION": 13
+              },
+              {
+                "POSITION": 14
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "children": [
+          1
+        ],
+        "extras": {
+          "sovereignFixtureStatus": "core-enforced-fixture-not-production-rig",
+          "sovereignRigCapabilities": {
+            "body": true,
+            "digitigrade": true,
+            "ears": true,
+            "face": true,
+            "hands": false,
+            "paws": true,
+            "tail": true
+          },
+          "sovereignRigId": "fox-quadruped-v1",
+          "sovereignSpecies": "fox"
+        },
+        "name": "Armature"
+      },
+      {
+        "children": [
+          2
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0,
+                0,
+                0
+              ],
+              "min": [
+                0,
+                0,
+                0
+              ]
+            },
+            "scaleLocked": false,
+            "translationLocked": false
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "name": "root"
+      },
+      {
+        "children": [
+          3,
+          13,
+          22,
+          25
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.48,
+          -0.35,
+          1
+        ],
+        "name": "pelvis"
+      },
+      {
+        "children": [
+          4
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0.35,
+          1
+        ],
+        "name": "spine"
+      },
+      {
+        "children": [
+          5,
+          16,
+          19
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.02,
+          0.38,
+          1
+        ],
+        "name": "chest"
+      },
+      {
+        "children": [
+          6
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.16,
+          0.18,
+          1
+        ],
+        "name": "neck"
+      },
+      {
+        "children": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.15,
+          0.16,
+          1
+        ],
+        "name": "head"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.02,
+          0.2,
+          1
+        ],
+        "name": "muzzle"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.1,
+                0.1
+              ],
+              "min": [
+                -0.1,
+                -0.1,
+                -0.1
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.1,
+          0.05,
+          1
+        ],
+        "name": "jaw"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.5,
+                0.5,
+                0
+              ],
+              "min": [
+                -0.5,
+                -0.5,
+                0
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.08,
+          0.05,
+          0.1,
+          1
+        ],
+        "name": "eye.L"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.5,
+                0.5,
+                0
+              ],
+              "min": [
+                -0.5,
+                -0.5,
+                0
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -0.08,
+          0.05,
+          0.1,
+          1
+        ],
+        "name": "eye.R"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.7,
+                0.7,
+                0.7
+              ],
+              "min": [
+                -0.7,
+                -0.7,
+                -0.7
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.12,
+          0.18,
+          0,
+          1
+        ],
+        "name": "ear.L"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.7,
+                0.7,
+                0.7
+              ],
+              "min": [
+                -0.7,
+                -0.7,
+                -0.7
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -0.12,
+          0.18,
+          0,
+          1
+        ],
+        "name": "ear.R"
+      },
+      {
+        "children": [
+          14
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                1.2,
+                1.2,
+                1.2
+              ],
+              "min": [
+                -1.2,
+                -1.2,
+                -1.2
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.08,
+          -0.28,
+          1
+        ],
+        "name": "tail.0"
+      },
+      {
+        "children": [
+          15
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.28,
+          1
+        ],
+        "name": "tail.1"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                3.141592653589793,
+                3.141592653589793,
+                3.141592653589793
+              ],
+              "min": [
+                -3.141592653589793,
+                -3.141592653589793,
+                -3.141592653589793
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.28,
+          1
+        ],
+        "name": "tail.2"
+      },
+      {
+        "children": [
+          17
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                1.2,
+                0.7,
+                0.7
+              ],
+              "min": [
+                -2.2,
+                -0.7,
+                -0.7
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.16,
+          -0.12,
+          0.18,
+          1
+        ],
+        "name": "foreleg.L.upper"
+      },
+      {
+        "children": [
+          18
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.5,
+                0.2,
+                0.2
+              ],
+              "min": [
+                -0.2,
+                -0.2,
+                -0.2
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.3,
+          0,
+          1
+        ],
+        "name": "foreleg.L.lower"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.5,
+                0.5
+              ],
+              "min": [
+                -0.8,
+                -0.5,
+                -0.5
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.24,
+          0.08,
+          1
+        ],
+        "name": "foreleg.L.paw"
+      },
+      {
+        "children": [
+          20
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                1.2,
+                0.7,
+                0.7
+              ],
+              "min": [
+                -2.2,
+                -0.7,
+                -0.7
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -0.16,
+          -0.12,
+          0.18,
+          1
+        ],
+        "name": "foreleg.R.upper"
+      },
+      {
+        "children": [
+          21
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.5,
+                0.2,
+                0.2
+              ],
+              "min": [
+                -0.2,
+                -0.2,
+                -0.2
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.3,
+          0,
+          1
+        ],
+        "name": "foreleg.R.lower"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.5,
+                0.5
+              ],
+              "min": [
+                -0.8,
+                -0.5,
+                -0.5
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.24,
+          0.08,
+          1
+        ],
+        "name": "foreleg.R.paw"
+      },
+      {
+        "children": [
+          23
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                1.2,
+                0.7,
+                0.7
+              ],
+              "min": [
+                -2.2,
+                -0.7,
+                -0.7
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.17,
+          -0.12,
+          -0.12,
+          1
+        ],
+        "name": "hindleg.L.upper"
+      },
+      {
+        "children": [
+          24
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.5,
+                0.2,
+                0.2
+              ],
+              "min": [
+                -0.2,
+                -0.2,
+                -0.2
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.3,
+          0,
+          1
+        ],
+        "name": "hindleg.L.lower"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.5,
+                0.5
+              ],
+              "min": [
+                -0.8,
+                -0.5,
+                -0.5
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.24,
+          0.08,
+          1
+        ],
+        "name": "hindleg.L.paw"
+      },
+      {
+        "children": [
+          26
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                1.2,
+                0.7,
+                0.7
+              ],
+              "min": [
+                -2.2,
+                -0.7,
+                -0.7
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -0.17,
+          -0.12,
+          -0.12,
+          1
+        ],
+        "name": "hindleg.R.upper"
+      },
+      {
+        "children": [
+          27
+        ],
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                2.5,
+                0.2,
+                0.2
+              ],
+              "min": [
+                -0.2,
+                -0.2,
+                -0.2
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.3,
+          0,
+          1
+        ],
+        "name": "hindleg.R.lower"
+      },
+      {
+        "extras": {
+          "sovereignBone": true,
+          "sovereignConstraint": {
+            "rotationRadians": {
+              "max": [
+                0.8,
+                0.5,
+                0.5
+              ],
+              "min": [
+                -0.8,
+                -0.5,
+                -0.5
+              ]
+            },
+            "scaleLocked": true,
+            "translationLocked": true
+          }
+        },
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -0.24,
+          0.08,
+          1
+        ],
+        "name": "hindleg.R.paw"
+      },
+      {
+        "extras": {
+          "sovereignDocumentId": "fox-fixture-v1",
+          "sovereignMeshRole": "whole-body"
+        },
+        "mesh": 0,
+        "name": "fox-fixture-v1",
+        "skin": 0
+      }
+    ],
+    "scene": 0,
+    "scenes": [
+      {
+        "nodes": [
+          0,
+          28
+        ]
+      }
+    ],
+    "skins": [
+      {
+        "extras": {
+          "sovereignRigSchemaVersion": "character-rig/1.0"
+        },
+        "inverseBindMatrices": 6,
+        "joints": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27
+        ],
+        "name": "fox-quadruped-v1",
+        "skeleton": 1
+      }
+    ]
+  }
+}

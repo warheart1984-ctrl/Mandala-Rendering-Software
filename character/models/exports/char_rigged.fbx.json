@@ -1,0 +1,37 @@
+{
+  "status": "skeleton",
+  "format": "fbx",
+  "note": "FBX encoder is not available in this repo and Blender CLI is not on PATH. Use char_rigged.glb (glTF 2.0) as the interchange format. This sidecar records the intended FBX contract.",
+  "intendedOutputs": [
+    "char_wire.fbx",
+    "char_rigged.fbx",
+    "char_final.fbx"
+  ],
+  "useInstead": "character/models/exports/char_rigged.glb",
+  "assetId": "default-humanoid",
+  "bones": [
+    "Root",
+    "Hips",
+    "Spine",
+    "Chest",
+    "Neck",
+    "Head",
+    "Shoulder_L",
+    "Shoulder_R",
+    "UpperArm_L",
+    "UpperArm_R",
+    "LowerArm_L",
+    "LowerArm_R",
+    "Hand_L",
+    "Hand_R",
+    "Finger_L",
+    "Finger_R",
+    "UpperLeg_L",
+    "UpperLeg_R",
+    "LowerLeg_L",
+    "LowerLeg_R",
+    "Foot_L",
+    "Foot_R",
+    "Tail"
+  ]
+}

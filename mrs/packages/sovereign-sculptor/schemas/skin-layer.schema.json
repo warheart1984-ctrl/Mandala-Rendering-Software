@@ -1,0 +1,23 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json",
+  "title":"Sovereign Sculptor Whole-Body Skin Layer",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schemaVersion","id","version","bodyCoverage","rigId","sculptDocumentId","topologyDigest","uvDigest","materialRegions","textureChannels","generationProvenance","surfaceOnly","anatomyMutationAllowed"],
+  "properties":{
+    "schemaVersion":{"const":"sovereign-skin-layer/1.0"}, "id":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"}, "version":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},
+    "bodyCoverage":{"const":"whole-body"}, "rigId":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"}, "sculptDocumentId":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},
+    "topologyDigest":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/sha256"}, "uvDigest":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/sha256"},
+    "materialRegions":{"type":"array","minItems":1,"items":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/materialRegion"}},
+    "textureChannels":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/channels"}, "generationProvenance":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/provenance"},
+    "surfaceOnly":{"const":true}, "anatomyMutationAllowed":{"const":false}
+  },
+  "$defs":{
+    "id":{"type":"string","minLength":1,"maxLength":2048}, "sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "materialRegion":{"type":"object","additionalProperties":false,"required":["id","sculptRegionId","materialId"],"properties":{"id":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},"sculptRegionId":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},"materialId":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"}}},
+    "texture":{"type":"object","additionalProperties":false,"required":["assetRef","digest","mimeType","colorSpace"],"properties":{"assetRef":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},"digest":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/sha256"},"mimeType":{"enum":["image/png","image/jpeg","image/webp","image/ktx2"]},"colorSpace":{"enum":["srgb","linear"]}}},
+    "channels":{"type":"object","additionalProperties":false,"required":["baseColor","celShade","normalDetail","roughness"],"properties":{"baseColor":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/texture"},"celShade":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/texture"},"normalDetail":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/texture"},"roughness":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/texture"},"fur":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/texture"},"marking":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/texture"},"opacity":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/texture"}}},
+    "provenance":{"type":"object","additionalProperties":false,"required":["method","generatorId","generatorVersion","authorityRef","rightsRef","inputDigests"],"properties":{"method":{"enum":["operator-authored","governed-model","procedural-bake"]},"generatorId":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},"generatorVersion":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},"authorityRef":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},"rightsRef":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/id"},"inputDigests":{"type":"array","items":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/sha256"}},"promptDigest":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json#/$defs/sha256"}}}
+  }
+}

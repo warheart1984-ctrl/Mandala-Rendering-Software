@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "sovereign-character-constitutional/1.0",
+  "status": "core-enforced-fixture-not-production-character",
+  "characterId": "human-fixture-character",
+  "sculptDocumentId": "human-fixture-v1",
+  "rigId": "human-standard-v1",
+  "species": "human",
+  "genderMetadata": {
+    "identity": "creator-specified",
+    "attribution": "creator-authored"
+  },
+  "rigVersion": "character-rig/1.0",
+  "topology": {
+    "state": "locked",
+    "revision": 0
+  },
+  "digests": {
+    "speciesDigest": "11e25bab0df4bb9f63c6dde985fea5de0ef16abdb2ec640dc08e7e97ec6b1d15",
+    "genderDigest": "542193ed5f4f58b47dcd06af312f54cce9548835d33d13a423a618eebc189c27",
+    "rigVersionDigest": "4c2df2407e6bda8d9a8e6425f0a443d0ad0623e8c647cc00448c50b6eed02aad",
+    "meshDigest": "23277b136fb729440dcf17b71ea3367b4221a499e1dd5ab8725433621bbc3902",
+    "topologyDigest": "47821682a91f14f5ae5af2e99436b78c61965091229b4272b5711704847ac100",
+    "vertexOrderDigest": "5fc11fcb2bdef58d13a546e2ec4a84168a76d077935cc6805fa1bdfd34dde9e7",
+    "uvDigest": "d8154e595751aa0e8add48eed7f74b52f1e22e88d52ae407a212fb5675d3c0a7",
+    "armatureDigest": "2620c57cee6087ab5c9cd6534dc8b3f649d121407a96a1c4e150f1d36c133312",
+    "blendshapeDigest": "58459621f931c4de8638e147ff9b63159bd1023c6f54463ad814a61c9f85f8cb",
+    "materialDigest": "165017c1abab02d1f3e95c132c73a4de40a065ecac58b99cfc4f3ca6a9bb640b",
+    "glbDigest": "5052f585f677e582fd342ec7449bcb1f7eedd5cd61d69622e6da3fcac9285f42",
+    "sourceDigest": "6dac5152b65138454ccfa7e104004e47e1bbf67bdf411e1d501288a514aee271",
+    "documentDigest": "ff5a92ba45b6d57eb30864e64bbbb1c3a820e7ed0c6d3bfe2a65def6f0258cf9",
+    "rigDigest": "e33882cce656f8351b113791b340ddf9b912be69a5086991c963b40d1b4418aa",
+    "skinDigest": "6a0a279437d4d70d3f98d743abb9d1ec0eb282f68723f7f971fa58987aa5d616",
+    "textureDigest": "903132b42039fe77a2f0020214064943ea5f042d1e2c95060fac9ac87dc093ca"
+  },
+  "skinLayers": [
+    {
+      "schemaVersion": "sovereign-skin-layer/1.0",
+      "id": "human-anime-whole-body-skin-v1",
+      "version": "1.0.0",
+      "bodyCoverage": "whole-body",
+      "rigId": "human-standard-v1",
+      "sculptDocumentId": "human-fixture-v1",
+      "topologyDigest": "47821682a91f14f5ae5af2e99436b78c61965091229b4272b5711704847ac100",
+      "uvDigest": "d8154e595751aa0e8add48eed7f74b52f1e22e88d52ae407a212fb5675d3c0a7",
+      "materialRegions": [
+        {
+          "id": "whole-body",
+          "sculptRegionId": "body",
+          "materialId": "anime-cel-body"
+        }
+      ],
+      "textureChannels": {
+        "baseColor": {
+          "assetRef": "asset://non-production/human/base-color.png",
+          "digest": "8585e2a600795872cb41d6eda8dd4274e7259361948f908521258cb81ab74434",
+          "mimeType": "image/png",
+          "colorSpace": "srgb"
+        },
+        "celShade": {
+          "assetRef": "asset://non-production/human/cel-shade.png",
+          "digest": "4e7a2a67590c357be245d5d457e581a118a89b8fc3290137b43dd38458333394",
+          "mimeType": "image/png",
+          "colorSpace": "srgb"
+        },
+        "normalDetail": {
+          "assetRef": "asset://non-production/human/normal-detail.png",
+          "digest": "fd55291074dce5b683cb82ad75e76eb8c1ceef7ba56546c1222f934076869a95",
+          "mimeType": "image/png",
+          "colorSpace": "linear"
+        },
+        "roughness": {
+          "assetRef": "asset://non-production/human/roughness.png",
+          "digest": "030204eaace7782c56a06edede9369af9d4d2a49dea45e48e4b362e216eb479d",
+          "mimeType": "image/png",
+          "colorSpace": "linear"
+        }
+      },
+      "generationProvenance": {
+        "method": "governed-model",
+        "generatorId": "mandala-anime-surface-painter-fixture",
+        "generatorVersion": "1.0.0",
+        "authorityRef": "authority://fixture-operator",
+        "rightsRef": "rights://non-production-original-fixture",
+        "inputDigests": [
+          "6dac5152b65138454ccfa7e104004e47e1bbf67bdf411e1d501288a514aee271"
+        ]
+      },
+      "surfaceOnly": true,
+      "anatomyMutationAllowed": false
+    }
+  ],
+  "skinLayerDigests": [
+    "a0a21ac9213228743123bfbbdee83eb08fab1da61b684938fbed8d7c529a33e8"
+  ],
+  "diffusionPolicy": {
+    "purpose": "surface-polish-only",
+    "anatomyMutationAllowed": false,
+    "topologyMutationAllowed": false,
+    "geometryDisplacementAllowed": false,
+    "runtimeRetopologyAllowed": false
+  },
+  "recordDigest": "315d3e63397ea6d683fd34cdb5c443e79731cb811eddf7c5c88da552c8ffc440"
+}

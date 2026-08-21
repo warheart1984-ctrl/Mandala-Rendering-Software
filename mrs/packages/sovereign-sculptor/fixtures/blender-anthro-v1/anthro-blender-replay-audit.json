@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "sovereign-blender-replay-audit/1.0",
+  "status": "passed",
+  "inputs": {
+    "seed": 1990,
+    "size": 768,
+    "blenderVersion": "5.2.0 LTS",
+    "independentProcesses": 2,
+    "blueprintId": "heroic-adult-fox-v1",
+    "blueprintDigest": "beb113ed7942ada429a38ef9b9a9254be45f5d72468630c453868128477673af"
+  },
+  "glb": {
+    "byteIdentical": false,
+    "observedSha256": [
+      "2bc44d043915d1e8fac653016682923c1216a3da9421e8772b35fb9350d019ee",
+      "14697c94b1f177a48bbbe953f1cce01490cfc2ed2ddf6f40ff2a89faf4608e0a"
+    ]
+  },
+  "semanticDigests": {
+    "meshSha256": "f8442af85ab5bf1c3c72c00f09a4047bd984debea4d1a6e1d0c5e6760de1ebcd",
+    "topologySha256": "761fcf1aba4436d585aea5eb4fb9fc97911ee62b5c116333b2823bb8c6597eb7",
+    "vertexOrderSha256": "69938b358dbf7a97e782dadc5f71833247b5dc7917ba9ee30a97ba718da6677a",
+    "uvSha256": "0a695d5b293788d5a5a7df3d48267ea1f82099fd75a77bb6eb225fdd68250876",
+    "armatureSha256": "748bb0967eb7875489a13a00603ff0587d2c83c19d1d0ed32cb06f037d26a962",
+    "blendshapeSha256": "dff28e5586b5746a5ecfa6798588b23bf32fa3663154736c58d32423bcdb7b26",
+    "materialSha256": "6a070d22deb46de96864d80934c55d188cff1547b6061536973754cc1578e681"
+  },
+  "claims": {
+    "glbContainerReplay": false,
+    "governedAnatomyReplay": true,
+    "blendFileByteReplay": false,
+    "renderPngByteReplay": false
+  },
+  "note": "All governed semantic anatomy digests match across independent Blender processes. Blender ancillary container bytes, source files, and rendered PNGs are not claimed byte-identical."
+}

@@ -1,0 +1,26 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"mrs://sovereign-sculptor/schemas/anatomy-record.schema.json",
+  "title":"Sovereign Constitutional Character Record",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schemaVersion","status","characterId","sculptDocumentId","rigId","species","genderMetadata","rigVersion","topology","digests","skinLayers","skinLayerDigests","diffusionPolicy","recordDigest"],
+  "properties":{
+    "schemaVersion":{"const":"sovereign-character-constitutional/1.0"},
+    "status":{"const":"core-enforced-fixture-not-production-character"},
+    "characterId":{"$ref":"#/$defs/id"}, "sculptDocumentId":{"$ref":"#/$defs/id"}, "rigId":{"$ref":"#/$defs/id"},
+    "species":{"enum":["human","fox","anthro"]}, "genderMetadata":{"$ref":"#/$defs/gender"},
+    "rigVersion":{"const":"character-rig/1.0"},
+    "topology":{"type":"object","additionalProperties":false,"required":["state","revision"],"properties":{"state":{"const":"locked"},"revision":{"type":"integer","minimum":0},"parentTopologyDigest":{"$ref":"#/$defs/sha256"}}},
+    "digests":{"$ref":"#/$defs/digests"},
+    "skinLayers":{"type":"array","items":{"$ref":"mrs://sovereign-sculptor/schemas/skin-layer.schema.json"}},
+    "skinLayerDigests":{"type":"array","items":{"$ref":"#/$defs/sha256"}},
+    "diffusionPolicy":{"$ref":"#/$defs/policy"}, "recordDigest":{"$ref":"#/$defs/sha256"}
+  },
+  "$defs":{
+    "id":{"type":"string","minLength":1,"maxLength":256}, "sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "gender":{"type":"object","additionalProperties":false,"required":["identity","attribution"],"properties":{"identity":{"$ref":"#/$defs/id"},"pronouns":{"type":"array","items":{"type":"string","minLength":1}},"attribution":{"enum":["self-described","creator-authored"]}}},
+    "digests":{"type":"object","additionalProperties":false,"required":["speciesDigest","genderDigest","rigVersionDigest","meshDigest","topologyDigest","vertexOrderDigest","uvDigest","armatureDigest","blendshapeDigest","materialDigest","glbDigest","sourceDigest","documentDigest","rigDigest","skinDigest","textureDigest"],"properties":{"speciesDigest":{"$ref":"#/$defs/sha256"},"genderDigest":{"$ref":"#/$defs/sha256"},"rigVersionDigest":{"$ref":"#/$defs/sha256"},"meshDigest":{"$ref":"#/$defs/sha256"},"topologyDigest":{"$ref":"#/$defs/sha256"},"vertexOrderDigest":{"$ref":"#/$defs/sha256"},"uvDigest":{"$ref":"#/$defs/sha256"},"armatureDigest":{"$ref":"#/$defs/sha256"},"blendshapeDigest":{"$ref":"#/$defs/sha256"},"materialDigest":{"$ref":"#/$defs/sha256"},"glbDigest":{"$ref":"#/$defs/sha256"},"sourceDigest":{"$ref":"#/$defs/sha256"},"documentDigest":{"$ref":"#/$defs/sha256"},"rigDigest":{"$ref":"#/$defs/sha256"},"skinDigest":{"$ref":"#/$defs/sha256"},"textureDigest":{"$ref":"#/$defs/sha256"}}},
+    "policy":{"type":"object","additionalProperties":false,"required":["purpose","anatomyMutationAllowed","topologyMutationAllowed","geometryDisplacementAllowed","runtimeRetopologyAllowed"],"properties":{"purpose":{"const":"surface-polish-only"},"anatomyMutationAllowed":{"const":false},"topologyMutationAllowed":{"const":false},"geometryDisplacementAllowed":{"const":false},"runtimeRetopologyAllowed":{"const":false}}}
+  }
+}

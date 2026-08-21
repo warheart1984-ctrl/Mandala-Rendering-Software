@@ -1,0 +1,9 @@
+# The repository root currently ignores every JSON file. This package's JSON
+# files are source contracts and deterministic evidence, so keep them visible.
+dist/
+!package.json
+!tsconfig.json
+!schemas/
+!schemas/*.json
+!fixtures/
+!fixtures/**/*.json

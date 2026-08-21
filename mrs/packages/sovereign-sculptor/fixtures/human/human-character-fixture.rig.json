@@ -1,0 +1,939 @@
+{
+  "schemaVersion": "character-rig/1.0",
+  "status": "core-enforced-fixture-not-production-rig",
+  "id": "human-standard-v1",
+  "species": "human",
+  "bones": [
+    {
+      "id": "root",
+      "parentId": null,
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            0,
+            0,
+            0
+          ],
+          "max": [
+            0,
+            0,
+            0
+          ]
+        },
+        "translationLocked": false,
+        "scaleLocked": false
+      }
+    },
+    {
+      "id": "pelvis",
+      "parentId": "root",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.95,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -3.141592653589793,
+            -3.141592653589793,
+            -3.141592653589793
+          ],
+          "max": [
+            3.141592653589793,
+            3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "spine",
+      "parentId": "pelvis",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.22,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -3.141592653589793,
+            -3.141592653589793,
+            -3.141592653589793
+          ],
+          "max": [
+            3.141592653589793,
+            3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "chest",
+      "parentId": "spine",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.28,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -3.141592653589793,
+            -3.141592653589793,
+            -3.141592653589793
+          ],
+          "max": [
+            3.141592653589793,
+            3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "neck",
+      "parentId": "chest",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.28,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -3.141592653589793,
+            -3.141592653589793,
+            -3.141592653589793
+          ],
+          "max": [
+            3.141592653589793,
+            3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "head",
+      "parentId": "neck",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.18,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -3.141592653589793,
+            -3.141592653589793,
+            -3.141592653589793
+          ],
+          "max": [
+            3.141592653589793,
+            3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "jaw",
+      "parentId": "head",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.1,
+        0.05,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.1,
+            -0.1,
+            -0.1
+          ],
+          "max": [
+            0.8,
+            0.1,
+            0.1
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "eye.L",
+      "parentId": "head",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.08,
+        0.05,
+        0.1,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.5,
+            -0.5,
+            0
+          ],
+          "max": [
+            0.5,
+            0.5,
+            0
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "eye.R",
+      "parentId": "head",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.08,
+        0.05,
+        0.1,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.5,
+            -0.5,
+            0
+          ],
+          "max": [
+            0.5,
+            0.5,
+            0
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "ear.L",
+      "parentId": "head",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.12,
+        0.18,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.7,
+            -0.7,
+            -0.7
+          ],
+          "max": [
+            0.7,
+            0.7,
+            0.7
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "ear.R",
+      "parentId": "head",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.12,
+        0.18,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.7,
+            -0.7,
+            -0.7
+          ],
+          "max": [
+            0.7,
+            0.7,
+            0.7
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "arm.LUpper",
+      "parentId": "chest",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.24,
+        0.18,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -2.4,
+            -1.5,
+            -2.4
+          ],
+          "max": [
+            2.4,
+            1.5,
+            2.4
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "arm.LLower",
+      "parentId": "arm.LUpper",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.42,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            0,
+            -0.1,
+            -0.1
+          ],
+          "max": [
+            2.7,
+            0.1,
+            0.1
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "arm.LEnd",
+      "parentId": "arm.LLower",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.38,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.8,
+            -0.8,
+            -0.8
+          ],
+          "max": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "arm.RUpper",
+      "parentId": "chest",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.24,
+        0.18,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -2.4,
+            -1.5,
+            -2.4
+          ],
+          "max": [
+            2.4,
+            1.5,
+            2.4
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "arm.RLower",
+      "parentId": "arm.RUpper",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.42,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            0,
+            -0.1,
+            -0.1
+          ],
+          "max": [
+            2.7,
+            0.1,
+            0.1
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "arm.REnd",
+      "parentId": "arm.RLower",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.38,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.8,
+            -0.8,
+            -0.8
+          ],
+          "max": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "leg.LUpper",
+      "parentId": "pelvis",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.12,
+        -0.12,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -2.4,
+            -1.5,
+            -2.4
+          ],
+          "max": [
+            2.4,
+            1.5,
+            2.4
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "leg.LLower",
+      "parentId": "leg.LUpper",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.42,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            0,
+            -0.1,
+            -0.1
+          ],
+          "max": [
+            2.7,
+            0.1,
+            0.1
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "leg.LEnd",
+      "parentId": "leg.LLower",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.38,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.8,
+            -0.8,
+            -0.8
+          ],
+          "max": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "leg.RUpper",
+      "parentId": "pelvis",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.12,
+        -0.12,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -2.4,
+            -1.5,
+            -2.4
+          ],
+          "max": [
+            2.4,
+            1.5,
+            2.4
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "leg.RLower",
+      "parentId": "leg.RUpper",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.42,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            0,
+            -0.1,
+            -0.1
+          ],
+          "max": [
+            2.7,
+            0.1,
+            0.1
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    },
+    {
+      "id": "leg.REnd",
+      "parentId": "leg.RLower",
+      "bindTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.38,
+        0,
+        1
+      ],
+      "constraint": {
+        "rotationRadians": {
+          "min": [
+            -0.8,
+            -0.8,
+            -0.8
+          ],
+          "max": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        },
+        "translationLocked": true,
+        "scaleLocked": true
+      }
+    }
+  ],
+  "blendshapes": [
+    {
+      "id": "blink.L",
+      "regionId": "face",
+      "minWeight": 0,
+      "maxWeight": 1,
+      "symmetricPartnerId": "blink.R"
+    },
+    {
+      "id": "blink.R",
+      "regionId": "face",
+      "minWeight": 0,
+      "maxWeight": 1,
+      "symmetricPartnerId": "blink.L"
+    },
+    {
+      "id": "browUp.L",
+      "regionId": "face",
+      "minWeight": 0,
+      "maxWeight": 1,
+      "symmetricPartnerId": "browUp.R"
+    },
+    {
+      "id": "browUp.R",
+      "regionId": "face",
+      "minWeight": 0,
+      "maxWeight": 1,
+      "symmetricPartnerId": "browUp.L"
+    },
+    {
+      "id": "jawOpen",
+      "regionId": "face",
+      "minWeight": 0,
+      "maxWeight": 1
+    },
+    {
+      "id": "smile",
+      "regionId": "face",
+      "minWeight": 0,
+      "maxWeight": 1
+    },
+    {
+      "id": "frown",
+      "regionId": "face",
+      "minWeight": 0,
+      "maxWeight": 1
+    }
+  ],
+  "capabilities": {
+    "face": true,
+    "body": true,
+    "tail": false,
+    "ears": false,
+    "digitigrade": false,
+    "hands": true,
+    "paws": false
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "schemaVersion": "sovereign-character-blueprint/1.0",
+  "id": "heroic-adult-fox-v1",
+  "status": "operator-supplied-single-view-inferred-not-orthographic",
+  "source": {
+    "assetRef": "operator-supplied://heroic-fox-three-panel.png",
+    "sha256": "bc21df01465da5312e869069e35926034cc2bdf825d5939861c75b710d484600"
+  },
+  "intent": {
+    "ageClass": "adult",
+    "build": "heroic-athletic",
+    "species": "anthro-fox",
+    "armorIsSeparateSurfaceLayer": true,
+    "singleViewInferenceAcknowledged": true
+  },
+  "bonePositions": {
+    "root": [0.0, 0.0, 0.05],
+    "pelvis": [0.0, 0.0, 2.85],
+    "spine": [0.0, 0.0, 3.55],
+    "chest": [0.0, 0.0, 4.35],
+    "neck": [0.0, 0.0, 4.88],
+    "head": [0.0, 0.0, 5.65],
+    "muzzle": [0.0, -0.45, 5.60],
+    "jaw": [0.0, -0.34, 5.39],
+    "eye.L": [0.19, -0.43, 5.82],
+    "eye.R": [-0.19, -0.43, 5.82],
+    "ear.L": [0.32, 0.0, 6.22],
+    "ear.R": [-0.32, 0.0, 6.22],
+    "tail.0": [0.0, 0.30, 2.82],
+    "tail.1": [0.72, 0.50, 2.87],
+    "tail.2": [1.46, 0.46, 2.45],
+    "arm.LUpper": [0.75, 0.0, 4.52],
+    "arm.LLower": [1.05, -0.05, 3.75],
+    "arm.LEnd": [1.22, -0.14, 3.12],
+    "arm.RUpper": [-0.75, 0.0, 4.52],
+    "arm.RLower": [-1.25, -0.12, 4.12],
+    "arm.REnd": [-1.65, -0.28, 4.45],
+    "thigh.L": [0.35, 0.0, 2.78],
+    "shin.L": [0.42, -0.05, 1.65],
+    "hock.L": [0.48, 0.12, 0.72],
+    "paw.L": [0.52, -0.24, 0.25],
+    "thigh.R": [-0.35, 0.0, 2.78],
+    "shin.R": [-0.42, -0.05, 1.65],
+    "hock.R": [-0.48, 0.12, 0.72],
+    "paw.R": [-0.52, -0.24, 0.25]
+  },
+  "torsoControls": [
+    [2.52, 0.45, 0.31, 0.05],
+    [2.70, 0.60, 0.39, 0.04],
+    [2.95, 0.66, 0.42, 0.02],
+    [3.24, 0.49, 0.32, 0.0],
+    [3.55, 0.54, 0.35, -0.01],
+    [3.88, 0.66, 0.41, -0.03],
+    [4.23, 0.78, 0.46, -0.04],
+    [4.50, 0.75, 0.43, -0.02],
+    [4.70, 0.60, 0.34, 0.0]
+  ],
+  "head": {
+    "center": [0.0, 0.0, 5.65],
+    "scale": [0.54, 0.47, 0.60],
+    "muzzleCenter": [0.0, -0.44, 5.55],
+    "muzzleScale": [0.32, 0.33, 0.23],
+    "jawCenter": [0.0, -0.39, 5.37],
+    "jawScale": [0.27, 0.25, 0.14],
+    "noseCenter": [0.0, -0.72, 5.63],
+    "noseScale": [0.12, 0.09, 0.085],
+    "eyeX": 0.19,
+    "eyeCenterY": -0.43,
+    "eyeCenterZ": 5.82,
+    "earX": 0.32,
+    "earCenterY": 0.0,
+    "earCenterZ": 6.25,
+    "earRadius": 0.26,
+    "earDepth": 0.88
+  },
+  "neck": {
+    "start": [0.0, 0.0, 4.62],
+    "end": [0.0, 0.0, 5.18],
+    "startRadius": 0.30,
+    "endRadius": 0.245,
+    "trapeziusInnerX": 0.14,
+    "trapeziusInnerZ": 4.98,
+    "trapeziusOuterX": 0.73,
+    "trapeziusOuterZ": 4.50,
+    "trapeziusInnerRadius": 0.20,
+    "trapeziusOuterRadius": 0.27,
+    "mantleControls": [
+      [4.42, 0.76, 0.40, -0.02],
+      [4.56, 0.68, 0.37, -0.01],
+      [4.72, 0.52, 0.32, 0.0],
+      [4.92, 0.37, 0.28, 0.0],
+      [5.18, 0.27, 0.24, 0.0]
+    ]
+  },
+  "arms": {
+    "L": {
+      "shoulder": [0.72, 0.0, 4.52],
+      "elbow": [1.05, -0.05, 3.75],
+      "wrist": [1.22, -0.14, 3.12],
+      "handForward": [0.10, -0.03, -0.24],
+      "chestAnchor": [0.38, -0.01, 4.59],
+      "deltoidEnd": [0.86, -0.02, 4.20]
+    },
+    "R": {
+      "shoulder": [-0.72, 0.0, 4.52],
+      "elbow": [-1.25, -0.12, 4.12],
+      "wrist": [-1.65, -0.28, 4.45],
+      "handForward": [-0.19, -0.08, 0.11],
+      "chestAnchor": [-0.38, -0.01, 4.59],
+      "deltoidEnd": [-0.90, -0.05, 4.40]
+    }
+  },
+  "legs": {
+    "L": {
+      "hip": [0.35, 0.0, 2.82],
+      "knee": [0.42, -0.05, 1.65],
+      "hock": [0.48, 0.12, 0.72],
+      "ankle": [0.52, -0.23, 0.29]
+    },
+    "R": {
+      "hip": [-0.35, 0.0, 2.82],
+      "knee": [-0.42, -0.05, 1.65],
+      "hock": [-0.48, 0.12, 0.72],
+      "ankle": [-0.52, -0.23, 0.29]
+    }
+  },
+  "tailControls": [
+    [[0.0, 0.26, 2.75], 0.42, 0.68],
+    [[0.24, 0.44, 2.95], 0.38, 0.72],
+    [[0.82, 0.54, 2.90], 0.35, 0.76],
+    [[1.45, 0.50, 2.55], 0.31, 0.80],
+    [[1.82, 0.42, 2.05], 0.27, 0.84],
+    [[1.72, 0.33, 1.55], 0.22, 0.88],
+    [[1.35, 0.25, 1.25], 0.18, 0.92]
+  ],
+  "tailRoot": {
+    "start": [0.0, 0.10, 2.73],
+    "end": [0.30, 0.43, 2.94],
+    "startRadius": 0.49,
+    "endRadius": 0.38,
+    "depthRatio": 0.62,
+    "curveOffset": [0.0, 0.025, 0.08]
+  },
+  "tailTip": {
+    "center": [1.29, 0.24, 1.20],
+    "scale": [0.24, 0.20, 0.32]
+  },
+  "costumeAnchors": {
+    "beltZ": 2.98,
+    "scarfZ": 5.10
+  },
+  "camera": {
+    "location": [8.6, -14.0, 6.2],
+    "target": [0.0, 0.0, 3.25],
+    "lens": 72
+  }
+}

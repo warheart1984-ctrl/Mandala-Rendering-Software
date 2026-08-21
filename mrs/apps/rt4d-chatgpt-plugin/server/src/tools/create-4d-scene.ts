@@ -15,6 +15,12 @@ export const create4dSceneInputShape = {
   species: SpeciesSchema.optional().describe(
     "Intended species. Default anthro (biped fox/warrior). fox = quadruped fixture. Does not bind the rig yet."
   ),
+  topology: z
+    .enum(["tesseract", "moebius"])
+    .optional()
+    .describe(
+      "Substrate topology. 'tesseract' (default) = hypercube + filaments. 'moebius' = hexagonal lattice on torus with twist parity (Flower of Life)."
+    ),
   mode: ProductionModeSchema.optional().describe(
     "Defaults to add_rt4d_powers (RT4D energy field). Use create_anime_character when the request is portrait-only."
   ),
@@ -57,7 +63,8 @@ export function handleCreate4dScene(args: unknown) {
     parentShotId: parsed.parentShotId,
   });
 
-  const scene = attachEnergyMeshToScene(created.sceneId, species);
+  const topology = parsed.topology ?? "tesseract";
+  const scene = attachEnergyMeshToScene(created.sceneId, species, topology);
   const mesh = scene.characterPipeline?.wireMesh;
   const png = mesh
     ? rasterEnergyWireMesh({
@@ -69,9 +76,10 @@ export function handleCreate4dScene(args: unknown) {
     : null;
 
   return {
-    text: `Created 4D energy/wire-mesh scene ${scene.sceneId} species=${species} verts=${mesh?.vertexCount ?? 0} edges=${mesh?.edgeCount ?? 0}. Energy PNG attached (partial dimensional field, not a production sculpt). Next: bind_character_rig then render_stage.`,
+    text: `Created 4D energy/wire-mesh scene ${scene.sceneId} species=${species} topology=${topology} verts=${mesh?.vertexCount ?? 0} edges=${mesh?.edgeCount ?? 0}. Energy PNG attached (partial dimensional field, not a production sculpt). Next: bind_character_rig then render_stage.`,
     sceneId: scene.sceneId,
     species,
+    topology,
     wireMesh: mesh,
     meshSha256: mesh?.meshSha256 ?? null,
     pngBase64: png?.pngBase64 ?? null,
@@ -84,6 +92,7 @@ export function handleCreate4dScene(args: unknown) {
     characterPipeline: {
       intendedSpecies: scene.characterPipeline?.intendedSpecies,
       meshSeedHex: scene.characterPipeline?.meshSeedHex,
+      topology: scene.characterPipeline?.topology ?? "tesseract",
       meshSha256: mesh?.meshSha256,
       includesRigPolylines: mesh?.includesRigPolylines ?? false,
       stages: scene.characterPipeline?.stages,

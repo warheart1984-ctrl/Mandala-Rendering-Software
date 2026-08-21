@@ -21,7 +21,18 @@ import { exportSculptGlbBundle } from "./glb.js";
 import { createAnthroRig, createFoxQuadrupedRig } from "./rigs.js";
 import type { CharacterRigSchema, SculptDocument, Species, Vec3 } from "./types.js";
 
-const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+function resolvePackageRoot(): string {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const candidates = [resolve(here, ".."), resolve(here, "../..")];
+  for (const root of candidates) {
+    if (existsSync(join(root, "fixtures", "anthro", "anthro-character-fixture.sculpt.json"))) {
+      return root;
+    }
+  }
+  return resolve(here, "..");
+}
+
+const PACKAGE_ROOT = resolvePackageRoot();
 
 /** Same IDs as preview-character-continuity.contract.json foxWarriorFixture. */
 export const FOX_WARRIOR_PREVIEW_IDS = {

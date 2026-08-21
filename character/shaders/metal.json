@@ -1,0 +1,17 @@
+{
+  "id": "metal",
+  "status": "partial",
+  "type": "conductor-pbr",
+  "note": "Specular/reflection metal for armor plates. CPU raster uses Blinn-Phong with high spec; not a full environment BRDF.",
+  "pbr": {
+    "baseColor": [0.72, 0.74, 0.78, 1],
+    "metallic": 1.0,
+    "roughness": 0.18,
+    "emissive": [0.04, 0.045, 0.055]
+  },
+  "specular": {
+    "ior": 1.5,
+    "f0": [0.91, 0.92, 0.94]
+  },
+  "wgsl": "metal.wgsl"
+}

@@ -1,0 +1,42 @@
+{
+  "id": "aven",
+  "species": "human",
+  "status": "enforced",
+  "sim": {
+    "ran": true,
+    "frames": 12,
+    "cloakMoved": true,
+    "status": "partial"
+  },
+  "topology": {
+    "verts": 410,
+    "quads": 328,
+    "ok": true
+  },
+  "armature": {
+    "spine": true,
+    "shoulders": true,
+    "hips": true,
+    "tail": true,
+    "fingers": true
+  },
+  "presets": [
+    "wire_sim",
+    "beauty_sim"
+  ],
+  "exports": {
+    "char_wire_glb": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/char_wire.glb",
+    "char_wire_png": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/char_wire_render.png",
+    "char_rigged_glb": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/char_rigged.glb",
+    "char_rig_png": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/char_rig_view.png",
+    "char_final_glb": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/char_final.glb",
+    "char_final_png": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/char_final.png",
+    "manifest": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/pipeline-manifest.json",
+    "char_final_mp4": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/char_final.mp4"
+  },
+  "turntable": "/media/jon/New Volume/Mandala Rendering Software/character/renders/aven/char_final.mp4",
+  "organ": {
+    "mandala": "pixels",
+    "simulationChamber": "motion-hooks"
+  }
+}

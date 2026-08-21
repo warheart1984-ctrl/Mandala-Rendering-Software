@@ -234,7 +234,7 @@ function createRt4dPluginServer(): McpServer {
     {
       title: "Create 4D Energy / Wire-Mesh Scene",
       description:
-        "Create a 4D energy wire-mesh scene and return a PNG (orange/cyan dimensional field). Default species=anthro. Next: bind_character_rig.",
+        "Create a 4D energy wire-mesh scene and return a PNG (orange/cyan dimensional field). Default species=anthro. topology='moebius' generates hexagonal lattice on torus with twist parity (Flower of Life). Next: bind_character_rig.",
       inputSchema: create4dSceneInputShape,
       _meta: widgetMeta("Creating 4D wire-mesh scene…", "Energy mesh ready"),
     },

@@ -5,6 +5,11 @@ import type {
   Vec4Tuple,
   WireMesh4D,
 } from "./scene-store.js";
+import {
+  buildMoebiusWireMesh4d,
+  type moebiusParity,
+  type moebiusTwistGradient,
+} from "./moebius-substrate.js";
 
 function sha256Hex(payload: string): string {
   return createHash("sha256").update(payload, "utf8").digest("hex");
@@ -109,10 +114,58 @@ function offsetEdges(
   return edges.map(([a, b]) => [a + offset, b + offset] as const);
 }
 
+/**
+ * Build the energy wire mesh for a scene.
+ *
+ * @param input.topology - "tesseract" (default) or "moebius" for Möbius Flower substrate
+ * @param input.gridRadius - Hex grid radius for Möbius topology (default 3)
+ * @param input.torusRadius - Torus major radius for Möbius topology (default 1.5)
+ */
 export function buildEnergyWireMesh4d(input: {
   sceneSeedHex: string;
   rigBinding?: CharacterRigBinding;
+  topology?: "tesseract" | "moebius";
+  gridRadius?: number;
+  torusRadius?: number;
 }): WireMesh4D {
+  // ── Möbius Flower topology ──
+  if (input.topology === "moebius") {
+    const moebius = buildMoebiusWireMesh4d({
+      sceneSeedHex: input.sceneSeedHex,
+      gridRadius: input.gridRadius ?? 3,
+      torusRadius: input.torusRadius ?? 1.5,
+    });
+
+    // Append rig polylines if bound
+    let includesRigPolylines = false;
+    const vertices: Vec4Tuple[] = [...moebius.vertices];
+    const edges: Array<readonly [number, number]> = [...moebius.edges];
+
+    if (input.rigBinding) {
+      const rig = rigPolylines(input.rigBinding);
+      const off = vertices.length;
+      vertices.push(...rig.vertices);
+      edges.push(...offsetEdges(rig.edges, off));
+      includesRigPolylines = true;
+    }
+
+    const payload = { vertices, edges, includesRigPolylines };
+    const meshSha256 = sha256Hex(JSON.stringify(payload));
+
+    return {
+      schemaVersion: "rt4d-wire-mesh/v0.1",
+      statusTag: "partial",
+      kind: "moebius_substrate",
+      vertices,
+      edges,
+      vertexCount: vertices.length,
+      edgeCount: edges.length,
+      meshSha256,
+      includesRigPolylines,
+    };
+  }
+
+  // ── Default tesseract + filaments topology ──
   const tessV = tesseractVertices();
   const tessE = tesseractEdges();
   const filaments = energyFilaments(input.sceneSeedHex);

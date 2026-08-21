@@ -1,0 +1,18 @@
+{
+  "id": "leather",
+  "status": "partial",
+  "type": "rough-dielectric",
+  "note": "Leather/fabric: roughness + procedural grain stand-in. Normal map is generated in raster, not a baked tangent map.",
+  "pbr": {
+    "baseColor": [0.28, 0.14, 0.08, 1],
+    "metallic": 0.04,
+    "roughness": 0.72,
+    "emissive": [0, 0, 0]
+  },
+  "normal": {
+    "status": "partial",
+    "grainScale": 18.0,
+    "grainStrength": 0.22
+  },
+  "wgsl": "fabric.wgsl"
+}

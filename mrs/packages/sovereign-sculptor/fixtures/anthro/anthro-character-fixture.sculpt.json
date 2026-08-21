@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "sovereign-sculpt/1.0",
+  "status": "core-enforced-fixture-not-production-sculpt",
+  "id": "anthro-fixture-v1",
+  "species": "anthro",
+  "topologyState": "locked",
+  "topologyRevision": 0,
+  "identity": {
+    "id": "anthro-fixture-character",
+    "displayName": "anthro non-production fixture",
+    "gender": {
+      "identity": "creator-specified",
+      "attribution": "creator-authored"
+    }
+  },
+  "morphologyProfile": {
+    "stature": 0.5,
+    "bodyMass": 0.5,
+    "limbLength": 0.5,
+    "torsoLength": 0.5,
+    "headScale": 0.5,
+    "muzzleLength": 0.7,
+    "earScale": 0.8,
+    "tailLength": 0.8,
+    "digitigradeBias": 0.8
+  },
+  "vertices": [
+    {
+      "id": "vertex:0",
+      "position": [
+        -0.5,
+        0,
+        -0.5
+      ]
+    },
+    {
+      "id": "vertex:1",
+      "position": [
+        0.5,
+        0,
+        -0.5
+      ]
+    },
+    {
+      "id": "vertex:2",
+      "position": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "vertex:3",
+      "position": [
+        0,
+        0,
+        0.5
+      ]
+    }
+  ],
+  "triangles": [
+    {
+      "id": "triangle:0",
+      "vertexIndices": [
+        0,
+        1,
+        2
+      ],
+      "regionId": "body"
+    },
+    {
+      "id": "triangle:1",
+      "vertexIndices": [
+        0,
+        3,
+        1
+      ],
+      "regionId": "body"
+    },
+    {
+      "id": "triangle:2",
+      "vertexIndices": [
+        1,
+        3,
+        2
+      ],
+      "regionId": "body"
+    },
+    {
+      "id": "triangle:3",
+      "vertexIndices": [
+        2,
+        3,
+        0
+      ],
+      "regionId": "body"
+    }
+  ],
+  "regions": [
+    {
+      "id": "body",
+      "vertexIndices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    }
+  ],
+  "masks": [],
+  "operationLog": []
+}

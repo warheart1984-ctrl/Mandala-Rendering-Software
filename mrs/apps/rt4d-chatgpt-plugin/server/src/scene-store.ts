@@ -46,7 +46,7 @@ export type Vec3Tuple = readonly [number, number, number];
 export type WireMesh4D = {
   schemaVersion: "rt4d-wire-mesh/v0.1";
   statusTag: "partial";
-  kind: "energy_field";
+  kind: "energy_field" | "moebius_substrate";
   vertices: Vec4Tuple[];
   edges: Array<readonly [number, number]>;
   vertexCount: number;
@@ -77,6 +77,8 @@ export type CharacterPipeline = {
   intendedSpecies: "human" | "fox" | "anthro";
   /** Frozen at first energy mesh so later envelope commits do not retessellate. */
   meshSeedHex: string;
+  /** Substrate topology: "tesseract" (default) or "moebius" (Flower of Life on torus). */
+  topology?: "tesseract" | "moebius";
   wireMesh?: WireMesh4D;
   rigBinding?: CharacterRigBinding;
   stages: {

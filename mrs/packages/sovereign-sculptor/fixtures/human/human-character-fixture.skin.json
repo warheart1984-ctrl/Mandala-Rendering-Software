@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "sovereign-skin-layer/1.0",
+  "id": "human-anime-whole-body-skin-v1",
+  "version": "1.0.0",
+  "bodyCoverage": "whole-body",
+  "rigId": "human-standard-v1",
+  "sculptDocumentId": "human-fixture-v1",
+  "topologyDigest": "47821682a91f14f5ae5af2e99436b78c61965091229b4272b5711704847ac100",
+  "uvDigest": "d8154e595751aa0e8add48eed7f74b52f1e22e88d52ae407a212fb5675d3c0a7",
+  "materialRegions": [
+    {
+      "id": "whole-body",
+      "sculptRegionId": "body",
+      "materialId": "anime-cel-body"
+    }
+  ],
+  "textureChannels": {
+    "baseColor": {
+      "assetRef": "asset://non-production/human/base-color.png",
+      "digest": "8585e2a600795872cb41d6eda8dd4274e7259361948f908521258cb81ab74434",
+      "mimeType": "image/png",
+      "colorSpace": "srgb"
+    },
+    "celShade": {
+      "assetRef": "asset://non-production/human/cel-shade.png",
+      "digest": "4e7a2a67590c357be245d5d457e581a118a89b8fc3290137b43dd38458333394",
+      "mimeType": "image/png",
+      "colorSpace": "srgb"
+    },
+    "normalDetail": {
+      "assetRef": "asset://non-production/human/normal-detail.png",
+      "digest": "fd55291074dce5b683cb82ad75e76eb8c1ceef7ba56546c1222f934076869a95",
+      "mimeType": "image/png",
+      "colorSpace": "linear"
+    },
+    "roughness": {
+      "assetRef": "asset://non-production/human/roughness.png",
+      "digest": "030204eaace7782c56a06edede9369af9d4d2a49dea45e48e4b362e216eb479d",
+      "mimeType": "image/png",
+      "colorSpace": "linear"
+    }
+  },
+  "generationProvenance": {
+    "method": "governed-model",
+    "generatorId": "mandala-anime-surface-painter-fixture",
+    "generatorVersion": "1.0.0",
+    "authorityRef": "authority://fixture-operator",
+    "rightsRef": "rights://non-production-original-fixture",
+    "inputDigests": [
+      "6dac5152b65138454ccfa7e104004e47e1bbf67bdf411e1d501288a514aee271"
+    ]
+  },
+  "surfaceOnly": true,
+  "anatomyMutationAllowed": false
+}
