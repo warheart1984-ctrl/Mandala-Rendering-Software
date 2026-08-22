@@ -816,9 +816,6 @@ if (args.length === 0) {
   console.error("         --cam-az-min R --cam-az-max R  azimuth arc (radians) for the eased ping-pong sweep (default 0.7..1.8)");
   console.error("         --cam-sweeps N          number of smooth there-and-back sweeps over the take (default 1)");
   console.error("         --cam-orbit-360         legacy: continuous one-way orbit (may pan off the lit scene)");
-  console.error("         --field-volume          composite certified φ/∇φ/η as a primary-ray field volume (partial)");
-  console.error("         --per-actor-grad        each actor steps by local −∇φ at its own lattice cell");
-  console.error("         --grad-scale N          world-space gain for --per-actor-grad (default 6.0)");
   process.exit(1);
 }
 
@@ -842,9 +839,6 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === "--cam-az-max" && args[i + 1]) { options.camAzMax = parseFloat(args[++i]); }
   else if (args[i] === "--cam-sweeps" && args[i + 1]) { options.camSweeps = parseFloat(args[++i]); }
   else if (args[i] === "--cam-orbit-360") { options.camOrbit360 = true; }
-  else if (args[i] === "--field-volume") { options.fieldVolume = true; }
-  else if (args[i] === "--per-actor-grad") { options.perActorGrad = true; }
-  else if (args[i] === "--grad-scale" && args[i + 1]) { options.gradMotionScale = parseFloat(args[++i]); }
   else { positionalArgs.push(args[i]); }
 }
 
