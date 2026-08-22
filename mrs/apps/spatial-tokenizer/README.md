@@ -9,8 +9,8 @@ plus an optional MCP surface. Primary ChatGPT payload: **Holo-Scheme V1**.
 | Depth grid → Spatial-V1 token (Node math core) | **enforced** |
 | GPT Actions OpenAPI | **partial** — `openapi-gpt-actions.yaml` |
 | MCP Streamable HTTP (`mcp/`) | **enforced** tools; UI **skeleton** |
-| `REQUIRE_CREDIT` 402 paywall | **declared** stub |
-| Billing `$1`/call Stripe live | **declared** (no secrets) |
+| `REQUIRE_CREDIT` 402 paywall | **declared** — webhook-only mint when Stripe configured |
+| Billing `$1`/call Stripe live | **declared** (no secrets in repo; stub until keys set) |
 | `image_base64` → grayscale pseudo-depth | **partial** |
 | Meter calibration | **declared** |
 

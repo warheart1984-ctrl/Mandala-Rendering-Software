@@ -14,7 +14,10 @@ info:
     `execution_instruction` telling you to apply geometric constraints — no distance
     hallucination. Meter claims require calibration (**declared**).
 
-    **Price:** $1 Spatial Credit per read (**declared** business model; stub paywall).
+    **Price:** $1 Spatial Credit per read. Billing is **declared** until Stripe keys are
+    configured. Credits mint only via signed Stripe webhooks — never via success URL.
+    Action auth should be OAuth (future) or shared server API key — not X-Spatial-Credit
+    as a wallet.
 servers:
   - url: https://YOUR-TUNNEL.example/v1
     description: Replace with ngrok / Cloudflare Tunnel / public HTTPS URL
@@ -61,30 +64,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/HoloMathResponse"
         "402":
-          description: Spatial Credit required (REQUIRE_CREDIT=1)
+          description: |
+            Spatial Credit required (REQUIRE_CREDIT=1). Returns a checkout_url.
+            Billing status remains declared until Stripe is configured.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PaymentRequired"
         "400":
           description: Bad request
-  /credits/status:
-    get:
-      operationId: spatial_credit_status
-      summary: Check Spatial Credit key
-      parameters:
-        - name: key
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Credit validity stub
-  /credits/checkout:
+  /billing/checkout:
     post:
-      operationId: spatial_credit_checkout
-      summary: Get $1 payment URL stub (declared — no live Stripe keys)
+      operationId: spatial_billing_checkout
+      summary: Start $1 Spatial Credit Checkout (webhook mints later)
+      description: |
+        Creates a pending credit and returns a Stripe Checkout URL when configured.
+        Without Stripe keys, returns a declared stub URL. **Does not mint credit.**
       requestBody:
         required: false
         content:
@@ -100,7 +95,40 @@ paths:
                   type: string
       responses:
         "200":
-          description: Checkout URL stub + optional demo credit for local testing
+          description: checkout_url + pending_credit_id (billing_status declared|stripe_*)
+  /credits/status:
+    get:
+      operationId: spatial_credit_status
+      summary: Check Spatial Credit token
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Credit validity
+  /credits/checkout:
+    post:
+      operationId: spatial_credit_checkout
+      summary: Alias of /billing/checkout (declared until Stripe live)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success_url:
+                  type: string
+                cancel_url:
+                  type: string
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Checkout URL (no instant credit mint)
   /health:
     get:
       operationId: spatial_health
@@ -116,10 +144,11 @@ components:
     ApiKeyAuth:
       type: apiKey
       in: header
-      name: X-Spatial-Credit
+      name: X-API-Key
       description: |
-        Stub API key / Spatial Credit header. When REQUIRE_CREDIT=1, pass a valid
-        credit_token (or use credit_ok_* demo keys from checkout). No secrets shipped.
+        Server-to-server HOLOR4D_API_KEY for GPT Action backends (when set).
+        This is NOT the $1 purchase credit. For anonymous demo credits use
+        credit_token body field or X-Spatial-Credit (demo/direct API only).
   schemas:
     SpatialTokenizeRequest:
       type: object
@@ -158,7 +187,9 @@ components:
             type: number
         credit_token:
           type: string
-          description: Spatial Credit when paywall enabled
+          description: |
+            Optional anonymous one-use Spatial Credit from Checkout/webhook.
+            Demo/direct API only — GPT Actions should not use this as wallet auth.
         brief_id:
           type: string
     HoloSchemeV1:
@@ -265,6 +296,7 @@ components:
         billing_status:
           type: string
           example: declared
+          description: declared until Stripe credentials configured
         status:
           type: object
     PaymentRequired:
@@ -278,6 +310,12 @@ components:
           example: I can see the image, but I don't have the 4D math yet. It costs $1...
         checkout_url:
           type: string
+          description: Stripe Checkout URL when configured; otherwise declared stub
         price_usd:
           type: number
           example: 1
+        billing_status:
+          type: string
+          example: declared
+        pending_credit_id:
+          type: string

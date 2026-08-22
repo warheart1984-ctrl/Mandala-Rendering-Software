@@ -7,7 +7,8 @@ Also returns HoloRT4D-Spatial-V1 via Node math core when available.
 Status:
 - depth grid → Holo-Scheme V1 + Spatial-V1: enforced (via Node SoT)
 - image_base64 / image_url grayscale pseudo-depth: partial (not metric ML)
-- REQUIRE_CREDIT paywall: declared stub (no real Stripe keys)
+- REQUIRE_CREDIT paywall: declared until Stripe keys configured; webhook-only mint
+- Stripe Billing Meter (successful_read): declared — outbox + flush; never meters failures
 - meters / calibrated world units: declared
 """
 
@@ -19,43 +20,50 @@ import json
 import os
 import subprocess
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+
+from .billing.config import get_billing_config
+from .billing.credits import get_credit_store
+from .billing.meter import (
+    record_successful_read_usage,
+    resolve_stripe_customer,
+)
+from .billing.routes import (
+    PAYMENT_REQUIRED_MSG,
+    create_checkout_response,
+    payment_required_payload,
+    router as billing_router,
+)
+
+# Re-export for tests / callers that import from app.main
+__all_payment_msg__ = PAYMENT_REQUIRED_MSG
 
 SCHEME_SPATIAL = "HoloRT4D-Spatial-V1"
 SCHEME_HOLO = "Holo-Scheme-V1"
 SCHEME_AUTH = "VERIFIED_MATH_ENGINE_RX580"
 PRICE_USD = 1.0
-CHECKOUT_URL_STUB = os.environ.get(
-    "SPATIAL_CHECKOUT_URL",
-    "https://buy.stripe.com/test_spatial_credit_1usd_PLACEHOLDER",
-)
-PAYMENT_REQUIRED_MSG = (
-    "I can see the image, but I don't have the 4D math yet. It costs $1..."
-)
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 TOKENIZE_CLI = REPO_ROOT / "scripts" / "holort4d-tokenize.mjs"
-
-# In-memory credit stub (declared — not production billing)
-_VALID_CREDITS: set[str] = set()
-for _k in (os.environ.get("SPATIAL_CREDIT_KEYS") or "").split(","):
-    _k = _k.strip()
-    if _k:
-        _VALID_CREDITS.add(_k)
 
 app = FastAPI(
     title="$1 Spatial Plugin — HoloMath_Read",
     version="0.2.0",
     description=(
         "ChatGPT Custom GPT Actions gateway. Primary response: Holo-Scheme V1. "
-        "Billing $1/call is declared (stub). No Stripe secrets in this repo."
+        "Billing $1/call is declared until Stripe is configured. "
+        "Credits mint only via signed webhook — never via success URL. "
+        "No Stripe secrets in this repo."
     ),
 )
+
+app.include_router(billing_router)
 
 
 class TokenizeRequest(BaseModel):
@@ -86,159 +94,221 @@ class TokenizeRequest(BaseModel):
     brief_id: Optional[str] = "spatial-token-default"
     credit_token: Optional[str] = Field(
         default=None,
-        description="Spatial Credit key when REQUIRE_CREDIT=1",
+        description=(
+            "One-use Spatial Credit token (anonymous). "
+            "Demo/direct API only — not GPT Action wallet auth."
+        ),
     )
     api_key: Optional[str] = Field(
         default=None,
-        description="Alias for credit_token / Actions API key header mirror",
+        description=(
+            "Deprecated alias for credit_token. Prefer X-Spatial-Credit for demo; "
+            "use Bearer HOLOR4D_API_KEY for Action server auth."
+        ),
+    )
+    stripe_customer_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Stripe Customer ID for Billing Meter usage (successful_read). "
+            "Production: resolve from OAuth — do not trust client blindly without auth."
+        ),
     )
 
 
-class CheckoutRequest(BaseModel):
-    success_url: Optional[str] = None
-    cancel_url: Optional[str] = None
-    email: Optional[str] = None
+def _extract_credit_token(
+    body: TokenizeRequest,
+    x_spatial_credit: Optional[str] = None,
+) -> Optional[str]:
+    return (body.credit_token or body.api_key or x_spatial_credit or "").strip() or None
 
 
-def _require_credit_enabled() -> bool:
-    return os.environ.get("REQUIRE_CREDIT", "0").strip() in ("1", "true", "TRUE", "yes")
+def _check_api_key(
+    authorization: Optional[str],
+    x_api_key: Optional[str],
+) -> None:
+    """Optional server-to-server gate via HOLOR4D_API_KEY (not a purchase credit)."""
+    cfg = get_billing_config()
+    expected = cfg.holor4d_api_key
+    if not expected:
+        return
+    bearer = None
+    if authorization and authorization.lower().startswith("bearer "):
+        bearer = authorization[7:].strip()
+    provided = bearer or (x_api_key or "").strip()
+    if provided != expected:
+        raise HTTPException(401, "Invalid or missing HOLOR4D_API_KEY")
 
 
-def _credit_valid(token: Optional[str]) -> bool:
-    if not token:
-        return False
-    if token in _VALID_CREDITS:
-        return True
-    # Stub: any key with prefix credit_ok_ is accepted (local demo)
-    if token.startswith("credit_ok_"):
-        return True
-    return False
-
-
-def _payment_required() -> JSONResponse:
-    return JSONResponse(
-        status_code=402,
-        content={
-            "error": "payment_required",
-            "message": PAYMENT_REQUIRED_MSG,
-            "checkout_url": CHECKOUT_URL_STUB,
-            "price_usd": PRICE_USD,
-            "unit_cost": "$1.00",
-            "billing_status": "declared",
-        },
-    )
+def _payment_required_response() -> JSONResponse:
+    checkout = create_checkout_response()
+    payload = payment_required_payload(checkout["checkout_url"])
+    payload["pending_credit_id"] = checkout.get("pending_credit_id")
+    return JSONResponse(status_code=402, content=payload)
 
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    cfg = get_billing_config()
     return {
         "status": "ok",
         "scheme": SCHEME_HOLO,
         "spatial_scheme": SCHEME_SPATIAL,
         "scheme_auth": SCHEME_AUTH,
-        "billing": "declared",
-        "require_credit": _require_credit_enabled(),
-    }
-
-
-@app.get("/v1/credits/status")
-def credits_status(key: str = Query(..., description="Spatial Credit key")) -> dict[str, Any]:
-    ok = _credit_valid(key)
-    return {
-        "valid": ok,
-        "key_present": bool(key),
-        "price_usd": PRICE_USD,
-        "billing_status": "declared",
-        "message": "Credit OK" if ok else "No valid Spatial Credit — checkout required",
-    }
-
-
-@app.post("/v1/credits/checkout")
-def credits_checkout(body: CheckoutRequest | None = None) -> dict[str, Any]:
-    """Declared Stripe/$1 link stub — no real Stripe keys."""
-    _ = body
-    # Issue a demo credit for local testing when stub checkout "succeeds"
-    demo = f"credit_ok_{hashlib.sha256(os.urandom(8)).hexdigest()[:12]}"
-    _VALID_CREDITS.add(demo)
-    return {
-        "checkout_url": CHECKOUT_URL_STUB,
-        "price_usd": PRICE_USD,
-        "unit_cost": "$1.00",
-        "billing_status": "declared",
-        "message": (
-            "Declared payment stub. Replace CHECKOUT_URL with a real Stripe Payment Link "
-            "when going live. Demo credit_token returned for local Actions testing only."
-        ),
-        "demo_credit_token": demo,
-        "note": "No Stripe secrets in this service.",
+        "billing": cfg.billing_status,
+        "require_credit": cfg.require_credit,
+        "stripe_configured": cfg.stripe_configured,
+        "meter_enabled": cfg.meter_enabled,
+        "meter_event": cfg.stripe_meter_event,
     }
 
 
 @app.post("/v1/spatial-tokenize")
-def spatial_tokenize(body: TokenizeRequest) -> Any:
+def spatial_tokenize(
+    body: TokenizeRequest,
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+    x_spatial_credit: Optional[str] = Header(default=None, alias="X-Spatial-Credit"),
+) -> Any:
     """HoloMath_Read — ChatGPT Actions entrypoint. Returns Holo-Scheme V1 primary."""
-    if _require_credit_enabled():
-        credit = body.credit_token or body.api_key
-        if not _credit_valid(credit):
-            return _payment_required()
+    _check_api_key(authorization, x_api_key)
 
-    depth, width, height, depth_source = _resolve_depth(body)
-    payload = {
-        "width": width,
-        "height": height,
-        "resolution": body.resolution,
-        "depth": depth,
-        "brief_id": body.brief_id,
-        "mode": body.mode,
-    }
-    if body.prev_depth_f32 is not None:
-        payload["prev_depth"] = body.prev_depth_f32[: width * height]
-    if body.face_landmarks_xyz is not None:
-        payload["face_landmarks_xyz"] = body.face_landmarks_xyz
+    cfg = get_billing_config()
+    credit_token = _extract_credit_token(body, x_spatial_credit)
+    consumed_token: Optional[str] = None
 
-    result = _run_node_tokenize(payload)
+    if cfg.require_credit:
+        # Future: OAuth account-bound balance when account_id present (declared stub).
+        _account_id = getattr(request.state, "account_id", None)
+        _ = _account_id  # reserved for account wallet
 
-    holo = result.get("holo_scheme") or result.get("structuredContent")
-    if not holo:
-        # Python fallback if CLI older
-        holo = _python_holo_scheme_fallback(depth, width, height)
+        if not credit_token:
+            return _payment_required_response()
 
-    llm_summary = result.get("llm_summary") or _format_holo_summary(holo)
-    token = result.get("token")
-    spatial_hash = result.get("hash")
+        store = get_credit_store(cfg.credits_db_path)
+        credit_id = store.atomic_consume(credit_token)
+        if credit_id is None:
+            return _payment_required_response()
+        consumed_token = credit_token
 
-    return {
-        # Primary ChatGPT-facing shape
-        "structuredContent": holo,
-        "holo_scheme": holo,
-        "llm_summary": llm_summary,
-        "text": llm_summary,
-        # Wrapped Spatial-V1
-        "scheme": SCHEME_SPATIAL,
-        "hash": spatial_hash or holo.get("hash"),
-        "token": token,
-        "spatial_llm": result.get("spatial_llm"),
-        "resolution": body.resolution,
-        "cell_count": (body.resolution * body.resolution) if token is None else len(token.get("cells", [])),
-        "price_usd": PRICE_USD,
-        "unit_cost": "$1.00",
-        "billing_status": "declared",
-        "depth_source": depth_source,
-        "status": {
-            "holoSchemeV1": "enforced",
-            "tokenizeFromDepthGrid": "enforced",
-            "imagePseudoDepth": "partial" if depth_source.startswith("pseudo") else "n/a",
-            "metersCalibration": "declared",
-            "billing": "declared",
-            "api": "partial",
-        },
-    }
+    read_id = str(uuid.uuid4())
+    try:
+        depth, width, height, depth_source = _resolve_depth(body)
+        payload = {
+            "width": width,
+            "height": height,
+            "resolution": body.resolution,
+            "depth": depth,
+            "brief_id": body.brief_id,
+            "mode": body.mode,
+        }
+        if body.prev_depth_f32 is not None:
+            payload["prev_depth"] = body.prev_depth_f32[: width * height]
+        if body.face_landmarks_xyz is not None:
+            payload["face_landmarks_xyz"] = body.face_landmarks_xyz
+
+        # Important: do not meter attempts — only successful tokenize below.
+        result = _run_node_tokenize(payload)
+
+        holo = result.get("holo_scheme") or result.get("structuredContent")
+        if not holo:
+            holo = _python_holo_scheme_fallback(depth, width, height)
+
+        llm_summary = result.get("llm_summary") or _format_holo_summary(holo)
+        token = result.get("token")
+        spatial_hash = result.get("hash")
+
+        meter_info: dict[str, Any] = {"metered": False}
+        if cfg.meter_enabled:
+            customer = resolve_stripe_customer(
+                account_id=getattr(request.state, "account_id", None),
+                stripe_customer_id=body.stripe_customer_id,
+            )
+            if customer:
+                try:
+                    meter_info = record_successful_read_usage(
+                        read_id=read_id,
+                        stripe_customer_id=customer["stripe_customer_id"],
+                        cfg=cfg,
+                    )
+                except RuntimeError as exc:
+                    # Fail closed only when METER_FAIL_CLOSED=1 + sync flush.
+                    raise HTTPException(
+                        status_code=503,
+                        detail="Unable to record billing usage",
+                    ) from exc
+            else:
+                meter_info = {
+                    "metered": False,
+                    "reason": "no_stripe_customer",
+                    "note": (
+                        "Set stripe_customer_id or STRIPE_DEFAULT_CUSTOMER_ID; "
+                        "production should map OAuth → Stripe Customer."
+                    ),
+                }
+
+        return {
+            "structuredContent": holo,
+            "holo_scheme": holo,
+            "llm_summary": llm_summary,
+            "text": llm_summary,
+            "scheme": SCHEME_SPATIAL,
+            "hash": spatial_hash or holo.get("hash"),
+            "token": token,
+            "spatial_llm": result.get("spatial_llm"),
+            "resolution": body.resolution,
+            "cell_count": (
+                (body.resolution * body.resolution)
+                if token is None
+                else len(token.get("cells", []))
+            ),
+            "price_usd": PRICE_USD,
+            "unit_cost": "$1.00",
+            "billing_status": cfg.billing_status,
+            "depth_source": depth_source,
+            "read_id": read_id,
+            "meter": meter_info,
+            "status": {
+                "holoSchemeV1": "enforced",
+                "tokenizeFromDepthGrid": "enforced",
+                "imagePseudoDepth": (
+                    "partial" if depth_source.startswith("pseudo") else "n/a"
+                ),
+                "metersCalibration": "declared",
+                "billing": cfg.billing_status,
+                "billingMeter": "declared" if cfg.meter_enabled else "off",
+                "api": "partial",
+            },
+        }
+    except HTTPException:
+        if consumed_token is not None:
+            get_credit_store(get_billing_config().credits_db_path).refund_credit(
+                consumed_token
+            )
+        raise
+    except Exception:
+        if consumed_token is not None:
+            get_credit_store(get_billing_config().credits_db_path).refund_credit(
+                consumed_token
+            )
+        raise
 
 
-# Alias path name used in some docs
 @app.post("/v1/HoloMath_Read")
-def holomath_read_alias(body: TokenizeRequest) -> Any:
-    return spatial_tokenize(body)
+def holomath_read_alias(
+    body: TokenizeRequest,
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+    x_spatial_credit: Optional[str] = Header(default=None, alias="X-Spatial-Credit"),
+) -> Any:
+    return spatial_tokenize(
+        body,
+        request,
+        authorization=authorization,
+        x_api_key=x_api_key,
+        x_spatial_credit=x_spatial_credit,
+    )
 
 
 def _resolve_depth(body: TokenizeRequest) -> tuple[list[float], int, int, str]:

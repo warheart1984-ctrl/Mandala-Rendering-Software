@@ -8,8 +8,9 @@ Wire **HoloMath_Read** so Custom GPTs can buy a mathematically verified **Holo-S
 | Actions OpenAPI | `mrs/apps/spatial-tokenizer/openapi-gpt-actions.yaml` | **partial** (contract ready) |
 | FastAPI gateway | `mrs/apps/spatial-tokenizer/` port `8792` | **partial** |
 | Holo-Scheme V1 math | `buildHoloSchemeV1` in spatial-tokens core | **enforced** |
-| Stripe live billing | checkout stub only | **declared** |
-| Meter calibration | marketing may say meters | **declared** unless calibrated |
+| Stripe Checkout + webhook credits | `app/billing/` | **declared** until live keys |
+| Stripe Billing Meter (`successful_read`) | outbox + `/v1/billing/meter-flush` | **declared** until live meter |
+| Meter calibration (world units) | marketing may say meters | **declared** unless calibrated |
 
 MCP tools (if present under `mcp/`) share the same tokenize core; keep this OpenAPI
 **separate** for GPT Actions.
@@ -77,12 +78,12 @@ cloudflared tunnel --url http://localhost:8792
    Replace `https://YOUR-TUNNEL.example/v1` with your tunnel base + `/v1`
    (e.g. `https://abc123.ngrok-free.app/v1`).
 
-5. **Authentication (stub)**  
-   - Auth type: API Key  
-   - Header: `X-Spatial-Credit`  
-   - For local demos with paywall off (`REQUIRE_CREDIT=0`, default): any placeholder works.  
-   - With `REQUIRE_CREDIT=1`: call checkout, then pass `demo_credit_token` or a key from
-     `SPATIAL_CREDIT_KEYS`.
+5. **Authentication (declared)**  
+   - Prefer **API Key** = `HOLOR4D_API_KEY` via `Authorization: Bearer` or `X-API-Key` for the GPT **server** (not a purchase wallet).  
+   - Do **not** treat `X-Spatial-Credit` as Action auth — that header is the **$1 Spatial Credit** token for demo/direct API only.  
+   - OAuth account balance is **declared** (future).  
+   - With `REQUIRE_CREDIT=0` (default): tokenize works without a credit token.  
+   - With `REQUIRE_CREDIT=1`: missing credit → HTTP 402 + `checkout_url` (Stripe when configured, else declared stub).
 
 6. Paste the **system instructions** block above into the GPT instructions field.
 
@@ -143,10 +144,105 @@ language in marketing is **declared**, not enforced.
 |--|-------------------|-------------------|
 | Price | ~$50/mo creative cloud seat (**market**) | **$1** per verified Spatial Scheme read |
 | What you buy | Subscription access | One mathematical depth scheme for this image |
-| Billing in this repo | n/a | **declared** stub — Stripe Payment Link placeholder, no live keys |
+| Billing in this repo | n/a | **declared** until Stripe keys configured — webhook-only mint |
 
 Positioning: a **vending machine for verified Z**, not another monthly seat. Live
 charging is **declared** until Stripe is wired with real secrets outside the repo.
+
+---
+
+## Billing security model (webhook authority)
+
+```
+Browser / GPT ──► POST /v1/billing/checkout ──► Stripe Checkout Session
+                                                      │
+User pays on Stripe ◄─────────────────────────────────┘
+                                                      │
+Stripe ──signed──► POST /v1/billing/stripe-webhook ──► mint exactly 1 Spatial Credit
+                                                      │
+GET /v1/billing/success ──► HTML only (NEVER mints)
+```
+
+**Hard rules**
+- Only a **verified Stripe webhook** mints credit (idempotent on `event.id`).
+- The browser success URL **never** unlocks credit.
+- `POST /v1/spatial-tokenize` with `REQUIRE_CREDIT=1` atomically consumes one unused credit, then tokenizes; on tokenize failure the credit is refunded.
+- `X-Spatial-Credit` / `credit_token` is the **purchase wallet** for demo/direct API — **not** GPT Action server auth.
+- Action auth should be OAuth (future) or shared `HOLOR4D_API_KEY` (`Authorization: Bearer` / `X-API-Key`) for the GPT server.
+
+### Stripe Billing Meter (successful reads only) — **declared**
+
+Complementary to prepaid Spatial Credits. Use when the customer has a Stripe
+Customer on a metered $1/unit recurring price:
+
+```
+successful spatial_tokenize
+        │
+        ▼
+  enqueue meter_outbox (identifier = read:<uuid>)
+        │
+        ▼
+  worker POST /v1/billing/meter-flush
+        │
+        ▼
+  stripe.billing.MeterEvent.create(event_name=successful_read, value=1)
+```
+
+**Hard rules**
+- Meter **only after a successful tokenize** — never meter attempts or 4xx/5xx.
+- Prefer **outbox + flush worker** so Stripe downtime is not part of the read path.
+- Stable `identifier=read:<read_id>` → economic exactly-once across retries.
+- Optional `METER_SYNC_FLUSH=1` + `METER_FAIL_CLOSED=1` fails closed (HTTP 503) if
+  Stripe cannot record usage — use only when you must not deliver unmetered reads.
+- Env: `STRIPE_METER_ENABLED=1`, `STRIPE_METER_EVENT=successful_read`,
+  `STRIPE_DEFAULT_CUSTOMER_ID=cus_...` (or pass `stripe_customer_id`; production
+  should map OAuth → Stripe Customer).
+
+In Stripe: create a Billing Meter with event name `successful_read`, customer
+mapping key `stripe_customer_id`, value field `value`, attach to a recurring
+price at **$1.00 per unit**. Invoice lag is expected (async meter processing).
+
+Status remains **declared** until a real meter event appears on a Stripe invoice.
+
+### Status honesty
+
+| Mode | When | Behavior |
+|------|------|----------|
+| **declared / stub** | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_HOLOMATH_PRICE_ID` missing | Checkout returns stub URL; optional `ALLOW_STUB_PAY=1` simulates webhook for local tests only |
+| **stripe_test_ready** | Test keys present | Real Checkout + webhook verification; still not “live production” |
+| **stripe_live_ready** | Live keys present | Same flow with live Stripe |
+
+Do **not** claim live billing is enabled until keys are configured and the gate checklist below passes.
+
+### Env (see `.env.example`)
+
+```
+REQUIRE_CREDIT=0
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_HOLOMATH_PRICE_ID=
+PUBLIC_BASE_URL=http://localhost:8792
+SPATIAL_CREDITS_DB=./data/spatial_credits.sqlite3
+HOLOR4D_API_KEY=
+ALLOW_STUB_PAY=0
+```
+
+### Deployment gate checklist (before claiming live)
+
+- [ ] Test Checkout Session creates and redirects
+- [ ] Webhook mints **exactly one** credit on `checkout.session.completed`
+- [ ] Forged `Stripe-Signature` → **400**
+- [ ] Duplicate `event.id` → **200**, zero second mint
+- [ ] Concurrent consume → only one succeeds
+- [ ] Success URL visit mints **zero** credits
+- [ ] Secrets only in env / secret manager (never committed)
+- [ ] Public HTTPS base URL for Checkout + webhook
+- [ ] One live $1 payment observed end-to-end before marketing “live”
+
+### Remaining declared items
+
+- OAuth account-bound credit balance (stub interface only today)
+- Out-of-band delivery of plaintext credit token after webhook mint (email / account portal)
 
 ---
 
@@ -157,8 +253,9 @@ REQUIRE_CREDIT=1 uvicorn app.main:app --host 0.0.0.0 --port 8792
 ```
 
 - Missing / invalid credit → **HTTP 402**  
-  `{ "error": "payment_required", "message": "I can see the image, but I don't have the 4D math yet. It costs $1...", "checkout_url": "...", "price_usd": 1 }`
+  `{ "error": "payment_required", "message": "...", "checkout_url": "...", "price_usd": 1, "billing_status": "declared" }`
 - `REQUIRE_CREDIT=0` (default) → tokenize freely for demos.
+- Local stub mint (dev only): `ALLOW_STUB_PAY=1` then `POST /v1/billing/stub-pay?pending=...`
 
 ---
 
