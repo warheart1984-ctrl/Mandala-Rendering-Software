@@ -819,7 +819,6 @@ if (args.length === 0) {
   console.error("         --field-volume          composite certified φ/∇φ/η as a primary-ray field volume (partial)");
   console.error("         --per-actor-grad        each actor steps by local −∇φ at its own lattice cell");
   console.error("         --grad-scale N          world-space gain for --per-actor-grad (default 6.0)");
-  console.error("         --holo                  redirects to scripts/simulation-chamber-holo.mjs (raw .bin)");
   process.exit(1);
 }
 
