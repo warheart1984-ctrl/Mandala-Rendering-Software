@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temporal 4D — space through time (partial)</title>
+  <style>
+    :root {
+      --bg0: #07080c;
+      --bg1: #12141c;
+      --ink: #e2e4ea;
+      --muted: #8a8f9c;
+      --accent: #d4a574;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: radial-gradient(110% 90% at 50% 0%, var(--bg1), var(--bg0));
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 44rem;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 2.5rem;
+    }
+    h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.15rem;
+      font-weight: 560;
+      letter-spacing: 0.02em;
+    }
+    .tag { color: var(--accent); font-weight: 500; }
+    p { margin: 0.35rem 0; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+    #stage {
+      margin: 1rem 0 0.75rem;
+      background: #000;
+      border: 1px solid #2a2e3a;
+      min-height: 12rem;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    #stage img {
+      width: 100%;
+      height: auto;
+      max-height: 70vh;
+      object-fit: contain;
+      image-rendering: auto;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+    button, .tab {
+      appearance: none;
+      border: 1px solid #3a4050;
+      background: #1a1e28;
+      color: var(--ink);
+      padding: 0.4rem 0.75rem;
+      font: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    button:hover, .tab:hover { border-color: var(--accent); }
+    .tab.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    #scrub { flex: 1; min-width: 8rem; }
+    .fine { font-size: 0.78rem; color: var(--muted); }
+    .seq-controls { display: none; width: 100%; }
+    .seq-controls.on { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .warn {
+      margin-top: 1rem;
+      padding: 0.65rem 0.75rem;
+      border-left: 3px solid var(--accent);
+      background: #141820;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Temporal 4D chamber — <span class="tag">partial</span></h1>
+    <p>Infographic composite places <code>t0…t4</code> in one frame (cyan→orange). Sequence view slides the hyperplane through the motion solid.</p>
+    <div class="row" id="tabs">
+      <button type="button" class="tab active" data-view="composite">Composite</button>
+      <button type="button" class="tab" data-view="energy">Energy-wire</button>
+      <button type="button" class="tab" data-view="sequence">Sequence</button>
+    </div>
+    <div id="stage"><img id="frame" alt="temporal frame"></div>
+    <div class="row seq-controls" id="seqControls">
+      <button type="button" id="prev">Prev</button>
+      <button type="button" id="play">Play</button>
+      <button type="button" id="next">Next</button>
+      <input id="scrub" type="range" min="0" max="0" value="0">
+    </div>
+    <p class="fine" id="status">Loading meta.json…</p>
+    <div class="warn">
+      Abstract Simulation Chamber demo. <strong>Not</strong> a medical device.
+      Temporal insight via multi-instance composite + slice — no clinical diagnostic claim.
+      Energy-wire is soft-raster bloom only, not Mythar holo COMPOSITE.
+    </div>
+  </main>
+  <script type="module">
+    const img = document.getElementById("frame");
+    const scrub = document.getElementById("scrub");
+    const status = document.getElementById("status");
+    const seqControls = document.getElementById("seqControls");
+    const meta = await fetch("./meta.json").then((r) => {
+      if (!r.ok) throw new Error("meta.json missing — run simulation-chamber-temporal first");
+      return r.json();
+    });
+    const frames = (meta.frames || []).map((n) => `./frames/${n}`);
+    let view = meta.view || "composite";
+    let i = 0;
+    let playing = false;
+    let timer = null;
+
+    function setTab(name) {
+      document.querySelectorAll(".tab").forEach((t) => {
+        t.classList.toggle("active", t.dataset.view === name);
+      });
+    }
+
+    function showComposite(src, label) {
+      seqControls.classList.remove("on");
+      setPlay(false);
+      img.src = src;
+      status.textContent = `${label} · insight phase ${meta.insightPhase ?? "—"} · status: ${meta.status || "partial"}`;
+    }
+
+    function showSeq(idx) {
+      if (!frames.length) return;
+      i = ((idx % frames.length) + frames.length) % frames.length;
+      img.src = frames[i];
+      scrub.value = String(i);
+      status.textContent = `sequence ${i + 1}/${frames.length} · ${meta.width}×${meta.height} · status: ${meta.status || "partial"}`;
+    }
+
+    function applyView(name) {
+      view = name;
+      setTab(name);
+      if (name === "composite") {
+        showComposite(`./${meta.composite || "composite.png"}`, "infographic composite t0…t4");
+      } else if (name === "energy") {
+        showComposite(
+          `./${meta.compositeEnergyWire || "composite-energy-wire.png"}`,
+          "energy-wire composite (partial)"
+        );
+      } else {
+        seqControls.classList.add("on");
+        scrub.max = String(Math.max(0, frames.length - 1));
+        showSeq(i);
+        setPlay(true);
+      }
+    }
+
+    function tick() {
+      showSeq(i + 1);
+    }
+
+    function setPlay(on) {
+      playing = on;
+      document.getElementById("play").textContent = on ? "Pause" : "Play";
+      clearInterval(timer);
+      if (on) timer = setInterval(tick, 420);
+    }
+
+    scrub.addEventListener("input", () => {
+      setPlay(false);
+      showSeq(parseInt(scrub.value, 10) || 0);
+    });
+    document.getElementById("prev").onclick = () => { setPlay(false); showSeq(i - 1); };
+    document.getElementById("next").onclick = () => { setPlay(false); showSeq(i + 1); };
+    document.getElementById("play").onclick = () => setPlay(!playing);
+    document.getElementById("tabs").addEventListener("click", (e) => {
+      const t = e.target.closest(".tab");
+      if (!t) return;
+      applyView(t.dataset.view);
+    });
+
+    applyView(view);
+  </script>
+</body>
+</html>

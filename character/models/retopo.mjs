@@ -25,11 +25,25 @@ export function inspectTopology(mesh) {
     if (!mesh.loops?.[name]) issues.push({ code: "missing-loop", message: `Missing edge loop '${name}'` });
   }
 
+  if (mesh.density === "amul" || mesh.density === "base") {
+    const amulIds = [
+      "AMUL::SHOULDER_L", "AMUL::SHOULDER_R", "AMUL::CHEST",
+      "AMUL::LAT_L", "AMUL::LAT_R", "AMUL::HIP_L", "AMUL::HIP_R",
+      "AMUL::KNEE_L", "AMUL::KNEE_R", "AMUL::TAIL_ROOT",
+    ];
+    for (const id of amulIds) {
+      if (!mesh.amulLoops?.[id]) {
+        issues.push({ code: "missing-amul-loop", message: `Missing AMUL loop '${id}'` });
+      }
+    }
+  }
+
   return {
     ok: issues.length === 0,
     issues,
     quads: mesh.faceCount,
     verts: mesh.vertexCount,
     poles,
+    density: mesh.density || "sparse",
   };
 }

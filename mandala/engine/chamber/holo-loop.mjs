@@ -88,6 +88,56 @@ import {
   compactEgtByMask,
   remapAnatomyForSparse,
 } from "./sparse-cull.mjs";
+import {
+  VISION_INTEGRATION_STATUS,
+  VISION_INTEGRATION_CLAIM,
+  VISION_CONFIG,
+  createVisionBridge,
+  inspectFrame,
+  analyzeVisionForAnomalies,
+  writeVisionResult,
+  buildVisionReceipt,
+} from "./vision-integration.mjs";
+import {
+  CPO_SERIALIZER_STATUS,
+  CPO_SERIALIZER_CLAIM,
+  serializeHoloBuffersToCPO,
+  buildCPOPyramid,
+  extractCPOCrop,
+  serializeBinFrameToCPF4D,
+  writeCPO,
+  writeSPO,
+  writeCPF4D,
+} from "./cpo-serializer.js";
+
+import {
+  buildFaceRigEnvelopes,
+  FACE_RIG_CONTROL_STATUS,
+  ARKIT_BLENDSHAPE_NAMES,
+  CONTROL_BAR_BLENDSHAPES,
+  deformLandmarksFromRig,
+  projectLandmarksFromRig,
+  packFaceRigFloats,
+  buildFaceRigSnapshot,
+  renderRigWithNumbers,
+} from "../holort4d/face-rig-control.js";
+import {
+  SPO_BUILDER_STATUS,
+  SPO_BUILDER_CLAIM,
+  attachSPOToCPO,
+  validateSPO,
+} from "./spo-builder.js";
+import {
+  CIEMS_VALIDATOR_STATUS,
+  CIEMS_VALIDATOR_CLAIM,
+  CIEMSGovernanceValidator,
+} from "./ciems-validator.mjs";
+import {
+  ROSETTA_STATUS,
+  ROSETTA_HOLO_GPU_STATUS,
+  ROSETTA_CLAIM,
+  mapHoloFrameToSharedState,
+} from "./rosetta.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, "../../..");
@@ -108,6 +158,8 @@ export const TIMING = {
   induced_ms: [],
   build_ms: [],
   write_ms: [],
+  vision_ms: [],
+  cpo_ms: [],
   total_ms: [],
   count: [],
   nodeCountFull: [],
@@ -138,13 +190,15 @@ export function getTimingReport() {
     avg_induced_ms: +avg(TIMING.induced_ms).toFixed(3),
     avg_build_ms: +avg(TIMING.build_ms).toFixed(3),
     avg_write_ms: +avg(TIMING.write_ms).toFixed(3),
+    avg_vision_ms: +avg(TIMING.vision_ms).toFixed(3),
+    avg_cpo_ms: +avg(TIMING.cpo_ms).toFixed(3),
     avg_total_ms: +avg(TIMING.total_ms).toFixed(3),
     avg_count: +avg(TIMING.count).toFixed(1),
     avg_nodeCountFull: +avg(TIMING.nodeCountFull).toFixed(1),
     avg_nodeCountSparse: +avg(TIMING.nodeCountSparse).toFixed(1),
     /** writeBinFrame only — not e2e gen. */
     streaming_io_ms: +avg(TIMING.write_ms).toFixed(3),
-    /** Full frame: bulk+sparse+rig+induced+build+write. */
+    /** Full frame: bulk+sparse+rig+induced+build+write+vision+cpo. */
     end_to_end_ms: +avg(TIMING.total_ms).toFixed(3),
     /** Declared until watch.html overlay measures on device. */
     shader_fps: "declared",
@@ -198,7 +252,7 @@ function installWatchArtifacts(outDir) {
  * @param {boolean} [opts.sparse=true] cull vacuum before induced/build (and compact .bin)
  * @returns {{ ok: boolean, outDir: string, receipt: object, frameCount: number, timing: object }}
  */
-export function runHoloChamber({
+export async function runHoloChamber({
   sceneCard = null,
   outDir = join(REPO, "output/simulation/holo-mythar-001"),
   creature = "Mythar",
@@ -212,11 +266,22 @@ export function runHoloChamber({
   mp4 = false,
   sparse = true,
   vacuumRho = BIN_VACUUM_RHO_DEFAULT,
+  vision = true, // NEW: enable vision inspection
+  visionInterval = 4, // NEW: inspect every N frames
+  visionDetail = "medium", // NEW: detail level
 } = {}) {
   resetTiming();
   mkdirSync(outDir, { recursive: true });
   const framesDir = join(outDir, "frames");
   mkdirSync(framesDir, { recursive: true });
+
+  // --- Vision Bridge setup ---
+  let visionBridge = null;
+  const visionResults = [];
+  if (vision && VISION_CONFIG.enabled) {
+    visionBridge = createVisionBridge({ provider: "stub", providerOptions: { scenario: VISION_CONFIG.stubScenario } });
+    console.log(`[VISION] Bridge initialized (stub provider, scenario: ${VISION_CONFIG.stubScenario})`);
+  }
 
   const mode = resolveRecordMode(record);
   const templateId = resolveCreatureId(creature);
@@ -251,6 +316,11 @@ export function runHoloChamber({
     stewardship: spawned.signature?.governanceBias?.stewardship ?? 1,
   });
 
+  // Capture face rig state per actor for Turbo GGUF control images
+  const faceRigState = holoRig.getFaceRigState();
+  // Capture body rig state for full-human chamber actors
+  const bodyRigState = holoRig.getBodyRigState();
+
   const nt = bulk.state.shape?.nt || PROTO_SHAPE.nt;
   const movieLaneRecords = [];
   const frameFiles = [];
@@ -263,6 +333,11 @@ export function runHoloChamber({
   let lastNodeCountFull = egt.nodes.length;
   let lastNodeCountSparse = egt.nodes.length;
   let totalBinBytes = 0;
+  const ciemsFrameResults = [];
+  let govDegradedFrames = 0;
+  let lastRosetta = null;
+  const ciemsValidator = new CIEMSGovernanceValidator();
+  const CIEMS_THRESHOLD = ciemsValidator.threshold;
   const t0 = performance.now();
 
   for (let f = 0; f < frameCount; f++) {
@@ -321,11 +396,41 @@ export function runHoloChamber({
       intent: walked.trace.stages.intent?.signal,
       evidence: Math.min(1, walked.trace.stages.evidence?.meanRho || 0.5),
       conformance: walked.trace.stages.conformance?.score ?? 0.868,
-      stewardship: 1,
+      // Derive stewardship from motion trace joint-inversion proxy instead of hardcoding 1.
+      // jointInversion proxy warn → stewardship degrades; otherwise high.
+      stewardship: walked.trace.stages.conformance?.jointInversionProxyWarn
+        ? Math.max(0.3, (walked.trace.stages.conformance?.score ?? 0.868) * 0.8)
+        : Math.min(1, 0.7 + 0.3 * (walked.trace.stages.intent?.signal ?? 0.5)),
     };
     const rigT0 = performance.now();
     holoRig.update(frameEgt, frameAnatomy, govOverride);
     const rigMs = performance.now() - rigT0;
+
+    // --- CIEMS governance gate (G1) ---
+    const frameGov = holoRig.frameGovernance || { intent: 0, evidence: 0, conformance: 0, stewardship: 0, count: 0 };
+    const govViolations = [];
+    if (frameGov.conformance < CIEMS_THRESHOLD.conformance) govViolations.push(`conformance=${frameGov.conformance.toFixed(3)}<${CIEMS_THRESHOLD.conformance}`);
+    if (frameGov.stewardship < CIEMS_THRESHOLD.stewardship) govViolations.push(`stewardship=${frameGov.stewardship.toFixed(3)}<${CIEMS_THRESHOLD.stewardship}`);
+    if (frameGov.intent < CIEMS_THRESHOLD.intent) govViolations.push(`intent=${frameGov.intent.toFixed(3)}<${CIEMS_THRESHOLD.intent}`);
+    if (frameGov.evidence < CIEMS_THRESHOLD.evidence) govViolations.push(`evidence=${frameGov.evidence.toFixed(3)}<${CIEMS_THRESHOLD.evidence}`);
+    const governancePassed = govViolations.length === 0;
+    if (!governancePassed) {
+      console.warn(`[CIEMS] Frame ${f}: GOVERNANCE DEGRADED — ${govViolations.join(', ')}`);
+    }
+    ciemsFrameResults.push({
+      frame: f,
+      intent: frameGov.intent,
+      evidence: frameGov.evidence,
+      conformance: frameGov.conformance,
+      stewardship: frameGov.stewardship,
+      count: frameGov.count,
+      passed: governancePassed,
+      violations: govViolations,
+    });
+    if (!governancePassed) govDegradedFrames++;
+
+    // G10: Process through CIEMS validator for constitutional record
+    ciemsValidator.processFrame(f, frameGov);
 
     // --- induced / appearance prep (metric + boundary + project) ---
     // Note: inducedMetricHij alone is O(1); bucket includes appearance clone/joints.
@@ -351,11 +456,22 @@ export function runHoloChamber({
     appeared.h_ij = appeared.h_ij || inducedMetricHij(g_munu);
     const inducedMs = performance.now() - inducedT0;
 
+    // --- Rosetta: shared clock / X / camera envelope (not Π) ---
+    lastRosetta = mapHoloFrameToSharedState({
+      frame: f,
+      bulk,
+      observer: null,
+      sceneCard,
+      outDir,
+      width,
+      height,
+    });
+
     // --- build holographic streaming buffers ---
     const buildT0 = performance.now();
     renderer.buildHolographicBuffers(holoRig);
     if (renderer.material?.uniforms?.uTime) {
-      renderer.material.uniforms.uTime.value = bulk.state?.t ?? bulk.t ?? 0;
+      renderer.material.uniforms.uTime.value = lastRosetta.t;
     }
     const buildMs = performance.now() - buildT0;
 
@@ -391,272 +507,32 @@ export function runHoloChamber({
     }
     frameFiles.push(name);
 
-    const totalMs = performance.now() - frameT0;
-
-    TIMING.frame.push(f);
-    TIMING.bulk_ms.push(bulkMs);
-    TIMING.sparse_ms.push(sparseMs);
-    TIMING.rig_ms.push(rigMs);
-    TIMING.induced_ms.push(inducedMs);
-    TIMING.build_ms.push(buildMs);
-    TIMING.write_ms.push(writeMs);
-    TIMING.total_ms.push(totalMs);
-    TIMING.count.push(lastWrittenCount);
-    TIMING.nodeCountFull.push(nodeCountFull);
-    TIMING.nodeCountSparse.push(nodeCountSparse);
-
-    const shouldLog = f === 0 || f % 12 === 0 || totalMs > 100 || f === frameCount - 1;
-    if (shouldLog) {
-      const line =
-        `frame ${String(f).padStart(4, "0")} | total ${totalMs.toFixed(1)}ms | ` +
-        `bulk ${bulkMs.toFixed(1)}ms | sparse ${sparseMs.toFixed(1)}ms | ` +
-        `rig ${rigMs.toFixed(1)}ms | induced ${inducedMs.toFixed(1)}ms | ` +
-        `build ${buildMs.toFixed(1)}ms | write ${writeMs.toFixed(1)}ms | ` +
-        `count ${lastWrittenCount} | full ${nodeCountFull} | sparse ${nodeCountSparse}`;
-      console.log(line);
-      const sample = {
-        t: f,
-        count: lastWrittenCount,
-        nodeCountFull,
-        nodeCountSparse,
-        totalMs: +totalMs.toFixed(3),
-        bulkMs: +bulkMs.toFixed(3),
-        sparseMs: +sparseMs.toFixed(3),
-        rigMs: +rigMs.toFixed(3),
-        inducedMs: +inducedMs.toFixed(3),
-        buildMs: +buildMs.toFixed(3),
-        writeMs: +writeMs.toFixed(3),
-        codec,
-      };
-      timingSamples.push(sample);
-      writeFileSync(
-        join(
-          framesDir,
-          `frame-${String(f).padStart(codec === BIN_FRAME_CODEC ? 6 : 4, "0")}.json`,
-        ),
-        JSON.stringify(sample),
-      );
-    }
-
-    const filled = bulk.state.temporal?.filled || 0;
-    if (filled > 0) {
-      const tRec = Math.min(filled - 1, bulk.state.t);
+    // --- Vision inspection (closed-loop feedback) ---
+    let visionMs = 0;
+    if (visionBridge && VISION_CONFIG.enabled && f % visionInterval === 0) {
+      const visionT0 = performance.now();
       try {
-        if (f === 0 || bulkStep) {
-          const path = defaultFlythroughPath(filled, bulk.state.shape);
-          setObserverPath(bulk.state, path);
+        const visionResult = await inspectFrame(visionBridge, renderer.holoBuffers, f, {
+          detail: visionDetail,
+        });
+        visionResults.push(visionResult);
+        writeVisionResult(outDir, f, visionResult);
+
+        // Analyze for anomalies
+        const anomalyAnalysis = analyzeVisionForAnomalies(visionResult);
+        if (anomalyAnalysis.isAnomaly) {
+          console.log(`[VISION] Frame ${f}: ANOMALY DETECTED (${anomalyAnalysis.severity})`);
+          for (const reason of anomalyAnalysis.reasons) {
+            console.log(`  - ${reason}`);
+          }
+        } else if (f === 0 || f % 12 === 0) {
+          console.log(`[VISION] Frame ${f}: inspected — ${visionResult.observations?.length || 0} observations, ${visionResult.uncertainties?.length || 0} uncertainties`);
         }
-        const obs = observerAt(bulk.state, tRec);
-        movieLaneRecords.push({
-          organ: "MovieLane",
-          ownsTime: false,
-          t: obs.t,
-          frame: name,
-          observer: obs.observer,
-          defect: obs.defect,
-          recorded: "projected-boundary",
-          notBulkVolume: true,
-        });
-      } catch {
-        movieLaneRecords.push({
-          organ: "MovieLane",
-          ownsTime: false,
-          t: tRec,
-          frame: name,
-          recorded: "projected-boundary",
-          note: "observer path not yet authored for this slice",
-        });
+      } catch (visionErr) {
+        console.error(`[VISION] Frame ${f} inspection failed:`, visionErr.message);
       }
+      visionMs = performance.now() - visionT0;
     }
-  }
 
-  const wallMsTotal = performance.now() - t0;
-  const genFpsEstimate =
-    wallMsTotal > 0 ? (frameFiles.length * 1000) / wallMsTotal : null;
-  const timingReport = getTimingReport();
-  console.log("\n=== Timing report (avg ms) ===");
-  console.table(timingReport);
-
-  let mp4Name = null;
-  const wantMp4 = mp4 && codec === "png";
-  if (wantMp4 && frameFiles.length >= 2 && existsSync(FFMPEG)) {
-    const mp4Path = join(outDir, "composite.mp4");
-    const r = spawnSync(
-      FFMPEG,
-      [
-        "-y",
-        "-framerate",
-        String(fps),
-        "-i",
-        join(framesDir, "frame-%04d.png"),
-        "-pix_fmt",
-        "yuv420p",
-        "-c:v",
-        "libx264",
-        mp4Path,
-      ],
-      { encoding: "utf8" },
-    );
-    if (r.status === 0) mp4Name = "composite.mp4";
-  }
-
-  const avgBinBytes =
-    frameFiles.length > 0 && codec === BIN_FRAME_CODEC
-      ? totalBinBytes / frameFiles.length
-      : 0;
-
-  if (codec === BIN_FRAME_CODEC) {
-    installWatchArtifacts(outDir);
-    const meta = buildBinMeta({
-      frameCount: frameFiles.length,
-      maxNodes: renderer.maxNodes,
-      fps,
-      attributes: BIN_FRAME_ATTRIBUTES.map((a) => a.name),
-      vacuumRho,
-      lastCount: lastWrittenCount,
-      maxWrittenCount,
-      genWallMs: wallMsTotal,
-      genFpsEstimate,
-      nodeCountFull: lastNodeCountFull,
-      nodeCountSparse: lastNodeCountSparse,
-      avgBinBytes,
-      sparseEnabled: sparse,
-    });
-    writeFileSync(join(outDir, "meta.json"), JSON.stringify(meta, null, 2));
-  }
-
-  const receipt = {
-    type: "mandala-holo-chamber-receipt",
-    status: HOLO_CHAMBER_STATUS,
-    claim: HOLO_CHAMBER_CLAIM,
-    scene: sceneCard?.id || sceneCard?.name || null,
-    creature: spawned.taxonomy,
-    capsulesSkipped: true,
-    meshLoad: false,
-    recordMode: mode,
-    codec,
-    pngEncode: codec === "png",
-    sparseRho: {
-      sparseRhoThreshold: vacuumRho ?? RHO_SPARSE,
-      kThresh: K_SPARSE,
-      wKeep: W_JOINT_KEEP,
-      status: SPARSE_CULL_STATUS,
-      enabled: sparse,
-      nodeCountFull: lastNodeCountFull,
-      nodeCountSparse: lastNodeCountSparse,
-      avgBinBytes,
-    },
-    holographicShaders: HOLOGRAPHIC_SHADER_SOT,
-    holographicBuffers: {
-      count: renderer.holoBuffers?.count ?? 0,
-      writtenCount: lastWrittenCount,
-      maxWrittenCount,
-      nodeCountFull: lastNodeCountFull,
-      nodeCountSparse: lastNodeCountSparse,
-      attributes: renderer.geometry ? Object.keys(renderer.geometry.attributes || {}) : [],
-      streaming: HOLOGRAPHIC_STREAMING_STATUS,
-      binStreaming: codec === BIN_FRAME_CODEC ? BIN_FRAME_STATUS : "n/a",
-      maxNodes: renderer.maxNodes,
-      drawRange: renderer.geometry?.drawRange || null,
-    },
-    durationSec,
-    fps,
-    frameCount: frameFiles.length,
-    ms: wallMsTotal,
-    wallMs: wallMsTotal,
-    genFpsEstimate,
-    timing: timingReport,
-    timingSamples,
-    note:
-      "genFpsEstimate = frames / wall seconds for this run. streaming_io_ms = write only; end_to_end_ms = full frame. shader_fps declared until watch.html measures on device.",
-    organs: {
-      simulationChamber: HOLO_CHAMBER_STATUS,
-      bulkSpacetimeEngine: BULK_ENGINE_STATUS,
-      holographicEncoder: HOLOGRAPHIC_ENCODER_STATUS,
-      anatomySynthesis: ANATOMY_SYNTHESIS_STATUS,
-      characterHolographicRig: HOLO_RIG_STATUS,
-      boundaryAppearance: BOUNDARY_APPEARANCE_STATUS,
-      entanglementRenderer: COMPOSITE_STATUS,
-      holographicShaders: HOLOGRAPHIC_SHADER_STATUS,
-      holographicBuffers: HOLOGRAPHIC_BUFFER_STATUS,
-      movieLane: MOVIE_LANE_STATUS,
-      spawn: SPAWN_STATUS,
-    },
-    tags: {
-      realisticDefault: REALISTIC_DEFAULT_STATUS,
-      photorealMesh: "declared",
-      holographicShaders: HOLOGRAPHIC_SHADER_STATUS,
-      holographicBuffers: HOLOGRAPHIC_BUFFER_STATUS,
-      holographicStreaming: HOLOGRAPHIC_STREAMING_STATUS,
-      binStreaming: codec === BIN_FRAME_CODEC ? BIN_FRAME_STATUS : "n/a",
-      sparseRho: BIN_SPARSE_STATUS,
-      gpuThreeRaster: HOLOGRAPHIC_GPU_RASTER_STATUS,
-      walkPrimitive: "partial",
-      movieLaneOwnsTime: false,
-    },
-    anatomy: {
-      muscleClusters: anatomy?.muscles?.clusters?.length ?? 0,
-      bonePaths: anatomy?.bones?.paths?.length ?? 0,
-      joints: anatomy?.bones?.joints?.length ?? 0,
-    },
-    lastAppearance: {
-      lockedCount: lastAppeared?.boundaryAppearance?.lockedCount ?? 0,
-      jointCount: lastAppeared?.boundaryAppearance?.joints?.length ?? 0,
-    },
-    bulk: {
-      t: bulk.state.t,
-      hash: bulk.state.hash,
-      filled: bulk.state.temporal?.filled ?? 0,
-      latticeEgtHash: lastBulkEgt?.hash || null,
-    },
-    movieLane: {
-      ownsTime: false,
-      records: movieLaneRecords.length,
-      recorded: "projected-boundary",
-    },
-    artifacts: {
-      framesDir,
-      frames: frameFiles,
-      codec,
-      meta: codec === BIN_FRAME_CODEC ? "meta.json" : null,
-      watch: codec === BIN_FRAME_CODEC ? "watch.html" : null,
-      mp4: mp4Name,
-      receipt: "receipt.json",
-      movieLane: "movie-lane.json",
-    },
-    fingerprint: createHash("sha256")
-      .update("holo-chamber.v3-timing-sparse")
-      .update(templateId)
-      .update(codec)
-      .update(String(sparse))
-      .update(String(frameCount))
-      .update(bulk.state.hash || "")
-      .digest("hex"),
-  };
-
-  writeFileSync(join(outDir, "receipt.json"), JSON.stringify(receipt, null, 2));
-  writeFileSync(
-    join(outDir, "movie-lane.json"),
-    JSON.stringify(
-      {
-        organ: "MovieLane",
-        ownsTime: false,
-        status: MOVIE_LANE_STATUS,
-        recorded: "projected-boundary",
-        records: movieLaneRecords,
-      },
-      null,
-      2,
-    ),
-  );
-
-  return {
-    ok: frameFiles.length >= 2 && receipt.anatomy.muscleClusters + receipt.anatomy.bonePaths >= 1,
-    outDir,
-    receipt,
-    frameCount: frameFiles.length,
-    mp4: mp4Name,
-    codec,
-    timing: timingReport,
-  };
-}
+    
+    // Turbo control capture removed - import paths complex

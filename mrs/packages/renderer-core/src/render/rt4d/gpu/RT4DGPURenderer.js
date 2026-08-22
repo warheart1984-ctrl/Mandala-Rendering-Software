@@ -29,6 +29,7 @@ export class RT4DGPURenderer {
     this._wavefrontLast = null;
     this._postProcessEnabled = options.postProcessEnabled ?? true;
     this._postProcessor = options.postProcessor || null;
+    this.onPathFinalize = options.onPathFinalize ?? null;
 
     this.device = null;
     this.bindGroupMgr = null;
@@ -320,6 +321,18 @@ export class RT4DGPURenderer {
         rpShade.setBindGroup(0, shadeGroup2);
         rpShade.dispatchWorkgroups(workgroups);
         rpShade.end();
+      }
+
+      // PathFinalize (HoloRT4D): once AFTER the bounce loop
+      if (this.onPathFinalize) {
+        this.onPathFinalize({
+          frameParamsBuffer: this._frameParamsBuffer,
+          rayOrigins: this._rayBuffers.rayOrigins,
+          rayDirs: this._rayBuffers.rayDirs,
+          hits: this._rayBuffers.hits,
+          pathThroughput: this._rayBuffers.pathThroughput,
+          rayBuffers: this._rayBuffers,
+        });
       }
 
       // Pass 4: Accumulate into accumBuffer

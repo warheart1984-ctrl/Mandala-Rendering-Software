@@ -160,6 +160,79 @@ export class CharacterHolographicRig {
     this.nodes = [];
     this.egt = null;
     this.buffers = null;
+    // Face rig state for Turbo GGUF control images
+    this.faceRigState = this._initFaceRigState();
+  }
+
+  _initFaceRigState() {
+    // Derive basic face rig state from holographic rig data.
+    // In production, each actor would carry a full FaceRig (blendshapes + landmarks).
+    // Here we drive face parameters from the chamber's EGT/anatomy.
+    return {
+      fieldId: this.creature || "chamber-actor",
+      blendshapes: new Float32Array(52).fill(0), // derived from anatomy/Eye-gaze proxies
+      headPos: { x: 0, y: 0, z: 0 },
+      headRot: { x: 0, y: 0, z: 0 },
+      landmarks: Array.from({ length: 68 }, (_, i) => ({
+        id: i,
+        x: 256 + Math.sin(i * 0.5) * 50,  // synthetic for Turbo imaging
+        y: 384 + Math.cos(i * 0.7) * 40,
+        z: 0,
+        bone: ["jaw", "eye_L", "eye_R", "brow_L", "brow_R", "mouth", "nose"][Math.floor(i / 10)] || "unknown",
+      })),
+    };
+  }
+
+  getFaceRigState() {
+    return this.faceRigState;
+  }
+
+  _initBodyRigState() {
+    // Body rig state: joint positions + pose for chamber actor full-body rendering
+    return {
+      fieldId: this.creature || "chamber-actor",
+      joints: Array.from({ length: 21 }, (_, i) => ({
+        id: i,
+        name: ["hip", "knee", "ankle", "subtalar", "meta_tarsal", "talus", "calcaneus", "mid_tarsal", "malleolus", "subtalar_joint"][i] || `joint_${i}`,
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        velocity: [0, 0, 0],
+      })),
+      pose: { x: 0, y: 0, z: 0, q: [1, 0, 0, 0] }, // position + quaternion rotation
+      temporal: {
+        prevJoints: [],
+        dt: 0,
+        opticalFlow: new Float32Array(21 * 2), // per-joint [u,v] flow
+      },
+    };
+  }
+
+  getBodyRigState() {
+    return this.bodyRigState;
+  }
+
+  updateFaceFromRig(rigState) {
+    if (!rigState) return;
+    this.faceRigState.blendshapes.copyFrom(rigState.blendshapes);
+    this.faceRigState.headPos.copyFrom(rigState.headPos);
+    this.faceRigState.headRot.copyFrom(rigState.headRot);
+    this.faceRigState.landmarks = rigState.landmarks || this.faceRigState.landmarks;
+  }
+
+  updateBodyFromRig(rigState) {
+    if (!rigState) return;
+    this.bodyRigState.pose.copyFrom(rigState.pose);
+    this.bodyRigState.joints.forEach((j, i) => {
+      j.position.copyFrom(rigState.joints[i]?.position || j.position);
+      j.rotation.copyFrom(rigState.joints[i]?.rotation || j.rotation);
+    });
+    if (rigState.temporal) {
+      this.bodyRigState.temporal.prevJoints = this.bodyRigState.joints.map(j => ({
+        ...j.position,
+      }));
+      this.bodyRigState.temporal.dt = rigState.temporal.dt;
+      this.bodyRigState.temporal.opticalFlow.copyFrom(rigState.temporal.opticalFlow || new Float32Array(21 * 2));
+    }
   }
 
   update(egt, anatomy, govOverride) {

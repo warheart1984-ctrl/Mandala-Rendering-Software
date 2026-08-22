@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "storyforge-mandala-contract/1.1",
+  "beatId": "studio-two-face-beat-001",
+  "organ": "StoryForge",
+  "statusTag": "partial",
+  "durationSeconds": 3,
+  "fps": 24,
+  "frameCount": 72,
+  "envelopeModel": "72 scene envelopes (1 per frame @ 24fps); 2 actors in beat metadata + per-actor landmark-z buffers",
+  "action": "Two actors face each other; actor-b blinks at midpoint (frame 36)",
+  "actors": [
+    {
+      "fieldId": "actor-a-mythar",
+      "displayName": "Mythar",
+      "headPos": { "x": -0.32, "y": 0, "z": 0.05 },
+      "headRot": { "x": 0.02, "y": 0.45, "z": 0 },
+      "tracks": [
+        {
+          "blendshape": "browInnerUp",
+          "keyframes": [
+            { "frame": 0, "value": 0.05 },
+            { "frame": 36, "value": 0.14 },
+            { "frame": 71, "value": 0.05 }
+          ]
+        },
+        {
+          "blendshape": "mouthSmileLeft",
+          "keyframes": [
+            { "frame": 0, "value": 0.06 },
+            { "frame": 71, "value": 0.06 }
+          ]
+        }
+      ]
+    },
+    {
+      "fieldId": "actor-b-warden",
+      "displayName": "Warden",
+      "headPos": { "x": 0.32, "y": 0, "z": 0.05 },
+      "headRot": { "x": 0.02, "y": -0.45, "z": 0 },
+      "tracks": [
+        {
+          "blendshape": "eyeBlinkLeft",
+          "keyframes": [
+            { "frame": 34, "value": 0 },
+            { "frame": 36, "value": 1 },
+            { "frame": 38, "value": 0 }
+          ]
+        },
+        {
+          "blendshape": "eyeBlinkRight",
+          "keyframes": [
+            { "frame": 34, "value": 0 },
+            { "frame": 36, "value": 1 },
+            { "frame": 38, "value": 0 }
+          ]
+        },
+        {
+          "blendshape": "jawOpen",
+          "keyframes": [
+            { "frame": 0, "value": 0.1 },
+            { "frame": 48, "value": 0.16 },
+            { "frame": 71, "value": 0.1 }
+          ]
+        }
+      ]
+    }
+  ]
+}
