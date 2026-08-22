@@ -101,7 +101,7 @@ async function stage1RenderMRS(opts) {
         return;
       }
       
-      let provenance = {};
+      let provenance;
       try {
         const lines = stdout.trim().split("\n");
         const jsonLine = lines[lines.length - 1];

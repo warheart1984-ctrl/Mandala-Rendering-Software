@@ -20,12 +20,12 @@ describe("SingularityTree Root", () => {
       assert.strictEqual(root.generationMetadata.dof, 2);
     });
 
-    it "creates root with deterministic seed", () => {
+    it( "creates root with deterministic seed", () => {
       const r = createRoot({ deterministicSeed: 0xcafebabe });
       assert.strictEqual(r.seed, 0xcafebabe);
     });
 
-    it "root.state is frozen", () => {
+    it( "root.state is frozen", () => {
       assert.strictEqual(Object.isFrozen(root.state), true);
     });
   });
@@ -36,11 +36,11 @@ describe("SingularityTree Root", () => {
       assert.ok(Object.isFrozen(cfg));
     });
 
-    it "throws on minBranchFactor > maxBranchFactor", () => {
+    it( "throws on minBranchFactor > maxBranchFactor", () => {
       assert.throws(() => normalizeSingularityTreeConfig({ minBranchFactor: 5, maxBranchFactor: 3 }), TypeError);
     });
 
-    it "accepts valid user config merge", () => {
+    it( "accepts valid user config merge", () => {
       const cfg = normalizeSingularityTreeConfig({ maxDepth: 8 });
       assert.strictEqual(cfg.maxDepth, 8);
     });

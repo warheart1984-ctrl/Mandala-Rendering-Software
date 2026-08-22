@@ -39,9 +39,9 @@
  * jitter when actors take discrete solver steps.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
-import { resolve, basename, dirname } from "node:path";
+import { resolve, basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { parseSceneSpecification } from "../mrs/packages/renderer-core/src/scene-spec/parse.js";
 import {
   renderSceneFrame,
@@ -799,6 +799,14 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
+if (args.includes("--holo")) {
+  // Official holographic recorder lives in simulation-chamber-holo.mjs (raw .bin).
+  // Keep this file on the legacy PNG / capsule path.
+  console.log("Redirecting --holo → scripts/simulation-chamber-holo.mjs (official raw .bin recorder)");
+  const holoScript = join(__dirname, "simulation-chamber-holo.mjs");
+  const r = spawnSync(process.execPath, [holoScript, ...args], { stdio: "inherit" });
+  process.exit(r.status === null ? 1 : r.status);
+}
 if (args.length === 0) {
   console.error("Usage: node simulation-chamber.mjs <scene-card.json> [output-dir] [options]");
   console.error("Options: --width N --height N --fps N --samples N --maxDepth N --no-tts --llm --llm-interval N");

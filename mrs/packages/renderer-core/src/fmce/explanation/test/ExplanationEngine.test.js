@@ -38,7 +38,7 @@ describe("Constitutional Explanation Contract", () => {
     const explanation = engine.generateExplanation(decisionInput);
 
     expect(explanation.evidence).toBeDefined();
-    expect(typeof explanation.evidence).toBe("string" || "object");
+    expect(["string", "object"]).toContain(typeof explanation.evidence);
   });
 
   test("produces invariant surface for every decision", () => {

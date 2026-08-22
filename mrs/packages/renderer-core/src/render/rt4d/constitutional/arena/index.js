@@ -1,3 +1,7 @@
+import { MetricTensor } from "./MetricTensor.js";
+import { ChristoffelSymbols } from "./Christoffel.js";
+import { CurvatureTensors } from "./Curvature.js";
+
 export {
   MetricTensor,
   METRIC_SIGNATURES,

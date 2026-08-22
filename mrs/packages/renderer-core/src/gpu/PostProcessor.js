@@ -447,7 +447,7 @@ export class PostProcessor {
     
     // Texture size
     uniforms[i++] = this.width;
-    uniforms[i++] = this.height;
+    uniforms[i] = this.height;
     
     this.device.queue.writeBuffer(this.uniformBuffer, 0, uniforms);
   }

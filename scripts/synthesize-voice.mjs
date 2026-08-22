@@ -155,6 +155,8 @@ function writeWAV(buffer, sampleRate, outPath) {
 
 // Write the WAV file
 const audioBuffer = Buffer.from(interleaved.buffer);
+const outputFlagIndex = process.argv.indexOf('--output');
+const argsOutput = outputFlagIndex !== -1 ? process.argv[outputFlagIndex + 1] : undefined;
 const outPath = argsOutput || join(dirname, '../tmp/mythar-natural-clip.wav');
 writeWAV(audioBuffer, audioSampleRate, outPath);
 
@@ -172,4 +174,3 @@ console.log(`    P-05: Divine suffix intonation (F0 contour fall at end)`);
 console.log(`    P-06: Root-consonant carry (even amplitude)`);
 console.log(`    P-07: Diphthong glide (sine wave base tone)`);
 console.log(`  F0 contour: rising then falling (melodic contour)`);
-PYEOF

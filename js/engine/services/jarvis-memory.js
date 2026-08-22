@@ -26,7 +26,7 @@ async function readJson(response) {
   try {
     return JSON.parse(text);
   } catch (error) {
-    throw new Error(`Jarvis memory response was not valid JSON (${error.message})`);
+    throw new Error(`Jarvis memory response was not valid JSON (${error.message})`, { cause: error });
   }
 }
 
