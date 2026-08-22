@@ -28,11 +28,20 @@
  *   --solver mandala-proto   Default. Certified −∇φ defect walk drives actor world positions.
  *                            Beat clock still drives Movie Lane / observer (ownsTime=false).
  *   --solver pose            Explicit fallback: beat lerp / pose_interpolation (notGradV).
+ *   --cam-az-min R           Min azimuth (radians) of the eased ping-pong camera sweep (default 0.7).
+ *   --cam-az-max R           Max azimuth (radians) of the eased ping-pong camera sweep (default 1.8).
+ *   --cam-sweeps N           Number of smooth there-and-back sweeps over the take (default 1).
+ *   --cam-orbit-360          Legacy continuous one-way orbit (default is a bounded ping-pong sweep).
+ *
+ * Camera motion: by default the observer performs a smooth, eased there-and-back
+ * sweep (0.5 - 0.5·cos(2π·N·p)) over a bounded azimuth arc and looks at a stable
+ * scene center, so it never pans off the lit scene into empty space and does not
+ * jitter when actors take discrete solver steps.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
-import { resolve, basename, dirname } from "node:path";
+import { resolve, basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { parseSceneSpecification } from "../mrs/packages/renderer-core/src/scene-spec/parse.js";
 import {
   renderSceneFrame,
@@ -66,6 +75,8 @@ import {
 import {
   runCinematicProtoSolver,
   applyDefectMotionToActors,
+  applyLocalGradientMotionToActors,
+  createFieldSampler,
   sampleWorldline,
   CHAMBER_SOLVER_ID,
   CHAMBER_SOLVER_POSE,
@@ -130,6 +141,14 @@ class MultiActorSim {
     this.enableLLM = options.enableLLM || false;
     this.llmInterval = options.llmInterval || 2.0; // seconds between LLM decisions
 
+    // Camera sweep — smooth, eased ping-pong over a bounded azimuth arc.
+    // Replaces the old linear one-way orbit that panned off the lit scene into
+    // empty space. camOrbit360 restores the legacy continuous orbit.
+    this.camOrbit360 = options.camOrbit360 || false;
+    this.camAzMin = options.camAzMin != null ? options.camAzMin : 0.7;
+    this.camAzMax = options.camAzMax != null ? options.camAzMax : 1.8;
+    this.camSweeps = options.camSweeps != null ? options.camSweeps : 1;
+
     this.scene = null;
     this.camera = null;
     this.descriptor = null;
@@ -152,6 +171,15 @@ class MultiActorSim {
     this.rhfdCharacterGlb = Boolean(options.characterGlb);
     this.solver = options.solver || CHAMBER_SOLVER_DEFAULT;
     this.solverResult = null;
+
+    // Certified-field bindings (opt-in). `--field-volume` composites the
+    // certified φ/∇φ/η field as a primary-ray volume; `--per-actor-grad`
+    // moves each actor by the local −∇φ at its own lattice cell. Default is
+    // preserved (shared defect delta, no volume) unless these are set.
+    this.enableFieldVolume = options.fieldVolume || false;
+    this.perActorGrad = options.perActorGrad || false;
+    this.gradMotionScale = options.gradMotionScale ?? 6.0;
+    this._fieldSampler = null;
   }
 
   buildWorld(sceneCard) {
@@ -409,6 +437,13 @@ class MultiActorSim {
   applyProtoMotion(actor) {
     if (!this.solverResult?.defectWorldline?.length) return false;
     if (!actor._solverRest) actor._solverRest = [...(actor.position || [0, 0, 0, 0])];
+    // PRIORITY 1: per-actor local −∇φ — each actor samples the certified
+    // gradient at ITS OWN lattice cell (trilinear) and steps by local −∇φ.
+    // The shared defect-delta path is kept as the back-compat fallback.
+    if (this.perActorGrad && this._fieldSampler) {
+      applyLocalGradientMotionToActors([actor], this._fieldSampler, { scale: this.gradMotionScale });
+      return true;
+    }
     const tNorm = this.duration > 0 ? this.time / this.duration : 0;
     const defect = sampleWorldline(this.solverResult.defectWorldline, tNorm);
     const origin = this.solverResult.defectOrigin || this.solverResult.defectWorldline[0];
@@ -424,6 +459,14 @@ class MultiActorSim {
     const dt = 1 / this.fps;
     this.time += dt;
     this.tickCount++;
+
+    // Build the certified-field sampler once per tick (shared by per-actor
+    // −∇φ motion and the FieldVolume composite). Slice-interpolated by tNorm.
+    this._fieldSampler = null;
+    if ((this.enableFieldVolume || this.perActorGrad) && this.solverResult?.field) {
+      const tNorm = this.duration > 0 ? this.time / this.duration : 0;
+      this._fieldSampler = createFieldSampler(this.solverResult.field, tNorm);
+    }
 
     const tickSpeech = [];
 
@@ -532,19 +575,45 @@ class MultiActorSim {
     // 6. Rebuild BVH
     this.scene.build();
 
-    // 7. Animate camera — orbit around center of mass of actors
-    if (this.cameraBase && this.actors.length > 0) {
-      const centerX = this.actors.reduce((sum, a) => sum + a.position[0], 0) / this.actors.length;
-      const centerY = this.actors.reduce((sum, a) => sum + a.position[1], 0) / this.actors.length;
-      const centerZ = this.actors.reduce((sum, a) => sum + a.position[2], 0) / this.actors.length;
-      
-      const orbitAngle = this.time * 0.18;
-      const orbitRadius = this.sceneCardCamera?.radius || 3.6;
+    // 7. Animate camera — smooth ping-pong sweep over a bounded arc.
+    if (this.cameraBase) {
+      // Stable orbit target: prefer the scene-card center/lookAt so the camera
+      // does not jitter when actors take discrete solver/beat steps. Fall back
+      // to the actors' center of mass only when the card has no explicit center.
+      const card = this.sceneCardCamera || {};
+      const cardTarget = Array.isArray(card.lookAt)
+        ? card.lookAt
+        : (Array.isArray(card.center) ? card.center : null);
+      let centerX, centerY, centerZ;
+      if (cardTarget) {
+        [centerX, centerY, centerZ] = cardTarget;
+      } else if (this.actors.length > 0) {
+        centerX = this.actors.reduce((s, a) => s + a.position[0], 0) / this.actors.length;
+        centerY = this.actors.reduce((s, a) => s + a.position[1], 0) / this.actors.length;
+        centerZ = this.actors.reduce((s, a) => s + a.position[2], 0) / this.actors.length;
+      } else {
+        centerX = 0; centerY = 1.2; centerZ = 0;
+      }
+
+      const p = this.duration > 0 ? this.time / this.duration : 0; // 0..1
+      let orbitAngle;
+      if (this.camOrbit360) {
+        // Legacy: continuous one-way orbit (kept for back-compat).
+        orbitAngle = this.time * 0.18;
+      } else {
+        // Eased there-and-back: 0.5 - 0.5*cos(2π·N·p) sweeps min→max→min with
+        // zero angular velocity at both endpoints and each turnaround, so the
+        // motion reads smooth and never pans past the lit scene into the void.
+        const ease = 0.5 - 0.5 * Math.cos(2 * Math.PI * this.camSweeps * p);
+        orbitAngle = this.camAzMin + (this.camAzMax - this.camAzMin) * ease;
+      }
+      const orbitRadius = card.radius || 3.6;
+      const orbitHeight = (card.height != null) ? card.height : centerY + 0.85;
+
       const cameraX = centerX + Math.sin(orbitAngle) * orbitRadius;
-      const cameraY = centerY + 0.85;
+      const cameraY = orbitHeight;
       const cameraZ = centerZ + Math.cos(orbitAngle) * orbitRadius;
-      
-      // Update camera position and look-at
+
       if (this.camera.position) {
         this.camera.position.x = cameraX;
         this.camera.position.y = cameraY;
@@ -552,7 +621,7 @@ class MultiActorSim {
       }
       if (this.camera.lookAt) {
         this.camera.lookAt.x = centerX;
-        this.camera.lookAt.y = centerY + 0.35;
+        this.camera.lookAt.y = centerY + 0.15;
         this.camera.lookAt.z = centerZ;
       }
       if (typeof this.camera._buildBasis === "function") {
@@ -568,6 +637,7 @@ class MultiActorSim {
       maxDepth: this.maxDepth,
       seed: this.seed + this.tickCount,
       palette: this.descriptor?.palette || { albedo: [0.5, 0.5, 0.6] },
+      fieldVolume: this.enableFieldVolume ? this._fieldSampler : null,
     });
 
     this.frames.push(png);
@@ -729,12 +799,27 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
+if (args.includes("--holo")) {
+  // Official holographic recorder lives in simulation-chamber-holo.mjs (raw .bin).
+  // Keep this file on the legacy PNG / capsule path.
+  console.log("Redirecting --holo → scripts/simulation-chamber-holo.mjs (official raw .bin recorder)");
+  const holoScript = join(__dirname, "simulation-chamber-holo.mjs");
+  const r = spawnSync(process.execPath, [holoScript, ...args], { stdio: "inherit" });
+  process.exit(r.status === null ? 1 : r.status);
+}
 if (args.length === 0) {
   console.error("Usage: node simulation-chamber.mjs <scene-card.json> [output-dir] [options]");
   console.error("Options: --width N --height N --fps N --samples N --maxDepth N --no-tts --llm --llm-interval N");
   console.error("         --character-glb [path]  consume character/models/exports/char_rigged.glb (partial hook)");
   console.error("         --solver mandala-proto  default: certified −∇φ defect walk drives actors");
   console.error("         --solver pose           beat lerp / pose_interpolation fallback");
+  console.error("         --cam-az-min R --cam-az-max R  azimuth arc (radians) for the eased ping-pong sweep (default 0.7..1.8)");
+  console.error("         --cam-sweeps N          number of smooth there-and-back sweeps over the take (default 1)");
+  console.error("         --cam-orbit-360         legacy: continuous one-way orbit (may pan off the lit scene)");
+  console.error("         --field-volume          composite certified φ/∇φ/η as a primary-ray field volume (partial)");
+  console.error("         --per-actor-grad        each actor steps by local −∇φ at its own lattice cell");
+  console.error("         --grad-scale N          world-space gain for --per-actor-grad (default 6.0)");
+  console.error("         --holo                  redirects to scripts/simulation-chamber-holo.mjs (raw .bin)");
   process.exit(1);
 }
 
@@ -754,6 +839,13 @@ for (let i = 0; i < args.length; i++) {
     else options.characterGlb = CHAR_RIGGED_GLB;
   }
   else if (args[i] === "--solver" && args[i + 1]) { options.solver = args[++i]; }
+  else if (args[i] === "--cam-az-min" && args[i + 1]) { options.camAzMin = parseFloat(args[++i]); }
+  else if (args[i] === "--cam-az-max" && args[i + 1]) { options.camAzMax = parseFloat(args[++i]); }
+  else if (args[i] === "--cam-sweeps" && args[i + 1]) { options.camSweeps = parseFloat(args[++i]); }
+  else if (args[i] === "--cam-orbit-360") { options.camOrbit360 = true; }
+  else if (args[i] === "--field-volume") { options.fieldVolume = true; }
+  else if (args[i] === "--per-actor-grad") { options.perActorGrad = true; }
+  else if (args[i] === "--grad-scale" && args[i + 1]) { options.gradMotionScale = parseFloat(args[++i]); }
   else { positionalArgs.push(args[i]); }
 }
 
@@ -825,11 +917,14 @@ function maybeProtoSolver() {
   sim.solver = CHAMBER_SOLVER_ID;
   sim.solverResult = solverResult;
   mkdirSync(outputDir, { recursive: true });
+  // Strip the large field caches (Float32Array subarray refs) before
+  // serialising the solver receipt — they belong in memory, not JSON.
+  const { field: _field, ...serializableSolver } = solverResult;
   writeFileSync(
     resolve(outputDir, "mandala-proto-solver.json"),
     JSON.stringify(
       {
-        ...solverResult,
+        ...serializableSolver,
         receipts: solverResult.receipts,
       },
       null,
@@ -840,6 +935,12 @@ function maybeProtoSolver() {
   console.log(
     `  Solver: mandala-proto — ${solverResult.committedSteps} certified steps; actors follow −∇φ defect walk (Movie Lane ownsTime=false); sample ${moved.rest} → ${moved.position.map((v) => v.toFixed(3))}`,
   );
+  if (options.perActorGrad) {
+    console.log(`  Field bind: --per-actor-grad ON — actors step by local −∇φ (trilinear, own cell); shared-delta is the fallback.`);
+  }
+  if (options.fieldVolume) {
+    console.log(`  Field bind: --field-volume ON — certified φ/∇φ/η composited as a primary-ray volume (partial; not multiple-scattering media).`);
+  }
   return Promise.resolve(solverResult);
 }
 

@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/test-all.mjs",
+    "test:bios-ai-lane": "node --test sovereign-x/tests/biosAiLane.test.js workers/denser-topology-worker.test.mjs",
     "test:fmce": "jest --config jest.config.cjs",
     "test:governance": "node --test engine/governance/test/*.test.js",
     "test:conformance": "node scripts/test-conformance.mjs",
@@ -26,6 +27,9 @@
     "@babel/preset-env": "^7.29.7",
     "@eslint/js": "^10.0.1",
     "babel-jest": "^29.7.0",
+    "canvas": "^3.2.3",
+    "jest": "^29.7.0",
+    "ws": "^8.21.3"
     "eslint": "^10.9.0",
     "globals": "^17.11.0",
     "jest": "^29.7.0"

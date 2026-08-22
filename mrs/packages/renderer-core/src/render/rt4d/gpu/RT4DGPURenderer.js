@@ -343,7 +343,6 @@ export class RT4DGPURenderer {
 
     return this._readback(width, height);
   }
-  }
 
   _copyScatterToRays(encoder) {
     const rb = this._rayBuffers;

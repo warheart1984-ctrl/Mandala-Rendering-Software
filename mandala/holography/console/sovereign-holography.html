@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sovereign Holography Console — Claim A</title>
+  <style>
+    :root {
+      --bg: #0e1218;
+      --panel: #161c26;
+      --ink: #d8e0ea;
+      --muted: #8a96a8;
+      --accent: #5eb0c8;
+      --warn: #c9a227;
+      --ok: #6aaa7a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1a2838, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.5rem 2rem 0.5rem;
+      border-bottom: 1px solid #243040;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+    }
+    header p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .modes {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem 2rem;
+    }
+    .modes button {
+      background: var(--panel);
+      color: var(--ink);
+      border: 1px solid #2a3848;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      font: inherit;
+    }
+    .modes button.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    main {
+      padding: 0 2rem 2rem;
+      max-width: 880px;
+    }
+    .panel {
+      display: none;
+      background: var(--panel);
+      border: 1px solid #243040;
+      padding: 1.25rem 1.4rem;
+    }
+    .panel.active { display: block; }
+    .panel h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+    .kv {
+      display: grid;
+      grid-template-columns: 12rem 1fr;
+      gap: 0.35rem 1rem;
+      font-size: 0.92rem;
+    }
+    .kv span:nth-child(odd) { color: var(--muted); }
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid #3a4a5a;
+      font-size: 0.75rem;
+      color: var(--warn);
+      margin-left: 0.5rem;
+    }
+    .ok { color: var(--ok); }
+    .bad { color: #d07070; }
+    pre {
+      background: #0a0e14;
+      padding: 0.75rem;
+      overflow: auto;
+      font-size: 0.78rem;
+      border: 1px solid #1e2834;
+    }
+    .load {
+      margin: 0 2rem 1rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sovereign Holography Console <span class="tag">partial</span></h1>
+    <p>Claim A lens — Spacetime / Holographic / Governance. Reads local <code>receipt.json</code>.</p>
+  </header>
+  <p class="load" id="status">Loading receipt.json…</p>
+  <div class="modes">
+    <button type="button" data-mode="spacetime" class="active">Spacetime</button>
+    <button type="button" data-mode="holographic">Holographic</button>
+    <button type="button" data-mode="governance">Governance</button>
+  </div>
+  <main>
+    <section class="panel active" id="panel-spacetime">
+      <h2>Spacetime (Bulk substrate)</h2>
+      <div class="kv" id="kv-spacetime"></div>
+    </section>
+    <section class="panel" id="panel-holographic">
+      <h2>Holographic (Boundary / EGT)</h2>
+      <div class="kv" id="kv-holographic"></div>
+    </section>
+    <section class="panel" id="panel-governance">
+      <h2>Governance (Audit metrics)</h2>
+      <div class="kv" id="kv-governance"></div>
+      <h2 style="margin-top:1.2rem">Raw governance block</h2>
+      <pre id="gov-raw"></pre>
+    </section>
+  </main>
+  <script>
+    const buttons = document.querySelectorAll(".modes button");
+    const panels = {
+      spacetime: document.getElementById("panel-spacetime"),
+      holographic: document.getElementById("panel-holographic"),
+      governance: document.getElementById("panel-governance"),
+    };
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        buttons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        Object.values(panels).forEach((p) => p.classList.remove("active"));
+        panels[btn.dataset.mode].classList.add("active");
+      });
+    });
+
+    function row(label, value, cls) {
+      return `<span>${label}</span><span class="${cls || ""}">${value}</span>`;
+    }
+
+    function fmt(x) {
+      if (x == null) return "—";
+      if (typeof x === "number") return Number.isInteger(x) ? String(x) : x.toFixed(6);
+      if (typeof x === "boolean") return x ? "true" : "false";
+      return String(x);
+    }
+
+    async function load() {
+      const status = document.getElementById("status");
+      try {
+        const res = await fetch("./receipt.json");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const r = await res.json();
+        status.textContent = "Loaded " + (r.kind || "receipt") + " · status=" + (r.status || "?");
+
+        document.getElementById("kv-spacetime").innerHTML = [
+          row("frames", fmt(r.frames)),
+          row("v_x / threshold", fmt(r.v_x ?? r.threshold)),
+          row("convention", r.convention || "—"),
+          row("certifiedProto", r.certifiedProto || "n/a"),
+          row("interaction frames", fmt(r.interactionFrameCount)),
+        ].join("");
+
+        document.getElementById("kv-holographic").innerHTML = [
+          row("nodeCount", fmt(r.nodeCount)),
+          row("edgeCount", fmt(r.edgeCount)),
+          row("maxRho", fmt(r.maxRho)),
+          row("maxK", fmt(r.maxK)),
+          row("edgeSum", fmt(r.edgeSum)),
+          row("egtHash", (r.egtHash || "—").slice(0, 16) + "…"),
+          row("reconstructionError", fmt(r.reconstructionError)),
+          row("maxRhoPeakDist", fmt(r.maxRhoPeakDist)),
+          row("spikeProof.ok", fmt(r.spikeProof?.ok), r.spikeProof?.ok ? "ok" : ""),
+        ].join("");
+
+        const g = r.governance || {};
+        const coup = g.invariants?.bulkEgtCoupling;
+        const health = g.metrics?.entanglementHealth;
+        document.getElementById("kv-governance").innerHTML = [
+          row("governance.ok", fmt(g.ok), g.ok ? "ok" : "bad"),
+          row("bulk↔EGT coupling", coup ? (coup.ok ? "ok" : coup.code) : "—", coup?.ok ? "ok" : "bad"),
+          row("entanglement healthy", fmt(health?.healthy), health?.healthy ? "ok" : "bad"),
+          row("edgeSum (health)", fmt(health?.edgeSum)),
+          row("reconstructionError", fmt(g.metrics?.reconstructionError)),
+          row("CIEMS status", g.status || "partial"),
+        ].join("");
+        document.getElementById("gov-raw").textContent = JSON.stringify(g, null, 2);
+      } catch (err) {
+        status.textContent = "Could not load receipt.json (" + err.message + "). Open this HTML beside a receipt.";
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
