@@ -3,6 +3,7 @@
  *
  * Prefer chamber / opticalLength / landmark-z depth grids.
  * Photo→metric depth without ML is declared (not implemented here).
+ * ChatGPT primary payload: Holo-Scheme V1 (buildHoloSchemeV1).
  */
 
 export { SPATIAL_TOKEN_SCHEME, SPATIAL_TOKEN_STATUS } from "./status.js";
@@ -23,3 +24,14 @@ export {
   grayscalePseudoDepth,
   IMAGE_PSEUDO_DEPTH_STATUS,
 } from "./image-pseudo-depth.js";
+export {
+  buildHoloSchemeV1,
+  hashHoloScheme,
+  canonicalHoloSchemeJson,
+  formatHoloSchemeForLLM,
+  HOLO_SCHEME_AUTH,
+  HOLO_SCHEME_UNIT_COST,
+  HOLO_SCHEME_EXECUTION_INSTRUCTION,
+  HOLO_SCHEME_STATUS,
+} from "./holo-scheme.js";
+export { formatForLLM } from "./format-llm.js";

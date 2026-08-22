@@ -24,6 +24,9 @@ const {
   faceRigFromLandmarkXYZ,
   grayscalePseudoDepth,
   SPATIAL_TOKEN_STATUS,
+  buildHoloSchemeV1,
+  formatForLLM,
+  formatHoloSchemeForLLM,
 } = await import(pathToFileURL(CORE).href);
 
 function usage() {
@@ -69,14 +72,28 @@ function syntheticDepth(size) {
   return d;
 }
 
-function emit(token, extra = {}) {
+function emit(token, depth, width, height, optsExtra = {}, extra = {}) {
   const hash = hashSpatialToken(token);
+  const holo_scheme = buildHoloSchemeV1({
+    depthGrid: depth,
+    width,
+    height,
+    faceRig: optsExtra.faceRig,
+    includeSpatialV1: false,
+  });
+  const llm_summary = formatHoloSchemeForLLM(holo_scheme);
+  const spatial_llm = formatForLLM(token, { hash });
   const payload = {
     scheme: token.scheme,
     hash,
     resolution: token.resolution,
     cell_count: token.cells.length,
     token,
+    // ChatGPT primary: Holo-Scheme V1
+    structuredContent: holo_scheme,
+    holo_scheme,
+    llm_summary,
+    spatial_llm,
     status: SPATIAL_TOKEN_STATUS,
     ...extra,
   };
@@ -184,7 +201,7 @@ async function main() {
     resolution: /** @type {8|16} */ (resolution),
     ...optsExtra,
   });
-  const payload = emit(token);
+  const payload = emit(token, depth, width, height, optsExtra);
 
   const text = JSON.stringify(payload, null, 2);
   if (args.out) {

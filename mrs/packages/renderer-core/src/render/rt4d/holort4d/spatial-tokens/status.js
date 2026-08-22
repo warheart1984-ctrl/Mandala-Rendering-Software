@@ -14,13 +14,17 @@ export const SPATIAL_TOKEN_STATUS = Object.freeze({
   normalsFromGradients: "enforced",
   gridPartition16: "enforced",
   hashCanonicalJson: "enforced",
+  holoSchemeV1: "enforced",
+  formatForLLM: "enforced",
   faceObjectLabels: "partial",
   motionFromPrevDepth: "partial",
   imageBase64ToDepth: "declared",
+  metersCalibration: "declared",
   apiServerStub: "partial",
   billingUsdPerCall: "declared",
+  chatgptActionsBridge: "partial",
   marketingSite: "skeleton",
   sdkClient: "skeleton",
   note:
-    "Deterministic tokenize requires Float32 depth (chamber/opticalLength/landmark-z). Photo→depth ML path is declared, not implemented.",
+    "Deterministic tokenize requires Float32 depth (chamber/opticalLength/landmark-z). Holo-Scheme V1 is the ChatGPT primary payload. Photo→depth ML and meter calibration are declared.",
 });

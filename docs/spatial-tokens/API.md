@@ -1,109 +1,87 @@
 # HoloRT4D Spatial Tokens — API Reference
 
-**Scheme:** `HoloRT4D-Spatial-V1`  
+**Primary ChatGPT payload:** `Holo-Scheme V1` (`structuredContent`)  
+**Wrapped math scheme:** `HoloRT4D-Spatial-V1`  
 **Base URL (local stub):** `http://localhost:8792`  
-**OpenAPI:** `mrs/apps/spatial-tokenizer/openapi.yaml`
+**Actions OpenAPI:** `mrs/apps/spatial-tokenizer/openapi-gpt-actions.yaml`  
+**operationId:** `HoloMath_Read`
 
 ## Auth & billing
 
 | Field | Status |
 |-------|--------|
-| `$1` USD per successful tokenize | **declared** — returned in response as `price_usd`, **not charged** |
-| API keys / Stripe | **not present** |
+| `$1` USD per successful tokenize | **declared** — stub paywall / checkout URL |
+| `REQUIRE_CREDIT=1` → HTTP 402 | **declared** stub |
+| Live Stripe keys | **not present** |
+| Meter calibration | **declared** |
 
 ## `GET /health`
 
 ```json
-{ "status": "ok", "scheme": "HoloRT4D-Spatial-V1", "billing": "declared" }
+{ "status": "ok", "scheme": "Holo-Scheme-V1", "scheme_auth": "VERIFIED_MATH_ENGINE_RX580", "billing": "declared" }
 ```
 
-## `GET /v1/status`
+## `GET /v1/credits/status?key=`
 
-Returns capability tags (`enforced` / `partial` / `declared`).
+Stub credit check → `{ "valid": true|false, "price_usd": 1.0, "billing_status": "declared" }`.
 
-## `POST /v1/spatial-tokenize`
+## `POST /v1/credits/checkout`
 
-### Request (enforced path)
+Returns placeholder Stripe Payment Link + optional `demo_credit_token` for local Actions testing. **Declared** — no secrets.
+
+## `POST /v1/spatial-tokenize` (HoloMath_Read)
+
+### Request
 
 ```json
 {
-  "depth_f32": [0.1, 0.2, "..."],
+  "depth_f32": [0.1, 0.2],
   "width": 64,
   "height": 64,
-  "resolution": 16,
-  "prev_depth_f32": null,
+  "resolution": 8,
+  "mode": "auto",
+  "image_base64": null,
+  "image_url": null,
   "face_landmarks_xyz": null,
-  "brief_id": "spatial-token-default",
-  "bill": true
+  "credit_token": null,
+  "brief_id": "spatial-token-default"
 }
 ```
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `depth_f32` | yes* | Row-major Float32 depth |
-| `width`, `height` | yes with depth | Pixel dimensions |
-| `resolution` | no | `8` or `16` (default 16) |
-| `prev_depth_f32` | no | Enables motion (**partial**) |
-| `face_landmarks_xyz` | no | Packed xyz → face labels (**partial**) |
-| `image_base64` | alt | **declared** — returns HTTP 501 until metric path exists |
-| `bill` | no | Stub flag; does not charge |
+| `depth_f32` / `depth` | preferred | Row-major Float32 depth (**enforced**) |
+| `width`, `height` | with depth | Pixel dimensions |
+| `resolution` | no | `8` or `16` (default **8** for Actions) |
+| `image_base64` / `image_url` | alt | Grayscale pseudo-depth (**partial**) |
+| `credit_token` | if `REQUIRE_CREDIT=1` | Spatial Credit stub |
+| (none) | smoke | Synthetic ramp for demos |
 
-\* Or `image_base64` (declared / 501).
+### Response (200)
 
-### Response
+Primary body fields:
+
+- `structuredContent` / `holo_scheme` — **Holo-Scheme V1** (8×8 bins)
+- `llm_summary` / `text` — compact LLM text
+- `token` — full `HoloRT4D-Spatial-V1` when Node core available
+- `hash` — Spatial-V1 hash (scheme also has its own `hash`)
+- `price_usd`: `1.0`, `billing_status`: `declared`
+
+### Response (402)
 
 ```json
 {
-  "scheme": "HoloRT4D-Spatial-V1",
-  "hash": "<sha256 hex>",
-  "resolution": 16,
-  "cell_count": 256,
-  "token": {
-    "scheme": "HoloRT4D-Spatial-V1",
-    "resolution": 16,
-    "width": 64,
-    "height": 64,
-    "cells": [
-      {
-        "cell": 0,
-        "depth": 0,
-        "curvature": 0.0,
-        "normal": [0.0, 0.0, 1.0],
-        "object": "face.nose",
-        "motion": { "dx": 0, "dy": 0, "mag": 0 }
-      }
-    ],
-    "meta": {}
-  },
-  "price_usd": 1.0,
-  "billing_status": "declared",
-  "status": {
-    "tokenizeFromDepthGrid": "enforced",
-    "api": "partial",
-    "billing": "declared"
-  }
+  "error": "payment_required",
+  "message": "I can see the image, but I don't have the 4D math yet. It costs $1...",
+  "checkout_url": "https://buy.stripe.com/test_spatial_credit_1usd_PLACEHOLDER",
+  "price_usd": 1
 }
 ```
 
-### Determinism
+## Holo-Scheme V1 shape
 
-Same `depth_f32` + `width` + `height` + `resolution` (+ optional face/motion inputs) → same `hash` when routed through the Node math core (`scripts/holort4d-tokenize.mjs`).
+See [CHATGPT_GPT_SETUP.md](./CHATGPT_GPT_SETUP.md) for the exact template (`scheme_auth`, `spatial_grid_8x8`, `execution_instruction`, …).
 
-### GridCell
+## Determinism
 
-| Field | Range / type |
-|-------|----------------|
-| `cell` | `0 .. resolution²-1` |
-| `depth` | integer `0–255` |
-| `curvature` | finite float |
-| `normal` | unit `[nx, ny, nz]` |
-| `object` | optional string |
-| `motion` | optional `{ dx, dy, mag }` |
-
-## Errors
-
-| Code | Meaning |
-|------|---------|
-| 400 | Missing depth/dims |
-| 501 | `image_base64` path declared only |
-| 500 | CLI / math core failure |
+Same depth + dimensions → same Holo-Scheme `hash` and Spatial-V1 `hash` via Node math core (`scripts/holort4d-tokenize.mjs`).
