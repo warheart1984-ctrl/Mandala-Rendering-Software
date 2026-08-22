@@ -39,9 +39,9 @@
  * jitter when actors take discrete solver steps.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
-import { resolve, basename, dirname } from "node:path";
+import { resolve, basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { parseSceneSpecification } from "../mrs/packages/renderer-core/src/scene-spec/parse.js";
 import {
   renderSceneFrame,
@@ -75,6 +75,8 @@ import {
 import {
   runCinematicProtoSolver,
   applyDefectMotionToActors,
+  applyLocalGradientMotionToActors,
+  createFieldSampler,
   sampleWorldline,
   CHAMBER_SOLVER_ID,
   CHAMBER_SOLVER_POSE,
@@ -169,6 +171,15 @@ class MultiActorSim {
     this.rhfdCharacterGlb = Boolean(options.characterGlb);
     this.solver = options.solver || CHAMBER_SOLVER_DEFAULT;
     this.solverResult = null;
+
+    // Certified-field bindings (opt-in). `--field-volume` composites the
+    // certified φ/∇φ/η field as a primary-ray volume; `--per-actor-grad`
+    // moves each actor by the local −∇φ at its own lattice cell. Default is
+    // preserved (shared defect delta, no volume) unless these are set.
+    this.enableFieldVolume = options.fieldVolume || false;
+    this.perActorGrad = options.perActorGrad || false;
+    this.gradMotionScale = options.gradMotionScale ?? 6.0;
+    this._fieldSampler = null;
   }
 
   buildWorld(sceneCard) {
@@ -426,6 +437,13 @@ class MultiActorSim {
   applyProtoMotion(actor) {
     if (!this.solverResult?.defectWorldline?.length) return false;
     if (!actor._solverRest) actor._solverRest = [...(actor.position || [0, 0, 0, 0])];
+    // PRIORITY 1: per-actor local −∇φ — each actor samples the certified
+    // gradient at ITS OWN lattice cell (trilinear) and steps by local −∇φ.
+    // The shared defect-delta path is kept as the back-compat fallback.
+    if (this.perActorGrad && this._fieldSampler) {
+      applyLocalGradientMotionToActors([actor], this._fieldSampler, { scale: this.gradMotionScale });
+      return true;
+    }
     const tNorm = this.duration > 0 ? this.time / this.duration : 0;
     const defect = sampleWorldline(this.solverResult.defectWorldline, tNorm);
     const origin = this.solverResult.defectOrigin || this.solverResult.defectWorldline[0];
@@ -441,6 +459,14 @@ class MultiActorSim {
     const dt = 1 / this.fps;
     this.time += dt;
     this.tickCount++;
+
+    // Build the certified-field sampler once per tick (shared by per-actor
+    // −∇φ motion and the FieldVolume composite). Slice-interpolated by tNorm.
+    this._fieldSampler = null;
+    if ((this.enableFieldVolume || this.perActorGrad) && this.solverResult?.field) {
+      const tNorm = this.duration > 0 ? this.time / this.duration : 0;
+      this._fieldSampler = createFieldSampler(this.solverResult.field, tNorm);
+    }
 
     const tickSpeech = [];
 
@@ -611,6 +637,7 @@ class MultiActorSim {
       maxDepth: this.maxDepth,
       seed: this.seed + this.tickCount,
       palette: this.descriptor?.palette || { albedo: [0.5, 0.5, 0.6] },
+      fieldVolume: this.enableFieldVolume ? this._fieldSampler : null,
     });
 
     this.frames.push(png);
@@ -772,6 +799,14 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
+if (args.includes("--holo")) {
+  // Official holographic recorder lives in simulation-chamber-holo.mjs (raw .bin).
+  // Keep this file on the legacy PNG / capsule path.
+  console.log("Redirecting --holo → scripts/simulation-chamber-holo.mjs (official raw .bin recorder)");
+  const holoScript = join(__dirname, "simulation-chamber-holo.mjs");
+  const r = spawnSync(process.execPath, [holoScript, ...args], { stdio: "inherit" });
+  process.exit(r.status === null ? 1 : r.status);
+}
 if (args.length === 0) {
   console.error("Usage: node simulation-chamber.mjs <scene-card.json> [output-dir] [options]");
   console.error("Options: --width N --height N --fps N --samples N --maxDepth N --no-tts --llm --llm-interval N");
@@ -875,11 +910,14 @@ function maybeProtoSolver() {
   sim.solver = CHAMBER_SOLVER_ID;
   sim.solverResult = solverResult;
   mkdirSync(outputDir, { recursive: true });
+  // Strip the large field caches (Float32Array subarray refs) before
+  // serialising the solver receipt — they belong in memory, not JSON.
+  const { field: _field, ...serializableSolver } = solverResult;
   writeFileSync(
     resolve(outputDir, "mandala-proto-solver.json"),
     JSON.stringify(
       {
-        ...solverResult,
+        ...serializableSolver,
         receipts: solverResult.receipts,
       },
       null,
@@ -890,6 +928,12 @@ function maybeProtoSolver() {
   console.log(
     `  Solver: mandala-proto — ${solverResult.committedSteps} certified steps; actors follow −∇φ defect walk (Movie Lane ownsTime=false); sample ${moved.rest} → ${moved.position.map((v) => v.toFixed(3))}`,
   );
+  if (options.perActorGrad) {
+    console.log(`  Field bind: --per-actor-grad ON — actors step by local −∇φ (trilinear, own cell); shared-delta is the fallback.`);
+  }
+  if (options.fieldVolume) {
+    console.log(`  Field bind: --field-volume ON — certified φ/∇φ/η composited as a primary-ray volume (partial; not multiple-scattering media).`);
+  }
   return Promise.resolve(solverResult);
 }
 

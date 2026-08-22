@@ -33,12 +33,12 @@ describe("SingularityTree Differentiation", () => {
   });
 
   describe("createDifferentiationState", () => {
-    it "freezes the state object", () => {
+    it( "freezes the state object", () => {
       const ds = createDifferentiationState({ potential: 0.18, state: { x: 0.6, y: 0.2, z: -0.3, w: 0.1 } });
       assert.ok(Object.isFrozen(ds));
     });
 
-    it "has required fields", () => {
+    it( "has required fields", () => {
       const ds = createDifferentiationState({ potential: 0.22, state: { x: 1, y: 0, z: 0, w: 0 } });
       assert.ok(ds.potential !== undefined);
       assert.ok(ds.state !== undefined);

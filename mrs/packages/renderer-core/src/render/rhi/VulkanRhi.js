@@ -12,13 +12,52 @@
  * @implements {import("./RhiContract.js").Rhi}
  */
 
-import { WgslToSpirvCompiler } from "../rt4d/gpu/wgsl-to-spirv.js";
-import { GpuProfiler } from "../rt4d/gpu/profileBaseline.js";
+// GPU-only backends (WGSL→SPIR-V compiler + profiler) are loaded lazily.
+// They are only needed on the real Vulkan GPU path; importing this module (and
+// therefore renderer-core's index) must never hard-fail when those optional
+// backends are absent from a given build. See _loadGpuBackends() below.
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ── Lazy GPU backend loader ──────────────────────────────────────
+// Dynamically imports the optional GPU-only modules on first GPU use. When a
+// module is missing, throws a clear, actionable error so the Vulkan/GPU path
+// fails loudly instead of silently pretending to work. The CPU import path and
+// all non-GPU functionality never trigger this.
+
+let _gpuBackendsPromise = null;
+
+async function _loadGpuBackends() {
+  if (!_gpuBackendsPromise) {
+    _gpuBackendsPromise = (async () => {
+      let WgslToSpirvCompiler;
+      let GpuProfiler;
+      try {
+        ({ WgslToSpirvCompiler } = await import("../rt4d/gpu/wgsl-to-spirv.js"));
+      } catch (e) {
+        throw new Error(
+          '[VulkanRhi] WGSL→SPIR-V backend not available in this build ' +
+          '(missing ../rt4d/gpu/wgsl-to-spirv.js). The Vulkan GPU path cannot ' +
+          `compile shaders without it. Underlying error: ${e.message}`
+        );
+      }
+      try {
+        ({ GpuProfiler } = await import("../rt4d/gpu/profileBaseline.js"));
+      } catch (e) {
+        throw new Error(
+          '[VulkanRhi] GPU profiler backend not available in this build ' +
+          '(missing ../rt4d/gpu/profileBaseline.js). The Vulkan GPU path cannot ' +
+          `initialize profiling without it. Underlying error: ${e.message}`
+        );
+      }
+      return { WgslToSpirvCompiler, GpuProfiler };
+    })();
+  }
+  return _gpuBackendsPromise;
+}
 
 // ── Constants ────────────────────────────────────────────────────
 
@@ -82,8 +121,15 @@ export class VulkanRhi {
     this._pipelines = new Map();
     this._shaders = new Map();
     this._frameCount = 0;
-    this._profile = new GpuProfiler();
-    this._spirvCompiler = new WgslToSpirvCompiler(options);
+    this._options = options;
+    // GPU-only backends are instantiated lazily in _ensureGpuBackends() (called
+    // by the GPU init/shader paths). Until then _profile is an inert placeholder
+    // that satisfies the `this._profile.results.vulkan` guards without profiling,
+    // and _spirvCompiler is null. This keeps `new VulkanRhi()` construction — and
+    // module import — free of the optional GPU dependencies.
+    this._GpuProfiler = null;
+    this._profile = { results: {} };
+    this._spirvCompiler = null;
     this._initialized = false;
     this._config = {
       width: options.width || 640,
@@ -110,6 +156,26 @@ export class VulkanRhi {
 
   getBackend() {
     return this._backend;
+  }
+
+  /**
+   * Lazily load and instantiate the optional GPU-only backends (WGSL→SPIR-V
+   * compiler + profiler). Idempotent. Throws a clear, actionable error if the
+   * backends are not present in this build. Only invoked on the real GPU path.
+   */
+  async _ensureGpuBackends() {
+    if (this._spirvCompiler && this._GpuProfiler) return;
+
+    const { WgslToSpirvCompiler, GpuProfiler } = await _loadGpuBackends();
+    this._GpuProfiler = GpuProfiler;
+
+    if (!this._spirvCompiler) {
+      this._spirvCompiler = new WgslToSpirvCompiler(this._options);
+    }
+    // Upgrade the inert placeholder profile to the real profiler exactly once.
+    if (!(this._profile instanceof GpuProfiler)) {
+      this._profile = new GpuProfiler();
+    }
   }
 
   async getDevices() {
@@ -150,6 +216,11 @@ export class VulkanRhi {
   }
 
   async selectDevice(id = 0) {
+    // GPU init point: load the optional GPU-only backends. If they are absent
+    // this throws a clear, actionable error rather than proceeding with a
+    // half-initialized GPU device.
+    await this._ensureGpuBackends();
+
     const devices = await this.getDevices();
     if (id >= devices.length) {
       throw new Error(`Device ${id} not found, available: 0-${devices.length - 1}`);
@@ -324,8 +395,11 @@ export class VulkanRhi {
 
   async createShaderModule(params) {
     const { code, label } = params;
-    
-    // Lever 5: Compile WGSL→SPIR-V
+
+    // Lever 5: Compile WGSL→SPIR-V. Ensure the optional GPU compiler backend is
+    // loaded (throws a clear error if unavailable in this build).
+    await this._ensureGpuBackends();
+
     let spirv;
     if (code && code.wgsl) {
       spirv = await this._spirvCompiler.compileWgsl(code.wgsl);
@@ -416,7 +490,9 @@ export class VulkanRhi {
   }
 
   resetProfile() {
-    this._profile = new GpuProfiler();
+    // Use the real profiler when the GPU backend has been loaded; otherwise fall
+    // back to the inert placeholder (no profiling until the GPU path is active).
+    this._profile = this._GpuProfiler ? new this._GpuProfiler() : { results: {} };
   }
 }
 

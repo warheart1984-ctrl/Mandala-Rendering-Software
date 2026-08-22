@@ -220,7 +220,6 @@ export function sceneToProtonField(sceneSpec, opts = {}) {
           ? geom.density
           : 1;
 
-    let emitted = 0;
     const before = protons.length;
 
     if (geom.kind === "hypersphere") {
@@ -281,7 +280,7 @@ export function sceneToProtonField(sceneSpec, opts = {}) {
       }
     }
 
-    emitted = protons.length - before;
+    const emitted = protons.length - before;
     // Guarantee ≥1 proton per entity (no silent entity drop)
     if (emitted === 0) {
       pushProton(entityId, color, [0, 0, 0, 0], 0.35, density, {

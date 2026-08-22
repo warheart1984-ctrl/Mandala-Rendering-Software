@@ -1152,6 +1152,13 @@ export function renderSceneFrame(scene, camera, options = {}) {
   const maxDepth = options.maxDepth ?? 3;
   const seed = options.seed ?? 42;
   const palette = options.palette ?? { albedo: [0.5, 0.5, 0.6] };
+  // Optional certified-field volume (primary-ray emission/absorption composite).
+  // A sampler with `.compositeRay(ray, surfaceColor, surfaceT) -> vec4`. Applied
+  // deterministically ONCE per pixel over the MC-averaged surface radiance, so
+  // it stays cheap and does not perturb per-sample determinism. See
+  // mandala/engine/chamber/field-lattice.mjs (status: partial — not multiple-
+  // scattering media; surfaces are not lit by the medium).
+  const fieldVolume = options.fieldVolume ?? null;
 
   const rng = mulberry32(seed);
   const tracer = new PathTracer4D({ maxDepth, samplesPerPixel: samples, rng });
@@ -1162,6 +1169,7 @@ export function renderSceneFrame(scene, camera, options = {}) {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       let r = 0, g = 0, b = 0;
+      let centerT = Infinity;
       for (let s = 0; s < samples; s++) {
         const u1 = rng();
         const u2 = rng();
@@ -1169,12 +1177,19 @@ export function renderSceneFrame(scene, camera, options = {}) {
         const hit = scene.intersect(ray);
         const L = hit ? tracer.trace(ray, scene) : backgroundColor(ray.direction, palette);
         r += L.x; g += L.y; b += L.z;
+        if (s === 0) centerT = hit ? hit.t : Infinity;
       }
       const inv = 1 / samples;
+      let cr = r * inv, cg = g * inv, cb = b * inv;
+      if (fieldVolume) {
+        const ray = camera.generateRay(x, y, 0.5, 0.5, 0.5, 0.5);
+        const composited = fieldVolume.compositeRay(ray, { x: cr, y: cg, z: cb }, centerT);
+        cr = composited.x; cg = composited.y; cb = composited.z;
+      }
       const idx = (y * width + x) * 4;
-      rgba[idx]     = toByte(r * inv, exposure);
-      rgba[idx + 1] = toByte(g * inv, exposure);
-      rgba[idx + 2] = toByte(b * inv, exposure);
+      rgba[idx]     = toByte(cr, exposure);
+      rgba[idx + 1] = toByte(cg, exposure);
+      rgba[idx + 2] = toByte(cb, exposure);
       rgba[idx + 3] = 255;
     }
   }
