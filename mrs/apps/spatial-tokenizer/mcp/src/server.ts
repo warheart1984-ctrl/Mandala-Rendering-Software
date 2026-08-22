@@ -9,15 +9,15 @@ import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { authorize } from "./lib/authorize.js";
-import { loadSpatialCore, type SpatialToken } from "./lib/core.js";
-import { resolveUnderOutput } from "./lib/sandbox.js";
-import { SCHEME_DOCS, SPATIAL_MODES } from "./lib/scheme.js";
+import { authorize } from "./internal/authorize.js";
+import { loadSpatialCore, type SpatialToken } from "./internal/core.js";
+import { resolveUnderOutput } from "./internal/sandbox.js";
+import { SCHEME_DOCS, SPATIAL_MODES } from "./internal/scheme.js";
 import {
   normalizeTokenizeArgs,
   runSpatialTokenize,
   verifyTokenHash,
-} from "./lib/tokenize-logic.js";
+} from "./internal/tokenize-logic.js";
 
 export const SERVER_NAME = "holort4d-spatial";
 export const SERVER_VERSION = "1.0.0";

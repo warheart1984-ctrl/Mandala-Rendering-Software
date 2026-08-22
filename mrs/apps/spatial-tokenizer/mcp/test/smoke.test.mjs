@@ -11,13 +11,13 @@ import { after, before, describe, it } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
-import { loadSpatialCore } from "../src/lib/core.ts";
-import { resetRateLimitForTests } from "../src/lib/authorize.ts";
+import { loadSpatialCore } from "../src/internal/core.ts";
+import { resetRateLimitForTests } from "../src/internal/authorize.ts";
 import {
   runSpatialTokenize,
   verifyTokenHash,
   syntheticRamp,
-} from "../src/lib/tokenize-logic.ts";
+} from "../src/internal/tokenize-logic.ts";
 import { SERVER_INSTRUCTIONS, TOOL_NAMES } from "../src/server.ts";
 
 describe("spatial tokenize logic (no HTTP)", () => {
