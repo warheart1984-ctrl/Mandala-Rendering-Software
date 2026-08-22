@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://recording/camera_rig.gd" id="1"]
+
+[sub_resource type="Curve3D" id="Curve3D_1"]
+_data = {
+"points": PackedVector3Array(-2.6, 2, 6.4, -2.6, 2, 6.4, -2.6, 2, 6.4, 0, 2.3, 5.6, 0, 0, 0, 0, 2.3, 5.6, 2.6, 2, 6.4, 2.6, 2, 6.4, 2.6, 2, 6.4),
+"tilts": PackedFloat32Array()
+}
+point_count = 3
+
+[node name="CameraRig" type="Node3D"]
+script = ExtResource("1")
+mode = "rail"
+speed = 0.12
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 5.6)
+fov = 55.0
+current = true
+
+[node name="Path3D" type="Path3D" parent="."]
+curve = SubResource("Curve3D_1")

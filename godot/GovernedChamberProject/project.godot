@@ -1,0 +1,15 @@
+config_version=5
+
+[application]
+
+config/name="GovernedChamberProject"
+run/main_scene="res://scenes/simulation_chamber.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/holodeck_plugin/plugin.cfg")
+
+[rendering]
+
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3

@@ -1,0 +1,27 @@
+{
+  "episode_id": "ep_001",
+  "title": "Test Chamber Episode",
+  "world_id": "chamber_world_01",
+  "scenes": [
+    {
+      "scene_id": "intro_room_meet",
+      "scene_path": "res://scenes/simulation_chamber.tscn",
+      "description": "A meets B, they talk warmly, B waves, camera rails, they leave.",
+      "beats": [
+        {"time": 0.5,  "actor": "A",          "action": "enter",       "data": {"pos": [-2.8, 0, 0]}},
+        {"time": 0.5,  "actor": "B",          "action": "enter",       "data": {"pos": [2.8, 0, 0]}},
+        {"time": 4.5,  "actor": "A",          "action": "say",         "data": {"line": "Hello. I did not expect anyone else down here."}},
+        {"time": 7.0,  "actor": "B",          "action": "say",         "data": {"line": "Neither did I. The door was open, so I walked in."}},
+        {"time": 10.0, "actor": "A",          "action": "set_emotion", "data": {"emotion": "happy", "intensity": 0.7}},
+        {"time": 11.0, "actor": "A",          "action": "face",        "data": {"target": "B"}},
+        {"time": 11.2, "actor": "A",          "action": "say_prompt",  "data": {"prompt": "greet B politely and welcome them"}},
+        {"time": 14.0, "actor": "B",          "action": "gesture",     "data": {"name": "wave"}},
+        {"time": 15.0, "actor": "CAMERA_MAIN","action": "rail",        "data": {"path": "", "speed": 1.2}},
+        {"time": 16.5, "actor": "A",          "action": "exit",        "data": {"pos": [-6.2, 0, -3.5]}},
+        {"time": 16.7, "actor": "B",          "action": "exit",        "data": {"pos": [6.2, 0, -3.5]}},
+        {"time": 20.0, "actor": "SYSTEM",     "action": "transition",  "data": {"type": "fade_out", "duration": 1.0}},
+        {"time": 21.5, "actor": "SYSTEM",     "action": "transition",  "data": {"type": "fade_in", "duration": 1.0}}
+      ]
+    }
+  ]
+}
