@@ -35,4 +35,5 @@ void main() {
   vWorldPos = world.xyz;
   vNormal = mat3(modelMatrix) * hNormal;
   gl_Position = projectionMatrix * viewMatrix * world;
+  gl_PointSize = 4.0 + entanglementDensity * 10.0;
 }

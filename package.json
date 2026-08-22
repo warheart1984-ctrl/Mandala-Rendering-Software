@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/test-all.mjs",
+    "test:bios-ai-lane": "node --test sovereign-x/tests/biosAiLane.test.js workers/denser-topology-worker.test.mjs",
     "test:fmce": "jest --config jest.config.cjs",
     "test:governance": "node --test engine/governance/test/*.test.js",
     "test:conformance": "node scripts/test-conformance.mjs",

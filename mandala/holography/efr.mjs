@@ -67,7 +67,7 @@ function blendPx(rgb, width, height, x, y, r, g, b, a = 1) {
   rgb[o + 2] = clampByte(rgb[o + 2] * (1 - a) + b * a);
 }
 
-function drawLine(rgb, width, height, x0, y0, x1, y1, color, thickness = 1) {
+function drawLine(rgb, width, height, x0, y0, x1, y1, color, thickness = 1, alpha = 0.85) {
   const dx = Math.abs(x1 - x0);
   const dy = Math.abs(y1 - y0);
   const sx = x0 < x1 ? 1 : -1;
@@ -81,7 +81,7 @@ function drawLine(rgb, width, height, x0, y0, x1, y1, color, thickness = 1) {
   for (;;) {
     for (let ty = -thickness + 1; ty < thickness; ty++) {
       for (let tx = -thickness + 1; tx < thickness; tx++) {
-        blendPx(rgb, width, height, x + tx, y + ty, r, g, b, 0.85);
+        blendPx(rgb, width, height, x + tx, y + ty, r, g, b, alpha);
       }
     }
     if (x === x1 && y === y1) break;
@@ -97,11 +97,73 @@ function drawLine(rgb, width, height, x0, y0, x1, y1, color, thickness = 1) {
   }
 }
 
+/** Soft bloom stroke — outer glow then bright core (energy wire look). */
+function drawEnergyLine(rgb, width, height, x0, y0, x1, y1, color, coreThick = 1) {
+  const glow = [
+    clampByte(color[0] * 0.45),
+    clampByte(color[1] * 0.55),
+    clampByte(color[2] * 0.65),
+  ];
+  drawLine(rgb, width, height, x0, y0, x1, y1, glow, coreThick + 2, 0.22);
+  drawLine(rgb, width, height, x0, y0, x1, y1, color, coreThick + 1, 0.45);
+  drawLine(rgb, width, height, x0, y0, x1, y1, [255, 245, 230], coreThick, 0.55);
+  drawLine(rgb, width, height, x0, y0, x1, y1, color, coreThick, 0.9);
+}
+
+function energyColorFromFields(rho, K, yNorm) {
+  // Dual-tone: amber on high-ρ / upper body, cyan on cool / lower / causal.
+  const warm = rho * 0.55 + Math.max(0, yNorm) * 0.35 + Math.max(0, K) * 0.15;
+  if (warm >= 0.42) return [255, 120, 28]; // amber-orange
+  if (warm >= 0.28) return [255, 180, 90]; // warm cream
+  return [0, 200, 255]; // electric cyan
+}
+
 function fillBackground(rgb, cool = [12, 14, 28]) {
   for (let i = 0; i < rgb.length; i += 3) {
     rgb[i] = cool[0];
     rgb[i + 1] = cool[1];
     rgb[i + 2] = cool[2];
+  }
+}
+
+function fillEnergyVoid(rgb, width, height) {
+  for (let y = 0; y < height; y++) {
+    const t = y / Math.max(1, height - 1);
+    const r = clampByte(4 + t * 6);
+    const g = clampByte(5 + t * 8);
+    const b = clampByte(12 + t * 18);
+    for (let x = 0; x < width; x++) {
+      const o = (y * width + x) * 3;
+      rgb[o] = r;
+      rgb[o + 1] = g;
+      rgb[o + 2] = b;
+    }
+  }
+}
+
+/** Orbital energy ellipses around the figure (reference energy aura). */
+function drawEnergyOrbits(rgb, width, height, bounds) {
+  const cx = width * 0.5;
+  const cy = height * 0.48;
+  const sx = ((bounds.maxX - bounds.minX) || 1);
+  const sy = ((bounds.maxY - bounds.minY) || 1);
+  const rx0 = Math.min(width, height) * 0.38;
+  const ry0 = Math.min(width, height) * 0.52;
+  const orbits = [
+    { rx: rx0, ry: ry0, color: [0, 196, 255], phase: 0 },
+    { rx: rx0 * 0.82, ry: ry0 * 1.05, color: [255, 110, 24], phase: 0.7 },
+    { rx: rx0 * 1.08, ry: ry0 * 0.72, color: [80, 220, 255], phase: 1.4 },
+  ];
+  for (const orb of orbits) {
+    const samples = 72;
+    let prev = null;
+    for (let s = 0; s <= samples; s++) {
+      const a = (s / samples) * Math.PI * 2 + orb.phase;
+      const x = Math.round(cx + Math.cos(a) * orb.rx);
+      const y = Math.round(cy + Math.sin(a) * orb.ry * (sy / sx > 1.2 ? 1.05 : 1));
+      if (prev) drawEnergyLine(rgb, width, height, prev.x, prev.y, x, y, orb.color, 1);
+      prev = { x, y };
+    }
   }
 }
 
@@ -349,7 +411,6 @@ export function shadeHolographicFromBuffers(buffers, uniforms, i, opts = {}) {
   const aniso = uniforms?.uAnisotropy?.value ?? 1.2;
   const gain = uniforms?.uMuscleGain?.value ?? 0.3;
   const boneT = uniforms?.uBoneThreshold?.value ?? 0.8;
-  const bc = uniforms?.uBoundaryColor?.value || [0x8a / 255, 0x5c / 255, 1];
   const lightPos = uniforms?.uLightPos?.value || [2, 4, 3];
   const rho = buffers.entanglementDensity[i] || 0;
   const K = buffers.curvature[i] || 0;
@@ -377,116 +438,117 @@ export function shadeHolographicFromBuffers(buffers, uniforms, i, opts = {}) {
   ];
   const L = normalize3([lightPos[0] - world[0], lightPos[1] - world[1], lightPos[2] - world[2]]);
   const NoL = Math.max(0, hNormal[0] * L[0] + hNormal[1] * L[1] + hNormal[2] * L[2]);
-  const sss = Math.pow(Math.max(0, rho), 1.5) * 0.6;
+  const energy = energyColorFromFields(rho, K, Math.max(0, Math.min(1, (py + 1) * 0.5)));
+  const glow = Math.pow(Math.max(0, rho), 1.2) * 0.55 + NoL * 0.35;
   return {
     world,
     rho,
     rgb: [
-      clampByte((bc[0] * 0.2 + bc[0] * NoL + sss * bc[0]) * 255),
-      clampByte((bc[1] * 0.2 + bc[1] * NoL + sss * bc[1]) * 255),
-      clampByte((bc[2] * 0.2 + bc[2] * NoL + sss * bc[2]) * 255),
+      clampByte(energy[0] * (0.35 + glow)),
+      clampByte(energy[1] * (0.35 + glow)),
+      clampByte(energy[2] * (0.35 + glow)),
     ],
   };
 }
 
 /**
- * COMPOSITE: bulk wire + boundary skin + causal flow (CPU PNG optional path).
+ * COMPOSITE: energy wire mesh (cyan/amber bloom) — Stage-1 look matching the
+ * left reference panel. Still boundary information density, not photoreal.
  */
 export function renderEGTComposite(egt, opts = {}) {
   const width = opts.width ?? 384;
   const height = opts.height ?? 512;
   const rgb = new Uint8Array(width * height * 3);
-  fillBackground(rgb, [10, 9, 14]);
+  fillEnergyVoid(rgb, width, height);
   const bounds = boundsOf(egt);
-  const h = opts.h_ij || egt.h_ij;
+  const ySpan = (bounds.maxY - bounds.minY) || 1;
   const buffers = opts.holoBuffers;
-  const uniforms = opts.uniforms;
   const appearance = egt.boundaryAppearance || {};
   const locked = appearance.boneLocked;
   const muscleSet = appearance.muscleSet;
   const boneSet = appearance.boneSet;
   const joints = appearance.joints || [];
-  const L = [0.45, 0.72, 0.53];
-  const Ln = Math.hypot(L[0], L[1], L[2]) || 1;
-  const light = [L[0] / Ln, L[1] / Ln, L[2] / Ln];
   const vacuumRho = opts.vacuumRho ?? 0.05;
+  const wantOrbits = opts.energyOrbits !== false;
 
+  // Soft floor reflection strip
+  for (let y = Math.floor(height * 0.78); y < height; y++) {
+    const fade = (y - height * 0.78) / (height * 0.22);
+    for (let x = 0; x < width; x++) {
+      blendPx(rgb, width, height, x, y, 8, 14, 28, 0.15 + fade * 0.25);
+    }
+  }
+
+  if (wantOrbits) drawEnergyOrbits(rgb, width, height, bounds);
+
+  // Pass A — every edge as glowing energy filament (was nearly invisible dark purple)
   for (const e of egt.edges) {
     const a = egt.nodes[e.i];
     const b = egt.nodes[e.j];
     if (!a || !b) continue;
+    const ia = a.id ?? e.i;
+    const ib = b.id ?? e.j;
+    const rhoA =
+      buffers?.entanglementDensity?.[ia] ?? egt.rho?.[ia] ?? 0;
+    const rhoB =
+      buffers?.entanglementDensity?.[ib] ?? egt.rho?.[ib] ?? 0;
+    const kA = buffers?.curvature?.[ia] ?? egt.K?.[ia] ?? 0;
+    const kB = buffers?.curvature?.[ib] ?? egt.K?.[ib] ?? 0;
+    const rho = (rhoA + rhoB) * 0.5;
+    const K = (kA + kB) * 0.5;
+    const yNorm = (((a.y + b.y) * 0.5) - bounds.minY) / ySpan;
+    const color = energyColorFromFields(rho, K, yNorm);
     const pa = toPixel(a, bounds, width, height);
     const pb = toPixel(b, bounds, width, height);
-    drawLine(rgb, width, height, pa.px, pa.py, pb.px, pb.py, [42, 36, 58], 1);
+    const boneBoost =
+      (boneSet?.has?.(ia) || locked?.[ia] || boneSet?.has?.(ib) || locked?.[ib]) ? 1 : 0;
+    drawEnergyLine(rgb, width, height, pa.px, pa.py, pb.px, pb.py, color, 1 + boneBoost);
+
+    // Soft floor reflection for lower filaments
+    const floorY = height * 0.88;
+    if (pa.py > height * 0.55 || pb.py > height * 0.55) {
+      const my0 = Math.round(floorY + (floorY - pa.py) * 0.28);
+      const my1 = Math.round(floorY + (floorY - pb.py) * 0.28);
+      drawLine(rgb, width, height, pa.px, my0, pb.px, my1, color, 1, 0.14);
+    }
   }
 
-  for (const e of egt.edges) {
-    const iBone = boneSet?.has?.(e.i) || locked?.[e.i];
-    const jBone = boneSet?.has?.(e.j) || locked?.[e.j];
-    if (!iBone && !jBone) continue;
-    const a = egt.nodes[e.i];
-    const b = egt.nodes[e.j];
-    const pa = toPixel(a, bounds, width, height);
-    const pb = toPixel(b, bounds, width, height);
-    const stiff = locked?.[e.i] && locked?.[e.j] ? 1 : 0.55;
-    drawLine(
-      rgb,
-      width,
-      height,
-      pa.px,
-      pa.py,
-      pb.px,
-      pb.py,
-      [clampByte(160 + stiff * 50), clampByte(168 + stiff * 40), clampByte(180 + stiff * 40)],
-      stiff > 0.8 ? 2 : 1,
-    );
-  }
-
+  // Pass B — star / constellation nodes
   for (let i = 0; i < egt.nodes.length; i++) {
     const n = egt.nodes[i];
     const id = n.id ?? i;
-    const rhoProbe =
-      buffers?.entanglementDensity && id < buffers.entanglementDensity.length
-        ? buffers.entanglementDensity[id] || 0
-        : egt.rho[id] || 0;
-    if (rhoProbe < vacuumRho && !muscleSet?.has?.(id) && !boneSet?.has?.(id) && !locked?.[id]) {
-      continue;
+    const rho =
+      buffers?.entanglementDensity?.[id] ?? egt.rho?.[id] ?? 0;
+    const K = buffers?.curvature?.[id] ?? egt.K?.[id] ?? 0;
+    const keep =
+      rho >= vacuumRho ||
+      muscleSet?.has?.(id) ||
+      boneSet?.has?.(id) ||
+      locked?.[id];
+    if (!keep) continue;
+    const { px, py } = toPixel(n, bounds, width, height);
+    const yNorm = (n.y - bounds.minY) / ySpan;
+    const color = energyColorFromFields(rho, K, yNorm);
+    const rad = 1 + Math.round(Math.min(3, rho * 3 + (muscleSet?.has?.(id) ? 1 : 0)));
+    // outer glow
+    for (let dy = -rad - 1; dy <= rad + 1; dy++) {
+      for (let dx = -rad - 1; dx <= rad + 1; dx++) {
+        if (dx * dx + dy * dy <= (rad + 1) * (rad + 1)) {
+          blendPx(rgb, width, height, px + dx, py + dy, color[0], color[1], color[2], 0.25);
+        }
+      }
     }
-    let px;
-    let py;
-    let r;
-    let g;
-    let b;
-    let rho;
-    const muscle = muscleSet?.has?.(id) ? 1 : 0;
-    if (buffers?.entanglementDensity && id < buffers.entanglementDensity.length) {
-      const shaded = shadeHolographicFromBuffers(buffers, uniforms, id, { h_ij: h });
-      rho = shaded.rho;
-      const node = { x: shaded.world[0] + 0.55, y: shaded.world[1] };
-      ({ px, py } = toPixel(node, bounds, width, height));
-      r = shaded.rgb[0];
-      g = shaded.rgb[1];
-      b = shaded.rgb[2];
-    } else {
-      ({ px, py } = toPixel(n, bounds, width, height));
-      rho = egt.rho[id] || 0;
-      const N = n.normal || [0, 0, 1];
-      const ndl = Math.max(0.12, hijDot(h, N, light));
-      const sss = Math.min(1, rho * 0.45);
-      r = clampByte(70 + ndl * 90 + sss * 80 + muscle * 40);
-      g = clampByte(52 + ndl * 70 + sss * 35 + muscle * 8);
-      b = clampByte(48 + ndl * 55 + (1 - sss) * 30);
-    }
-    const rad = 1 + Math.round(rho * 2 + (muscle ? 1 : 0));
+    // cream core
     for (let dy = -rad; dy <= rad; dy++) {
       for (let dx = -rad; dx <= rad; dx++) {
         if (dx * dx + dy * dy <= rad * rad) {
-          blendPx(rgb, width, height, px + dx, py + dy, r, g, b, 0.9);
+          blendPx(rgb, width, height, px + dx, py + dy, 255, 230, 180, 0.95);
         }
       }
     }
   }
 
+  // Pass C — joint sparks (d̂ flips)
   for (const j of joints) {
     const a = egt.nodes[j.i];
     const b = egt.nodes[j.j];
@@ -495,15 +557,16 @@ export function renderEGTComposite(egt, opts = {}) {
     const pb = toPixel(b, bounds, width, height);
     const mx = Math.round((pa.px + pb.px) / 2);
     const my = Math.round((pa.py + pb.py) / 2);
-    for (let dy = -2; dy <= 2; dy++) {
-      for (let dx = -2; dx <= 2; dx++) {
-        if (dx * dx + dy * dy <= 5) {
-          blendPx(rgb, width, height, mx + dx, my + dy, 230, 170, 70, 0.85);
+    for (let dy = -3; dy <= 3; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        if (dx * dx + dy * dy <= 10) {
+          blendPx(rgb, width, height, mx + dx, my + dy, 255, 200, 80, 0.75);
         }
       }
     }
   }
 
+  // Pass D — causal filaments stay cyan-bright
   const links = egt.C || egt.causalLinks || [];
   for (const link of links) {
     if ((link.strength ?? 0) < 0.35) continue;
@@ -512,7 +575,7 @@ export function renderEGTComposite(egt, opts = {}) {
     if (!a || !b) continue;
     const pa = toPixel(a, bounds, width, height);
     const pb = toPixel(b, bounds, width, height);
-    drawLine(rgb, width, height, pa.px, pa.py, pb.px, pb.py, [40, 170, 190], 1);
+    drawEnergyLine(rgb, width, height, pa.px, pa.py, pb.px, pb.py, [40, 220, 255], 1);
   }
 
   return {
@@ -522,7 +585,9 @@ export function renderEGTComposite(egt, opts = {}) {
     rgb,
     status: COMPOSITE_STATUS,
     realisticMesh: REALISTIC_MESH_STATUS,
-    note: "COMPOSITE = bulk wire + holographic buffers when present + d̂-flip joints. Not GPU Three.js / Unreal PBR.",
+    usedHoloBuffers: Boolean(buffers?.entanglementDensity),
+    note: "COMPOSITE energy wire mesh: cyan/amber bloom filaments + star nodes + orbits. Boundary density, not photoreal / Unreal PBR.",
+    style: "energy_wire_mesh",
   };
 }
 

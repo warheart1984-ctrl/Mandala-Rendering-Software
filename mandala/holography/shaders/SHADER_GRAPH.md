@@ -23,7 +23,7 @@ Drop-in copies (not a second theory tree): `src/mandala/shaders/holographic.vert
 
 Material is a Node stub `{ vertexShader, fragmentShader, uniforms }` so COMPOSITE / bin recording does not need WebGL. `uTime` is written from `holoRig.bulk.t` / chamber `bulk.state.t`.
 
-**Bin path (default `--holo`):** after `buildHolographicBuffers`, write `frames/frame-NNNNNN.bin` + `meta.json`; skip PNG encode and ffmpeg unless `--record-png` / `--mp4`. Sparse ρ **partial**: vacuum `ρ < 0.05` skipped in pack/shade/bin compact where safe — bone/joint topology not rewritten.
+**Bin path (default `--holo`):** after `buildHolographicBuffers`, write `frames/frame-NNNNNN.bin` + `meta.json`; skip PNG encode and ffmpeg unless `--record-png` / `--mp4`. Sparse ρ **partial**: pre-induced cull (`ρ > 0.05 || |K| > 0.3 || w_ij > 0.1` / bone-joint keep) so rig + appearance + build see fewer nodes; write compact mirrors. Chamber logs `performance.now` buckets (`bulk`/`rig`/`induced`/`build`/`write`); `streaming_io_ms` = write only; `shader_fps` declared until watch overlay.
 
 Status: streaming contract **partial**; live GPU draw **declared** until measured. Do not claim 60fps unless measured in `watch.html`.
 
@@ -68,6 +68,6 @@ Status: streaming contract **partial**; live GPU draw **declared** until measure
 
 - Shader sources + alloc-once / `needsUpdate` streaming: **partial**.
 - Bin streaming: **partial**.
-- Sparse ρ skip/compact: **partial**.
+- Sparse ρ pre-induced cull + write compact: **partial**.
 - GPU Three.js / RX 580 draw: **declared** (open `watch.html`, read overlay — do not invent 60fps).
 - Do not advertise as “AdS/CFT shader” or photoreal Unreal PBR.

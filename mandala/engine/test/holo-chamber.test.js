@@ -92,9 +92,9 @@ describe("holo chamber loop", () => {
     assert.ok(Array.isArray(joints));
   });
 
-  it("default --holo path writes raw-float32 .bin + meta.json + watch.html", () => {
+  it("default --holo path writes raw-float32 .bin + meta.json + watch.html", async () => {
     const outDir = join(__dirname, "../../../output/simulation/holo-chamber-bin-test");
-    const r = runHoloChamber({
+    const r = await runHoloChamber({
       sceneCard: { id: "holo-bin-test", name: "holo-bin-test" },
       outDir,
       creature: "Mythar",
@@ -104,6 +104,7 @@ describe("holo chamber loop", () => {
       width: 96,
       height: 128,
       seed: 21,
+      vision: false,
     });
     assert.equal(r.receipt.status, HOLO_CHAMBER_STATUS);
     assert.equal(r.codec, BIN_FRAME_CODEC);
@@ -162,9 +163,9 @@ describe("holo chamber loop", () => {
     assert.deepEqual(Array.from(c.rho), [0.9, 0.2, 0.8]);
   });
 
-  it("--record-png still writes PNG frames for regression", () => {
+  it("--record-png still writes PNG frames for regression", async () => {
     const outDir = join(__dirname, "../../../output/simulation/holo-chamber-png-test");
-    const r = runHoloChamber({
+    const r = await runHoloChamber({
       sceneCard: { id: "holo-png-test", name: "holo-png-test" },
       outDir,
       creature: "Mythar",
@@ -175,6 +176,7 @@ describe("holo chamber loop", () => {
       height: 128,
       seed: 21,
       recordPng: true,
+      vision: false,
     });
     assert.equal(r.receipt.pngEncode, true);
     assert.equal(r.receipt.codec, "png");

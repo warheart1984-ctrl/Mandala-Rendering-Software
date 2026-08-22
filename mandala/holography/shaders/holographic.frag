@@ -31,19 +31,24 @@ void main() {
   float NoL = max(dot(N, L), 0.0);
   float NoV = max(dot(N, V), 0.0);
   float NoH = max(dot(N, H), 0.0);
-  float roughness = clamp(1.0 - stewardship * 0.8 - evidence * 0.2, 0.05, 1.0);
-  float specular = clamp(conformance, 0.0, 1.0);
-  float metallic = clamp(intent * 0.3, 0.0, 0.3);
-  float sss = pow(vRho, 1.5) * 0.6 * (1.0 - roughness);
-  vec3 sssColor = uBoundaryColor * sss * NoL;
-  float fiber = pow(max(dot(H, normalize(vEntDir)), 0.0), 32.0) * vWij * vRho;
-  float D = D_GGX(NoH, roughness);
-  vec3 base = mix(uBoundaryColor * 0.2, uBoundaryColor, specular);
-  vec3 diffuse = base * NoL * (1.0 - metallic);
-  vec3 specCol = mix(vec3(0.04), base, metallic) * D * NoL;
-  float cavity = 1.0 - clamp(vCurvature * 0.5, 0.0, 0.6);
-  vec3 color = (diffuse + specCol) * cavity + sssColor + fiber * 0.5;
-  float rim = pow(1.0 - NoV, 3.0) * conformance * 0.4;
-  color += rim * uBoundaryColor;
+  // Energy wire palette: cyan ↔ amber from ρ / height (Stage-1 left panel look).
+  float warm = clamp(vRho * 0.55 + vWorldPos.y * 0.25 + max(vCurvature, 0.0) * 0.15, 0.0, 1.0);
+  vec3 cyan = vec3(0.0, 0.78, 1.0);
+  vec3 amber = vec3(1.0, 0.47, 0.11);
+  vec3 cream = vec3(1.0, 0.90, 0.70);
+  vec3 energy = mix(cyan, amber, smoothstep(0.28, 0.55, warm));
+  float core = pow(max(vRho, 0.05), 0.85);
+  float spark = pow(max(dot(H, normalize(vEntDir)), 0.0), 24.0) * vWij;
+  float rim = pow(1.0 - NoV, 2.5) * 0.55;
+  float glow = 0.35 + NoL * 0.35 + core * 0.55 + spark * 0.4 + rim;
+  vec3 color = mix(energy, cream, core * 0.45) * glow;
+  color += energy * stewardship * 0.12;
+  color += cream * intent * evidence * 0.08;
+  // Soft circular point sprite falloff for bloom-like stars
+  vec2 pc = gl_PointCoord * 2.0 - 1.0;
+  float d = dot(pc, pc);
+  if (d > 1.0) discard;
+  float alpha = clamp(1.0 - d, 0.0, 1.0);
+  color *= (0.55 + 0.45 * alpha);
   gl_FragColor = vec4(color, 1.0);
 }

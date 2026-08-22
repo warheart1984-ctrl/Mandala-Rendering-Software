@@ -90,7 +90,7 @@
     if (!/gl_PointSize/.test(vertSrc)) {
       vertSrc = vertSrc.replace(
         /gl_Position\s*=\s*projectionMatrix\s*\*\s*viewMatrix\s*\*\s*world\s*;/,
-        "gl_Position = projectionMatrix * viewMatrix * world;\n  gl_PointSize = 3.0 + vRho * 6.0;",
+        "gl_Position = projectionMatrix * viewMatrix * world;\n  gl_PointSize = 4.0 + vRho * 10.0;",
       );
     }
 
@@ -107,7 +107,7 @@
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
-    renderer.setClearColor(0x0b0c10, 1);
+    renderer.setClearColor(0x05060c, 1);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 200);
@@ -156,7 +156,7 @@
       uAnisotropy: { value: 1.2 },
       uMuscleGain: { value: 0.3 },
       uBoneThreshold: { value: 0.8 },
-      uBoundaryColor: { value: new THREE.Color(0x8a5cff) },
+      uBoundaryColor: { value: new THREE.Color(0x00c8ff) },
       uLightPos: { value: new THREE.Vector3(2, 4, 3) },
       uInducedMetric: { value: new THREE.Matrix3() },
     };
@@ -165,8 +165,10 @@
       vertexShader: vertSrc,
       fragmentShader: fragSrc,
       uniforms,
-      transparent: false,
+      transparent: true,
       depthTest: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
     });
 
     const points = new THREE.Points(geometry, material);
