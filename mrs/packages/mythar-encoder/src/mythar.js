@@ -85,7 +85,7 @@ export function compileMythar(expression, opts = {}) {
   if (result.error) {
     return { ok: false, reason: 'SPAWN_ERROR', error: String(result.error.message ?? result.error) };
   }
-  let compiled = null;
+  let compiled;
   try {
     compiled = JSON.parse(result.stdout);
   } catch {

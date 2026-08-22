@@ -323,7 +323,7 @@ export function acceptConformanceReport(report, options = {}) {
 
   // Optional GovernanceKernel hook: record precedent / attach provenance only
   // after the PI gate; kernel default policies must not override PI deny/accept.
-  let kernelDecision = null;
+  let kernelDecision;
   if (
     options.kernel &&
     typeof options.kernel.evaluateIntent === "function" &&

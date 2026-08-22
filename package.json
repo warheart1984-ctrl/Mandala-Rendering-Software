@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/test-all.mjs",
+    "test:bios-ai-lane": "node --test sovereign-x/tests/biosAiLane.test.js workers/denser-topology-worker.test.mjs",
     "test:fmce": "jest --config jest.config.cjs",
     "test:governance": "node --test engine/governance/test/*.test.js",
     "test:conformance": "node scripts/test-conformance.mjs",
@@ -15,6 +16,8 @@
     "test:gpu": "node --test mrs/packages/renderer-core/test/gpu/gpu-core.test.js engine/constitution/test/gpu-constitution.test.js",
     "test:gpu-live": "node --test mrs/packages/renderer-core/test/gpu/gpu-live-*.test.js",
     "test:multihost": "node --test engine/constitution/test/multihost-constitution.test.js engine/runtime/test/BrowserRuntimeAdapter.host.test.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "sync:surfaces": "node scripts/sync-surface-meshes.mjs",
     "release:check": "node scripts/release-check.mjs",
     "demo": "node mrs/packages/renderer-core/src/fmce/demo/run-demo.js"
@@ -22,7 +25,13 @@
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@babel/preset-env": "^7.29.7",
+    "@eslint/js": "^10.0.1",
     "babel-jest": "^29.7.0",
+    "canvas": "^3.2.3",
+    "jest": "^29.7.0",
+    "ws": "^8.21.3"
+    "eslint": "^10.9.0",
+    "globals": "^17.11.0",
     "jest": "^29.7.0"
   }
 }

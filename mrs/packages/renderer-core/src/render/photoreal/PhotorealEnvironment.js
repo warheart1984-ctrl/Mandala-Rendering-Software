@@ -178,7 +178,7 @@ export class PhotorealEnvironment {
     
     // Denoise
     const denoiseStart = performance.now();
-    const denoisedFrame = await this.denoiser.denoise({
+    const denoisedRadiance = await this.denoiser.denoise({
       radiance: renderResult.radiance,
       albedo: renderResult.aovs.albedo,
       normal: renderResult.aovs.normal,
@@ -283,7 +283,8 @@ export class PhotorealEnvironment {
   }
 
   _hashArray(arr) {
-    return createHash("sha256").update(Buffer.from(new Float32Array(arr).buffer)).digest("hex").slice(0, 32);
+    const crypto = require("crypto");
+    return crypto.createHash("sha256").update(Buffer.from(new Float32Array(arr).buffer)).digest("hex").slice(0, 32);
   }
 
   _hashAOVs(aovs) {

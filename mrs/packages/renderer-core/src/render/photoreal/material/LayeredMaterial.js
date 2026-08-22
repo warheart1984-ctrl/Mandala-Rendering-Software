@@ -1,4 +1,9 @@
 import { PBRMaterial } from "./PBRMaterial.js";
+import { DisneyMaterial } from "./DisneyMaterial.js";
+import { ConductorMaterial } from "./ConductorMaterial.js";
+import { GlassMaterial } from "./GlassMaterial.js";
+import { SubsurfaceMaterial } from "./SubsurfaceMaterial.js";
+import { ThinFilmMaterial } from "./ThinFilmMaterial.js";
 
 /**
  * Layered Material

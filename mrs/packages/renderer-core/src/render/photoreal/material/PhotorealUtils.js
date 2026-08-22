@@ -81,9 +81,9 @@ export function sampleCosineHemisphere(rng, normal) {
   const tangent = onb.tangent;
   const bitangent = onb.bitangent;
   
-  const worldX = tangent[0] * x + bitangent[0] * y + n[0] * z;
-  const worldY = tangent[1] * x + bitangent[1] * y + n[1] * z;
-  const worldZ = tangent[2] * x + bitangent[2] * y + n[2] * z;
+  const worldX = tangent[0] * x + bitangent[0] * y + normal[0] * z;
+  const worldY = tangent[1] * x + bitangent[1] * y + normal[1] * z;
+  const worldZ = tangent[2] * x + bitangent[2] * y + normal[2] * z;
   
   return [worldX, worldY, worldZ];
 }

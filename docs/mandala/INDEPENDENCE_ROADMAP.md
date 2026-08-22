@@ -5,6 +5,7 @@
 **Does not invent:** AAIS-UL v20. Organ ABI stays `mandala-engine-organ.v1`.
 **Extends:** [`MANDALA_ENGINE_ROADMAP.md`](./MANDALA_ENGINE_ROADMAP.md), [`GOVERNED_SYNTHETIC_WORLD_RUNTIME.md`](./GOVERNED_SYNTHETIC_WORLD_RUNTIME.md).
 **Phase plan sources (ingested):** [`phases/`](./phases/) (copied from `/tmp/*-plan.md` + implementation roadmap).
+**White paper (Claim A holography / constitutional graphics):** [`whitepapers/MANDALA_HOLOGRAPHIC_GRAPHICS.md`](./whitepapers/MANDALA_HOLOGRAPHIC_GRAPHICS.md) · index [`README.md`](./README.md).
 
 Tags: **enforced** · **partial** · **skeleton** · **declared** · **blocked-with-evidence**.
 
@@ -23,6 +24,7 @@ Renderer must not mutate certified state (proto proof 4).
 | Area | Status | Evidence |
 |------|--------|----------|
 | Proto four proofs | **enforced** | `mandala/proto/test/four-proofs.test.js` |
+| Holographic bulk ↔ boundary (Claim A) | **partial** (toy encode/reconstruct; not AdS/CFT) | [`HOLOGRAPHIC_BULK_BOUNDARY.md`](./HOLOGRAPHIC_BULK_BOUNDARY.md), `mandala/holography/` |
 | Certified state + AAIS gate (proto) | **partial** / working at tiny scale | `mandala/proto/certified-state.mjs`, `aais-gate.mjs` |
 | H_gov / Hamiltonian organ hook | **partial** | `mandala/engine/hamiltonian/` |
 | Engine e2e | **partial** | `mandala/engine/run-e2e.mjs`, `mandala/engine/test/e2e.test.js` |
