@@ -78,7 +78,7 @@ export class PhysicsConformanceGate {
       } catch (error) {
         results[checkName] = { pass: false, reason: error.message };
         if (this.config.strictMode) {
-          throw new Error(`Physics conformance check failed: ${checkName} - ${error.message}`);
+          throw new Error(`Physics conformance check failed: ${checkName} - ${error.message}`, { cause: error });
         }
       }
     }

@@ -393,7 +393,7 @@ export class ActorDecisionEngine {
    */
   async resolveModel({ force = false } = {}) {
     if (this._resolved && !force) return this.model;
-    let available = [];
+    let available;
     try {
       available = await listLemonadeModelIds(this.baseUrl);
     } catch (err) {

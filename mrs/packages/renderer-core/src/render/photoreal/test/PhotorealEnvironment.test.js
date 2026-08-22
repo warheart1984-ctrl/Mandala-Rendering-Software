@@ -178,7 +178,7 @@ describe("PhotorealEnvironment — Integration", () => {
       assert.equal(fp.length, 32);
     });
 
-    it("is deterministic for same configuration", () => {
+    it("is deterministic for same configuration", async () => {
       const env2 = new PhotorealEnvironment({
         width: 64,
         height: 64,

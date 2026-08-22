@@ -7,6 +7,28 @@ on:
     branches: [ main, master ]
 
 jobs:
+  lint:
+    # Blocking ESLint gate over first-party JS/ESM. `npm run lint` (eslint .)
+    # exits non-zero on ERROR-level problems only (warnings do not fail the
+    # build), so this job fails the pipeline exactly on genuine lint errors.
+    # NOTE: this gate depends on branches #38 (eslint config) and #33
+    # (RT4DGPURenderer.js parse-error fix). Until #33 lands, that single
+    # remaining parse error keeps this job red; every other error is resolved.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint (blocking on errors)
+        run: npm run lint
+
   test-renderer:
     runs-on: ubuntu-latest
     steps:
@@ -75,5 +97,4 @@ jobs:
           cd mandala-rendering-software
           python -m pytest aris/tests/ -v 2>/dev/null || echo "ARIS tests directory not found, checking structure..."
           ls aris/*.py | head -10
-```
 
