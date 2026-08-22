@@ -357,7 +357,7 @@ fn fs_main(@builtin(position) fragCoord: vec4<f32>) -> vec4<f32> {
     uniforms[i++] = this.showNormals ? 1 : 0;
     uniforms[i++] = this.showDepth ? 1 : 0;
     uniforms[i++] = cam.projectionMode === "orthographic" ? 1 : 0;
-    uniforms[i++] = 0;
+    uniforms[i] = 0;
 
     this.device.queue.writeBuffer(this.uniformBuffer, 0, uniforms);
   }

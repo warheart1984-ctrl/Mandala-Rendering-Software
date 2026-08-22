@@ -1,3 +1,7 @@
+import { certifyTensor } from "./CertifiedTensor.js";
+import { ConstitutionalWrapper } from "./ConstitutionalWrapper.js";
+import { PhysicsConformanceGate } from "./PhysicsConformanceGate.js";
+
 export {
   CertifiedTensor,
   CERTIFICATION_STATUSES,

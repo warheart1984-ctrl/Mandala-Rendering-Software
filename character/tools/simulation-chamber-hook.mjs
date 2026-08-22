@@ -8,16 +8,16 @@
  * Status: partial
  *   - char_rigged.glb is the contract plug-in point.
  *   - Simulation Chamber v3 still builds 15-part capsule humanoids from
- *     scripts/humanoid-avatar.mjs (RT4D primitives). A mesh-to-primitive
- *     adapter is not implemented yet.
+ *     scripts/humanoid-avatar.mjs (RT4D primitives) unless `--holo`.
+ *   - `--holo` skips capsules and records EntanglementRenderer COMPOSITE
+ *     (boundary information density — not photoreal mesh).
  *   - Joint names / proportions are aligned so the adapter can land without
  *     a new character system.
  *   - RHFD/Möbius: this GLB (and the capsules) are substrate defects / petal
  *     ruptures. See mandala/substrate/MAPPING.md. Not a second character organ.
  *
  * Usage:
- *   node scripts/simulation-chamber.mjs <scene.json> --character-glb
- *   node scripts/simulation-chamber.mjs <scene.json> --character-glb character/models/exports/char_rigged.glb
+ *   node scripts/simulation-chamber.mjs <scene.json> --holo --creature Mythar --record composite
  */
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";

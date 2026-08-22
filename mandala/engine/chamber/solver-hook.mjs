@@ -77,9 +77,8 @@ export function walkOnGradV({ flat = false, wellAt = [22, 16, 16], defectAt = [1
     applyWell(phi, wellAt[0], wellAt[1], wellAt[2], 1.5, 2.5, shape, +1);
   }
   computeGradientInto(phi, vector, shape);
-  let gMag = 0;
   const i = (defect.x + defect.y * shape.nx + defect.z * shape.nx * shape.ny) * 3;
-  gMag = Math.hypot(vector[i], vector[i + 1], vector[i + 2]);
+  const gMag = Math.hypot(vector[i], vector[i + 1], vector[i + 2]);
   const next = walkDefect(defect, vector, shape);
   return { defect, next, gMag, moved: next.x !== defect.x || next.y !== defect.y || next.z !== defect.z };
 }

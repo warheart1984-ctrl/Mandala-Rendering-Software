@@ -99,7 +99,7 @@ async function generateTTS() {
       console.error(`  TTS: both edge-tts and Lemonade failed`);
       console.error(`    edge-tts: ${edgeErr.message?.slice(0, 60)}`);
       console.error(`    Lemonade: ${lemonErr.message?.slice(0, 60)}`);
-      throw new Error("TTS unavailable");
+      throw new Error("TTS unavailable", { cause: lemonErr });
     }
   }
 }
