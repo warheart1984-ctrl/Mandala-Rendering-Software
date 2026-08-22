@@ -13,3 +13,9 @@ Do not overclaim.
 | FBX | skeleton |
 | Simulation Chamber consume `char_rigged.glb` | partial |
 | RHFD / Möbius framing (meshes + capsules = lattice defects) | declared |
+| Character holography (`character/holography/`) skin EGT | partial |
+| MuscleRegion fire / deform | partial |
+| Face patch expressions | partial |
+| Full-body breathing EGT | partial |
+| Production face retopo / biomechanics / “realistic by default” | declared |
+| Full anatomical RT4D reconstruct | declared |

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mandala holography — CIEMS / Sovereign lens console</title>
+  <style>
+    :root {
+      --bg: #0e1218;
+      --panel: #161c26;
+      --ink: #d8e0ea;
+      --muted: #8a96a8;
+      --accent: #5ec8c0;
+      --warn: #d4a574;
+      --ok: #7dba7a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1a2838 0%, var(--bg) 55%);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    h1 {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      font-size: 1.35rem;
+      margin: 0 0 0.35rem;
+    }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
+    .modes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    @media (max-width: 900px) {
+      .modes { grid-template-columns: 1fr; }
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid #243044;
+      padding: 1rem 1.1rem;
+      min-height: 12rem;
+    }
+    section h2 {
+      margin: 0 0 0.75rem;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+    dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 0.35rem 0.75rem; font-size: 0.88rem; }
+    dt { color: var(--muted); }
+    dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    label { display: block; margin: 1.25rem 0 0.4rem; color: var(--muted); font-size: 0.85rem; }
+    textarea {
+      width: 100%;
+      min-height: 8rem;
+      background: #0a0e14;
+      color: var(--ink);
+      border: 1px solid #2a3548;
+      padding: 0.75rem;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.78rem;
+    }
+    button {
+      margin-top: 0.6rem;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 0.45rem 0.9rem;
+      cursor: pointer;
+      font: inherit;
+    }
+    button:hover { background: rgba(94, 200, 192, 0.12); }
+    footer { margin-top: 1.5rem; color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>Holographic lab console</h1>
+  <p class="sub">Claim A · partial · Spacetime / Holographic / Governance metrics from receipt JSON · not charter enforcement</p>
+
+  <div class="modes">
+    <section>
+      <h2>Spacetime</h2>
+      <dl id="spacetime"></dl>
+    </section>
+    <section>
+      <h2>Holographic</h2>
+      <dl id="holographic"></dl>
+    </section>
+    <section>
+      <h2>Governance</h2>
+      <dl id="governance"></dl>
+    </section>
+  </div>
+
+  <label for="receipt">Paste <code>receipt.json</code> (tiny-scene or interference)</label>
+  <textarea id="receipt" placeholder='{ "kind": "tiny-holographic-scene-receipt", ... }'></textarea>
+  <button type="button" id="apply">Apply receipt</button>
+
+  <footer>
+    Docs: <code>docs/mandala/HOLOGRAPHIC_CIEMS.md</code> ·
+    Generate: <code>node mandala/holography/test-scene.mjs</code>
+  </footer>
+
+  <script>
+    const DEMO = {
+      kind: "tiny-holographic-scene-receipt",
+      status: "partial",
+      frames: 48,
+      v_x: 0.15,
+      maxRho: 3,
+      maxK: 1.2,
+      edgeSum: 42,
+      egtHash: "(run test-scene for live hash)",
+      reconstructionError: 0.2,
+      maxWorldlineError: 0.4,
+      certifiedProto: "untouched — isolated scene",
+      modes: ["HEATMAP", "EMERGENT_GEOMETRY"],
+      governance: {
+        ok: true,
+        invariants: { bulkEgtCoupling: { ok: true, code: "ok" } },
+        metrics: {
+          entanglementHealth: { healthy: true, edgeSum: 42, maxRho: 3, maxAbsK: 1.2 },
+          reconstructionError: 0.2,
+        },
+      },
+    };
+
+    function row(dl, key, val, cls) {
+      const dt = document.createElement("dt");
+      dt.textContent = key;
+      const dd = document.createElement("dd");
+      dd.textContent = val == null ? "—" : String(val);
+      if (cls) dd.className = cls;
+      dl.appendChild(dt);
+      dl.appendChild(dd);
+    }
+
+    function clear(el) {
+      while (el.firstChild) el.removeChild(el.firstChild);
+    }
+
+    function render(r) {
+      const st = document.getElementById("spacetime");
+      const ho = document.getElementById("holographic");
+      const go = document.getElementById("governance");
+      clear(st);
+      clear(ho);
+      clear(go);
+
+      row(st, "kind", r.kind);
+      row(st, "status", r.status);
+      row(st, "frames", r.frames);
+      row(st, "v_x / interact", r.v_x ?? r.interact);
+      row(st, "certifiedProto", r.certifiedProto || "—");
+
+      row(ho, "maxRho", r.maxRho);
+      row(ho, "edgeSum", r.edgeSum);
+      row(ho, "maxK", r.maxK);
+      row(ho, "egtHash", r.egtHash ? String(r.egtHash).slice(0, 16) + "…" : "—");
+      row(ho, "modes", (r.modes || []).join(", "));
+
+      const g = r.governance || {};
+      const coupling = g.invariants?.bulkEgtCoupling || {};
+      const health = g.metrics?.entanglementHealth || {};
+      row(go, "audit ok", g.ok, g.ok ? "ok" : "warn");
+      row(go, "bulk↔EGT", coupling.ok === false ? coupling.code : "ok", coupling.ok === false ? "warn" : "ok");
+      row(go, "entanglement health", health.healthy, health.healthy ? "ok" : "warn");
+      row(go, "reconstructionError", r.reconstructionError ?? g.metrics?.reconstructionError);
+      row(go, "maxWorldlineError", r.maxWorldlineError);
+      row(go, "maxRhoPeakDist", r.maxRhoPeakDist);
+    }
+
+    document.getElementById("apply").addEventListener("click", () => {
+      try {
+        const raw = document.getElementById("receipt").value.trim();
+        render(raw ? JSON.parse(raw) : DEMO);
+      } catch (e) {
+        alert("Invalid JSON: " + e.message);
+      }
+    });
+
+    document.getElementById("receipt").value = JSON.stringify(DEMO, null, 2);
+    render(DEMO);
+  </script>
+</body>
+</html>

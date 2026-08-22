@@ -194,6 +194,7 @@ export class PathIntegrator {
           depth++;
           continue;
         }
+      }
 
       break;
     }

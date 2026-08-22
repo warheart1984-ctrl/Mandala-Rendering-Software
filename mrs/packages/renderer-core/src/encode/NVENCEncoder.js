@@ -75,7 +75,7 @@ export class NVENCEncoder extends GPUVideoEncoder {
     try {
       await NVENCEncoder._runFfmpeg(this._encoderPath, args);
     } catch (e) {
-      throw new Error(`NVENC encoding failed: ${e.message}`);
+      throw new Error(`NVENC encoding failed: ${e.message}`, { cause: e });
     }
 
     await this._cleanupTmp(tmpDir);

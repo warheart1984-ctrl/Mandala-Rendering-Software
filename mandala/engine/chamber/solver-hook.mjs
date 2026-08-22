@@ -15,6 +15,13 @@ import { defaultFlythroughPath, setObserverPath } from "../../proto/movie-lane.m
 import { computeGradientInto, walkDefect } from "../../proto/cpu-reference.mjs";
 import { applyWell } from "../../proto/certified-state.mjs";
 import { PROTO_SHAPE } from "../../proto/constitution.mjs";
+import {
+  CHAMBER_FIELD_BOUNDS,
+  createFieldSampler,
+  applyLocalGradientMotionToActors,
+} from "./field-lattice.mjs";
+
+export { CHAMBER_FIELD_BOUNDS, createFieldSampler, applyLocalGradientMotionToActors };
 
 export const CHAMBER_SOLVER_STATUS = "partial";
 export const CHAMBER_SOLVER_ID = "mandala-proto";
@@ -30,13 +37,32 @@ export function latticeDelta(defect, origin) {
   };
 }
 
+/**
+ * Sample the baked defect worldline at normalised time.
+ *
+ * The cinematic solver runs ONCE (see runCinematicProtoSolver); the render loop
+ * only interpolates this stored worldline — it never calls cpuProposeNext per
+ * frame. Linear interpolation between the two bracketing stored slices gives
+ * smooth temporal motion between certified cells (fractional cells are fine:
+ * they feed latticeDelta as a world-space delta). Deterministic (P4).
+ */
 export function sampleWorldline(worldline, tNorm) {
   if (!worldline?.length) return null;
-  const i = Math.min(
-    worldline.length - 1,
-    Math.max(0, Math.round(tNorm * (worldline.length - 1))),
-  );
-  return worldline[i];
+  if (worldline.length === 1) return worldline[0];
+  const f = Math.min(1, Math.max(0, tNorm)) * (worldline.length - 1);
+  const i0 = Math.floor(f);
+  const i1 = Math.min(worldline.length - 1, i0 + 1);
+  const t = f - i0;
+  const a = worldline[i0];
+  const b = worldline[i1];
+  if (!a || !b) return a || b || null;
+  return {
+    type: a.type,
+    t: (a.t ?? i0) + ((b.t ?? i1) - (a.t ?? i0)) * t,
+    x: a.x + (b.x - a.x) * t,
+    y: a.y + (b.y - a.y) * t,
+    z: a.z + (b.z - a.z) * t,
+  };
 }
 
 /**
@@ -77,9 +103,8 @@ export function walkOnGradV({ flat = false, wellAt = [22, 16, 16], defectAt = [1
     applyWell(phi, wellAt[0], wellAt[1], wellAt[2], 1.5, 2.5, shape, +1);
   }
   computeGradientInto(phi, vector, shape);
-  let gMag = 0;
   const i = (defect.x + defect.y * shape.nx + defect.z * shape.nx * shape.ny) * 3;
-  gMag = Math.hypot(vector[i], vector[i + 1], vector[i + 2]);
+  const gMag = Math.hypot(vector[i], vector[i + 1], vector[i + 2]);
   const next = walkDefect(defect, vector, shape);
   return { defect, next, gMag, moved: next.x !== defect.x || next.y !== defect.y || next.z !== defect.z };
 }
@@ -125,7 +150,22 @@ export function runCinematicProtoSolver({
   project(universe, image);
   const hashAfterProject = universe.state.hash;
 
+  // Field caches for the RT4D binding (per-actor −∇φ motion + FieldVolume).
+  // Subarray refs, NOT copies. These are large Float32Arrays; callers that
+  // serialise the solver result MUST strip `field` first (see the chamber).
+  const shape = universe.state.shape;
+  const field = {
+    shape,
+    bounds: CHAMBER_FIELD_BOUNDS,
+    scalarCache: universe.state.temporal.scalarCache,
+    vectorCache: universe.state.temporal.vectorCache,
+    filled: universe.state.temporal.filled,
+    seed: universe.state.seed,
+    etaAmplitude: universe.constitution?.numerics?.etaAmplitude ?? 0.02,
+  };
+
   return {
+    field,
     solver: CHAMBER_SOLVER_ID,
     status: CHAMBER_SOLVER_STATUS,
     motionDriverPhysics: INTEGRATOR_DRIVER,

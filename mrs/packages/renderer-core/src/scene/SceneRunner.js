@@ -53,6 +53,7 @@ export async function runScene(scenePath, options = {}) {
  * GPU SDF Raymarching
  */
 async function runGPUScene(scene, outputDir, evidenceLog) {
+  const renderConfig = scene.render;
   const { createWebGPURenderer } = await import("../gpu/WebGPURenderer.js");
   const camera = new Camera4D({
     width: renderConfig.width,

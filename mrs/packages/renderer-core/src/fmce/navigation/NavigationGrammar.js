@@ -28,7 +28,7 @@ export class NavigationGrammar {
   parse(command = "", params = {}) {
     const c = String(command);
     const errors = [];
-    let rule = "unknown";
+    let rule;
 
     switch (c) {
       case "move_forward":

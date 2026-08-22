@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Holo bin watch — partial boundary density (not photoreal)</title>
+  <style>
+    :root {
+      --bg0: #0b0c10;
+      --bg1: #14161e;
+      --ink: #d6d8e0;
+      --muted: #8b90a0;
+      --accent: #c4a574;
+    }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: radial-gradient(120% 80% at 50% 0%, var(--bg1), var(--bg0));
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+    #c { display: block; width: 100%; height: 100%; }
+    #hud {
+      position: fixed;
+      left: 1rem;
+      bottom: 1rem;
+      right: 1rem;
+      max-width: 28rem;
+      pointer-events: none;
+      text-shadow: 0 1px 2px #000a;
+    }
+    #hud h1 {
+      margin: 0 0 0.35rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    #hud p {
+      margin: 0.15rem 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    #hud .accent { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <h1>Mythar holo stream — <span class="accent">partial</span> boundary density, not photoreal</h1>
+    <p id="line-shader">shader fps: —</p>
+    <p id="line-gen">gen fps: —</p>
+    <p id="line-frame">frame: — · nodes: — · codec: —</p>
+  </div>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+
+    const canvas = document.getElementById("c");
+    const elShader = document.getElementById("line-shader");
+    const elGen = document.getElementById("line-gen");
+    const elFrame = document.getElementById("line-frame");
+
+    const meta = await fetch("./meta.json").then((r) => {
+      if (!r.ok) throw new Error("meta.json missing — run --holo bin record first");
+      return r.json();
+    });
+
+    const vertUrl = "./shaders/holographic.vert";
+    const fragUrl = "./shaders/holographic.frag";
+    let vertSrc;
+    let fragSrc;
+    try {
+      [vertSrc, fragSrc] = await Promise.all([
+        fetch(vertUrl).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); }),
+        fetch(fragUrl).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); }),
+      ]);
+    } catch (e) {
+      elFrame.textContent = `shader load failed: ${e.message}`;
+      throw e;
+    }
+
+    // Points need a point size; append if SoT vert has no gl_PointSize.
+    if (!/gl_PointSize/.test(vertSrc)) {
+      vertSrc = vertSrc.replace(
+        /gl_Position\s*=\s*projectionMatrix\s*\*\s*viewMatrix\s*\*\s*world\s*;/,
+        "gl_Position = projectionMatrix * viewMatrix * world;\n  gl_PointSize = 4.0 + vRho * 10.0;",
+      );
+    }
+
+    const frameCount = meta.frames | 0;
+    const maxNodes = Math.max(1, meta.maxNodes | 0, meta.maxWrittenCount | 0, 8192);
+    const timelineFps = meta.fps || 12;
+    const genFps = meta.genFpsEstimate;
+    if (Number.isFinite(genFps)) {
+      elGen.textContent = `gen fps: ${genFps.toFixed(2)} (from receipt/meta — record wall time)`;
+    } else {
+      elGen.textContent = "gen fps: (not in meta — see receipt.json)";
+    }
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    renderer.setClearColor(0x05060c, 1);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 200);
+    camera.position.set(0, 0.2, 2.4);
+    camera.lookAt(0, 0, 0);
+
+    const geometry = new THREE.BufferGeometry();
+    const pos = new Float32Array(maxNodes * 3);
+    const rho = new Float32Array(maxNodes);
+    const dir = new Float32Array(maxNodes * 3);
+    const curv = new Float32Array(maxNodes);
+    const wij = new Float32Array(maxNodes);
+    const gov = new Float32Array(maxNodes * 4);
+    const baseN = new Float32Array(maxNodes * 3);
+    for (let i = 0; i < maxNodes; i++) {
+      dir[i * 3 + 1] = 1;
+      baseN[i * 3 + 1] = 1;
+      gov[i * 4] = 0.8;
+      gov[i * 4 + 1] = 0.8;
+      gov[i * 4 + 2] = 0.868;
+      gov[i * 4 + 3] = 1;
+    }
+
+    const aPos = new THREE.BufferAttribute(pos, 3);
+    const aRho = new THREE.BufferAttribute(rho, 1);
+    const aDir = new THREE.BufferAttribute(dir, 3);
+    const aCurv = new THREE.BufferAttribute(curv, 1);
+    const aWij = new THREE.BufferAttribute(wij, 1);
+    const aGov = new THREE.BufferAttribute(gov, 4);
+    const aBn = new THREE.BufferAttribute(baseN, 3);
+    for (const a of [aPos, aRho, aDir, aCurv, aWij, aGov, aBn]) {
+      a.setUsage(THREE.DynamicDrawUsage);
+    }
+    geometry.setAttribute("position", aPos);
+    geometry.setAttribute("entanglementDensity", aRho);
+    geometry.setAttribute("entanglementDirection", aDir);
+    geometry.setAttribute("curvature", aCurv);
+    geometry.setAttribute("entanglementWeight", aWij);
+    geometry.setAttribute("governance", aGov);
+    geometry.setAttribute("baseNormal", aBn);
+    geometry.setDrawRange(0, 0);
+    geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 100);
+
+    const uniforms = {
+      uTime: { value: 0 },
+      uAnisotropy: { value: 1.2 },
+      uMuscleGain: { value: 0.3 },
+      uBoneThreshold: { value: 0.8 },
+      uBoundaryColor: { value: new THREE.Color(0x00c8ff) },
+      uLightPos: { value: new THREE.Vector3(2, 4, 3) },
+      uInducedMetric: { value: new THREE.Matrix3() },
+    };
+
+    const material = new THREE.ShaderMaterial({
+      vertexShader: vertSrc,
+      fragmentShader: fragSrc,
+      uniforms,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    function resize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / Math.max(1, h);
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const HEADER_BYTES = 64;
+    const FLOATS_PER = 3 + 1 + 3 + 1 + 1 + 4 + 3;
+
+    async function loadBin(index) {
+      const name = `frames/frame-${String(index).padStart(6, "0")}.bin`;
+      const res = await fetch(name);
+      if (!res.ok) throw new Error(`${name} ${res.status}`);
+      const ab = await res.arrayBuffer();
+      const u32 = new Uint32Array(ab, 0, 2);
+      const count = u32[0];
+      const t = u32[1];
+      const hij = new Float32Array(ab, 8, 9);
+      const expected = HEADER_BYTES + count * FLOATS_PER * 4;
+      if (ab.byteLength !== expected) {
+        throw new Error(`${name} size ${ab.byteLength} != ${expected}`);
+      }
+      let off = HEADER_BYTES;
+      const take = (n) => {
+        const v = new Float32Array(ab, off, n);
+        off += n * 4;
+        return v;
+      };
+      const p = take(count * 3);
+      const r = take(count);
+      const d = take(count * 3);
+      const k = take(count);
+      const w = take(count);
+      const g = take(count * 4);
+      const bn = take(count * 3);
+      return { count, t, hij, p, r, d, k, w, g, bn };
+    }
+
+    function upload(frame) {
+      const { count } = frame;
+      if (count > maxNodes) {
+        console.warn("frame count exceeds pool", count, maxNodes);
+      }
+      const n = Math.min(count, maxNodes);
+      pos.set(frame.p.subarray(0, n * 3));
+      rho.set(frame.r.subarray(0, n));
+      dir.set(frame.d.subarray(0, n * 3));
+      curv.set(frame.k.subarray(0, n));
+      wij.set(frame.w.subarray(0, n));
+      gov.set(frame.g.subarray(0, n * 4));
+      baseN.set(frame.bn.subarray(0, n * 3));
+      aPos.needsUpdate = true;
+      aRho.needsUpdate = true;
+      aDir.needsUpdate = true;
+      aCurv.needsUpdate = true;
+      aWij.needsUpdate = true;
+      aGov.needsUpdate = true;
+      aBn.needsUpdate = true;
+      geometry.setDrawRange(0, n);
+      uniforms.uInducedMetric.value.fromArray(frame.hij);
+      uniforms.uTime.value = frame.t;
+      return n;
+    }
+
+    // Prefetch a few frames; stream the rest.
+    const cache = new Map();
+    async function ensure(i) {
+      const idx = ((i % frameCount) + frameCount) % frameCount;
+      if (!cache.has(idx)) {
+        cache.set(idx, loadBin(idx));
+      }
+      return cache.get(idx);
+    }
+
+    let playIndex = 0;
+    let lastNodeCount = 0;
+    let rafCount = 0;
+    let fpsWindowStart = performance.now();
+    let shaderFps = null;
+    const playDt = 1000 / timelineFps;
+    let lastAdvance = performance.now();
+
+    // Kick first frame
+    try {
+      const first = await ensure(0);
+      lastNodeCount = upload(first);
+      elFrame.textContent = `frame: 0/${frameCount} · nodes: ${lastNodeCount} · codec: ${meta.codec || "raw-float32"}`;
+    } catch (e) {
+      elFrame.textContent = `load failed: ${e.message}`;
+      console.error(e);
+    }
+
+    function tick(now) {
+      requestAnimationFrame(tick);
+      rafCount++;
+      if (rafCount >= 45) {
+        const dt = (now - fpsWindowStart) / 1000;
+        if (dt > 0) shaderFps = rafCount / dt;
+        rafCount = 0;
+        fpsWindowStart = now;
+        if (shaderFps != null) {
+          elShader.textContent = `shader fps: ${shaderFps.toFixed(1)} (rAF / WebGL draw — measured here)`;
+        }
+      }
+
+      if (frameCount > 0 && now - lastAdvance >= playDt) {
+        lastAdvance = now;
+        playIndex = (playIndex + 1) % frameCount;
+        ensure(playIndex)
+          .then((fr) => {
+            lastNodeCount = upload(fr);
+            elFrame.textContent =
+              `frame: ${playIndex}/${frameCount} · nodes: ${lastNodeCount} · codec: ${meta.codec || "raw-float32"}`;
+            // Drop far-behind cache entries
+            if (cache.size > 24) {
+              const keep = new Set();
+              for (let k = 0; k < 8; k++) keep.add((playIndex + k) % frameCount);
+              for (const key of cache.keys()) {
+                if (!keep.has(key)) cache.delete(key);
+              }
+            }
+            ensure((playIndex + 1) % frameCount);
+          })
+          .catch((e) => {
+            elFrame.textContent = `frame error: ${e.message}`;
+          });
+      }
+
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

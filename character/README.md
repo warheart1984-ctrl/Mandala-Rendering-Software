@@ -8,12 +8,15 @@ Chosen path (top-level `/models` would collide with `runtime/models/` and other 
 
 ```
 character/
-  models/     sculpt + retopo + rig
-  sim/        cloth / hair / body simulation
-  shaders/    fur, skin, metal, fabric
-  renders/    wireframe, rig view, final
-  tools/      export / import (GLB, FBX stub)
+  models/       sculpt + retopo + rig
+  sim/          cloth / hair / body simulation
+  shaders/      fur, skin, metal, fabric
+  renders/      wireframe, rig view, final
+  tools/        export / import (GLB, FBX stub)
+  holography/   skin EGT / muscle / face / body (partial; imports mandala/holography)
 ```
+
+Holography docs: [`docs/mandala/CHARACTER_HOLOGRAPHY.md`](../docs/mandala/CHARACTER_HOLOGRAPHY.md). Demo: `node character/holography/demo.mjs`.
 
 ## Organs
 
