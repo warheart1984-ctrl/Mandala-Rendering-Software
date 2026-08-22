@@ -273,3 +273,16 @@ export {
   replayTapeFromDisk,
   recordStudioBeat,
 } from "./ChamberStudioBeat.js";
+export {
+  RENDER_VIEW_STATUS,
+  DEFAULT_ANIME_PROMPT,
+  DEFAULT_ANIME_NEGATIVE,
+  ANIME_VIEW_CONFIG,
+  applyToonLUT,
+  amplitudeToComplexField,
+  loadChamberFrame,
+  rigStateFromChamberActors,
+  createRenderView,
+  callAnimeSdImg2img,
+  renderTurboMapsFromInput,
+} from "./RenderView.js";
