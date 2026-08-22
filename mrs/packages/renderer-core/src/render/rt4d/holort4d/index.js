@@ -1,0 +1,275 @@
+/**
+ * HoloRT4D — wave-optics downstream of RT4D.
+ * Not math4d projection. Not EntanglementRenderer.
+ */
+
+import {
+  SNAPSHOT_STATUS,
+  SNAPSHOT_CPU_STATUS,
+  SNAPSHOT_LEVELS,
+  getSnapshot,
+  publishSnapshot,
+  normalizeSnapshotLevel,
+  perceptualFeatures,
+  toCanonical,
+  buildArtDirectionProvenance,
+} from "./snapshot.js";
+
+export { HOLORT4D_CONTRACT, HOLORT4D_STATUS, ACCUMULATOR_PATTERNS } from "./status.js";
+export {
+  TWO_PI,
+  LAMBDA_R,
+  LAMBDA_G,
+  LAMBDA_B,
+  TILE_SIZE,
+  TILE_SIZE_X,
+  TILE_SIZE_Y,
+  POLAR_BANKS,
+  POLAR_TILE_STRIDE,
+  createHoloCamera,
+  createComplexField,
+  createRgbFields,
+  wavenumber,
+} from "./types.js";
+export {
+  PATH_SAMPLE_BYTE_SIZE,
+  PATH_SAMPLE_OFFSETS,
+  PATH_SAMPLE_FINALIZE_OFFSET,
+  PATH_SAMPLE_FINALIZE_END,
+  PATH_SAMPLE_WGSL,
+  createPathSampleView,
+  writeBounceSample,
+  writePathFinalize,
+  readPathSample,
+  packPathSample,
+  packPathSamples,
+} from "./path-sample.js";
+export {
+  PATH_FINALIZE_STATUS,
+  PATH_FINALIZE_WGSL_SKETCH,
+  traceBounce,
+  pathFinalize,
+  runPathLoopThenFinalize,
+  finalizeAndGate,
+} from "./path-finalize.js";
+export {
+  PATH_GATE_STATUS,
+  PathSampleUnreadyError,
+  hasFinalizeEvidence,
+  rejectUnreadyPath,
+  rejectUnreadyPaths,
+} from "./gate.js";
+export {
+  RT4D_BIND_SETS,
+  HOLO_LOGICAL_SET_TILES,
+  HOLO_LOGICAL_SET_PHASE,
+  HOLO_BIND_SET_TILES,
+  HOLO_BIND_SET_PHASE,
+  HOLO_SET4_BINDINGS,
+  HOLO_SET5_BINDINGS,
+  HOLO_LAYOUT_STATUS,
+  describeHoloBindGroups,
+  createHoloPipelineLayout,
+  createPathFinalizeAdapterLayout,
+} from "./layouts.js";
+export {
+  ALIGN_MODE,
+  pixelIdFromRaygen,
+  pixelXYFromPixelId,
+  holoXYFromPixel,
+  holoXYFromPixelId,
+  tileIdFromHolo,
+  binPaths,
+  prefixSumOffsets,
+  localTileXYFromPixelId,
+  tileCountsFromAlignedGrid,
+} from "./aligned.js";
+export {
+  TILED_ACCUMULATE_STATUS,
+  POLAR_TILE_FLAT_LEN,
+  POLAR_PAD_COLUMN,
+  flattenPolarSoa,
+  polarSoaPadColumn,
+  tileHeadersFromCounts,
+  binPathsU32,
+  tiledAccumulate,
+  createTiledField,
+} from "./tiled.js";
+export {
+  SNAPSHOT_STATUS,
+  SNAPSHOT_CPU_STATUS,
+  SNAPSHOT_LEVELS,
+  getSnapshot,
+  publishSnapshot,
+  normalizeSnapshotLevel,
+  perceptualFeatures,
+  toCanonical,
+  buildArtDirectionProvenance,
+};
+export {
+  CIEMS_STATUS,
+  CIEMS_TRAIL_STAGES,
+  hashTileHeaders,
+  hashComplexField,
+  attachCiemsTrail,
+  postCiemsMemory,
+  loadChamberCiemsValidator,
+} from "./ciems.js";
+export {
+  radianceMagnitude,
+  complexContrib,
+  accumulateAtomic,
+  accumulateRGB,
+  nearestRgbChannel,
+  propagateConstantPhase,
+  phaseNorm,
+  encodePhaseOnly,
+  encodePhaseRGB,
+  DEBUG_REAL_IMAG_MAP,
+  mapBoundedField,
+  encodeDebugRealImag,
+  fieldMagnitude,
+  atomicLoadF32,
+} from "./accumulate.js";
+export {
+  HOLORT4D_MC_LINEAR_ID,
+  HOLORT4D_MC_LINEAR,
+  invariantPredicateResult,
+  complexSumLinear,
+  checkLinearity,
+} from "./invariant.js";
+export {
+  POLAR_ATOMIC,
+  POLAR_BINPATHS_WORKGROUP,
+  POLAR_TILED_WORKGROUP,
+  POLAR_PHASE_ENCODE_WORKGROUP,
+  supportsFloatAtomic,
+  shouldUseFloatAtomic,
+  isPolarDevice,
+  describePolarDispatch,
+  polarBank,
+  polarWarpRows,
+  polarTileLayout,
+} from "./polar.js";
+export {
+  PATH_ADAPTER_STATUS,
+  pathSampleFromRt4dIndex,
+  pathSamplesFromWavefrontStates,
+  adaptRt4dLoopThenFinalize,
+  rt4dBuffersFromHandoff,
+} from "./path-adapter.js";
+export { HoloRT4DGPURenderer } from "./gpu/HoloRT4DGPURenderer.js";
+export {
+  POLAR_SAFE_WGSL,
+  HOLO_PATH_FINALIZE_WGSL,
+  HOLO_BIN_PATHS_WGSL,
+  HOLO_TILED_ACCUMULATE_WGSL,
+  HOLO_PHASE_ENCODE_WGSL,
+  HOLO_PHASE_ENCODE_ATOMIC_WGSL,
+  HOLO_DEBUG_REAL_IMAG_WGSL,
+  HOLO_ACCUMULATE_ATOMIC_WGSL,
+} from "./gpu/shaders.js";
+
+export const holort4d = {
+  getSnapshot,
+  publish: publishSnapshot,
+  toCanonical,
+};
+export {
+  DEPTH_RECONSTRUCT_STATUS,
+  scatterOpticalLength,
+  scatterOpticalLengthTileModWrong,
+  depthToComplexField,
+  reconstructPhaseFromPaths,
+  validatePixelIdRoundtrip,
+  depthCorrelation,
+  analyzeTunnelBehindSubject,
+  phaseDepthAgreement,
+  depthToRgba,
+  phaseToRgba,
+  verifyDepthScatterRoundtrip,
+  scorePixelIdMapping,
+} from "./depth-reconstruct.js";
+export {
+  DEBUG_MODE,
+  PHASE_WHEEL_SIZE,
+  CORNELL_SCENE,
+  DEBUG_REAL_IMAG_STATUS,
+  onTileBorder,
+  intensityHeat,
+  phaseHue,
+  overlayHoloTile,
+  phaseWheelColor,
+  inspectTile,
+  historyIndex,
+  playbackIndex,
+  wNorm,
+  wSliceColor,
+  wSlicePixelIndex,
+  accumulateWSlice,
+  rasterizeDebugRealImag,
+  encodePngRgba8,
+  encodeDebugRealImagPng,
+  dumpDebugRealImagPng,
+} from "./debug.js";
+export {
+  CANONICAL_STATUS,
+  CANONICAL_VERSION,
+  STATUS_TAGS,
+  PIPELINE_STAGES,
+  hashFloat32Array,
+  hashUint8Array,
+  hashJson,
+  buildCanonicalEnvelope,
+  buildCPF4DEnvelope,
+  buildCPOEnvelope,
+  buildSPOEnvelope,
+} from "./canonical.js";
+export {
+  FACE_RIG_CONTROL_STATUS,
+  ARKIT_BLENDSHAPE_NAMES,
+  FACE_RIG_FLOAT_COUNT,
+  CONTROL_BAR_BLENDSHAPES,
+  packFaceRigFloats,
+  buildFaceRigSnapshot,
+  formatControlBarText,
+  renderDepthMap,
+  renderColoredByBone,
+  renderFlow,
+  renderAllTurboControls,
+  renderRigWithNumbers,
+  buildFaceRigEnvelopes,
+  createDefaultFaceRig,
+  summarizeFaceRigState,
+  deformLandmarksFromRig,
+  projectLandmarksFromRig,
+} from "./face-rig-control.js";
+export {
+  LANDMARK_COUNT,
+  LANDMARK_TO_CONTROL,
+  BONE_COLORS,
+  BONE_EDGES,
+  buildFaceRigState,
+  landmarkControlCoverage,
+  boneNameForLandmark,
+} from "./face-rig-state.js";
+export {
+  SIMULATION_CHAMBER_STATUS,
+  SimulationChamber,
+  integrateBones,
+  tracePathsFromRigState,
+  rigFromState,
+  zToOpticalLength,
+  loadTape,
+  recordDeterministicTape,
+} from "./SimulationChamber.js";
+export {
+  CHAMBER_STUDIO_BEAT_STATUS,
+  ChamberStudioBeat,
+  loadStoryForgeBeat,
+  applyBeatTracks,
+  interpolateTrack,
+  replayTapeFrames,
+  replayTapeFromDisk,
+  recordStudioBeat,
+} from "./ChamberStudioBeat.js";
