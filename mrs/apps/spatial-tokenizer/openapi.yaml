@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: HoloRT4D Spatial Tokenizer
+  version: 0.1.0
+  description: |
+    Spatial token API. Billing $1/call is **declared** (not charged in this stub).
+    Prefer `depth_f32` from chamber / opticalLength / landmark-z (**enforced** math).
+    `image_base64` → metric depth without ML is **declared**.
+servers:
+  - url: http://localhost:8792
+paths:
+  /health:
+    get:
+      summary: Liveness
+      responses:
+        "200":
+          description: OK
+  /v1/status:
+    get:
+      summary: Capability status tags
+      responses:
+        "200":
+          description: Honest status object
+  /v1/spatial-tokenize:
+    post:
+      summary: Tokenize a depth grid into HoloRT4D-Spatial-V1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenizeRequest"
+      responses:
+        "200":
+          description: Spatial token + sha256 hash
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenizeResponse"
+        "400":
+          description: Bad request
+        "501":
+          description: Declared path not implemented
+components:
+  schemas:
+    TokenizeRequest:
+      type: object
+      properties:
+        depth_f32:
+          type: array
+          items:
+            type: number
+          description: Row-major Float32 depth (enforced path)
+        width:
+          type: integer
+        height:
+          type: integer
+        resolution:
+          type: integer
+          enum: [8, 16]
+          default: 16
+        image_base64:
+          type: string
+          description: Declared — not metric depth without ML
+        face_landmarks_xyz:
+          type: array
+          items:
+            type: number
+        prev_depth_f32:
+          type: array
+          items:
+            type: number
+        brief_id:
+          type: string
+        bill:
+          type: boolean
+          default: true
+          description: Declared $1 stub; not a payment
+    TokenizeResponse:
+      type: object
+      required: [scheme, hash, resolution, cell_count, token, billing_status]
+      properties:
+        scheme:
+          type: string
+          example: HoloRT4D-Spatial-V1
+        hash:
+          type: string
+          description: sha256 of canonical JSON
+        resolution:
+          type: integer
+        cell_count:
+          type: integer
+        token:
+          type: object
+        price_usd:
+          type: number
+          example: 1.0
+        billing_status:
+          type: string
+          example: declared
+        status:
+          type: object

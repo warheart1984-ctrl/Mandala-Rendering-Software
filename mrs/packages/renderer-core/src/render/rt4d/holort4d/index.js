@@ -286,3 +286,19 @@ export {
   callAnimeSdImg2img,
   renderTurboMapsFromInput,
 } from "./RenderView.js";
+export {
+  SPATIAL_TOKEN_SCHEME,
+  SPATIAL_TOKEN_STATUS,
+  createGridCell,
+  createSpatialToken,
+  clampByte,
+  canonicalTokenJson,
+  tokenizeFromDepthGrid,
+  hashSpatialToken,
+  faceRigFromLandmarkXYZ,
+  FACE_OBJECT_STATUS,
+  packFlow,
+  MOTION_TOKEN_STATUS,
+  grayscalePseudoDepth,
+  IMAGE_PSEUDO_DEPTH_STATUS,
+} from "./spatial-tokens/index.js";
