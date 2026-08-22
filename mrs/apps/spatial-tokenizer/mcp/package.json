@@ -1,0 +1,25 @@
+{
+  "name": "@mrs/holort4d-spatial-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HoloRT4D Spatial Tokens MCP server (Streamable HTTP) for ChatGPT/Codex",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/smoke.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
