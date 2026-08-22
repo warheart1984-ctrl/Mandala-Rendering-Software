@@ -53,14 +53,28 @@ export function loadCharacterMaterial(materialName, shadersDir = CHARACTER_SHADE
     }
     const jsonData = JSON.parse(readFileSync(jsonPath, 'utf8'));
 
-    const wgslFileName = jsonData.wgsl || `${materialName}.wgsl`;
-    const wgslPath = join(shadersDir, wgslFileName);
-    if (!existsSync(wgslPath)) {
-      console.warn(`Character material WGSL missing: ${wgslPath}`);
-      return null;
+    // Try 4D shader first, fall back to 3D
+    const wgslFileName4D = jsonData.wgsl?.replace('.wgsl', '_4d.wgsl') || `${materialName}_4d.wgsl`;
+    const wgslFileName3D = jsonData.wgsl || `${materialName}.wgsl`;
+    
+    let wgslSource = null;
+    let wgslPath = null;
+    let shaderVersion = '3d';
+    
+    const wgslPath4D = join(shadersDir, wgslFileName4D);
+    if (existsSync(wgslPath4D)) {
+      wgslSource = readFileSync(wgslPath4D, 'utf8');
+      wgslPath = wgslPath4D;
+      shaderVersion = '4d';
+    } else {
+      const wgslPath3D = join(shadersDir, wgslFileName3D);
+      if (!existsSync(wgslPath3D)) {
+        console.warn(`Character material WGSL missing: ${wgslPath3D}`);
+        return null;
+      }
+      wgslSource = readFileSync(wgslPath3D, 'utf8');
+      wgslPath = wgslPath3D;
     }
-
-    const wgslSource = readFileSync(wgslPath, 'utf8');
 
     const hashInput = `${materialName}:${jsonData.status}:${wgslSource}`;
     const hash = createHash('sha256').update(hashInput).digest('hex').slice(0, 16);
@@ -75,11 +89,13 @@ export function loadCharacterMaterial(materialName, shadersDir = CHARACTER_SHADE
       normal: jsonData.normal || null,
       shaderSource: wgslSource,
       shaderHash: hash,
+      shaderVersion: shaderVersion,
       provenance: {
-        source: `character/shaders/${wgslFileName}`,
+        source: `character/shaders/${wgslFileName4D}`,
         json_source: `character/shaders/${materialName}.json`,
         hash,
-        status: 'partial',
+        status: shaderVersion === '4d' ? 'integrated' : 'partial',
+        version: shaderVersion,
       },
     };
   } catch (error) {
