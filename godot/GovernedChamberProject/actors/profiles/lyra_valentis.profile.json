@@ -1,0 +1,18 @@
+{
+  "profile_id": "lyra-valentis",
+  "actor_name": "LYRA",
+  "actor_type": "human",
+  "base_color": [0.36, 0.42, 0.75],
+  "move_speed": 2.0,
+  "brain_personality": "wandering starcaller; curious astromancer; protective of the weak; seeks Unfading Point",
+  "voice_hint": "nova",
+  "gestures": ["raise_staff", "trace_constellation", "read_astrolabe", "star_glow", "navigate_void"],
+  "emotions": ["neutral", "focused", "curious", "surprised", "sad", "determined"],
+  "palette": {
+    "key": "#3949ab",
+    "rim": "#7e57c2",
+    "accent": "#ffd54f"
+  },
+  "status": "skeleton",
+  "full_spec": "../../../character/specs/lyra-valentis.starcaller.v1.json"
+}

@@ -1,0 +1,18 @@
+{
+  "profile_id": "drake-korvan",
+  "actor_name": "DRAKE",
+  "actor_type": "human",
+  "base_color": [0.38, 0.49, 0.55],
+  "move_speed": 2.4,
+  "brain_personality": "independent smuggler scout; paranoid opportunist; low trust; combat-first; DO NOT TRUST",
+  "voice_hint": "onyx",
+  "gestures": ["raise_rifle", "draw_knife", "scan_alley", "hand_on_holster", "crouch_cover"],
+  "emotions": ["neutral", "angry", "skeptical", "smirk", "tired", "focused"],
+  "palette": {
+    "key": "#607d8b",
+    "rim": "#00bcd4",
+    "accent": "#b71c1c"
+  },
+  "status": "skeleton",
+  "full_spec": "../../../character/specs/drake-korvan.scout.v1.json"
+}

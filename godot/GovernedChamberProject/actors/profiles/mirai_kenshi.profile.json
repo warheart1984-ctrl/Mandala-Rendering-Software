@@ -1,0 +1,18 @@
+{
+  "profile_id": "mirai-kenshi",
+  "actor_name": "MIRAI",
+  "actor_type": "human",
+  "base_color": [0.31, 0.76, 0.97],
+  "move_speed": 2.2,
+  "brain_personality": "precise cyber-samurai; honor-bound; anti-corporate",
+  "voice_hint": "shimmer",
+  "gestures": ["draw_katana", "sheath_katana", "salute", "scan_horizon", "rain_stance"],
+  "emotions": ["neutral", "focused", "determined", "battle_ready", "calm"],
+  "palette": {
+    "key": "#6ec6ff",
+    "rim": "#e040fb",
+    "accent": "#00e5ff"
+  },
+  "status": "skeleton",
+  "full_spec": "../../../character/specs/mirai-kenshi.swordsman.v1.json"
+}

@@ -1,0 +1,33 @@
+{
+  "episode_id": "ep_002_neon_tokyo",
+  "title": "Neon Tokyo — Rain Alley",
+  "world_id": "neo_tokyo_alley_01",
+  "reference_profile": "res://actors/profiles/mirai_kenshi.profile.json",
+  "status": "skeleton",
+  "notes": "Uses capsule stand-ins. Rename chamber actors A→MIRAI, B→CORPVOICE or add instances before play.",
+  "scenes": [
+    {
+      "scene_id": "rain_alley_standoff",
+      "scene_path": "res://scenes/simulation_chamber.tscn",
+      "description": "Mirai enters rain alley, corporate PA warns, she draws stance and exits toward towers.",
+      "beats": [
+        { "time": 0.5,  "actor": "MIRAI",       "action": "enter",       "data": { "pos": [-3.2, 0, 0] } },
+        { "time": 0.7,  "actor": "CORPVOICE",   "action": "enter",       "data": { "pos": [3.0, 0, 0] } },
+        { "time": 2.5,  "actor": "MIRAI",       "action": "set_emotion", "data": { "emotion": "focused", "intensity": 0.8 } },
+        { "time": 3.0,  "actor": "MIRAI",       "action": "say",         "data": { "line": "The towers still breathe. I hear their contracts in the rain." } },
+        { "time": 5.5,  "actor": "CORPVOICE",   "action": "say",         "data": { "line": "Unauthorized presence detected. Stand down." } },
+        { "time": 7.0,  "actor": "MIRAI",       "action": "face",        "data": { "target": "CORPVOICE" } },
+        { "time": 7.2,  "actor": "MIRAI",       "action": "gesture",     "data": { "name": "draw_katana" } },
+        { "time": 8.0,  "actor": "MIRAI",       "action": "say_prompt",  "data": { "prompt": "warn the corporate voice that freedom is not negotiable, one short line" } },
+        { "time": 10.5, "actor": "CAMERA_MAIN", "action": "rail",        "data": { "path": "", "speed": 1.4 } },
+        { "time": 11.0, "actor": "MIRAI",       "action": "set_emotion", "data": { "emotion": "determined", "intensity": 0.9 } },
+        { "time": 12.0, "actor": "MIRAI",       "action": "move_to",     "data": { "pos": [0.5, 0, 1.2] } },
+        { "time": 14.0, "actor": "CORPVOICE",   "action": "say",         "data": { "line": "Compliance is safety. Return to your sector." } },
+        { "time": 15.5, "actor": "MIRAI",       "action": "exit",        "data": { "pos": [6.0, 0, -3.0] } },
+        { "time": 16.0, "actor": "CORPVOICE",   "action": "exit",        "data": { "pos": [6.5, 0, -3.5] } },
+        { "time": 18.0, "actor": "SYSTEM",      "action": "transition",  "data": { "type": "fade_out", "duration": 1.2 } },
+        { "time": 19.5, "actor": "SYSTEM",      "action": "transition",  "data": { "type": "fade_in", "duration": 1.0 } }
+      ]
+    }
+  ]
+}
