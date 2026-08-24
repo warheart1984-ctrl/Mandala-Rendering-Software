@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ChamberActorProfile",
+  "status": "skeleton",
+  "id": "cyber-ronin",
+  "project": "CYBER RONIN",
+  "name": "Cyber Ronin",
+  "name_en": "Wanderer / Protector",
+  "name_ja": "サイバー浪人",
+  "codename": "RONIN",
+  "tagline": "HONOR. SILENCE. PRECISION.",
+  "tagline_ja": "名誉は刃に宿る",
+  "reference_art": "tmp/cyber-ronin/assets/concept/cyber-ronin-sheet.png",
+
+  "identity": {
+    "age": 31,
+    "height_cm": 182,
+    "build": "lean warrior",
+    "role": "Wanderer / Protector",
+    "affiliation": "Independent (neo-feudal streets)",
+    "alignment": "Lawful Neutral",
+    "style": "Neo Feudal / Cyberpunk",
+    "origin": "Neon districts under Bushido 2077 code",
+    "languages": ["Common", "Street Cant", "Old Court Japanese"]
+  },
+
+  "appearance": {
+    "hair": "long black, tied back, silver streak",
+    "eyes": "amber",
+    "skin": "pale under neon",
+    "scars": ["scar across right eye"],
+    "implants": ["right arm black mechanical/cybernetic prosthetic"],
+    "coat_mark": "侍魂",
+    "coat_mark_en": "Samurai Soul",
+    "silhouette": "heavy dark high-collared coat, red circular back emblem, cyber-right arm, katana harness"
+  },
+
+  "personality": "Disciplined, calm, resolute lone wolf. Speaks rarely; when he does, lines are short and edged. Honor lives in the blade. Silence is a weapon. Precision ends fights before they begin.",
+  "voice": "onyx",
+  "color": "#1a237e",
+  "avatarRadius": 0.44,
+
+  "weapon": {
+    "id": "rune-katana",
+    "name": "Rune Katana",
+    "blade": "cyan/teal glowing edge with inscribed runes",
+    "hilt": "dark wrapped grip, silver fittings",
+    "sheath": "black lacquer with neon filigree"
+  },
+
+  "costume_breakdown": {
+    "coat": "heavy dark high-collar, rain-shedding nano weave",
+    "back_emblem": "red circular 侍魂 (Samurai Soul)",
+    "right_arm": "black mechanical cybernetic prosthetic",
+    "harness": "katana mag-lock shoulder strap",
+    "boots": "reinforced sole, wet-street grip"
+  },
+
+  "expressions": ["neutral", "calm", "resolute", "focused", "battle_ready", "silent_watch"],
+  "gestures": ["draw_katana", "sheath_katana", "bow_silent", "scan_street", "rain_stance", "prosthetic_grip"],
+
+  "personality_metrics": {
+    "discipline": 0.96,
+    "silence": 0.92,
+    "precision": 0.94,
+    "empathy": 0.42,
+    "loyalty": 0.78,
+    "traits": {
+      "lone_wolf": 0.9,
+      "honor_bound": 0.95,
+      "calm_under_fire": 0.93,
+      "protector": 0.86,
+      "uncompromising": 0.81
+    }
+  },
+
+  "behavioral_tendencies": {
+    "situational_awareness": 0.93,
+    "combat_instinct": 0.91,
+    "negotiation": 0.28,
+    "silence_priority": 0.94
+  },
+
+  "simulation_variables": {
+    "trust_level": 0.35,
+    "goal_priority": "Protect / Honor / Walk on",
+    "decision_style": "Disciplined / Precise",
+    "flags": ["LONE_WOLF", "HONOR_BOUND", "PRECISION"]
+  },
+
+  "core_drives": [
+    "Keep the blade clean of needless blood",
+    "Honor the code when the city forgets it",
+    "Protect those who cannot draw steel",
+    "Walk alone without becoming lost"
+  ],
+
+  "fears": [
+    "Dishonor",
+    "Becoming a corporate blade",
+    "Losing the silence that keeps precision",
+    "The prosthetic failing mid-cut"
+  ],
+
+  "signature_quote": "HONOR. SILENCE. PRECISION.",
+  "signature_quote_ja": "名誉は刃に宿る",
+
+  "lighting_palette": {
+    "key": { "name": "Neon Teal", "hex": "#00e5ff" },
+    "rim": { "name": "Magenta", "hex": "#e040fb" },
+    "fill": { "name": "Dark Navy", "hex": "#1a237e" },
+    "accent": { "name": "Bright Red", "hex": "#ff1744" },
+    "secondary": { "name": "Tan", "hex": "#bcaaa4" },
+    "materials": ["wet_asphalt", "matte_coat", "cybernetic_metal", "energy_glow", "neon_sign"]
+  },
+
+  "environment": {
+    "id": "cyber-ronin-street",
+    "motifs": ["Hotel Mirai", "Bushido 2077 signs", "rainy neon city night", "wet reflections", "high-contrast alley"],
+    "weather": "rain-slick neon reflections, steam vents"
+  },
+
+  "camera_orbits": [
+    { "id": "wide_establishing", "note": "Rainy neo-feudal street + Hotel Mirai / Bushido 2077 signs" },
+    { "id": "over_shoulder", "note": "OTS toward rival or patron" },
+    { "id": "profile_close", "note": "Amber eye + scar + silver streak" },
+    { "id": "front_three_quarter", "note": "Front 3/4 coat + emblem silhouette" },
+    { "id": "low_angle_hero", "note": "Low Angle Hero, coat flow, teal blade glow" },
+    { "id": "wide_reveal", "note": "Walk into neon rain, city scale" }
+  ],
+
+  "godot": {
+    "actor_name": "RONIN",
+    "actor_type": "human",
+    "scene_path": "res://scenes/simulation_chamber.tscn",
+    "base_color": [0.1, 0.14, 0.49],
+    "move_speed": 2.1,
+    "brain_personality": "cyber ronin wanderer-protector; honor silence precision; lone wolf; neo-feudal code",
+    "emotion_defaults": { "idle": "calm", "combat": "resolute", "dialogue": "silent_watch", "threat": "focused" },
+    "episode_id": "ep_006_cyber_ronin"
+  },
+
+  "simulation_chamber": {
+    "scene_card_id": "scene-cyber-ronin-street",
+    "emissive_accent": [0.0, 0.9, 1.0],
+    "solver": "mandala-proto"
+  },
+
+  "provenance": {
+    "source": "user concept sheet CYBER RONIN — HONOR. SILENCE. PRECISION. / 名誉は刃に宿る",
+    "reference_file": "image-5676e44b-4076-4a11-a51f-f9aa896d8598.png",
+    "created": "2026-08-23",
+    "implementation": "capsule stand-in until rigged mesh; honest skeleton"
+  }
+}
