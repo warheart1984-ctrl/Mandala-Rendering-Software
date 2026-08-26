@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0",
+  "id": "scene-neon-shrine-district",
+  "kind": "SceneSpecification",
+  "name": "Neon Shrine — Torii District",
+  "description": "Shin-Kei jack-in under rain-slick torii gates. Netrunner vs shrine-system daemon. Stand-in chamber geometry; navy/magenta/cyan palette from concept sheet.",
+
+  "actors": [
+    {
+      "id": "shinkei",
+      "name": "Shin-Kei",
+      "personality": "Intelligent, enigmatic, calculating. Calm under pressure. Short ritual-code speech.",
+      "color": "#e040fb",
+      "avatarRadius": 0.42,
+      "voice": "shimmer",
+      "beats": [
+        { "time": 0.0, "action": "appear", "position": [-3.0, 0, 0.2, 0], "emissive": [0.5, 0.1, 0.7], "scale": 0.1 },
+        { "time": 0.8, "action": "glow", "emissive": [0.88, 0.25, 0.98], "scale": 0.42 },
+        { "time": 2.0, "action": "speak", "speech": "Code. Ritual. Control. The torii still holds the gate.", "emissive": [0.95, 0.3, 1.0], "scale": 0.45 },
+        { "time": 4.5, "action": "move", "position": [-0.8, 0, 0.4, 0], "emissive": [0.8, 0.2, 0.95], "scale": 0.45 },
+        { "time": 6.0, "action": "speak", "speech": "Sanctuary Connection open. I rewrite you as rite, not noise.", "emissive": [1.0, 0.35, 1.0], "scale": 0.48 },
+        { "time": 8.5, "action": "listen", "emissive": [0.6, 0.15, 0.8], "scale": 0.42 },
+        { "time": 10.0, "action": "speak", "speech": "Data Tantō charged. One cut severs the daemon thread.", "emissive": [0.9, 0.28, 1.0], "scale": 0.46 },
+        { "time": 12.5, "action": "speak", "speech": "Sacred code. Alter the future — or leave the lattice.", "emissive": [0.85, 0.25, 0.95], "scale": 0.45 },
+        { "time": 15.0, "action": "exit", "position": [4.0, 0, -2.0, 0], "emissive": [0.3, 0.05, 0.4], "scale": 0.1 }
+      ]
+    },
+    {
+      "id": "torii",
+      "name": "Torii Daemon",
+      "personality": "Cold shrine-system daemon. Speaks in protocol warnings and sacred-error codes.",
+      "color": "#00e5ff",
+      "avatarRadius": 0.38,
+      "voice": "alloy",
+      "beats": [
+        { "time": 1.2, "action": "appear", "position": [2.8, 0, 0.5, 0], "emissive": [0.0, 0.6, 0.8], "scale": 0.1 },
+        { "time": 2.0, "action": "glow", "emissive": [0.0, 0.9, 1.0], "scale": 0.38 },
+        { "time": 5.5, "action": "speak", "speech": "INTRUSION. Shrine-net integrity at risk. Identify.", "emissive": [0.1, 0.95, 1.0], "scale": 0.4 },
+        { "time": 9.0, "action": "speak", "speech": "Unauthorized rite. Disconnect or be dissolved.", "emissive": [0.05, 0.85, 0.95], "scale": 0.38 },
+        { "time": 13.5, "action": "speak", "speech": "Gate holds. Daemon yields — for now.", "emissive": [0.0, 0.7, 0.85], "scale": 0.36 },
+        { "time": 16.0, "action": "exit", "position": [4.5, 0, -2.5, 0], "emissive": [0.0, 0.3, 0.4], "scale": 0.1 }
+      ]
+    }
+  ],
+
+  "entities": [],
+
+  "materials": [
+    { "id": "wet-shrine-stone", "color": "#1a1f2e", "brdf": "lambertian", "roughness": 0.88 },
+    { "id": "magenta-rim", "color": "#e040fb", "brdf": "lambertian", "roughness": 0.35 },
+    { "id": "cyan-holo", "color": "#00e5ff", "brdf": "lambertian", "roughness": 0.4 },
+    { "id": "torii-red", "color": "#b71c1c", "brdf": "lambertian", "roughness": 0.55 },
+    { "id": "deep-navy", "color": "#1a237e", "brdf": "lambertian", "roughness": 0.7 }
+  ],
+
+  "camera": {
+    "position4d": [0, 2.4, 6.5, 0],
+    "target4d": [0, 1.0, 0, 0],
+    "fovX": 55,
+    "fovY": 55,
+    "fovZ": 8,
+    "fovW": 8
+  },
+
+  "lights": [
+    { "center": [-3, 3.5, 1, 0], "radius": 0.55, "color": [0.88, 0.25, 0.98], "intensity": 0.9 },
+    { "center": [3, 4, -1, 0], "radius": 0.5, "color": [0.0, 0.9, 1.0], "intensity": 0.75 },
+    { "center": [0, 2.5, 3, 0], "radius": 0.45, "color": [0.1, 0.14, 0.49], "intensity": 0.55 }
+  ],
+
+  "output": { "width": 512, "height": 512, "samples": 4, "maxDepth": 3 },
+
+  "metadata": {
+    "duration": 17,
+    "title": "Neon Shrine — Torii District",
+    "subtitle": "Shin-Kei / CODE. RITUAL. CONTROL.",
+    "animation": { "type": "actor-driven" },
+    "reference": "character/specs/shin-kei.neon-shrine-hacker.v1.json"
+  },
+
+  "shot": {
+    "keyframes": [
+      { "time": 0, "position": [0, 2.4, 6.5], "target": [0, 1.0, 0], "fov": 55 },
+      { "time": 6, "position": [-1.5, 2.1, 5.0], "target": [-0.5, 1.0, 0], "fov": 50 },
+      { "time": 12, "position": [1.5, 2.5, 6.0], "target": [0.5, 1.0, -0.5], "fov": 56 }
+    ]
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ChamberActorProfile",
+  "status": "skeleton",
+  "id": "lyra-valentis",
+  "project": "CLARION EXPANSE",
+  "name": "Lyra Valentis",
+  "name_en": "Wandering Starcaller",
+  "codename": "STARCALLER",
+  "reference_art": "tmp/lyra-valentis/assets/concept/lyra-valentis-starcaller-sheet.png",
+
+  "identity": {
+    "age": 23,
+    "height_cm": 168,
+    "weight_kg": 54,
+    "role": "Astromancer / Navigator",
+    "affiliation": "Clarion Expanse (Astral Nomads)",
+    "alignment": "Neutral Good",
+    "origin": "Ember Conjunction survivor; raised by stargazers",
+    "languages": ["Common", "Celestial Script", "Old Elar", "Star Runes"]
+  },
+
+  "appearance": {
+    "hair": "midnight black with indigo tips, long wavy",
+    "eyes": "violet",
+    "skin": "pale",
+    "birthmark": "Star Map (left shoulder)",
+    "silhouette": "star-patterned dress-cloak, gold rune trim, grav-boots, orrery staff"
+  },
+
+  "personality": "Wonder-seeker with high curiosity and empathy. Idealistic but stubborn when protecting the weak. Speaks in poetic star-metaphors; calm until magic or allies are threatened.",
+  "voice": "nova",
+  "color": "#5c6bc0",
+  "avatarRadius": 0.42,
+
+  "weapon": {
+    "id": "starcaller-staff",
+    "name": "Starcaller Staff",
+    "head": "celestial orrery with rotating rings",
+    "core": "Focus Core (gold/white glow)",
+    "shaft": "silver-gold alloy with engraved star runes"
+  },
+
+  "gear": {
+    "astrolabe_compass": "handheld gold navigation device",
+    "grav_boots": "low-gravity maneuvering, fall-damage reduction",
+    "utility_pouch": "rune inks, starmetal fragments, scroll tools",
+    "hidden_dagger": "starmetal blade (concealed)"
+  },
+
+  "expressions": ["neutral", "focused", "curious", "surprised", "sad", "determined"],
+  "gestures": ["raise_staff", "trace_constellation", "read_astrolabe", "star_glow", "navigate_void"],
+
+  "personality_metrics": {
+    "curiosity": 0.92,
+    "determination": 0.81,
+    "empathy": 0.78,
+    "calm": 0.70,
+    "cautiousness": 0.45,
+    "impulsivity": 0.30,
+    "traits": {
+      "wonder_seeker": 0.92,
+      "idealistic": 0.88,
+      "protective": 0.81,
+      "independent": 0.78,
+      "empathetic": 0.73,
+      "stubborn": 0.61,
+      "lonely": 0.47
+    }
+  },
+
+  "core_drives": [
+    "Locate the Unfading Point",
+    "Understand the language of stars",
+    "Protect those who cannot protect themselves",
+    "Prove survival was not an accident"
+  ],
+
+  "fears": [
+    "Losing control of magic",
+    "Failing those who rely on her",
+    "The darkness between stars",
+    "Being forgotten",
+    "Never finding purpose"
+  ],
+
+  "magic": {
+    "focus": "Celestial energy — read fates, navigate void routes, weave protective constellations",
+    "affinities": ["Astral", "Aether", "Gravity", "Light"],
+    "knowledge": {
+      "astral_navigation": 0.92,
+      "star_runes": 0.88,
+      "ancient_history": 0.66,
+      "alchemy": 0.54,
+      "combat_tactics": 0.47,
+      "politics": 0.28
+    }
+  },
+
+  "relationships": {
+    "eldra": { "role": "mentor", "trust": 0.82 },
+    "orin": { "role": "ally", "trust": 0.71 },
+    "starborn_clan": { "role": "clan", "trust": 0.65 },
+    "kael": { "role": "rival", "trust": -0.35 },
+    "unknown_father": { "role": "unknown", "trust": null }
+  },
+
+  "lighting_palette": {
+    "key": { "name": "Deep Indigo", "hex": "#3949ab" },
+    "rim": { "name": "Nebula Violet", "hex": "#7e57c2" },
+    "fill": { "name": "Star White", "hex": "#eceff1" },
+    "accent": { "name": "Gold Glow", "hex": "#ffd54f" },
+    "materials": ["matte", "metallic", "celestial_glow"]
+  },
+
+  "environment": {
+    "id": "clarion-observatory",
+    "motifs": ["floating stone platform", "gold floor inlay", "crystal spires", "nebula sky", "star-chart holograms"],
+    "atmosphere": "open astral dome under purple-blue nebula"
+  },
+
+  "camera_orbits": [
+    { "id": "wide_establishing", "note": "Observatory platform + nebula dome" },
+    { "id": "over_shoulder", "note": "Lyra reading astrolabe toward horizon" },
+    { "id": "low_angle_hero", "note": "Staff raised against star field" },
+    { "id": "profile_close", "note": "Violet eyes + birthmark detail" },
+    { "id": "high_angle", "note": "Gold inlay floor pattern from above" },
+    { "id": "dynamic_tilt", "note": "Orrery staff rings in motion" }
+  ],
+
+  "godot": {
+    "actor_name": "LYRA",
+    "actor_type": "human",
+    "scene_path": "res://scenes/simulation_chamber.tscn",
+    "base_color": [0.36, 0.42, 0.75],
+    "move_speed": 2.0,
+    "brain_personality": "wandering starcaller; curious astromancer; protective of the weak; seeks Unfading Point",
+    "emotion_defaults": { "idle": "neutral", "magic": "focused", "dialogue": "curious", "resolve": "determined" },
+    "episode_id": "ep_003_lyra_valentis"
+  },
+
+  "simulation_chamber": {
+    "scene_card_id": "scene-clarion-observatory",
+    "emissive_accent": [1.0, 0.84, 0.31],
+    "solver": "mandala-proto"
+  },
+
+  "provenance": {
+    "source": "user concept sheet SC-7A19 — Wandering Starcaller / Lyra Valentis",
+    "reference_file": "image-82c7bff7-c442-4de9-8107-d17f60a2776e.png",
+    "created": "2026-08-23",
+    "implementation": "capsule stand-in until rigged mesh; honest skeleton"
+  }
+}

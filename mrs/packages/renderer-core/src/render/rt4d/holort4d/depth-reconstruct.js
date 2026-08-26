@@ -163,6 +163,7 @@ export function depthCorrelation(a, b) {
   const varA = n * sumA2 - sumA * sumA;
   const varB = n * sumB2 - sumB * sumB;
   const den = Math.sqrt(Math.max(0, varA) * Math.max(0, varB));
+  if (Math.abs(num - den) < 1e-12) return { r: 1, n };
   return { r: den > 0 ? num / den : 0, n };
 }
 

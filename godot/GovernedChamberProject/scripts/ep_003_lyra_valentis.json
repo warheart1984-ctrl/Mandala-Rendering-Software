@@ -1,0 +1,38 @@
+{
+  "episode_id": "ep_003_lyra_valentis",
+  "title": "Clarion Observatory — Star Map Vigil",
+  "world_id": "clarion_observatory_01",
+  "reference_profile": "res://actors/profiles/lyra_valentis.profile.json",
+  "status": "skeleton",
+  "notes": "Uses capsule stand-ins. Rename chamber actors A→LYRA, B→ORIN or add instances before play. Standalone episode — simulation_chamber.tscn not modified.",
+  "scenes": [
+    {
+      "scene_id": "observatory_star_vigil",
+      "scene_path": "res://scenes/simulation_chamber.tscn",
+      "description": "Lyra enters the Clarion Observatory, reads the star field with Orin, traces a constellation route toward the Unfading Point, and exits into the void lane.",
+      "beats": [
+        { "time": 0.5,  "actor": "LYRA",        "action": "enter",       "data": { "pos": [-2.8, 0, 0.4] } },
+        { "time": 0.7,  "actor": "ORIN",        "action": "enter",       "data": { "pos": [2.6, 0, 0.6] } },
+        { "time": 2.0,  "actor": "LYRA",        "action": "set_emotion", "data": { "emotion": "curious", "intensity": 0.85 } },
+        { "time": 2.5,  "actor": "LYRA",        "action": "say",         "data": { "line": "The Clarion sky remembers every path we have ever lost." } },
+        { "time": 4.5,  "actor": "LYRA",        "action": "gesture",     "data": { "name": "read_astrolabe" } },
+        { "time": 5.5,  "actor": "LYRA",        "action": "say",         "data": { "line": "Orin — the Unfading Point flickers again. Can you triangulate it?" } },
+        { "time": 7.0,  "actor": "ORIN",        "action": "face",        "data": { "target": "LYRA" } },
+        { "time": 7.5,  "actor": "ORIN",        "action": "say",         "data": { "line": "Triangulation holds — vector seven-nine, through the crystal gap." } },
+        { "time": 9.0,  "actor": "LYRA",        "action": "face",        "data": { "target": "ORIN" } },
+        { "time": 9.5,  "actor": "LYRA",        "action": "set_emotion", "data": { "emotion": "focused", "intensity": 0.8 } },
+        { "time": 10.0, "actor": "LYRA",        "action": "gesture",     "data": { "name": "raise_staff" } },
+        { "time": 10.5, "actor": "CAMERA_MAIN", "action": "rail",        "data": { "path": "", "speed": 1.2 } },
+        { "time": 11.0, "actor": "LYRA",        "action": "say_prompt",  "data": { "prompt": "promise Orin that no traveler will walk blind under her watch, one short poetic line" } },
+        { "time": 13.0, "actor": "ORIN",        "action": "say",         "data": { "line": "Grav-boots checked. I will keep the platform stable while you weave." } },
+        { "time": 14.0, "actor": "LYRA",        "action": "gesture",     "data": { "name": "trace_constellation" } },
+        { "time": 14.5, "actor": "LYRA",        "action": "set_emotion", "data": { "emotion": "determined", "intensity": 0.9 } },
+        { "time": 15.0, "actor": "LYRA",        "action": "say",         "data": { "line": "The stars do not lie. We only forget how to listen." } },
+        { "time": 16.5, "actor": "LYRA",        "action": "move_to",     "data": { "pos": [0.2, 0, 1.0] } },
+        { "time": 17.5, "actor": "LYRA",        "action": "exit",        "data": { "pos": [5.5, 0, -2.5] } },
+        { "time": 18.0, "actor": "ORIN",        "action": "exit",        "data": { "pos": [6.0, 0, -3.0] } },
+        { "time": 19.5, "actor": "SYSTEM",      "action": "transition",  "data": { "type": "fade_out", "duration": 1.2 } }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "episode_id": "ep_005_neon_shrine_hacker",
+  "title": "Neon Shrine — Torii Gate Intrusion",
+  "world_id": "neon_shrine_district_01",
+  "reference_profile": "res://actors/profiles/shin_kei.profile.json",
+  "status": "skeleton",
+  "notes": "Uses capsule stand-ins. Rename chamber actors A→SHINKEI, B→TORII or add instances before play. Standalone episode — simulation_chamber.tscn not modified.",
+  "scenes": [
+    {
+      "scene_id": "torii_gate_intrusion",
+      "scene_path": "res://scenes/simulation_chamber.tscn",
+      "description": "Shin-Kei enters the rainy neon shrine district, jack-in against the Torii Daemon under red gates, draws Data Tantō, rewrites the rite, and dissolves into the network.",
+      "beats": [
+        { "time": 0.5,  "actor": "SHINKEI",     "action": "enter",       "data": { "pos": [-3.0, 0, 0.2] } },
+        { "time": 0.7,  "actor": "TORII",       "action": "enter",       "data": { "pos": [2.8, 0, 0.5] } },
+        { "time": 2.0,  "actor": "SHINKEI",     "action": "set_emotion", "data": { "emotion": "calculating", "intensity": 0.85 } },
+        { "time": 2.5,  "actor": "SHINKEI",     "action": "say",         "data": { "line": "Code. Ritual. Control. The torii still holds the gate." } },
+        { "time": 4.0,  "actor": "SHINKEI",     "action": "gesture",     "data": { "name": "scan_network" } },
+        { "time": 5.0,  "actor": "TORII",       "action": "say",         "data": { "line": "INTRUSION. Shrine-net integrity at risk. Identify." } },
+        { "time": 6.5,  "actor": "SHINKEI",     "action": "face",        "data": { "target": "TORII" } },
+        { "time": 7.0,  "actor": "SHINKEI",     "action": "gesture",     "data": { "name": "jack_in" } },
+        { "time": 7.5,  "actor": "SHINKEI",     "action": "say",         "data": { "line": "Sanctuary Connection open. I rewrite you as rite, not noise." } },
+        { "time": 9.0,  "actor": "TORII",       "action": "face",        "data": { "target": "SHINKEI" } },
+        { "time": 9.5,  "actor": "TORII",       "action": "say",         "data": { "line": "Unauthorized rite. Disconnect or be dissolved." } },
+        { "time": 10.5, "actor": "SHINKEI",     "action": "set_emotion", "data": { "emotion": "calm", "intensity": 0.9 } },
+        { "time": 11.0, "actor": "SHINKEI",     "action": "gesture",     "data": { "name": "draw_data_tanto" } },
+        { "time": 11.5, "actor": "CAMERA_MAIN", "action": "rail",        "data": { "path": "", "speed": 1.3 } },
+        { "time": 12.0, "actor": "SHINKEI",     "action": "say_prompt",  "data": { "prompt": "warn the shrine daemon that sacred code rewrites hostile threads, one short calculating line" } },
+        { "time": 13.5, "actor": "SHINKEI",     "action": "gesture",     "data": { "name": "trace_torii_sigil" } },
+        { "time": 14.0, "actor": "TORII",       "action": "say",         "data": { "line": "Gate holds. Daemon yields — for now." } },
+        { "time": 15.0, "actor": "SHINKEI",     "action": "set_emotion", "data": { "emotion": "focused", "intensity": 0.88 } },
+        { "time": 15.5, "actor": "SHINKEI",     "action": "say",         "data": { "line": "Sacred code. Alter the future — or leave the lattice." } },
+        { "time": 16.5, "actor": "SHINKEI",     "action": "move_to",     "data": { "pos": [-0.3, 0, 0.8] } },
+        { "time": 17.5, "actor": "SHINKEI",     "action": "gesture",     "data": { "name": "ritual_stance" } },
+        { "time": 18.0, "actor": "SHINKEI",     "action": "exit",        "data": { "pos": [5.0, 0, -2.5] } },
+        { "time": 18.5, "actor": "TORII",       "action": "exit",        "data": { "pos": [5.5, 0, -3.0] } },
+        { "time": 20.0, "actor": "SYSTEM",      "action": "transition",  "data": { "type": "fade_out", "duration": 1.2 } }
+      ]
+    }
+  ]
+}

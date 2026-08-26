@@ -273,3 +273,32 @@ export {
   replayTapeFromDisk,
   recordStudioBeat,
 } from "./ChamberStudioBeat.js";
+export {
+  RENDER_VIEW_STATUS,
+  DEFAULT_ANIME_PROMPT,
+  DEFAULT_ANIME_NEGATIVE,
+  ANIME_VIEW_CONFIG,
+  applyToonLUT,
+  amplitudeToComplexField,
+  loadChamberFrame,
+  rigStateFromChamberActors,
+  createRenderView,
+  callAnimeSdImg2img,
+  renderTurboMapsFromInput,
+} from "./RenderView.js";
+export {
+  SPATIAL_TOKEN_SCHEME,
+  SPATIAL_TOKEN_STATUS,
+  createGridCell,
+  createSpatialToken,
+  clampByte,
+  canonicalTokenJson,
+  tokenizeFromDepthGrid,
+  hashSpatialToken,
+  faceRigFromLandmarkXYZ,
+  FACE_OBJECT_STATUS,
+  packFlow,
+  MOTION_TOKEN_STATUS,
+  grayscalePseudoDepth,
+  IMAGE_PSEUDO_DEPTH_STATUS,
+} from "./spatial-tokens/index.js";

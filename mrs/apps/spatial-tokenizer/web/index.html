@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HoloRT4D — Spatial Tokens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1814;
+      --paper: #e8e2d6;
+      --mist: #c5d0c8;
+      --accent: #2f5d50;
+      --accent-ink: #f3efe6;
+      --line: rgba(26, 24, 20, 0.14);
+      --depth: #7a8f9a;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      font-family: "Source Sans 3", Georgia, serif;
+      background:
+        radial-gradient(120% 80% at 70% 0%, rgba(122, 143, 154, 0.35), transparent 55%),
+        radial-gradient(90% 70% at 10% 90%, rgba(47, 93, 80, 0.18), transparent 50%),
+        linear-gradient(165deg, #dfe6df 0%, var(--paper) 42%, #d2cbb8 100%);
+    }
+    a { color: var(--accent); }
+    .wrap { width: min(1120px, 92vw); margin: 0 auto; }
+    /* One composition hero — brand first, full-bleed visual plane */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      align-items: end;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero-visual {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(to top, rgba(232, 226, 214, 0.92) 0%, rgba(232, 226, 214, 0.15) 45%, transparent 70%),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0,
+          transparent 47px,
+          rgba(26, 24, 20, 0.05) 47px,
+          rgba(26, 24, 20, 0.05) 48px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          transparent 0,
+          transparent 47px,
+          rgba(26, 24, 20, 0.05) 47px,
+          rgba(26, 24, 20, 0.05) 48px
+        ),
+        radial-gradient(ellipse 70% 55% at 62% 38%, rgba(47, 93, 80, 0.45), transparent 62%),
+        radial-gradient(circle at 28% 42%, rgba(122, 143, 154, 0.55), transparent 42%);
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+    @keyframes drift {
+      from { transform: scale(1) translate(0, 0); }
+      to { transform: scale(1.04) translate(-1.5%, 1%); }
+    }
+    .brand {
+      font-family: Fraunces, "Times New Roman", serif;
+      font-weight: 700;
+      font-size: clamp(2.8rem, 8vw, 5.5rem);
+      letter-spacing: -0.03em;
+      line-height: 0.95;
+      margin: 0 0 0.35em;
+      animation: rise 0.9s ease-out both;
+    }
+    .headline {
+      font-family: Fraunces, serif;
+      font-weight: 500;
+      font-size: clamp(1.35rem, 3.2vw, 2rem);
+      max-width: 18ch;
+      margin: 0 0 0.5em;
+      animation: rise 1s 0.1s ease-out both;
+    }
+    .lede {
+      max-width: 36ch;
+      font-size: 1.1rem;
+      line-height: 1.45;
+      margin: 0 0 1.4em;
+      opacity: 0.9;
+      animation: rise 1s 0.2s ease-out both;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      margin-bottom: 4.5rem;
+      animation: rise 1s 0.28s ease-out both;
+    }
+    .cta {
+      display: inline-block;
+      padding: 0.7rem 1.25rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 600;
+      background: var(--accent);
+      color: var(--accent-ink);
+      border: 1px solid transparent;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+    .cta:hover { transform: translateY(-2px); background: #254a40; }
+    .cta-ghost {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    section {
+      padding: 4.5rem 0;
+      border-top: 1px solid var(--line);
+    }
+    section h2 {
+      font-family: Fraunces, serif;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      margin: 0 0 0.4em;
+    }
+    section p.sub {
+      margin: 0 0 1.5em;
+      max-width: 48ch;
+      opacity: 0.88;
+    }
+    .steps {
+      display: grid;
+      gap: 1.25rem;
+      counter-reset: step;
+    }
+    .steps li {
+      list-style: none;
+      padding-left: 2.5rem;
+      position: relative;
+      max-width: 52ch;
+      line-height: 1.45;
+    }
+    .steps li::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-family: Fraunces, serif;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .price {
+      font-family: Fraunces, serif;
+      font-size: 3rem;
+      margin: 0.2em 0 0.15em;
+    }
+    .price span { font-size: 1rem; font-family: "Source Sans 3", sans-serif; opacity: 0.75; }
+    .uses {
+      display: grid;
+      gap: 1rem 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    .uses h3 {
+      font-family: Fraunces, serif;
+      font-size: 1.15rem;
+      margin: 0 0 0.25em;
+    }
+    .uses p { margin: 0; opacity: 0.85; font-size: 0.98rem; }
+    footer {
+      padding: 2rem 0 3rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.92rem;
+      opacity: 0.8;
+    }
+    .status-note {
+      font-size: 0.9rem;
+      opacity: 0.75;
+      max-width: 56ch;
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-visual" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="brand">HoloRT4D</p>
+      <h1 class="headline">LLMs have a brain. Give them eyes.</h1>
+      <p class="lede">Spatial Tokens turn depth, curvature, and normals into a deterministic 16×16 grid LLMs can reason over.</p>
+      <div class="cta-row">
+        <a class="cta" href="../../../docs/spatial-tokens/API.md">Read the API</a>
+        <a class="cta cta-ghost" href="../../../docs/spatial-tokens/SDK.md">SDK &amp; pricing</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <h2>How it works</h2>
+      <p class="sub">One job: map a depth field into a hashed spatial token — not a chat wrapper.</p>
+      <ol class="steps">
+        <li>Feed chamber depth, opticalLength, or landmark-z (math path).</li>
+        <li>Bin into an 8×8 or 16×16 grid with curvature and surface normals.</li>
+        <li>Hash canonical JSON — same depth bytes, same token hash.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Pricing</h2>
+      <p class="sub">Documented stub rate for the product brief. Not a live payment integration.</p>
+      <p class="price">$1 <span>per tokenize call (declared)</span></p>
+      <p class="status-note">Billing status: <strong>declared</strong>. Free local CLI for depth grids. Photo→metric depth without ML remains <strong>declared</strong>.</p>
+    </section>
+
+    <section>
+      <h2>Use cases</h2>
+      <p class="sub">Where a spatial prior beats guessing from pixels alone.</p>
+      <div class="uses">
+        <div>
+          <h3>Interior</h3>
+          <p>Layout and occlusion cues for scene assistants.</p>
+        </div>
+        <div>
+          <h3>Robotics</h3>
+          <p>Compact depth tokens for planners and VLM stacks.</p>
+        </div>
+        <div>
+          <h3>Dermatology</h3>
+          <p>Surface curvature tokens as structured notes (assistive).</p>
+        </div>
+        <div>
+          <h3>Fashion</h3>
+          <p>Garment / body silhouette priors for try-on briefs.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p>HoloRT4D Spatial Tokens · scheme <code>HoloRT4D-Spatial-V1</code> · scaffold status tags in <code>docs/spatial-tokens/README.md</code></p>
+  </footer>
+</body>
+</html>

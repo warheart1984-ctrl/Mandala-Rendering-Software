@@ -1,0 +1,18 @@
+{
+  "profile_id": "shin-kei",
+  "actor_name": "SHINKEI",
+  "actor_type": "human",
+  "base_color": [0.88, 0.25, 0.98],
+  "move_speed": 2.1,
+  "brain_personality": "neon shrine netrunner; ritual-precise; calculating; calm under pressure; code-as-rite",
+  "voice_hint": "shimmer",
+  "gestures": ["draw_data_tanto", "jack_in", "trace_torii_sigil", "scan_network", "ritual_stance"],
+  "emotions": ["neutral", "focused", "calculating", "calm", "intense"],
+  "palette": {
+    "key": "#1a237e",
+    "rim": "#e040fb",
+    "accent": "#00e5ff"
+  },
+  "status": "skeleton",
+  "full_spec": "../../../character/specs/shin-kei.neon-shrine-hacker.v1.json"
+}

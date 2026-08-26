@@ -1,0 +1,81 @@
+openapi: 3.0.3
+info:
+  title: HoloRT4D Spatial Tokenizer
+  version: 0.2.0
+  description: |
+    Spatial token + Holo-Scheme V1 API. Billing $1/call is **declared** (not charged in this stub).
+    Prefer depth grids from chamber / opticalLength / landmark-z (**enforced** math).
+    ChatGPT Actions: see `openapi-gpt-actions.yaml`.
+servers:
+  - url: http://localhost:8792
+paths:
+  /health:
+    get:
+      summary: Liveness
+      responses:
+        "200":
+          description: OK
+  /v1/credits/status:
+    get:
+      summary: Spatial Credit stub check
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Validity stub
+  /v1/credits/checkout:
+    post:
+      summary: $1 checkout URL stub (declared)
+      responses:
+        "200":
+          description: Placeholder Stripe link + demo credit
+  /v1/spatial-tokenize:
+    post:
+      operationId: HoloMath_Read
+      summary: Tokenize → Holo-Scheme V1 (primary) + Spatial-V1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenizeRequest"
+      responses:
+        "200":
+          description: Holo-Scheme V1 structuredContent + llm_summary
+        "402":
+          description: payment_required when REQUIRE_CREDIT=1
+        "400":
+          description: Bad request
+components:
+  schemas:
+    TokenizeRequest:
+      type: object
+      properties:
+        depth_f32:
+          type: array
+          items:
+            type: number
+        width:
+          type: integer
+        height:
+          type: integer
+        resolution:
+          type: integer
+          enum: [8, 16]
+          default: 8
+        image_base64:
+          type: string
+        image_url:
+          type: string
+        credit_token:
+          type: string
+        face_landmarks_xyz:
+          type: array
+          items:
+            type: number
+        brief_id:
+          type: string

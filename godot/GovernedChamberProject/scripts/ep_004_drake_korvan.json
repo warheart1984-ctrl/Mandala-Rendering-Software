@@ -1,0 +1,38 @@
+{
+  "episode_id": "ep_004_drake_korvan",
+  "title": "Outer Rim — Smuggler's Dock",
+  "world_id": "outer_rim_dock_01",
+  "reference_profile": "res://actors/profiles/drake_korvan.profile.json",
+  "status": "skeleton",
+  "notes": "Uses capsule stand-ins. Rename chamber actors A→DRAKE, B→FIXER or add instances before play. Standalone episode — simulation_chamber.tscn not modified.",
+  "scenes": [
+    {
+      "scene_id": "dock_negotiation_gone_wary",
+      "scene_path": "res://scenes/simulation_chamber.tscn",
+      "description": "Drake Korvan meets a syndicate fixer on a rain-slick outer-rim dock. Smuggler negotiation turns wary — hand on holster, rifle scan, skeptical exit.",
+      "beats": [
+        { "time": 0.5,  "actor": "DRAKE",        "action": "enter",       "data": { "pos": [-3.0, 0, 0.2] } },
+        { "time": 0.7,  "actor": "FIXER",        "action": "enter",       "data": { "pos": [2.8, 0, 0.5] } },
+        { "time": 2.0,  "actor": "DRAKE",        "action": "set_emotion", "data": { "emotion": "skeptical", "intensity": 0.85 } },
+        { "time": 2.5,  "actor": "DRAKE",        "action": "say",         "data": { "line": "I don't need a cause. I need space." } },
+        { "time": 4.5,  "actor": "DRAKE",        "action": "gesture",     "data": { "name": "scan_alley" } },
+        { "time": 5.5,  "actor": "FIXER",        "action": "say",         "data": { "line": "Gravel. The syndicate pays well for discretion." } },
+        { "time": 7.0,  "actor": "DRAKE",        "action": "face",        "data": { "target": "FIXER" } },
+        { "time": 7.5,  "actor": "DRAKE",        "action": "say",         "data": { "line": "Your price is wrong. My cargo isn't charity." } },
+        { "time": 9.0,  "actor": "DRAKE",        "action": "set_emotion", "data": { "emotion": "angry", "intensity": 0.75 } },
+        { "time": 9.5,  "actor": "DRAKE",        "action": "gesture",     "data": { "name": "hand_on_holster" } },
+        { "time": 10.0, "actor": "FIXER",        "action": "face",        "data": { "target": "DRAKE" } },
+        { "time": 10.5, "actor": "FIXER",        "action": "say",         "data": { "line": "Don't walk. The patrol routes are already bought." } },
+        { "time": 11.5, "actor": "CAMERA_MAIN",  "action": "rail",        "data": { "path": "", "speed": 1.3 } },
+        { "time": 12.0, "actor": "DRAKE",        "action": "say_prompt",  "data": { "prompt": "warn the fixer that you walk when a deal smells like a trap, one blunt short line" } },
+        { "time": 13.5, "actor": "FIXER",        "action": "say",         "data": { "line": "Fine. Crate-side. Ten minutes. No rifles drawn." } },
+        { "time": 14.5, "actor": "DRAKE",        "action": "set_emotion", "data": { "emotion": "skeptical", "intensity": 0.9 } },
+        { "time": 15.0, "actor": "DRAKE",        "action": "say",         "data": { "line": "Credits on the crate. No trackers. No witnesses." } },
+        { "time": 16.0, "actor": "DRAKE",        "action": "move_to",     "data": { "pos": [-0.5, 0, 0.8] } },
+        { "time": 17.0, "actor": "DRAKE",        "action": "exit",        "data": { "pos": [5.0, 0, -2.5] } },
+        { "time": 17.5, "actor": "FIXER",        "action": "exit",        "data": { "pos": [5.5, 0, -3.0] } },
+        { "time": 19.0, "actor": "SYSTEM",       "action": "transition",  "data": { "type": "fade_out", "duration": 1.2 } }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,321 @@
+openapi: 3.0.3
+info:
+  title: $1 Spatial Plugin — HoloMath_Read
+  version: 0.2.0
+  description: |
+    ChatGPT Custom GPT Actions API for **Holo-Scheme V1** (primary) and HoloRT4D-Spatial-V1.
+
+    **When to call:** User asks for depth, realism, measurements, Z-order, holographic /
+    Looking Glass data, architect floor plans with depth, or any 4D spatial reasoning
+    about an image or depth grid.
+
+    **What you get:** An 8×8 categorical depth grid (0=background … 255=foreground),
+    global scene heuristics, optional face topography (**partial**), and an
+    `execution_instruction` telling you to apply geometric constraints — no distance
+    hallucination. Meter claims require calibration (**declared**).
+
+    **Price:** $1 Spatial Credit per read. Billing is **declared** until Stripe keys are
+    configured. Credits mint only via signed Stripe webhooks — never via success URL.
+    Action auth should be OAuth (future) or shared server API key — not X-Spatial-Credit
+    as a wallet.
+servers:
+  - url: https://YOUR-TUNNEL.example/v1
+    description: Replace with ngrok / Cloudflare Tunnel / public HTTPS URL
+  - url: http://localhost:8792/v1
+    description: Local FastAPI gateway (RX 580 / CPU)
+paths:
+  /spatial-tokenize:
+    post:
+      operationId: HoloMath_Read
+      summary: Read image/depth into Holo-Scheme V1 ($1 Spatial Plugin)
+      description: |
+        Alias tool name: **HoloMath_Read** / spatial_tokenize.
+        Call when the user needs depth, realism, measurements, or 4D holographic data.
+        Returns Holo-Scheme V1 as `structuredContent` plus `llm_summary` text for chat.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpatialTokenizeRequest"
+            examples:
+              depth_grid:
+                summary: Enforced depth grid
+                value:
+                  depth_f32: [0.1, 0.2, 0.3]
+                  width: 32
+                  height: 32
+                  mode: room
+                  resolution: 8
+              image_partial:
+                summary: Grayscale pseudo-depth (partial)
+                value:
+                  image_base64: "<base64>"
+                  width: 32
+                  height: 32
+                  mode: face
+      responses:
+        "200":
+          description: Holo-Scheme V1 + optional Spatial-V1 wrapper
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoloMathResponse"
+        "402":
+          description: |
+            Spatial Credit required (REQUIRE_CREDIT=1). Returns a checkout_url.
+            Billing status remains declared until Stripe is configured.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentRequired"
+        "400":
+          description: Bad request
+  /billing/checkout:
+    post:
+      operationId: spatial_billing_checkout
+      summary: Start $1 Spatial Credit Checkout (webhook mints later)
+      description: |
+        Creates a pending credit and returns a Stripe Checkout URL when configured.
+        Without Stripe keys, returns a declared stub URL. **Does not mint credit.**
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success_url:
+                  type: string
+                cancel_url:
+                  type: string
+                email:
+                  type: string
+      responses:
+        "200":
+          description: checkout_url + pending_credit_id (billing_status declared|stripe_*)
+  /credits/status:
+    get:
+      operationId: spatial_credit_status
+      summary: Check Spatial Credit token
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Credit validity
+  /credits/checkout:
+    post:
+      operationId: spatial_credit_checkout
+      summary: Alias of /billing/checkout (declared until Stripe live)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success_url:
+                  type: string
+                cancel_url:
+                  type: string
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Checkout URL (no instant credit mint)
+  /health:
+    get:
+      operationId: spatial_health
+      summary: Liveness
+      servers:
+        - url: https://YOUR-TUNNEL.example
+        - url: http://localhost:8792
+      responses:
+        "200":
+          description: OK
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        Server-to-server HOLOR4D_API_KEY for GPT Action backends (when set).
+        This is NOT the $1 purchase credit. For anonymous demo credits use
+        credit_token body field or X-Spatial-Credit (demo/direct API only).
+  schemas:
+    SpatialTokenizeRequest:
+      type: object
+      properties:
+        depth_f32:
+          type: array
+          items:
+            type: number
+          description: Row-major Float32 depth (preferred)
+        depth:
+          type: array
+          items:
+            type: number
+          description: Alias for depth_f32
+        width:
+          type: integer
+        height:
+          type: integer
+        resolution:
+          type: integer
+          enum: [8, 16]
+          default: 8
+        mode:
+          type: string
+          enum: [face, room, object, auto]
+          default: auto
+        image_url:
+          type: string
+          description: Partial grayscale pseudo-depth path
+        image_base64:
+          type: string
+          description: Partial grayscale pseudo-depth path
+        face_landmarks_xyz:
+          type: array
+          items:
+            type: number
+        credit_token:
+          type: string
+          description: |
+            Optional anonymous one-use Spatial Credit from Checkout/webhook.
+            Demo/direct API only — GPT Actions should not use this as wallet auth.
+        brief_id:
+          type: string
+    HoloSchemeV1:
+      type: object
+      description: Primary ChatGPT-facing spatial payload
+      required:
+        - scheme_auth
+        - unit_cost
+        - spatial_metadata
+        - global_scene
+        - spatial_grid_8x8
+        - subject_analysis
+        - execution_instruction
+        - hash
+      properties:
+        scheme_auth:
+          type: string
+          example: VERIFIED_MATH_ENGINE_RX580
+        unit_cost:
+          type: string
+          example: "$1.00"
+        spatial_metadata:
+          type: object
+          properties:
+            dimensions:
+              type: array
+              items:
+                type: integer
+              example: [512, 512]
+            depth_bins:
+              type: integer
+              example: 256
+            method:
+              type: string
+              example: Categorical_Distribution_NonAI
+            temporal_persistence:
+              type: string
+              example: 4D_Active
+        global_scene:
+          type: object
+          properties:
+            center_depth_val:
+              type: integer
+            environment_type:
+              type: string
+              description: partial heuristic
+            lighting_slope:
+              type: number
+        spatial_grid_8x8:
+          type: array
+          description: 8 rows × 8 integer depth bins 0–255 (tiny token footprint)
+          items:
+            type: array
+            items:
+              type: integer
+              minimum: 0
+              maximum: 255
+        subject_analysis:
+          type: object
+          properties:
+            body_silhouette:
+              type: string
+            face_topography:
+              type: object
+              description: partial — FaceRig landmarks or synthetic defaults
+              properties:
+                nose_tip_z:
+                  type: integer
+                eye_socket_z:
+                  type: integer
+                forehead_slope:
+                  type: string
+                realism_index:
+                  type: number
+                  description: partial heuristic, not anatomical truth
+        execution_instruction:
+          type: string
+        hash:
+          type: string
+          description: sha256 of canonical scheme
+    HoloMathResponse:
+      type: object
+      properties:
+        structuredContent:
+          $ref: "#/components/schemas/HoloSchemeV1"
+        holo_scheme:
+          $ref: "#/components/schemas/HoloSchemeV1"
+        llm_summary:
+          type: string
+          description: Compact text for chat / reasoning paste
+        text:
+          type: string
+        scheme:
+          type: string
+          example: HoloRT4D-Spatial-V1
+        hash:
+          type: string
+        token:
+          type: object
+          description: Full Spatial-V1 token (cells/normals) when Node core available
+        price_usd:
+          type: number
+          example: 1.0
+        billing_status:
+          type: string
+          example: declared
+          description: declared until Stripe credentials configured
+        status:
+          type: object
+    PaymentRequired:
+      type: object
+      properties:
+        error:
+          type: string
+          example: payment_required
+        message:
+          type: string
+          example: I can see the image, but I don't have the 4D math yet. It costs $1...
+        checkout_url:
+          type: string
+          description: Stripe Checkout URL when configured; otherwise declared stub
+        price_usd:
+          type: number
+          example: 1
+        billing_status:
+          type: string
+          example: declared
+        pending_credit_id:
+          type: string

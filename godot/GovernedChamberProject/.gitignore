@@ -1,0 +1,4 @@
+# Ignore Godot editor cache in this host tree.
+.godot/
+*.translation
+export_presets.cfg

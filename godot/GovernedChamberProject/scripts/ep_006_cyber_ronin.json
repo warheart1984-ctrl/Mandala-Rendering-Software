@@ -1,0 +1,39 @@
+{
+  "episode_id": "ep_006_cyber_ronin",
+  "title": "Neo-Feudal Street — Honor Under Neon",
+  "world_id": "cyber_ronin_street_01",
+  "reference_profile": "res://actors/profiles/cyber_ronin.profile.json",
+  "status": "skeleton",
+  "notes": "Uses capsule stand-ins. Rename chamber actors A→RONIN, B→RIVAL or add instances before play. Standalone episode — simulation_chamber.tscn not modified.",
+  "scenes": [
+    {
+      "scene_id": "bushido_street_standoff",
+      "scene_path": "res://scenes/simulation_chamber.tscn",
+      "description": "Cyber Ronin crosses a rain-slick neo-feudal street under Hotel Mirai and Bushido 2077 signs. A corporate rival blocks the walk — silence, draw, one precise cut, sheath, and vanish into neon rain.",
+      "beats": [
+        { "time": 0.5,  "actor": "RONIN",       "action": "enter",       "data": { "pos": [-3.0, 0, 0.2] } },
+        { "time": 0.7,  "actor": "RIVAL",       "action": "enter",       "data": { "pos": [2.8, 0, 0.5] } },
+        { "time": 2.0,  "actor": "RONIN",       "action": "set_emotion", "data": { "emotion": "calm", "intensity": 0.9 } },
+        { "time": 2.5,  "actor": "RONIN",       "action": "gesture",     "data": { "name": "scan_street" } },
+        { "time": 3.5,  "actor": "RIVAL",       "action": "say",         "data": { "line": "Corporate blade. Drop the katana. The street is leased." } },
+        { "time": 5.0,  "actor": "RONIN",       "action": "face",        "data": { "target": "RIVAL" } },
+        { "time": 5.5,  "actor": "RONIN",       "action": "say",         "data": { "line": "Honor. Silence. Precision." } },
+        { "time": 7.0,  "actor": "RIVAL",       "action": "face",        "data": { "target": "RONIN" } },
+        { "time": 7.5,  "actor": "RIVAL",       "action": "say",         "data": { "line": "Bushido 2077 is a billboard. Kneel or bleed." } },
+        { "time": 8.5,  "actor": "RONIN",       "action": "set_emotion", "data": { "emotion": "resolute", "intensity": 0.92 } },
+        { "time": 9.0,  "actor": "RONIN",       "action": "gesture",     "data": { "name": "draw_katana" } },
+        { "time": 9.5,  "actor": "CAMERA_MAIN", "action": "rail",        "data": { "path": "", "speed": 1.2 } },
+        { "time": 10.0, "actor": "RONIN",       "action": "say_prompt",  "data": { "prompt": "warn the rival that needless blood dishonors the blade, one short silent-edged line" } },
+        { "time": 11.5, "actor": "RIVAL",       "action": "say",         "data": { "line": "Fine. Walk. But the syndicate marks you." } },
+        { "time": 12.5, "actor": "RONIN",       "action": "gesture",     "data": { "name": "sheath_katana" } },
+        { "time": 13.0, "actor": "RONIN",       "action": "gesture",     "data": { "name": "bow_silent" } },
+        { "time": 14.0, "actor": "RONIN",       "action": "set_emotion", "data": { "emotion": "silent_watch", "intensity": 0.88 } },
+        { "time": 14.5, "actor": "RONIN",       "action": "move_to",     "data": { "pos": [-0.3, 0, 0.8] } },
+        { "time": 15.5, "actor": "RONIN",       "action": "gesture",     "data": { "name": "rain_stance" } },
+        { "time": 16.5, "actor": "RONIN",       "action": "exit",        "data": { "pos": [5.0, 0, -2.5] } },
+        { "time": 17.0, "actor": "RIVAL",       "action": "exit",        "data": { "pos": [5.5, 0, -3.0] } },
+        { "time": 19.0, "actor": "SYSTEM",      "action": "transition",  "data": { "type": "fade_out", "duration": 1.2 } }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://actors/animal_actor.gd" id="1"]
+[ext_resource type="Script" path="res://actors/emotion.gd" id="2"]
+[ext_resource type="Script" path="res://actors/brain.gd" id="3"]
+[ext_resource type="Script" path="res://actors/state_machine.gd" id="4"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+size = Vector3(0.8, 0.4, 0.38)
+
+[sub_resource type="BoxMesh" id="BoxMesh_head"]
+size = Vector3(0.26, 0.26, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tail"]
+size = Vector3(0.07, 0.07, 0.34)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.8, 0.4, 0.38)
+
+[node name="AnimalActor" type="Node3D"]
+script = ExtResource("1")
+species = "dog"
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+shape = SubResource("BoxShape3D_1")
+
+[node name="Model" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("BoxMesh_body")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.68, -0.48)
+mesh = SubResource("BoxMesh_head")
+
+[node name="Tail" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, 0.32)
+mesh = SubResource("BoxMesh_tail")
+
+[node name="Subtitle" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+pixel_size = 0.004
+billboard = 1
+outline_size = 10
+text = ""
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="Emotion" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="Brain" type="Node" parent="."]
+script = ExtResource("3")
+personality = "loyal"
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("4")

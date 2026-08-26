@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ChamberActorProfile",
+  "status": "skeleton",
+  "id": "mirai-kenshi",
+  "project": "NEON TOKYO",
+  "name": "Mirai no Kenshi",
+  "name_en": "Swordswoman of the Future",
+  "codename": "FUTURE KATANA",
+  "reference_art": "tmp/neon-tokyo-mirai/assets/concept/neon-tokyo-swordswoman-sheet.png",
+
+  "identity": {
+    "age": 22,
+    "height_cm": 168,
+    "role": "Vanguard / Independent",
+    "affiliation": "Independent (anti-corporate resistance)",
+    "fighting_style": "Swift, Precise, Futuristic Samurai"
+  },
+
+  "appearance": {
+    "hair": "long silver-white, high ponytail, rain-wet strands",
+    "eyes": "bright blue",
+    "coat_mark": "未来",
+    "silhouette": "long cyber-coat, pleated skirt, mag-lock boots, photon katana harness"
+  },
+
+  "personality": "Focused, precise, calm under rain. Speaks in short declarative lines. Fights corporate control; katana is hope, not rage.",
+  "voice": "shimmer",
+  "color": "#4fc3f7",
+  "avatarRadius": 0.42,
+
+  "weapon": {
+    "id": "photon-katana",
+    "name": "Photon Katana",
+    "blade": "energy photon blade (electric cyan glow)",
+    "hilt": "titanium alloy",
+    "sheath": "energy condenser"
+  },
+
+  "costume_breakdown": {
+    "coat": "waterproof / light-reflective nano-fiber",
+    "armor_plate": "carbon titanium",
+    "harness": "magnetic lock katana harness",
+    "belt": "modular utility pouches",
+    "gloves": "enhanced grip flexible armor",
+    "boots": "shock-absorbing mag-lock sole"
+  },
+
+  "expressions": ["neutral", "focused", "determined", "battle_ready", "calm", "slight_smile"],
+  "gestures": ["draw_katana", "sheath_katana", "salute", "scan_horizon", "rain_stance"],
+
+  "lighting_palette": {
+    "key": { "name": "Moon Blue", "hex": "#6ec6ff" },
+    "rim": { "name": "Magenta", "hex": "#e040fb" },
+    "fill": { "name": "Cool White", "hex": "#eceff1" },
+    "accent": { "name": "Electric Cyan", "hex": "#00e5ff" },
+    "materials": ["matte", "metallic", "energy_glow"]
+  },
+
+  "environment": {
+    "id": "neo-tokyo-alley",
+    "motifs": ["mega-building corporate towers", "holographic ads", "sky bridges", "flying traffic layers"],
+    "weather": "rain-slick neon reflections"
+  },
+
+  "camera_orbits": [
+    { "id": "wide_establishing", "note": "Rain alley + towers" },
+    { "id": "over_shoulder_push", "note": "Katana POV toward skyline" },
+    { "id": "katana_harness_side", "note": "Mag-lock harness detail" },
+    { "id": "low_angle_hero", "note": "Hero stance, coat flow" },
+    { "id": "front_three_quarter_close", "note": "Face + neon rim" },
+    { "id": "wide_reveal", "note": "Pull back to city scale" }
+  ],
+
+  "godot": {
+    "actor_name": "MIRAI",
+    "actor_type": "human",
+    "scene_path": "res://scenes/simulation_chamber.tscn",
+    "base_color": [0.31, 0.76, 0.97],
+    "move_speed": 2.2,
+    "brain_personality": "precise cyber-samurai; honor-bound; anti-corporate",
+    "emotion_defaults": { "idle": "neutral", "combat": "determined", "dialogue": "focused" },
+    "episode_id": "ep_002_neon_tokyo"
+  },
+
+  "simulation_chamber": {
+    "scene_card_id": "scene-neon-tokyo-alley",
+    "emissive_accent": [0.0, 0.9, 1.0],
+    "solver": "mandala-proto"
+  },
+
+  "provenance": {
+    "source": "user concept sheet PROJECT: NEON TOKYO — SWORDSWOMAN",
+    "reference_file": "image-67fce87d-bda5-40c1-bce1-2d96b756c2e7.png",
+    "created": "2026-08-23",
+    "implementation": "capsule stand-in until rigged mesh; honest skeleton"
+  }
+}

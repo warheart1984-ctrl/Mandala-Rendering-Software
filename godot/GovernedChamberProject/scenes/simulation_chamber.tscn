@@ -1,0 +1,57 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://simulation_chamber.gd" id="1"]
+[ext_resource type="Script" path="res://actors/actor_manager.gd" id="2"]
+[ext_resource type="Script" path="res://director/director.gd" id="3"]
+[ext_resource type="Script" path="res://recording/recorder.gd" id="4"]
+[ext_resource type="Script" path="res://director/scene_transition.gd" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/camera_rig.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/actors/actor.tscn" id="7"]
+
+[sub_resource type="Environment" id="Env_1"]
+background_mode = 1
+
+[node name="SimulationChamber" type="Node3D"]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_1")
+
+[node name="Level" type="Node3D" parent="."]
+
+[node name="ActorManager" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="MIRAI" parent="." instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -4)
+actor_name = "MIRAI"
+move_speed = 2.2
+base_color = Color(0.31, 0.76, 0.97, 1)
+
+[node name="CORPVOICE" parent="." instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -4)
+actor_name = "CORPVOICE"
+move_speed = 2.0
+base_color = Color(0.878, 0.251, 0.984, 1)
+
+[node name="Director" type="Node" parent="."]
+script = ExtResource("3")
+episode_path = "res://scripts/ep_002_neon_tokyo.json"
+
+[node name="Recorder" type="Node" parent="."]
+script = ExtResource("4")
+
+[node name="CameraRig" parent="." instance=ExtResource("6")]
+
+[node name="SceneTransition" type="CanvasLayer" parent="."]
+script = ExtResource("5")
+
+[node name="ColorRect" type="ColorRect" parent="SceneTransition"]
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)

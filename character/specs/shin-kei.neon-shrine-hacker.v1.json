@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ChamberActorProfile",
+  "status": "skeleton",
+  "id": "shin-kei",
+  "project": "NEON SHRINE",
+  "name": "Shin-Kei",
+  "name_en": "Neon Shrine Hacker",
+  "codename": "SHIN-KEI",
+  "tagline": "CODE. RITUAL. CONTROL.",
+  "tagline_ja": "神聖なるコード、未来を改変。",
+  "reference_art": "tmp/neon-shrine-hacker/assets/concept/neon-shrine-hacker-sheet.png",
+
+  "identity": {
+    "age": 21,
+    "height_cm": 165,
+    "role": "Netrunner / Hacker",
+    "affiliation": "Independent (Shrine-Net)",
+    "style": "Techwear + Shrine Core",
+    "alignment": "Lawful Neutral (code-as-rite)"
+  },
+
+  "appearance": {
+    "hair": "black with purple tips, messy bun, loose strands",
+    "eyes": "magenta with digital circuitry iris patterns",
+    "coat_mark": "神域接続",
+    "coat_mark_en": "Sanctuary Connection",
+    "coat_label": "SHIN-KEI",
+    "silhouette": "black tactical trench, buckles/straps, purple glow tags, Data Tantō harness"
+  },
+
+  "personality": "Intelligent, enigmatic, calculating. Calm under pressure. Speaks in short ritual-code lines — treats intrusion as ceremony, not chaos.",
+  "voice": "shimmer",
+  "color": "#e040fb",
+  "avatarRadius": 0.42,
+
+  "weapon": {
+    "id": "data-tanto",
+    "name": "Data Tantō",
+    "blade": "glowing crystalline purple with circuit etch",
+    "hilt": "black techwear grip, circuit-pattern detailing"
+  },
+
+  "costume_breakdown": {
+    "coat": "black tactical techwear trench (waterproof / light-absorbing)",
+    "back_print": "vertical white kanji 神域接続 + SHIN-KEI",
+    "tags": "small glowing purple rectangular patches",
+    "harness": "Data Tantō magnetic lock",
+    "boots": "mag-lock techwear soles"
+  },
+
+  "expressions": ["neutral", "focused", "calculating", "calm", "intense", "slight_smile"],
+  "gestures": ["draw_data_tanto", "jack_in", "trace_torii_sigil", "scan_network", "ritual_stance"],
+
+  "personality_metrics": {
+    "intelligence": 0.94,
+    "calm": 0.88,
+    "calculation": 0.91,
+    "empathy": 0.42,
+    "impulsivity": 0.18,
+    "traits": {
+      "enigmatic": 0.9,
+      "ritual_precise": 0.87,
+      "pressure_stable": 0.92,
+      "independent": 0.85,
+      "control_oriented": 0.8
+    }
+  },
+
+  "core_drives": [
+    "Keep the shrine-net sovereign",
+    "Rewrite hostile daemons as rites",
+    "Prove code can be sacred",
+    "Stay calm when the lattice screams"
+  ],
+
+  "fears": [
+    "Losing ritual control mid-intrusion",
+    "Sanctuary Connection severed",
+    "Becoming the daemon she hunts",
+    "Noise drowning the rite"
+  ],
+
+  "signature_quote": "CODE. RITUAL. CONTROL.",
+
+  "lighting_palette": {
+    "key": { "name": "Deep Navy", "hex": "#1a237e" },
+    "rim": { "name": "Bright Magenta", "hex": "#e040fb" },
+    "fill": { "name": "Dark Slate", "hex": "#37474f" },
+    "accent": { "name": "Electric Cyan", "hex": "#00e5ff" },
+    "highlight": { "name": "Light Grey", "hex": "#cfd8dc" },
+    "materials": ["matte_techwear", "wet_stone", "energy_crystal", "hologram_ui"]
+  },
+
+  "environment": {
+    "id": "neon-shrine-district",
+    "motifs": ["red torii gates", "neon skyscrapers", "holographic UI streams", "rain-slick wet stone", "digital cherry petals"],
+    "weather": "rain + neon reflections under shrine district"
+  },
+
+  "camera_orbits": [
+    { "id": "wide_establishing", "note": "Behind/above — shrine district scale, character at frame edge" },
+    { "id": "over_shoulder", "note": "OTS push-in revealing holographic interfaces" },
+    { "id": "profile_close", "note": "Side orbit, neon bokeh parallax, hacker in thought" },
+    { "id": "front_three_quarter_close", "note": "Eyes lock camera amid code streams" },
+    { "id": "low_angle_hero", "note": "Tilt-up, Data Tantō drawn, power presence" },
+    { "id": "wide_reveal", "note": "Orbit out — dissolve into network" }
+  ],
+
+  "godot": {
+    "actor_name": "SHINKEI",
+    "actor_type": "human",
+    "scene_path": "res://scenes/simulation_chamber.tscn",
+    "base_color": [0.88, 0.25, 0.98],
+    "move_speed": 2.1,
+    "brain_personality": "neon shrine netrunner; ritual-precise; calculating; calm under pressure; code-as-rite",
+    "emotion_defaults": { "idle": "neutral", "intrusion": "calculating", "dialogue": "focused", "threat": "calm" },
+    "episode_id": "ep_005_neon_shrine_hacker"
+  },
+
+  "simulation_chamber": {
+    "scene_card_id": "scene-neon-shrine-district",
+    "emissive_accent": [0.88, 0.25, 0.98],
+    "solver": "mandala-proto"
+  },
+
+  "provenance": {
+    "source": "user concept sheet — NEON SHRINE HACKER / CODE. RITUAL. CONTROL.",
+    "reference_file": "image-c34398df-f330-4fb7-acd5-d40f974e7948.png",
+    "created": "2026-08-23",
+    "implementation": "capsule stand-in until rigged mesh; honest skeleton"
+  }
+}

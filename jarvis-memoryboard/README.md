@@ -19,6 +19,8 @@ determine epistemic truth (see `docs/CONTINUITY_LEDGER_SOC.md`). The broader
 | Replay (why/where/when/session) | **enforced** | `TestReplayAcceptance` + `/api/jarvis/memory/retrieve` |
 | Conflict (no silent merge / no truth pick) | **enforced** | `TestConflictAcceptance` + `/api/jarvis/memory/conflicts` |
 | Drift (multi-day fidelity) | **partial** | hash check enforced; protocol in `docs/DRIFT_PROTOCOL.md` |
+| AMUL substrate (`app/amul.py`) | **partial** | append-only field, lineage, verify/drift **enforced** (`tests/test_amul.py`); scale/GC/index **declared** |
+| AMUL RAG (`app/amul_rag.py`) | **partial** | classifier/modes, lexical vector+BM25, evidence gate, replay log **enforced** (`tests/test_amul_rag.py`); neural embeddings **declared**, LLM generation **extractive-v0 / partial** (`JARVIS_RAG_LLM_URL` hook) |
 
 ### Four-layer SoC
 

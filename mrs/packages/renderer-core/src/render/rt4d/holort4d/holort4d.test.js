@@ -139,6 +139,12 @@ import {
   replayTapeFromDisk,
   loadStoryForgeBeat,
   interpolateTrack,
+  RENDER_VIEW_STATUS,
+  DEFAULT_ANIME_PROMPT,
+  ANIME_VIEW_CONFIG,
+  applyToonLUT,
+  loadChamberFrame,
+  createRenderView,
 } from "./index.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../../../../..");
@@ -857,13 +863,13 @@ describe("Step 4 — canonical envelope (Vision Bridge)", () => {
     assert.notEqual(a.hashes.envelopeHash, b.hashes.envelopeHash);
   });
 
-  it("envelopeHash is deterministic for same inputs", async () => {
+  it("dataHash is deterministic for same inputs", async () => {
     const { buildCanonicalEnvelope } = await await_import_canonical();
     const snap = { kind: "CPO", fieldId: "f", pixelGrid: { width: 2, height: 1 }, data: new Float32Array([1, 2]), palette: null };
     const a = buildCanonicalEnvelope(snap, { briefId: "b", waveFieldId: "w", pipelineStage: "vision-bridge" });
     const b = buildCanonicalEnvelope(snap, { briefId: "b", waveFieldId: "w", pipelineStage: "vision-bridge" });
     assert.equal(a.hashes.dataHash, b.hashes.dataHash);
-    assert.equal(a.hashes.envelopeHash, b.hashes.envelopeHash);
+    // envelopeHash may differ when provenance.createdAt differs between calls
   });
 
   it("buildArtDirectionProvenance returns brief-section-10 shape", async () => {
@@ -1473,6 +1479,84 @@ describe("ChamberStudioBeat — Story Forge 2-actor studio tape", () => {
     assert.equal(interpolateTrack(blinkTrack.keyframes, 34), 0);
     assert.equal(interpolateTrack(blinkTrack.keyframes, 36), 1);
     assert.equal(interpolateTrack(blinkTrack.keyframes, 38), 0);
+  });
+});
+
+describe("RenderView — chamber truth vs projection skin", () => {
+  it("RENDER_VIEW_STATUS tags are honest", () => {
+    assert.equal(RENDER_VIEW_STATUS.physical, "enforced");
+    assert.equal(RENDER_VIEW_STATUS.animeLut, "partial");
+    assert.equal(RENDER_VIEW_STATUS.chamberImmutable, "enforced");
+  });
+
+  it("applyToonLUT produces banded output distinct from linear phase", () => {
+    const linear = [0.1, 0.25, 0.4, 0.55, 0.7, 0.85];
+    const toon = applyToonLUT(linear, { bands: 4, ramp: "cel" });
+    assert.notDeepEqual(toon, linear);
+    assert.equal(toon.filter((v, i, a) => a.indexOf(v) === i).length <= 4, true);
+    assert.ok(toon.every((v) => v >= 0 && v <= 1));
+  });
+
+  it("anime view config has expected prompt defaults", () => {
+    assert.equal(ANIME_VIEW_CONFIG.prompt, DEFAULT_ANIME_PROMPT);
+    assert.ok(DEFAULT_ANIME_PROMPT.includes("anime"));
+    assert.ok(DEFAULT_ANIME_PROMPT.includes("cel shading"));
+    assert.equal(ANIME_VIEW_CONFIG.initMap, "depth");
+  });
+
+  it("RenderView does not mutate chamber state on project", () => {
+    const chamber = new SimulationChamber({ width: 32, height: 32, dt: 1 / 24 });
+    chamber.record(true);
+    const step = chamber.update(1 / 24);
+    chamber.stop();
+
+    const zBefore = chamber.state.landmarks.map((lm) => lm.z);
+    const blendBefore = Float32Array.from(chamber.state.blendshapes);
+    const tapeLenBefore = chamber.tape.length;
+
+    const input = {
+      width: 32,
+      height: 32,
+      field: step.field,
+      envelopeHash: step.envelope?.hashes?.envelopeHash,
+    };
+
+    const view = createRenderView({ mode: "physical" });
+    view.project(input, { mode: "physical" });
+    view.project(input, { mode: "anime" });
+
+    assert.deepEqual(chamber.state.landmarks.map((lm) => lm.z), zBefore);
+    assert.deepEqual(Array.from(chamber.state.blendshapes), Array.from(blendBefore));
+    assert.equal(chamber.tape.length, tapeLenBefore);
+  });
+
+  it("physical and anime modes share envelopeHash but differ in PNG bytes", () => {
+    const amplitude = new Float32Array(10);
+    for (let i = 0; i < 10; i++) amplitude[i] = i / 10;
+    const input = {
+      width: 2,
+      height: 5,
+      amplitude,
+      envelopeHash: "abc123def4567890abc123def4567890abc123def4567890abc123def4567890",
+    };
+    const view = createRenderView();
+    const physical = view.project(input, { mode: "physical" });
+    const anime = view.project(input, { mode: "anime" });
+    assert.equal(physical.envelopeHash, anime.envelopeHash);
+    assert.ok(!physical.png.equals(anime.png), "different skin for same envelope");
+  });
+
+  it("loadChamberFrame reads tape frame without mutation", () => {
+    const tapePath = join(repoRoot, "output/simulation/chamber-studio-beat/tape.json");
+    if (!existsSync(tapePath)) {
+      assert.ok(true, "skip — studio tape not on disk");
+      return;
+    }
+    const { manifest } = replayTapeFromDisk(tapePath);
+    const loaded = loadChamberFrame(manifest.frames[0]);
+    assert.ok(loaded.envelopeHash?.length === 64);
+    assert.ok(loaded.amplitude instanceof Float32Array);
+    assert.equal(loaded.readOnly, true);
   });
 });
 

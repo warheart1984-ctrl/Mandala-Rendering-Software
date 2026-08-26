@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "ChamberActorProfile",
+  "status": "skeleton",
+  "id": "drake-korvan",
+  "project": "OUTER RIM",
+  "name": "Drake Korvan",
+  "name_en": "Independent Scout / Smuggler",
+  "codename": "GRAVEL",
+  "subject_id": "SC-4R7K",
+  "reference_art": "tmp/drake-korvan/assets/concept/drake-korvan-scout-sheet.png",
+
+  "identity": {
+    "age": 34,
+    "height_cm": 186,
+    "weight_kg": 82,
+    "build": "lean muscular",
+    "role": "Independent Scout / Smuggler",
+    "affiliation": "Independent (Outer Rim)",
+    "alignment": "Chaotic Neutral",
+    "origin": "Outer Rim Colony; backwater iron mines",
+    "languages": ["Common", "Rim Cant", "Smuggler Code"]
+  },
+
+  "appearance": {
+    "hair": "messy dark brown, short beard",
+    "eyes": "steel gray",
+    "skin": "weathered",
+    "scars": ["left cheek", "across back", "right forearm"],
+    "implants": ["reinforced left rib cage (two ribs missing)", "spinal pain dampener"],
+    "silhouette": "rugged leather trench, torn shirt, arm wraps, mag-lock boots, survival backpack, heavy belt"
+  },
+
+  "personality": "Pragmatic opportunist. Speaks in blunt, clipped lines. Trusts no one; stays three moves ahead. High caution and combat instinct; low empathy and loyalty. Dangerous and unpredictable under pressure.",
+  "voice": "onyx",
+  "color": "#607d8b",
+  "avatarRadius": 0.44,
+
+  "weapon": {
+    "id": "mag-rifle",
+    "name": "Modified Mag Rifle",
+    "note": "short barrel, high rate of fire",
+    "sidearm": "Heavy Pistol (custom grip, high stopping power)",
+    "melee": "Vibro-Knife (close, quiet)"
+  },
+
+  "gear": {
+    "lockpick_set": "standard bypass kit",
+    "hacking_spool": "portable splice tool",
+    "multi_tool": "field repair",
+    "mini_torch": "cutting / signal flare",
+    "injector": "stim pack",
+    "signal_scrambler": "comms jammer",
+    "belt": "modular ammo and tool pouches",
+    "backpack": "light survival pack"
+  },
+
+  "expressions": ["neutral", "angry", "skeptical", "smirk", "tired", "focused"],
+  "gestures": ["raise_rifle", "draw_knife", "scan_alley", "hand_on_holster", "crouch_cover"],
+
+  "personality_metrics": {
+    "independence": 0.95,
+    "caution": 0.84,
+    "aggression": 0.78,
+    "empathy": 0.26,
+    "loyalty": 0.32,
+    "traits": {
+      "opportunistic": 0.88,
+      "paranoid": 0.82,
+      "combat_ready": 0.86,
+      "greed_driven": 0.75,
+      "unpredictable": 0.71
+    }
+  },
+
+  "behavioral_tendencies": {
+    "situational_awareness": 0.91,
+    "combat_instinct": 0.86,
+    "negotiation": 0.38,
+    "loot_priority": 0.82
+  },
+
+  "simulation_variables": {
+    "trust_level": 0.18,
+    "goal_priority": "Survive / Profit",
+    "decision_style": "Pragmatic / Opportunistic",
+    "flags": ["DANGEROUS", "UNPREDICTABLE", "DO NOT TRUST"]
+  },
+
+  "core_drives": [
+    "Stay free",
+    "Get rich",
+    "Avoid capture",
+    "Stay three moves ahead"
+  ],
+
+  "fears": [
+    "Betrayal",
+    "Being forgotten",
+    "Losing control",
+    "Corporate or syndicate capture"
+  ],
+
+  "signature_quote": "I DON'T NEED A CAUSE. I NEED SPACE.",
+
+  "lighting_palette": {
+    "key": { "name": "Steel Gray", "hex": "#607d8b" },
+    "rim": { "name": "Neon Cyan", "hex": "#00bcd4" },
+    "fill": { "name": "Wet Asphalt", "hex": "#37474f" },
+    "accent": { "name": "Deep Red", "hex": "#b71c1c" },
+    "materials": ["worn_leather", "oiled_canvas", "scratched_metal", "dirty_cloth", "carbon_fiber"]
+  },
+
+  "environment": {
+    "id": "outer-rim-dock",
+    "motifs": ["neon-lit gritty alleys", "wet streets", "crowded stalls", "hanging wires", "holographic signs", "cargo crates"],
+    "weather": "rain-slick reflections, steam vents"
+  },
+
+  "camera_orbits": [
+    { "id": "wide_establishing", "note": "Neon dock alley + cargo stacks" },
+    { "id": "low_angle", "note": "Hero stance, trench silhouette" },
+    { "id": "over_shoulder", "note": "Rifle POV toward fixer" },
+    { "id": "profile_close", "note": "Steel gray eyes + scar detail" },
+    { "id": "high_angle", "note": "Wet dock floor from above" },
+    { "id": "dynamic_tilt", "note": "Tense negotiation tilt" }
+  ],
+
+  "godot": {
+    "actor_name": "DRAKE",
+    "actor_type": "human",
+    "scene_path": "res://scenes/simulation_chamber.tscn",
+    "base_color": [0.38, 0.49, 0.55],
+    "move_speed": 2.4,
+    "brain_personality": "independent smuggler scout; paranoid opportunist; low trust; combat-first; DO NOT TRUST",
+    "emotion_defaults": { "idle": "skeptical", "combat": "focused", "dialogue": "neutral", "threat": "angry" },
+    "episode_id": "ep_004_drake_korvan"
+  },
+
+  "simulation_chamber": {
+    "scene_card_id": "scene-outer-rim-dock",
+    "emissive_accent": [0.0, 0.74, 0.83],
+    "solver": "mandala-proto"
+  },
+
+  "provenance": {
+    "source": "user concept sheet SC-4R7K — Drake Korvan / GRAVEL Simulation Chamber Subject File",
+    "reference_file": "image-120f9225-7f5d-44a1-93fb-97ec3d03ad08.png",
+    "created": "2026-08-23",
+    "implementation": "capsule stand-in until rigged mesh; honest skeleton"
+  }
+}

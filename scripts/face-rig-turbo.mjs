@@ -18,7 +18,7 @@
  *   node scripts/face-rig-turbo.mjs --photoreal [--sd-strength 0.65] [--output photoreal-v1.png]
  *   node scripts/face-rig-turbo.mjs --photoreal --init depth   # avoids topology number/color bleed
  *   node scripts/face-rig-turbo.mjs --color-portrait [--init prior|depth] [--sd-strength 0.55]
-
+ *   node scripts/face-rig-turbo.mjs --view anime [--sd-model <gguf>] [--init depth|topology]
  *
 
  * Output: output/holort4d-human/face-rig-control/
@@ -113,6 +113,16 @@ const COLOR_PORTRAIT_NEGATIVE =
 
   + "watercolor, sepia wash, deformed, blurry, flat lighting, text, watermark, numbers overlay, extra limbs";
 
+const ANIME_PROMPT =
+
+  "anime, cel shading, toon ramp, large eyes, clean lineart";
+
+const ANIME_NEGATIVE =
+
+  "photoreal, grayscale, text, watermark, deformed, blurry, extra limbs, flat lighting";
+
+const SD_MODEL = process.env.SD_MODEL ?? process.env.ANIME_GGUF ?? "SD-Turbo";
+
 const PRIOR_PHOTOREAL = join(OUT_DIR, "photoreal-v3-fixed.png");
 
 const HUMAN_PROVENANCE = join(REPO, "output/holort4d-human/provenance.json");
@@ -147,6 +157,10 @@ function parseArgs(argv) {
 
     initMap: "topology",
 
+    view: "default",
+
+    sdModel: SD_MODEL,
+
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -168,6 +182,10 @@ function parseArgs(argv) {
     else if (a === "--output" && argv[i + 1]) opts.output = argv[++i];
 
     else if (a === "--init" && argv[i + 1]) opts.initMap = argv[++i];
+
+    else if (a === "--view" && argv[i + 1]) opts.view = argv[++i];
+
+    else if (a === "--sd-model" && argv[i + 1]) opts.sdModel = argv[++i];
 
     else if (a === "--photoreal") {
 
@@ -192,6 +210,16 @@ function parseArgs(argv) {
     }
 
     else if (a === "--skip-sd") opts.skipSd = true;
+
+  }
+
+  if (opts.view === "anime") {
+
+    opts.sdSteps = 4;
+
+    opts.sdStrength = 0.85;
+
+    if (opts.initMap === "topology") opts.initMap = "depth";
 
   }
 
@@ -224,6 +252,12 @@ function loadHumanPromptHint() {
 
 
 function sdPrompts(opts) {
+
+  if (opts.view === "anime") {
+
+    return { prompt: ANIME_PROMPT, negative: ANIME_NEGATIVE };
+
+  }
 
   if (opts.colorPortrait) {
 
@@ -487,7 +521,9 @@ async function main() {
 
         const outName = opts.output
 
-          || (opts.colorPortrait ? "color-portrait-output.png"
+          || (opts.view === "anime" ? "anime-output.png"
+
+            : opts.colorPortrait ? "color-portrait-output.png"
 
             : opts.photoreal ? "photoreal-output.png" : "turbo-output.png");
 
@@ -501,7 +537,9 @@ async function main() {
 
         sdStage.status = "partial";
 
-        sdStage.mode = opts.colorPortrait ? "color-portrait"
+        sdStage.mode = opts.view === "anime" ? "anime"
+
+          : opts.colorPortrait ? "color-portrait"
 
           : opts.photoreal ? "photoreal" : "cinematic";
 
@@ -513,7 +551,7 @@ async function main() {
 
         sdStage.negative = negative;
 
-        sdStage.note = `${sdStage.mode} img2img from ${initLabel} strength=${opts.sdStrength} steps=${opts.sdSteps} cfg=${opts.sdCfg}`;
+        sdStage.note = `${sdStage.mode} img2img from ${initLabel} strength=${opts.sdStrength} steps=${opts.sdSteps} cfg=${opts.sdCfg} model=${opts.sdModel}`;
 
         envelopes.provenance.pipeline.sdTurbo = opts.colorPortrait ? "partial-color-portrait"
 
@@ -612,6 +650,16 @@ async function main() {
         ? (sdStage.status === "partial"
 
           ? "partial — warm color skin from prior grayscale bust; not target freckle close-up"
+
+          : "blocked")
+
+        : "not-claimed",
+
+      anime: opts.view === "anime"
+
+        ? (sdStage.status === "partial"
+
+          ? "partial — anime img2img from depth+topology controls; swap GGUF via SD_MODEL / --sd-model"
 
           : "blocked")
 
