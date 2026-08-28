@@ -56,6 +56,7 @@ from app.auth import (
     require_memory_write,
 )
 from app.store import get_store
+from mcp_server.mcp_http import create_mcp_router
 
 app = FastAPI(
     title="Jarvis Continuity Ledger",
@@ -148,6 +149,12 @@ def index():
                 "catalog": "GET /api/jarvis/tools",
                 "emr_recall": "POST /api/jarvis/tools/emr_recall",
             },
+            "mcp": {
+                "streamable_http": "POST /mcp",
+                "transport": "streamable-http",
+                "tools": ["emr_recall"],
+                "read_only": True,
+            },
         },
     }
 
@@ -167,6 +174,11 @@ def health():
         "auth": {
             "emr_recall_key_required": emr_recall_api_key() is not None,
             "ledger_read_protected": ledger_read_protected(),
+        },
+        "mcp": {
+            "streamable_http": "/mcp",
+            "tools": ["emr_recall"],
+            "read_only": True,
         },
         "store_path": os.getenv("JARVIS_STORE_PATH", "data/jarvis-store.json"),
     }
@@ -684,3 +696,13 @@ def amul_field_verify():
     store = get_store()
     report = verify_field(get_field(), store.list_memories(limit=9999))
     return report.model_dump()
+
+
+def _invoke_emr_recall(arguments: dict) -> dict:
+    """In-process EMR recall for MCP Streamable HTTP (same path as REST tool)."""
+    body = EmrRecallRequest.model_validate(arguments)
+    store = get_store()
+    return emr_recall(store, body).model_dump()
+
+
+app.include_router(create_mcp_router(_invoke_emr_recall), prefix="/mcp", tags=["mcp"])

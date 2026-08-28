@@ -113,3 +113,13 @@ async def ledger_read_protection_middleware(request: Request, call_next):
     except HTTPException as exc:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
     return await call_next(request)
+
+
+def optional_verify_operator_api_key(
+    authorization: str | None,
+    x_emr_recall_key: str | None,
+) -> None:
+    """When EMR_RECALL_API_KEY is unset, allow (local dev). When set, require match."""
+    if not emr_recall_api_key():
+        return
+    verify_operator_api_key(authorization, x_emr_recall_key)
