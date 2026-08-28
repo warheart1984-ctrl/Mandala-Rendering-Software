@@ -187,6 +187,30 @@ def test_llm_hook_declared_off_by_default(monkeypatch):
     assert record.llm_model == "extractive-v0"  # unreachable endpoint degrades gracefully
 
 
+def test_context_budget_exhaustion_abstains_without_crash(monkeypatch):
+    """Support gate passes but every hit exceeds token budget → abstain, no IndexError."""
+    monkeypatch.setattr(rag, "RAG_LLM_URL", "http://127.0.0.1:9/v1")
+
+    def _tiny_contract(query: str):
+        contract = routing_contract(query)
+        contract["retrieval_config"]["min_support"] = 0.01
+        contract["generation_config"]["max_context_tokens"] = 8
+        return contract
+
+    monkeypatch.setattr(rag, "routing_contract", _tiny_contract)
+    huge = _doc(
+        "d-huge",
+        "Huge",
+        "governed recall excitation " * 200,
+    )
+    idx = _index(huge)
+    record = answer_query("governed recall excitation", idx)
+
+    assert record.status == "insufficient_evidence"
+    assert "token budget" in record.answer.lower()
+    assert record.docs_used == []
+
+
 # --- Route roundtrip -----------------------------------------------------------------
 
 

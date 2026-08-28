@@ -8,6 +8,7 @@ overlay effects; ledger status/confidence/content stay byte-identical.
 from __future__ import annotations
 
 import tempfile
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +16,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
+import app.emr as emr
 from app.emr import (
     DAMP_CAP,
     DAMP_GAIN,
@@ -308,3 +310,33 @@ def test_replayed_outcome_is_idempotent():
     assert len(first) == 1 and replayed_first == []
     assert second == [] and replayed_second == ["mem-once"]
     assert get_reinforcement("mem-once").use_count == 1
+
+
+def test_concurrent_reinforcement_preserves_distinct_outcomes(monkeypatch, tmp_path):
+    """Overlapping reinforce requests must not lose outcome ids or use counts."""
+    monkeypatch.setenv("JARVIS_EMR_DYNAMICS_PATH", str(tmp_path / "dyn.json"))
+    reset_stm_for_tests()
+    emr._dynamics_loaded = False
+
+    barrier = threading.Barrier(2)
+    errors: list[Exception] = []
+
+    def worker(outcome_id: str) -> None:
+        try:
+            barrier.wait(timeout=5)
+            reinforce_ids({"mem-conc"}, ["mem-conc"], outcome=_outcome(outcome_id))
+        except Exception as exc:  # pragma: no cover - surfaced below
+            errors.append(exc)
+
+    t1 = threading.Thread(target=worker, args=("outcome-a",))
+    t2 = threading.Thread(target=worker, args=("outcome-b",))
+    t1.start()
+    t2.start()
+    t1.join(timeout=10)
+    t2.join(timeout=10)
+
+    assert not errors
+    state = get_reinforcement("mem-conc")
+    assert state is not None
+    assert state.use_count == 2
+    assert set(state.outcome_ids) == {"outcome-a", "outcome-b"}
