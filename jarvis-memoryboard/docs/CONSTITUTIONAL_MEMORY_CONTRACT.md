@@ -171,6 +171,8 @@ Expansion is always `STM → memory_id → Memoryboard LTM → evidence`. No inv
 | `POST` | `/api/jarvis/memory/emr/reinforce` | Bounded retrieval-state reinforcement; never edits LTM truth fields |
 | `POST` | `/api/jarvis/memory/emr/correct` | Operator correction — immediately resets reinforcement overlay |
 | `POST` | `/api/jarvis/tools/emr_recall` | **Read-only** EMR Recall Protocol for agent tool calling |
+| `POST` | `/api/jarvis/tools/emr_remember` | Governed create (draft); gated by `JARVIS_MCP_WRITE_ENABLED` — **partial** |
+| `POST` | `/api/jarvis/tools/emr_upsert` | Governed supersede (draft + archive prior); same gate — **partial** |
 | `GET` | `/api/jarvis/tools` | Tool catalog (OpenAI-compatible function schemas) |
 | `GET` | `/api/jarvis/memory/emr/status` | EMR session / STM counts |
 | `GET` | `/api/jarvis/memory/stm` | Read current STM session view |
@@ -213,3 +215,4 @@ Do **not** claim "no hallucinated memories" or "no contradictions exist." Evalua
 | Bounded persistent reinforcement, separate from truth | enforced (`tests/test_emr_reinforce.py`) |
 | Neural embedding resonance | declared |
 | Cross-agent constitutional enforcement of thresholds | declared |
+| MCP write tools (`emr_remember` / `emr_upsert`) | **partial** — draft-only, flag-gated; see `tests/test_emr_write.py` |

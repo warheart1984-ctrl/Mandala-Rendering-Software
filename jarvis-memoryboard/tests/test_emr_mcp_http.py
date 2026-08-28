@@ -49,7 +49,7 @@ def test_mcp_initialize():
     assert resp.status_code == 200
     body = resp.json()
     assert body["result"]["protocolVersion"] == "2025-03-26"
-    assert body["result"]["serverInfo"]["name"] == "jarvis-emr-recall"
+    assert body["result"]["serverInfo"]["name"] == "jarvis-emr"
     assert "Mcp-Session-Id" in resp.headers or "mcp-session-id" in resp.headers
 
 
@@ -71,9 +71,10 @@ def test_mcp_tools_list():
     )
     assert resp.status_code == 200
     tools = resp.json()["result"]["tools"]
-    assert len(tools) == 1
-    assert tools[0]["name"] == "emr_recall"
+    names = [t["name"] for t in tools]
+    assert names == ["emr_recall", "emr_remember", "emr_upsert"]
     assert tools[0]["annotations"]["readOnlyHint"] is True
+    assert tools[1]["annotations"]["readOnlyHint"] is False
 
 
 def test_mcp_tools_call_emr_recall():
@@ -95,6 +96,37 @@ def test_mcp_tools_call_emr_recall():
     assert result["isError"] is False
     assert result["structuredContent"]["protocol"] == "emr-recall-v1"
     assert "abstained" in result["structuredContent"]
+
+
+def test_mcp_tools_call_emr_remember(monkeypatch):
+    monkeypatch.setenv("JARVIS_MCP_WRITE_ENABLED", "true")
+    resp = client.post(
+        "/mcp",
+        headers=MCP_HEADERS,
+        json={
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {
+                "name": "emr_remember",
+                "arguments": {
+                    "content": "Prefer high-contrast cinematic lighting.",
+                    "session_id": "mcp-sess",
+                    "type": "preference",
+                    "subject": "creative-style",
+                    "user_requested": True,
+                    "user_statement": "Remember my lighting preference",
+                },
+            },
+        },
+    )
+    assert resp.status_code == 200
+    result = resp.json()["result"]
+    assert result["isError"] is False
+    body = result["structuredContent"]
+    assert body["protocol"] == "emr-write-v1"
+    assert body["accepted"] is True
+    assert body["memory"]["status"] == "draft"
 
 
 def test_mcp_unknown_tool():

@@ -1,6 +1,6 @@
-# EMR Recall MCP Adapter
+# EMR MCP Adapter (recall + gated writes)
 
-Expose the Jarvis **EMR Recall Protocol** (`emr_recall`) to assistant hosts
+Expose the Jarvis **EMR Protocol** to assistant hosts
 (Cursor, OpenCode, ChatGPT, Claude Desktop, etc.) via the Model Context Protocol.
 
 ## Live vs declared (status tags)
@@ -8,26 +8,46 @@ Expose the Jarvis **EMR Recall Protocol** (`emr_recall`) to assistant hosts
 | Capability | Tag | When it works | Evidence |
 |------------|-----|---------------|----------|
 | `POST /api/jarvis/tools/emr_recall` on loopback | **live** | Memoryboard running on `127.0.0.1:8001` | `tests/test_emr_tool.py`, `tests/test_emr_mcp.py` |
-| MCP stdio adapter (`python -m mcp_server`) | **live** | Same host as memoryboard; stdio process can reach `:8001` | `tests/test_emr_mcp.py::test_tools_call_proxies_to_http` |
-| Cursor / OpenCode local MCP wiring | **live** (operator) | Host config points `cwd` at `jarvis-memoryboard` + memoryboard up | `config/mcp-cursor.example.json`, `.opencode/config.json` |
-| Render public `POST /mcp` (Streamable HTTP) | **live** | Render deploy with `EMR_RECALL_API_KEY` | `mcp_server/mcp_http.py`, `tests/test_emr_mcp_http.py`, `docs/DEPLOY_RENDER.md` |
-| ChatGPT remote MCP app (public HTTPS) | **live** (operator) | Pro+ / Business developer-mode app → `https://YOUR-SERVICE.onrender.com/mcp` | `docs/DEPLOY_RENDER.md` |
-| ChatGPT via Secure MCP Tunnel | **live** (operator) | `tunnel-client` bridges private MCP → OpenAI; memoryboard stays local | [openai/tunnel-client](https://github.com/openai/tunnel-client/releases) |
-| Write path (`POST /api/jarvis/memory`) via MCP | **declared** | Not exposed in MCP v1 (read-only by design) | `docs/EMR_RECALL_PROTOCOL.md` |
+| `emr_remember` / `emr_upsert` tool endpoints | **partial** | `JARVIS_MCP_WRITE_ENABLED=true` + `user_requested=true` | `tests/test_emr_write.py`, `tests/test_emr_mcp*.py` |
+| MCP stdio adapter (`python -m mcp_server`) | **live** | Same host as memoryboard; stdio process can reach `:8001` | `tests/test_emr_mcp.py` |
+| Cursor / OpenCode local MCP wiring | **live** (operator) | Host config points `cwd` at `jarvis-memoryboard` + memoryboard up | `config/mcp-cursor.example.json` |
+| Render public `POST /mcp` (Streamable HTTP) | **live** | Render deploy with `EMR_RECALL_API_KEY` | `mcp_server/mcp_http.py`, `docs/DEPLOY_RENDER.md` |
+| ChatGPT remote MCP write tools | **declared** / operator | Requires `JARVIS_MCP_WRITE_ENABLED=true` (off on Render by default) + host `requireApproval` | `app/emr_write.py` |
 
-## Architecture
+## Architecture (constitutional loop)
 
 ```
-User → Assistant host → MCP emr_recall tool
-                            ↓ (stdio JSON-RPC)
-                     mcp_server/emr_stdio.py
-                            ↓ (HTTP POST)
-              http://127.0.0.1:8001/api/jarvis/tools/emr_recall
-                            ↓
-                     EMR excite → Continuity Ledger bundle
+                ┌──────────────────────────┐
+                │        ChatGPT / LLM     │
+                └──────────────┬───────────┘
+                               │ propose (MCP tools)
+                               ▼
+                ┌──────────────────────────┐
+                │        EMR (write)       │
+                │  emr_remember / upsert   │
+                │  abstention + provenance │
+                └──────────────┬───────────┘
+                               │ governed draft commit
+                               ▼
+                ┌──────────────────────────┐
+                │   Continuity Ledger (LTM)│
+                └──────────────┬───────────┘
+                               │ governed recall
+                               ▼
+                ┌──────────────────────────┐
+                │        EMR (read)        │
+                │      emr_recall         │
+                └──────────────┬───────────┘
+                               │ STM injection
+                               ▼
+                ┌──────────────────────────┐
+                │        ChatGPT / LLM     │
+                └──────────────────────────┘
 ```
 
-The MCP adapter is a thin **read-only proxy**. It does not write to the ledger.
+Agent never touches the ledger directly. Writes are **draft-only** and refuse
+without explicit `user_requested=true`. Public Render keeps writes off until
+`JARVIS_MCP_WRITE_ENABLED=true`.
 
 ## Prerequisites
 
@@ -63,14 +83,30 @@ Environment:
 |----------|---------|---------|
 | `JARVIS_MEMORYBOARD_URL` | `http://127.0.0.1:8001` | Memoryboard base URL |
 | `EMR_RECALL_API_KEY` | — | Operator key when memoryboard requires auth (Render, protected local) |
+| `JARVIS_MCP_WRITE_ENABLED` | `false` | Enable `emr_remember` / `emr_upsert` |
+| `JARVIS_MCP_FIXED_SOURCE_AGENT` | — | Optional fixed `source_agent` for all MCP writes |
+| `JARVIS_MEMORY_WRITE_ENABLED` | `true` (local) / `false` (Render) | REST ledger CRUD (separate from MCP tools) |
 
 ### Tool surface
 
 | MCP tool | HTTP equivalent | Policy |
 |----------|-----------------|--------|
 | `emr_recall` | `POST /api/jarvis/tools/emr_recall` | **READ** — governed bundle |
+| `emr_remember` | `POST /api/jarvis/tools/emr_remember` | **WRITE draft** — create (gated) |
+| `emr_upsert` | `POST /api/jarvis/tools/emr_upsert` | **WRITE draft** — supersede lineage (gated) |
 
 Tool catalog (OpenAI function schemas): `GET /api/jarvis/tools`
+
+### Enabling writes (local)
+
+```bash
+export JARVIS_MCP_WRITE_ENABLED=true
+# optional: export JARVIS_MCP_FIXED_SOURCE_AGENT=user-requested-mcp
+uvicorn app.main:app --host 127.0.0.1 --port 8001
+```
+
+Write calls require `user_requested: true`. Hosts should set MCP `require_approval`
+(or equivalent) so the model cannot silently commit.
 
 ---
 
@@ -158,7 +194,8 @@ See [DEPLOY_RENDER.md](./DEPLOY_RENDER.md). After deploy:
 2. Apps → **Create** → Connection: **Remote MCP**
 3. URL: `https://YOUR-SERVICE.onrender.com/mcp`
 4. Auth: **Bearer token** → `EMR_RECALL_API_KEY`
-5. **Scan Tools** → expect exactly **`emr_recall`** (read-only)
+5. **Scan Tools** → expect **`emr_recall`**, **`emr_remember`**, **`emr_upsert`**
+   (writes refuse unless `JARVIS_MCP_WRITE_ENABLED=true`)
 
 Smoke test:
 
@@ -256,7 +293,7 @@ include `Authorization: Bearer …`.
 2. ChatGPT → Plugins → **+** → Create developer-mode app
 3. Connection: **Tunnel** (not Remote MCP URL)
 4. Select your tunnel (or paste `tunnel_id`)
-5. Scan tools → **`emr_recall`**
+5. Scan tools → **`emr_recall`** (+ write tools if MCP write flag enabled)
 6. New chat → select app → e.g. “Recall my image-generation preferences”
 
 ### Path C — Responses API (public `/mcp`)
@@ -273,26 +310,30 @@ curl https://api.openai.com/v1/responses \
       {
         "type": "mcp",
         "server_label": "jarvis-emr",
-        "server_description": "Read-only EMR recall over the Continuity Ledger.",
+        "server_description": "Governed EMR memory (recall + optional draft writes).",
         "server_url": "https://YOUR-SERVICE.onrender.com/mcp",
         "authorization": "'"$EMR_RECALL_API_KEY"'",
         "allowed_tools": ["emr_recall"],
-        "require_approval": "never"
+        "require_approval": "always"
       }
     ],
     "input": "Recall my image-generation preferences from the continuity ledger."
   }'
 ```
 
-Expect `mcp_list_tools` with one tool (`emr_recall`), then `mcp_call` with the
-governed bundle. Re-send `authorization` on every request (not stored by the API).
+Expect `mcp_list_tools` with `emr_recall` (and write tools when enabled), then `mcp_call`
+with the governed bundle. Re-send `authorization` on every request (not stored by the API).
+For write tools, keep `require_approval: always` and only enable `JARVIS_MCP_WRITE_ENABLED`
+on private/staging hosts.
 
 For **tunnel-backed** testing via API, use the tunnel target exposed by your
 Platform tunnel settings instead of `server_url`.
 
 ### OpenAI security notes
 
-- MCP exposes **read-only** `emr_recall` only — no ledger writes via MCP.
+- Public Render defaults: recall on, MCP writes **off** (`JARVIS_MCP_WRITE_ENABLED=false`).
+- Writes require `user_requested=true`, force `status=draft`, and may abstain on conflicts / Clause V dumps.
+- Do **not** expose unrestricted PATCH/DELETE via MCP.
 - Bind local memoryboard to `127.0.0.1` unless you intend LAN exposure.
 - Treat `EMR_RECALL_API_KEY` and tunnel credentials as secrets; rotate if leaked.
 - `/api/jarvis/tools` is an OpenAI-style function catalog, **not** MCP transport.

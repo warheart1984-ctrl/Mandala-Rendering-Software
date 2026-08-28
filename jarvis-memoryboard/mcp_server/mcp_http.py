@@ -1,6 +1,7 @@
 """Streamable HTTP MCP transport — mount at ``/mcp`` on the FastAPI app.
 
-Stateless JSON responses (no SSE session manager). Read-only ``emr_recall`` only.
+Stateless JSON responses (no SSE session manager).
+Tools: ``emr_recall``, ``emr_remember``, ``emr_upsert`` (writes gated server-side).
 Spec: MCP Streamable HTTP (2025-03-26).
 """
 
@@ -8,7 +9,7 @@ from __future__ import annotations
 
 import json
 import secrets
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
@@ -16,14 +17,12 @@ from fastapi.responses import JSONResponse
 from app.auth import optional_verify_operator_api_key
 from mcp_server.protocol import (
     PROTOCOL_VERSION,
+    EmrToolCaller,
     dispatch_rpc,
     is_jsonrpc_request,
 )
 
-EmrRecallCaller = Callable[[dict[str, Any]], dict[str, Any]]
-
 SESSION_HEADER = "mcp-session-id"
-PROTOCOL_HEADER = "mcp-protocol-version"
 
 
 def _require_mcp_auth(request: Request) -> None:
@@ -62,7 +61,7 @@ def _validate_accept(request: Request) -> None:
     )
 
 
-def create_mcp_router(call_emr_recall: EmrRecallCaller) -> APIRouter:
+def create_mcp_router(call_tool: EmrToolCaller) -> APIRouter:
     router = APIRouter()
 
     @router.post("")
@@ -74,12 +73,11 @@ def create_mcp_router(call_emr_recall: EmrRecallCaller) -> APIRouter:
         session_id = request.headers.get(SESSION_HEADER)
         messages = _parse_body(await request.body())
 
-        # After initialize, clients should echo Mcp-Session-Id (stateless: we accept any).
         requests = [m for m in messages if is_jsonrpc_request(m)]
         notifications = [m for m in messages if not is_jsonrpc_request(m)]
 
         for note in notifications:
-            dispatch_rpc(note, call_emr_recall)
+            dispatch_rpc(note, call_tool)
 
         if not requests:
             return Response(status_code=202)
@@ -89,7 +87,7 @@ def create_mcp_router(call_emr_recall: EmrRecallCaller) -> APIRouter:
         for msg in requests:
             if msg.get("method") == "initialize" and not session_id:
                 new_session = secrets.token_urlsafe(24)
-            out = dispatch_rpc(msg, call_emr_recall)
+            out = dispatch_rpc(msg, call_tool)
             if out is not None:
                 responses.append(out)
 
@@ -108,7 +106,6 @@ def create_mcp_router(call_emr_recall: EmrRecallCaller) -> APIRouter:
     @router.get("")
     @router.get("/")
     async def mcp_get() -> Response:
-        # Stateless server — no standing SSE stream.
         return Response(status_code=405, headers={"Allow": "POST, DELETE"})
 
     @router.delete("")

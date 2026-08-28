@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Stdio MCP server — exposes ``emr_recall`` to assistant hosts.
+"""Stdio MCP server — EMR recall + gated write tools.
 
 Proxies tool calls to the Jarvis Memoryboard HTTP API:
-  POST {JARVIS_MEMORYBOARD_URL}/api/jarvis/tools/emr_recall
+  POST {JARVIS_MEMORYBOARD_URL}/api/jarvis/tools/{emr_recall|emr_remember|emr_upsert}
 
 Transport: JSON-RPC 2.0 over stdin/stdout (MCP 2024-11-05 / 2025-03-26 compatible).
 """
@@ -16,12 +16,26 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from mcp_server.protocol import EMR_RECALL_TOOL, dispatch_rpc
+from mcp_server.protocol import (
+    EMR_RECALL_TOOL,
+    EMR_REMEMBER_TOOL,
+    EMR_UPSERT_TOOL,
+    MCP_TOOLS,
+    dispatch_rpc,
+)
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8001"
 
-# Re-export for tests
-__all__ = ["EMR_RECALL_TOOL", "handle_message", "handle_tools_call", "call_emr_recall"]
+__all__ = [
+    "EMR_RECALL_TOOL",
+    "EMR_REMEMBER_TOOL",
+    "EMR_UPSERT_TOOL",
+    "MCP_TOOLS",
+    "handle_message",
+    "handle_tools_call",
+    "call_emr_tool",
+    "call_emr_recall",
+]
 
 
 def base_url() -> str:
@@ -33,9 +47,8 @@ def _send(message: dict[str, Any]) -> None:
     sys.stdout.flush()
 
 
-def call_emr_recall(arguments: dict[str, Any]) -> dict[str, Any]:
-    """POST emr_recall to the memoryboard HTTP API."""
-    url = f"{base_url()}/api/jarvis/tools/emr_recall"
+def _http_post(path: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    url = f"{base_url()}{path}"
     payload = json.dumps(arguments).encode("utf-8")
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     api_key = (os.environ.get("EMR_RECALL_API_KEY") or "").strip()
@@ -62,15 +75,27 @@ def call_emr_recall(arguments: dict[str, Any]) -> dict[str, Any]:
     return json.loads(body)
 
 
+def call_emr_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    """POST the named EMR tool to the memoryboard HTTP API."""
+    if name not in {"emr_recall", "emr_remember", "emr_upsert"}:
+        raise RuntimeError(f"unknown tool: {name}")
+    return _http_post(f"/api/jarvis/tools/{name}", arguments)
+
+
+def call_emr_recall(arguments: dict[str, Any]) -> dict[str, Any]:
+    """POST emr_recall to the memoryboard HTTP API (compat)."""
+    return call_emr_tool("emr_recall", arguments)
+
+
 def handle_tools_call(params: dict[str, Any]) -> dict[str, Any]:
     from mcp_server.protocol import handle_tools_call as _handle
 
-    return _handle(params, call_emr_recall)
+    return _handle(params, call_emr_tool)
 
 
 def handle_message(message: dict[str, Any]) -> bool:
     """Handle one JSON-RPC message. Returns False when the server should exit."""
-    out = dispatch_rpc(message, call_emr_recall)
+    out = dispatch_rpc(message, call_emr_tool)
     if out is not None:
         _send(out)
     return True

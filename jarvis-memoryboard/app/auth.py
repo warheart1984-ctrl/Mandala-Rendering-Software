@@ -15,11 +15,33 @@ def emr_recall_api_key() -> str | None:
 
 
 def memory_write_enabled() -> bool:
+    """Gate for REST ledger CRUD / EMR reinforce / board mutations."""
     return os.getenv("JARVIS_MEMORY_WRITE_ENABLED", "true").lower() in (
         "1",
         "true",
         "yes",
     )
+
+
+def mcp_write_enabled() -> bool:
+    """Gate for MCP/tool write surface (emr_remember / emr_upsert).
+
+    Defaults to **false** so public Render stays recall-only until explicitly enabled.
+    Independent of ``JARVIS_MEMORY_WRITE_ENABLED`` (REST CRUD).
+    """
+    return os.getenv("JARVIS_MCP_WRITE_ENABLED", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+def require_mcp_write() -> None:
+    if not mcp_write_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail="MCP memory writes are disabled on this deployment (set JARVIS_MCP_WRITE_ENABLED=true)",
+        )
 
 
 def ledger_read_protected() -> bool:

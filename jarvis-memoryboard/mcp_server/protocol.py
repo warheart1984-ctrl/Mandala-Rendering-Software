@@ -1,6 +1,8 @@
 """Shared MCP protocol surface — stdio and Streamable HTTP.
 
-Exposes **only** read-only ``emr_recall``. No write / reinforce / correct / CRUD tools.
+Tools:
+- ``emr_recall`` — read-only governed recall (always available when auth allows)
+- ``emr_remember`` / ``emr_upsert`` — draft writes when ``JARVIS_MCP_WRITE_ENABLED``
 """
 
 from __future__ import annotations
@@ -10,18 +12,20 @@ from typing import Any, Callable
 
 PROTOCOL_VERSION = "2025-03-26"
 PROTOCOL_VERSION_LEGACY = "2024-11-05"
-SERVER_NAME = "jarvis-emr-recall"
-SERVER_VERSION = "0.2.0"
+SERVER_NAME = "jarvis-emr"
+SERVER_VERSION = "0.3.0"
 
-# Callable that runs emr_recall and returns a JSON-serializable dict.
+# (tool_name, arguments) → JSON-serializable result dict
+EmrToolCaller = Callable[[str, dict[str, Any]], dict[str, Any]]
+
+# Backward-compatible alias used by older call sites
 EmrRecallCaller = Callable[[dict[str, Any]], dict[str, Any]]
 
 EMR_RECALL_TOOL: dict[str, Any] = {
     "name": "emr_recall",
     "description": (
-        "Read-only Electrom-Matic Recall over the Continuity Ledger. "
-        "Returns a governed memory bundle for the given intent and query. "
-        "Does not write, reinforce, or mutate ledger truth. "
+        "Governed recall bundle from EMR. Returns STM-ready memories with provenance "
+        "and activation scores. Does not write, reinforce, or mutate ledger truth. "
         "May abstain when evidence is insufficient; surfaces unresolved conflicts."
     ),
     "annotations": {
@@ -93,25 +97,127 @@ EMR_RECALL_TOOL: dict[str, Any] = {
     },
 }
 
+EMR_REMEMBER_TOOL: dict[str, Any] = {
+    "name": "emr_remember",
+    "description": (
+        "Create a governed durable memory record via EMR. Writes to Continuity Ledger "
+        "through constitutional gatekeeping. Requires user_requested=true; always draft. "
+        "Host should requireApproval. Disabled unless JARVIS_MCP_WRITE_ENABLED=true."
+    ),
+    "annotations": {
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": False,
+    },
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "content": {"type": "string", "description": "Memory content"},
+            "source_agent": {"type": "string", "description": "Agent writing the memory"},
+            "session_id": {"type": "string", "description": "Session identifier"},
+            "type": {
+                "type": "string",
+                "description": "MemoryType literal",
+                "enum": [
+                    "decision",
+                    "fact",
+                    "task",
+                    "preference",
+                    "architecture",
+                    "research",
+                ],
+            },
+            "subject": {"type": "string", "description": "Subject domain"},
+            "tags": {"type": "array", "items": {"type": "string"}},
+            "user_requested": {
+                "type": "boolean",
+                "description": "Must be true — explicit user intent to store",
+            },
+            "user_statement": {
+                "type": "string",
+                "description": "Verbatim user wording requesting storage",
+            },
+        },
+        "required": ["content", "session_id", "type", "user_requested"],
+    },
+}
+
+EMR_UPSERT_TOOL: dict[str, Any] = {
+    "name": "emr_upsert",
+    "description": (
+        "Update or supersede an existing memory record. EMR enforces lineage, "
+        "provenance, and conflict membranes (new draft + archive prior; no destructive "
+        "overwrite). Requires user_requested=true. Disabled unless JARVIS_MCP_WRITE_ENABLED=true."
+    ),
+    "annotations": {
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": False,
+    },
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "id": {"type": "string", "description": "Existing memory id being superseded"},
+            "content": {"type": "string", "description": "Updated content"},
+            "supersedes": {
+                "type": "string",
+                "description": "Optional id of record being superseded (defaults to id)",
+            },
+            "source_agent": {"type": "string"},
+            "session_id": {"type": "string"},
+            "type": {
+                "type": "string",
+                "enum": [
+                    "decision",
+                    "fact",
+                    "task",
+                    "preference",
+                    "architecture",
+                    "research",
+                ],
+            },
+            "subject": {"type": "string"},
+            "tags": {"type": "array", "items": {"type": "string"}},
+            "user_requested": {
+                "type": "boolean",
+                "description": "Must be true — explicit user intent",
+            },
+            "user_statement": {"type": "string"},
+        },
+        "required": ["id", "content", "user_requested"],
+    },
+}
+
+MCP_TOOLS: list[dict[str, Any]] = [
+    EMR_RECALL_TOOL,
+    EMR_REMEMBER_TOOL,
+    EMR_UPSERT_TOOL,
+]
+
+_KNOWN_TOOLS = frozenset(t["name"] for t in MCP_TOOLS)
+
 
 def handle_tools_call(
     params: dict[str, Any],
-    call_emr_recall: EmrRecallCaller,
+    call_tool: EmrToolCaller,
 ) -> dict[str, Any]:
     name = params.get("name")
     arguments = params.get("arguments") or {}
-    if name != "emr_recall":
+    if name not in _KNOWN_TOOLS:
         return {
             "content": [{"type": "text", "text": f"unknown tool: {name}"}],
             "isError": True,
         }
     try:
-        result = call_emr_recall(arguments if isinstance(arguments, dict) else {})
+        result = call_tool(str(name), arguments if isinstance(arguments, dict) else {})
     except Exception as exc:  # noqa: BLE001 — surface as tool error to host
         return {
             "content": [{"type": "text", "text": str(exc)}],
             "isError": True,
         }
+    # Write refusals are structured success (accepted=false), not transport errors
     return {
         "content": [{"type": "text", "text": json.dumps(result, indent=2)}],
         "structuredContent": result,
@@ -132,15 +238,18 @@ def _initialize_result(params: dict[str, Any] | None) -> dict[str, Any]:
         },
         "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
         "instructions": (
-            "Read-only EMR recall. Use emr_recall to fetch governed Continuity Ledger "
-            "memories. The tool may abstain; do not invent memories. No write tools."
+            "EMR constitutional memory tools. "
+            "Use emr_recall for governed Continuity Ledger recall (may abstain). "
+            "Use emr_remember / emr_upsert only when the user explicitly asked to store "
+            "or update memory (user_requested=true); writes are draft-only and may be "
+            "disabled by JARVIS_MCP_WRITE_ENABLED. Never invent memories."
         ),
     }
 
 
 def dispatch_rpc(
     message: dict[str, Any],
-    call_emr_recall: EmrRecallCaller,
+    call_tool: EmrToolCaller,
 ) -> dict[str, Any] | None:
     """Dispatch one JSON-RPC MCP message.
 
@@ -169,7 +278,7 @@ def dispatch_rpc(
         return {
             "jsonrpc": "2.0",
             "id": request_id,
-            "result": {"tools": [EMR_RECALL_TOOL]},
+            "result": {"tools": list(MCP_TOOLS)},
         }
 
     if method == "tools/call":
@@ -178,7 +287,7 @@ def dispatch_rpc(
             "id": request_id,
             "result": handle_tools_call(
                 params if isinstance(params, dict) else {},
-                call_emr_recall,
+                call_tool,
             ),
         }
 
@@ -197,3 +306,14 @@ def dispatch_rpc(
 
 def is_jsonrpc_request(message: dict[str, Any]) -> bool:
     return "id" in message and message.get("id") is not None and "method" in message
+
+
+def wrap_recall_caller(call_emr_recall: EmrRecallCaller) -> EmrToolCaller:
+    """Adapt legacy recall-only callers to the multi-tool dispatcher."""
+
+    def _call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        if name != "emr_recall":
+            raise RuntimeError(f"tool {name} not supported by this caller")
+        return call_emr_recall(arguments)
+
+    return _call

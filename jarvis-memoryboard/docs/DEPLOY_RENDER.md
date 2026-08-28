@@ -8,8 +8,9 @@ can call the Continuity Ledger without a local MCP tunnel.
 | Docker image + `render.yaml` | **live** (this doc) |
 | Render Disk persistence | **live** (operator enables via blueprint) |
 | `EMR_RECALL_API_KEY` gate on recall | **live** (`app/auth.py`) |
-| Public write endpoints | **disabled** by default (`JARVIS_MEMORY_WRITE_ENABLED=false`) |
-| HTTP MCP transport on Render | **live** — `POST /mcp` Streamable HTTP (`emr_recall` only) |
+| Public write endpoints (REST CRUD) | **disabled** by default (`JARVIS_MEMORY_WRITE_ENABLED=false`) |
+| MCP write tools | **disabled** by default (`JARVIS_MCP_WRITE_ENABLED=false`) |
+| HTTP MCP transport on Render | **live** — `POST /mcp` Streamable HTTP (`emr_recall`; writes refuse until flag on) |
 
 ## Architecture
 
@@ -58,6 +59,7 @@ render blueprint launch
 | `JARVIS_STORE_PATH` | yes | `/var/data/jarvis-store.json` | Must live on Render Disk |
 | `JARVIS_EMR_DYNAMICS_PATH` | recommended | `/var/data/emr-dynamics.json` | Reinforcement overlay |
 | `JARVIS_MEMORY_WRITE_ENABLED` | recommended | `false` | Blocks POST/PATCH/DELETE on ledger |
+| `JARVIS_MCP_WRITE_ENABLED` | recommended | `false` | Blocks `emr_remember` / `emr_upsert` (keep off on public) |
 | `JARVIS_PROTECT_LEDGER_READ` | recommended | `true` (Render) | Requires API key for `GET /api/jarvis/memory/*` |
 | `JARVIS_CORS_ORIGINS` | optional | `*` | Restrict in production |
 | `PORT` | auto | Render injects | Do not override |

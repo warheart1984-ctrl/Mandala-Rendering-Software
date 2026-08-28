@@ -32,7 +32,9 @@ def test_tool_catalog_exposes_emr_recall():
     cat = tool_catalog()
     assert cat["schema"] == "emr-tool-catalog-v1"
     names = [t["function"]["name"] for t in cat["tools"]]
-    assert names == ["emr_recall"]
+    assert names[0] == "emr_recall"
+    assert "emr_remember" in names
+    assert "emr_upsert" in names
     assert cat["write_policy"]["emr_recall"] == "read"
 
 
