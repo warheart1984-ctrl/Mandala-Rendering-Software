@@ -1,0 +1,28 @@
+{
+  "id": "scene-temporal-4d",
+  "name": "Temporal 4D — Space Through Time",
+  "description": "Abstract organ-like volume animated over time, extruded into a 4D motion solid, then sliced along the time axis. Demonstrates temporal insight — not clinical imaging, not photoreal.",
+  "duration": 4,
+  "chamberPath": "temporal-4d",
+  "status": "partial",
+  "claim": "We don't just render space. We render space through time.",
+  "disclaimer": "Not a medical device. Not photoreal. Soft-raster Simulation Chamber demo only.",
+  "temporal4d": {
+    "keyframes": 5,
+    "frames": 8,
+    "sliceMode": "slide",
+    "rings": 10,
+    "segs": 16,
+    "width": 320,
+    "height": 240
+  },
+  "scene": {
+    "objects": [],
+    "lights": []
+  },
+  "palette": {
+    "albedo": [0.2, 0.55, 0.75],
+    "ambient": [0.02, 0.03, 0.05]
+  },
+  "actors": []
+}
