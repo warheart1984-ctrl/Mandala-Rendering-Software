@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "bash": {
+      "*": "ask"
+    },
+    "read": {
+      "*": "allow"
+    },
+    "edit": {
+      "*": "ask"
+    }
+  },
+  "mcp": {
+    "servers": {
+      "mrs": { "url": "http://localhost:8080" },
+      "context7": { "url": "https://mcp.context7.com/mcp" },
+      "jarvis-emr": {
+        "command": "python",
+        "args": ["-m", "mcp_server"],
+        "cwd": "jarvis-memoryboard",
+        "env": {
+          "JARVIS_MEMORYBOARD_URL": "http://127.0.0.1:8001"
+        }
+      }
+    }
+  }
+}

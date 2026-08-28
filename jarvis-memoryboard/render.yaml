@@ -26,6 +26,8 @@ services:
         value: /var/data/amul-field.jsonl
       - key: JARVIS_MEMORY_WRITE_ENABLED
         value: "false"
+      - key: JARVIS_MCP_WRITE_ENABLED
+        value: "false"
       - key: JARVIS_PROTECT_LEDGER_READ
         value: "true"
       - key: JARVIS_CORS_ORIGINS

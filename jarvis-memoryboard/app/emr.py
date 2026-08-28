@@ -24,6 +24,7 @@ import json
 import math
 import os
 import re
+import threading
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
@@ -220,6 +221,7 @@ REINFORCEMENT_RULE = (
 )
 
 _REINFORCEMENT: dict[str, ReinforcementState] = {}
+_DYNAMICS_LOCK = threading.RLock()
 
 # --- Dynamics sidecar (survives restarts; lives OUTSIDE the Continuity Ledger) ---
 
@@ -235,37 +237,41 @@ def _ensure_dynamics() -> None:
     Corrupt/unreadable sidecar => fresh overlay; LTM is never affected
     (the ledger remains the sole truth source).
     """
-    global _dynamics_loaded
-    if _dynamics_loaded:
-        return
-    _dynamics_loaded = True
-    try:
-        p = Path(DYNAMICS_PATH)
-        if p.exists():
-            data = json.loads(p.read_text(encoding="utf-8"))
-            for mid, state in (data.get("reinforcement") or {}).items():
-                _REINFORCEMENT[mid] = ReinforcementState(**state)
-    except Exception:
-        pass  # sidecar is disposable dynamics, not truth
+    with _DYNAMICS_LOCK:
+        global _dynamics_loaded
+        if _dynamics_loaded:
+            return
+        _dynamics_loaded = True
+        try:
+            p = Path(DYNAMICS_PATH)
+            if p.exists():
+                data = json.loads(p.read_text(encoding="utf-8"))
+                for mid, state in (data.get("reinforcement") or {}).items():
+                    _REINFORCEMENT[mid] = ReinforcementState(**state)
+        except Exception:
+            pass  # sidecar is disposable dynamics, not truth
 
 
 def save_dynamics() -> bool:
     """Atomic sidecar write (tmp + rename). Returns success flag."""
-    try:
-        p = Path(DYNAMICS_PATH)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        tmp = p.with_suffix(p.suffix + ".tmp")
-        payload = {
-            "schema": "emr-dynamics-v1",
-            "saved_at": datetime.now(timezone.utc).isoformat(),
-            "note": "EMR retrieval dynamics only — NOT truth; ledger is authoritative.",
-            "reinforcement": {k: v.model_dump() for k, v in sorted(_REINFORCEMENT.items())},
-        }
-        tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        os.replace(tmp, p)
-        return True
-    except Exception:
-        return False
+    with _DYNAMICS_LOCK:
+        try:
+            p = Path(DYNAMICS_PATH)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            tmp = p.with_suffix(p.suffix + ".tmp")
+            payload = {
+                "schema": "emr-dynamics-v1",
+                "saved_at": datetime.now(timezone.utc).isoformat(),
+                "note": "EMR retrieval dynamics only — NOT truth; ledger is authoritative.",
+                "reinforcement": {
+                    k: v.model_dump() for k, v in sorted(_REINFORCEMENT.items())
+                },
+            }
+            tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            os.replace(tmp, p)
+            return True
+        except Exception:
+            return False
 
 
 # --- Resonance vectors F_i (multichannel) and trigger presets ---
@@ -569,8 +575,9 @@ def clear_stm(session_key: str | None = None) -> None:
 
 
 def reset_stm_for_tests() -> None:
-    _STM.clear()
-    _REINFORCEMENT.clear()
+    with _DYNAMICS_LOCK:
+        _STM.clear()
+        _REINFORCEMENT.clear()
 
 
 def get_reinforcement(memory_id: str) -> ReinforcementState | None:
@@ -591,29 +598,30 @@ def reinforce_ids(
     """
     if outcome is None or outcome.signal != "positive":
         raise ValueError("an explicit positive outcome signal is required")
-    _ensure_dynamics()
-    now_iso = datetime.now(timezone.utc).isoformat()
-    reinforced: list[ReinforcementState] = []
-    unknown: list[str] = []
-    replayed: list[str] = []
-    for mid in requested:
-        if mid not in known_ids:
-            unknown.append(mid)
-            continue
-        state = _REINFORCEMENT.get(mid) or ReinforcementState(memory_id=mid)
-        if outcome.outcome_id in state.outcome_ids:
-            replayed.append(mid)
-            continue
-        state.use_count += 1
-        state.salience = min(SALIENCE_CAP, state.salience + SALIENCE_GAIN)
-        state.decay_damp = min(DAMP_CAP, state.decay_damp + DAMP_GAIN)
-        state.last_reinforced_at = now_iso
-        state.outcome_ids.append(outcome.outcome_id)
-        _REINFORCEMENT[mid] = state
-        reinforced.append(state)
-    if reinforced:
-        save_dynamics()
-    return reinforced, unknown, replayed
+    with _DYNAMICS_LOCK:
+        _ensure_dynamics()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        reinforced: list[ReinforcementState] = []
+        unknown: list[str] = []
+        replayed: list[str] = []
+        for mid in requested:
+            if mid not in known_ids:
+                unknown.append(mid)
+                continue
+            state = _REINFORCEMENT.get(mid) or ReinforcementState(memory_id=mid)
+            if outcome.outcome_id in state.outcome_ids:
+                replayed.append(mid)
+                continue
+            state.use_count += 1
+            state.salience = min(SALIENCE_CAP, state.salience + SALIENCE_GAIN)
+            state.decay_damp = min(DAMP_CAP, state.decay_damp + DAMP_GAIN)
+            state.last_reinforced_at = now_iso
+            state.outcome_ids.append(outcome.outcome_id)
+            _REINFORCEMENT[mid] = state
+            reinforced.append(state)
+        if reinforced:
+            save_dynamics()
+        return reinforced, unknown, replayed
 
 
 def correct_memory_ids(
@@ -627,28 +635,29 @@ def correct_memory_ids(
     Clears salience and decay damping so a mistaken memory cannot slowly
     outcompete a corrected replacement. Mutates only the EMR dynamics sidecar.
     """
-    _ensure_dynamics()
-    now_iso = datetime.now(timezone.utc).isoformat()
-    corrected: list[ReinforcementState] = []
-    unknown: list[str] = []
-    replayed: list[str] = []
-    for mid in requested:
-        if mid not in known_ids:
-            unknown.append(mid)
-            continue
-        state = _REINFORCEMENT.get(mid) or ReinforcementState(memory_id=mid)
-        if correction.correction_id in state.correction_ids:
-            replayed.append(mid)
-            continue
-        state.salience = 0.0
-        state.decay_damp = 0.0
-        state.last_reinforced_at = now_iso
-        state.correction_ids.append(correction.correction_id)
-        _REINFORCEMENT[mid] = state
-        corrected.append(state)
-    if corrected:
-        save_dynamics()
-    return corrected, unknown, replayed
+    with _DYNAMICS_LOCK:
+        _ensure_dynamics()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        corrected: list[ReinforcementState] = []
+        unknown: list[str] = []
+        replayed: list[str] = []
+        for mid in requested:
+            if mid not in known_ids:
+                unknown.append(mid)
+                continue
+            state = _REINFORCEMENT.get(mid) or ReinforcementState(memory_id=mid)
+            if correction.correction_id in state.correction_ids:
+                replayed.append(mid)
+                continue
+            state.salience = 0.0
+            state.decay_damp = 0.0
+            state.last_reinforced_at = now_iso
+            state.correction_ids.append(correction.correction_id)
+            _REINFORCEMENT[mid] = state
+            corrected.append(state)
+        if corrected:
+            save_dynamics()
+        return corrected, unknown, replayed
 
 
 def build_retrieval_receipt(

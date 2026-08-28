@@ -58,6 +58,11 @@ evidence*.json
 # Cloud Agent environment config (must be tracked despite blanket *.json ignore)
 !.cursor/environment.json
 
+# Jarvis EMR MCP host config examples (blanket *.json ignore)
+!jarvis-memoryboard/config/mcp-cursor.example.json
+!jarvis-memoryboard/config/mcp-opencode.example.json
+!.opencode/config.json
+
 # HoloRT4D Spatial MCP package manifests (blanket *.json ignore)
 !mrs/apps/spatial-tokenizer/mcp/package.json
 !mrs/apps/spatial-tokenizer/mcp/package-lock.json

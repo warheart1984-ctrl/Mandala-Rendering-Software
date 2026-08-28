@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>math4d debug — slice / basis / Rot4</title>
+  <style>
+    :root {
+      --bg: #1a1f24;
+      --fg: #e8ecef;
+      --muted: #8a949e;
+      --accent: #5dade2;
+      --panel: #242b32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+    aside {
+      background: var(--panel);
+      padding: 1rem 1.1rem;
+      border-right: 1px solid #333b44;
+      overflow-y: auto;
+    }
+    h1 { font-size: 1rem; font-weight: 600; margin: 0 0 0.25rem; }
+    .status { color: var(--muted); font-size: 0.75rem; margin-bottom: 1rem; }
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      margin: 0.45rem 0;
+      gap: 0.5rem;
+    }
+    label span { color: var(--muted); min-width: 2.5rem; text-align: right; font-variant-numeric: tabular-nums; }
+    input[type="range"] { flex: 1; }
+    select, button {
+      width: 100%;
+      margin: 0.35rem 0 0.75rem;
+      padding: 0.4rem;
+      background: #1a1f24;
+      color: var(--fg);
+      border: 1px solid #3d4752;
+      border-radius: 4px;
+    }
+    main { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+    canvas {
+      background: #0e1216;
+      width: 100%;
+      max-width: 720px;
+      height: auto;
+      border: 1px solid #333b44;
+      image-rendering: pixelated;
+    }
+    .row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .heatmap {
+      width: 160px; height: 160px;
+      background: #0e1216;
+      border: 1px solid #333b44;
+    }
+    pre {
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: var(--panel);
+      padding: 0.6rem;
+      border-radius: 4px;
+      max-width: 720px;
+      overflow: auto;
+    }
+    h2 { font-size: 0.85rem; margin: 0.5rem 0 0.25rem; color: var(--accent); }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>math4d debug</h1>
+    <p class="status">Status: <strong>partial</strong> — slice / basis / Rot4 / distance heatmap; Quat4+extrusion tags below</p>
+
+    <h2>Slice mode</h2>    <select id="mode">
+      <option value="static">static</option>
+      <option value="orbit">orbit (SO4)</option>
+      <option value="slide">slide d(t)</option>
+    </select>
+
+    <h2>Slice offset d</h2>
+    <label>d <input id="d" type="range" min="-2" max="2" step="0.01" value="0" /><span id="dV">0</span></label>
+
+    <h2>Rotation debugger (6 planes)</h2>
+    <label>XY <input data-plane="xy" type="range" min="-3.14" max="3.14" step="0.01" value="0" /><span>0</span></label>
+    <label>XZ <input data-plane="xz" type="range" min="-3.14" max="3.14" step="0.01" value="0" /><span>0</span></label>
+    <label>XW <input data-plane="xw" type="range" min="-3.14" max="3.14" step="0.01" value="0" /><span>0</span></label>
+    <label>YZ <input data-plane="yz" type="range" min="-3.14" max="3.14" step="0.01" value="0" /><span>0</span></label>
+    <label>YW <input data-plane="yw" type="range" min="-3.14" max="3.14" step="0.01" value="0" /><span>0</span></label>
+    <label>ZW <input data-plane="zw" type="range" min="-3.14" max="3.14" step="0.01" value="0" /><span>0</span></label>
+
+    <button type="button" id="reset">Reset</button>
+
+    <h2>Facade status (honest)</h2>
+    <pre id="statusTags" style="font-size:0.65rem;margin:0;max-height:9rem;overflow:auto;">…</pre>
+  </aside>
+  <main>
+    <canvas id="view" width="640" height="400"></canvas>
+    <div class="row">
+      <div>
+        <h2>Distance heatmap (w-slice)</h2>
+        <canvas class="heatmap" id="heat" width="160" height="160"></canvas>
+      </div>
+      <pre id="basisOut">basis…</pre>
+    </div>
+    <pre id="log">Open via a local static server from package root, or use Node harness.
+Inline math below mirrors SoT formulas (no module load required for this partial tool).</pre>
+  </main>
+  <script type="module">
+    /**
+     * Self-contained partial debugger (mirrors SoT; does not import package ESM
+     * so it can open as file://). Prefer npm package tests for enforcement.
+     */
+    const planes = ["xy", "xz", "xw", "yz", "yw", "zw"];
+    const angles = Object.fromEntries(planes.map((p) => [p, 0]));
+    let mode = "static";
+    let d = 0;
+    let t0 = performance.now();
+
+    // Mirrors math4d README tags (keep in sync manually — file:// tool has no package import).
+    document.getElementById("statusTags").textContent = [
+      "pipeline 1–5 (world/camera/slice/clip/ndc): enforced",
+      "pipeline 6 screen viewport: enforced; raster/shade/post: declared",
+      "quatExpLog: enforced",
+      "quat4Slerp / bivecExpLog: partial",
+      "slerpSO4 (skew+Taylor): partial",
+      "temporalExtrusion (extrudeBetween): partial",
+      "holographic ρ/h_ij recorder: declared (not this math package)",
+      "phaseAlbedo / anisotropy4dHint: partial",
+      "hyperVolumeDensity: declared",
+      "BRDF 3ρ/(4π), pdf 3cosθ/(4π): enforced",
+    ].join("\n");
+
+    function rotPlane(plane, a, p) {
+      const c = Math.cos(a), s = Math.sin(a);
+      const o = { ...p };
+      if (plane === "xy") { o.x = c*p.x - s*p.y; o.y = s*p.x + c*p.y; }
+      if (plane === "xz") { o.x = c*p.x - s*p.z; o.z = s*p.x + c*p.z; }
+      if (plane === "xw") { o.x = c*p.x - s*p.w; o.w = s*p.x + c*p.w; }
+      if (plane === "yz") { o.y = c*p.y - s*p.z; o.z = s*p.y + c*p.z; }
+      if (plane === "yw") { o.y = c*p.y - s*p.w; o.w = s*p.y + c*p.w; }
+      if (plane === "zw") { o.z = c*p.z - s*p.w; o.w = s*p.z + c*p.w; }
+      return o;
+    }
+    function compose(angs, p) {
+      let r = p;
+      for (const plane of planes) {
+        const a = angs[plane];
+        if (a) r = rotPlane(plane, a, r);
+      }
+      return r;
+    }
+    function signedDist(n, dOff, p) {
+      return n.x*p.x + n.y*p.y + n.z*p.z + n.w*p.w - dOff;
+    }
+    function basisFor(n) {
+      const cand = [{x:1,y:0,z:0,w:0},{x:0,y:1,z:0,w:0},{x:0,y:0,z:1,w:0},{x:0,y:0,z:0,w:1}];
+      let best = 0, bd = Infinity;
+      for (let i=0;i<4;i++) {
+        const d0 = Math.abs(n.x*cand[i].x+n.y*cand[i].y+n.z*cand[i].z+n.w*cand[i].w);
+        if (d0 < bd) { bd = d0; best = i; }
+      }
+      const sub = (a,b,s)=>({x:a.x-b.x*s,y:a.y-b.y*s,z:a.z-b.z*s,w:a.w-b.w*s});
+      const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z+a.w*b.w;
+      const norm=(v)=>{const L=Math.sqrt(dot(v,v))||1;return {x:v.x/L,y:v.y/L,z:v.z/L,w:v.w/L};};
+      const e1 = norm(sub(cand[best], n, dot(n, cand[best])));
+      const basis = [e1];
+      for (let i=0;i<4;i++) {
+        if (i===best) continue;
+        let v = sub(cand[i], n, dot(n, cand[i]));
+        for (const b of basis) v = sub(v, b, dot(b,v));
+        if (Math.sqrt(dot(v,v)) > 1e-6) { basis.push(norm(v)); if (basis.length===3) break; }
+      }
+      return basis;
+    }
+
+    // Unit tesseract edges
+    const verts = [];
+    for (let i=0;i<16;i++) {
+      verts.push({
+        x: (i&1)?1:-1, y: (i&2)?1:-1, z: (i&4)?1:-1, w: (i&8)?1:-1
+      });
+    }
+    const edges = [];
+    for (let i=0;i<16;i++) for (let j=i+1;j<16;j++) {
+      let diff = 0;
+      if (verts[i].x!==verts[j].x) diff++;
+      if (verts[i].y!==verts[j].y) diff++;
+      if (verts[i].z!==verts[j].z) diff++;
+      if (verts[i].w!==verts[j].w) diff++;
+      if (diff===1) edges.push([i,j]);
+    }
+
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const heat = document.getElementById("heat");
+    const hctx = heat.getContext("2d");
+
+    function currentAngles(t) {
+      const a = { ...angles };
+      if (mode === "orbit") {
+        a.xw += t * 0.7; a.yz += t * 1.1; a.zw += t * 1.5; a.yw += t * 2.0;
+      }
+      return a;
+    }
+    function currentD(t) {
+      return mode === "slide" ? d + t * 0.4 : d;
+    }
+
+    function draw() {
+      const t = (performance.now() - t0) / 1000;
+      const angs = currentAngles(t);
+      const dOff = currentD(t);
+      let n = { x: 0, y: 0, z: 0, w: 1 };
+      n = compose(angs, n);
+      const L = Math.hypot(n.x,n.y,n.z,n.w) || 1;
+      n = { x:n.x/L, y:n.y/L, z:n.z/L, w:n.w/L };
+      const basis = basisFor(n);
+
+      ctx.fillStyle = "#0e1216";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width/2, cy = canvas.height/2, sc = 70;
+
+      for (const [i,j] of edges) {
+        const a = compose(angs, verts[i]);
+        const b = compose(angs, verts[j]);
+        // project via basis (drop along n)
+        const pa = {
+          x: a.x*basis[0].x + a.y*basis[0].y + a.z*basis[0].z + a.w*basis[0].w,
+          y: a.x*basis[1].x + a.y*basis[1].y + a.z*basis[1].z + a.w*basis[1].w,
+        };
+        const pb = {
+          x: b.x*basis[0].x + b.y*basis[0].y + b.z*basis[0].z + b.w*basis[0].w,
+          y: b.x*basis[1].x + b.y*basis[1].y + b.z*basis[1].z + b.w*basis[1].w,
+        };
+        const da = signedDist(n, dOff, a);
+        const db = signedDist(n, dOff, b);
+        const alpha = 0.25 + 0.75 * (1 - Math.min(1, (Math.abs(da)+Math.abs(db))/4));
+        ctx.strokeStyle = `rgba(93,173,226,${alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(cx + pa.x*sc, cy - pa.y*sc);
+        ctx.lineTo(cx + pb.x*sc, cy - pb.y*sc);
+        ctx.stroke();
+      }
+
+      // basis viewer
+      document.getElementById("basisOut").textContent =
+        `n = (${n.x.toFixed(3)}, ${n.y.toFixed(3)}, ${n.z.toFixed(3)}, ${n.w.toFixed(3)})\n` +
+        `d = ${dOff.toFixed(3)}  mode=${mode}\n` +
+        basis.map((e,i)=>`e${i+1}=(${e.x.toFixed(3)},${e.y.toFixed(3)},${e.z.toFixed(3)},${e.w.toFixed(3)})`).join("\n") +
+        `\nquat4 demo: qL=cos(xy/2)+i sin(xy/2)  (pair SLERP = partial)`;
+
+      // distance heatmap over x-y at z=0,w varies via d
+      const img = hctx.createImageData(160, 160);
+      for (let py=0; py<160; py++) for (let px=0; px<160; px++) {
+        const x = (px/160)*4 - 2;
+        const y = (py/160)*4 - 2;
+        const p = { x, y, z: 0, w: 0 };
+        const sd = signedDist(n, dOff, compose(angs, p));
+        const v = Math.max(0, Math.min(1, 0.5 + sd * 0.25));
+        const i = (py*160 + px)*4;
+        img.data[i] = Math.floor(40 + v*180);
+        img.data[i+1] = Math.floor(60 + (1-v)*100);
+        img.data[i+2] = Math.floor(120 + v*80);
+        img.data[i+3] = 255;
+      }
+      hctx.putImageData(img, 0, 0);
+
+      requestAnimationFrame(draw);
+    }
+
+    document.querySelectorAll("input[data-plane]").forEach((el) => {
+      el.addEventListener("input", () => {
+        angles[el.dataset.plane] = +el.value;
+        el.parentElement.querySelector("span").textContent = (+el.value).toFixed(2);
+      });
+    });
+    document.getElementById("d").addEventListener("input", (e) => {
+      d = +e.target.value;
+      document.getElementById("dV").textContent = d.toFixed(2);
+    });
+    document.getElementById("mode").addEventListener("change", (e) => { mode = e.target.value; });
+    document.getElementById("reset").addEventListener("click", () => {
+      planes.forEach((p) => { angles[p] = 0; });
+      document.querySelectorAll("input[data-plane]").forEach((el) => {
+        el.value = 0;
+        el.parentElement.querySelector("span").textContent = "0";
+      });
+      d = 0;
+      document.getElementById("d").value = 0;
+      document.getElementById("dV").textContent = "0";
+      t0 = performance.now();
+    });
+
+    draw();
+  </script>
+</body>
+</html>

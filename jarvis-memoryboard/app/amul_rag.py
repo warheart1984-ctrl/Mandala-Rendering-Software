@@ -465,7 +465,7 @@ def llm_generate(
     query: str, context: str, style: str, allowed_doc_ids: list[str]
 ) -> tuple[str, str] | None:
     """Cited OpenAI-compatible generation with deterministic safe fallback."""
-    if not RAG_LLM_URL:
+    if not RAG_LLM_URL or not allowed_doc_ids:
         return None
     try:
         data = _post_json(
@@ -569,6 +569,12 @@ INSUFFICIENT_TEMPLATE = (
     "Insufficient evidence to answer (top support {top:.3f} < threshold "
     "{thr:.2f}). The governed policy forbids answering without a supporting "
     "document; refine the query or ingest relevant sources."
+)
+
+CONTEXT_BUDGET_TEMPLATE = (
+    "Insufficient evidence to answer: retrieved documents exceed the context "
+    "token budget ({max_tokens} tokens) and none could be admitted. Refine "
+    "the query or ingest shorter sources."
 )
 
 CONFLICT_TEMPLATE = (
@@ -703,6 +709,27 @@ def answer_query(query: str, index: RagIndex, extra_docs: list[RagDocument] | No
         return record
 
     context, used_ids = build_context(work_index, hits, gcfg["max_context_tokens"])
+    if not used_ids:
+        top = hits[0]["final"] if hits else 0.0
+        record = EvidenceRecord(
+            query=query,
+            intent_type=intent,
+            retrieval_config=rcfg,
+            docs_used=[],
+            scores={"top_support": round(top, 6)},
+            answer=CONTEXT_BUDGET_TEMPLATE.format(
+                max_tokens=gcfg["max_context_tokens"]
+            ),
+            llm_model=gcfg["llm_model"],
+            status="insufficient_evidence",
+            timestamp=now,
+            embedding_backend=work_index.embedding_backend,
+            epistemic_status="unsupported",
+            query_sha256=query_sha,
+        )
+        _persist_replay(record)
+        return record
+
     gen = llm_generate(query, context, gcfg["style"], used_ids)
     if gen is None:
         answer, model = extractive_answer(query, work_index, used_ids), "extractive-v0"

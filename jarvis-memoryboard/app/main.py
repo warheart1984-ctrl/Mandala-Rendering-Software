@@ -40,6 +40,12 @@ from app.emr import (
     stm_context_block,
 )
 from app.emr_tool import EmrRecallRequest, emr_recall, tool_catalog
+from app.emr_write import (
+    EmrRememberRequest,
+    EmrUpsertRequest,
+    emr_remember,
+    emr_upsert,
+)
 from app.models import (
     BoardUpdate,
     MemoryBoard,
@@ -51,11 +57,13 @@ from app.auth import (
     emr_recall_api_key,
     ledger_read_protected,
     ledger_read_protection_middleware,
+    mcp_write_enabled,
     memory_write_enabled,
     require_emr_recall_api_key,
     require_memory_write,
 )
 from app.store import get_store
+from mcp_server.mcp_http import create_mcp_router
 
 app = FastAPI(
     title="Jarvis Continuity Ledger",
@@ -147,6 +155,14 @@ def index():
             "tools": {
                 "catalog": "GET /api/jarvis/tools",
                 "emr_recall": "POST /api/jarvis/tools/emr_recall",
+                "emr_remember": "POST /api/jarvis/tools/emr_remember",
+                "emr_upsert": "POST /api/jarvis/tools/emr_upsert",
+            },
+            "mcp": {
+                "streamable_http": "POST /mcp",
+                "transport": "streamable-http",
+                "tools": ["emr_recall", "emr_remember", "emr_upsert"],
+                "mcp_write_enabled": mcp_write_enabled(),
             },
         },
     }
@@ -163,10 +179,16 @@ def health():
         "memory_count": len(store.list_memories(limit=9999)),
         "board_id": board.board_id,
         "memory_write_enabled": memory_write_enabled(),
+        "mcp_write_enabled": mcp_write_enabled(),
         "deployment": deployment_label(),
         "auth": {
             "emr_recall_key_required": emr_recall_api_key() is not None,
             "ledger_read_protected": ledger_read_protected(),
+        },
+        "mcp": {
+            "streamable_http": "/mcp",
+            "tools": ["emr_recall", "emr_remember", "emr_upsert"],
+            "mcp_write_enabled": mcp_write_enabled(),
         },
         "store_path": os.getenv("JARVIS_STORE_PATH", "data/jarvis-store.json"),
     }
@@ -299,9 +321,23 @@ def tool_emr_recall(body: EmrRecallRequest):
     return result.model_dump()
 
 
+@app.post("/api/jarvis/tools/emr_remember", dependencies=[Depends(require_emr_recall_api_key)])
+def tool_emr_remember(body: EmrRememberRequest):
+    """Governed create via EMR — draft-only; gated by JARVIS_MCP_WRITE_ENABLED."""
+    store = get_store()
+    return emr_remember(store, body).model_dump()
+
+
+@app.post("/api/jarvis/tools/emr_upsert", dependencies=[Depends(require_emr_recall_api_key)])
+def tool_emr_upsert(body: EmrUpsertRequest):
+    """Governed supersede via EMR — new draft + archive prior; gated by JARVIS_MCP_WRITE_ENABLED."""
+    store = get_store()
+    return emr_upsert(store, body).model_dump()
+
+
 @app.get("/api/jarvis/tools")
 def list_tools():
-    """Tool catalog (OpenAI-compatible function schemas, read-only v1)."""
+    """Tool catalog (OpenAI-compatible function schemas)."""
     return tool_catalog()
 
 
@@ -684,3 +720,21 @@ def amul_field_verify():
     store = get_store()
     report = verify_field(get_field(), store.list_memories(limit=9999))
     return report.model_dump()
+
+
+def _invoke_emr_tool(name: str, arguments: dict) -> dict:
+    """In-process EMR tools for MCP Streamable HTTP (same path as REST tools)."""
+    store = get_store()
+    if name == "emr_recall":
+        body = EmrRecallRequest.model_validate(arguments)
+        return emr_recall(store, body).model_dump()
+    if name == "emr_remember":
+        body = EmrRememberRequest.model_validate(arguments)
+        return emr_remember(store, body).model_dump()
+    if name == "emr_upsert":
+        body = EmrUpsertRequest.model_validate(arguments)
+        return emr_upsert(store, body).model_dump()
+    raise RuntimeError(f"unknown tool: {name}")
+
+
+app.include_router(create_mcp_router(_invoke_emr_tool), prefix="/mcp", tags=["mcp"])
