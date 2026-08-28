@@ -61,7 +61,16 @@ Continuity Ledger remains the **LTM SoT via Memoryboard**. EMR reads Memoryboard
 ## Activation score
 
 \[
-A_i = Q_i \cdot R_i \cdot P_i \cdot e^{-D_i \Delta t}
+A_i^{base} = Q_i^{w_q} \cdot R_i^{w_r} \cdot P_i^{w_p}
+\cdot (e^{-D_i^{eff} \Delta t})^{w_d}
+\cdot (1 + U_i)^{w_u}
+\cdot (1 + \kappa\cos(F_i,R))^{w_f}
+\]
+
+After base scoring, bounded graph expansion may add the strongest recorded path:
+
+\[
+A_i = A_i^{base} + w_g A_{seed}^{base} \cdot pathStrength(seed \rightarrow i)
 \]
 
 | Factor | Meaning | Ledger mapping (v1) |
@@ -70,6 +79,68 @@ A_i = Q_i \cdot R_i \cdot P_i \cdot e^{-D_i \Delta t}
 | \(R_i\) | Resonance / bonding with trajectory | Overlap of trajectory tokens vs same fields (sticky prior STM) |
 | \(P_i\) | Provenance / authority / certification weight | `confidence` × status weight (`verified` > `draft` ≫ `archived`) |
 | \(D_i\) | Decay rate | Per-type constant; \(\Delta t\) from `updated_at` |
+| \(U_i\) | Reinforcement salience | Bounded EMR sidecar state; never a truth score |
+| \(F_i\) | Multichannel resonance frequency | Domain, authority, project, temporal, procedural, and identity channels |
+| `pathStrength` | Graph expansion signal | Strongest bounded path through recorded/derived ledger edges |
+
+The `weights` request object makes each soft component explicit and auditable.
+Provenance admission remains a hard gate: a zero-authority/archived particle
+cannot be made admissible by changing weights or reinforcing it.
+
+## Metadata filtering
+
+`filters` are applied before activation scoring and before `candidate_limit`.
+Supported exact-match fields are `types`, `statuses`, `source_agents`,
+`session_ids`, `subjects`, `tags_any`, and `tags_all`; range filters cover
+confidence plus created/updated timestamps. String metadata is matched
+case-insensitively. An archived record remains dormant even if requested.
+
+## Bounded graph expansion
+
+EMR traverses only relationships visible in the ledger: `supersedes`, explicit
+`memory:mem-…` evidence references, shared subjects, and shared tags. Traversal
+is bounded by depth, seed count, expanded-node count, minimum edge strength,
+and hop decay. Every graph boost reports its seed, hop count, memory-id path,
+typed edges, and numeric boost. The strongest path wins; cycles do not stack.
+
+Graph expansion does not override the contradiction membrane. Two different
+claims under one subject may be discovered, but are not silently co-admitted
+when `contradiction_policy=exclude`.
+
+The current evidence-calibrated defaults use graph contribution `0.30` and
+minimum derived edge strength `0.35`. The decision record and its provisional
+semantic judgments are in `docs/EMR_GRAPH_ADJUDICATION_2026-08-24.md`.
+
+## Abstention
+
+Before STM selection, EMR applies a gate to the strongest distinct-content
+scores. The default gate requires evidence activation `>= 0.05`, lexical query
+alignment `>= 0.20`, absolute score margin `>= 0.0005`, and relative margin
+`>= 0.005`. It returns an empty STM plus an explicit reason when the query is
+unsupported or ambiguous.
+
+The gate uses canonical `gate_A`, calculated without reinforcement, graph
+boosts, or caller-supplied retrieval-weight changes. Therefore repeated use,
+graph proximity, and custom ranking weights can reorder supported memories but
+cannot make an unsupported query appear answerable. Duplicate content hashes
+are collapsed before the margin comparison. API callers may strengthen these
+floors but cannot disable or lower them; controlled evaluation bypasses the
+gate only through an internal function argument.
+
+## Reinforcement
+
+Reinforcement changes only the disposable EMR dynamics sidecar: bounded
+salience raises retrievability and bounded decay damping extends recall life.
+It never changes ledger content, status, confidence, evidence, or hashes.
+Every reinforcement requires an explicit positive outcome signal containing a
+source and outcome id. Reusing the same outcome id for the same memory is
+idempotent and reported as a replay. Use
+`POST /api/jarvis/memory/emr/reinforce` explicitly, or set
+`reinforce_selected=true` together with `reinforcement_outcome` on an excitation
+request. Selection alone is never a positive outcome.
+
+Separate salience and decay-damping caps remain, and their compounded effect is
+also capped at `1.25x` activation. Automatic reinforcement is off by default.
 
 ## Thresholds & budget
 
@@ -97,6 +168,10 @@ Expansion is always `STM → memory_id → Memoryboard LTM → evidence`. No inv
 |--------|------|---------|
 | `GET` | `/api/jarvis/memory/active` | EMR excite → budgeted STM view (contract GET) |
 | `POST` | `/api/jarvis/memory/emr/excite` | Same excitation with full request body |
+| `POST` | `/api/jarvis/memory/emr/reinforce` | Bounded retrieval-state reinforcement; never edits LTM truth fields |
+| `POST` | `/api/jarvis/memory/emr/correct` | Operator correction — immediately resets reinforcement overlay |
+| `POST` | `/api/jarvis/tools/emr_recall` | **Read-only** EMR Recall Protocol for agent tool calling |
+| `GET` | `/api/jarvis/tools` | Tool catalog (OpenAI-compatible function schemas) |
 | `GET` | `/api/jarvis/memory/emr/status` | EMR session / STM counts |
 | `GET` | `/api/jarvis/memory/stm` | Read current STM session view |
 | `GET` | `/api/jarvis/memory/stm/context` | LLM-ready STM injection block |
@@ -105,6 +180,19 @@ Expansion is always `STM → memory_id → Memoryboard LTM → evidence`. No inv
 | `DELETE` | `/api/jarvis/memory/stm` | Clear STM session view |
 
 Existing Continuity Ledger endpoints remain the LTM SoT (`list` / `retrieve` / CRUD / `conflicts` / `board`).
+
+## Defensible claims (evidence-bound)
+
+Use these formulations in papers, READMEs, and operator docs:
+
+| Claim | Wording |
+|-------|---------|
+| Recall quality | EMR **reduces unsupported recall** and makes memory selection **inspectable, replayable, and governable** |
+| Contradictions | Contradictory memories are **detected and prevented from silent co-admission** under the tested policy |
+| Reinforcement | **Retrieval ≠ reinforcement** — outcome-gated salience/decay changes retrievability only |
+| Truth | Retrieval may affect activation; it **must never silently alter** LTM truth, authority, provenance, or content |
+
+Do **not** claim "no hallucinated memories" or "no contradictions exist." Evaluation may surface unsupported promotion and unresolved disputes; the system surfaces them rather than hiding them.
 
 ## Non-goals
 
@@ -120,5 +208,8 @@ Existing Continuity Ledger endpoints remain the LTM SoT (`list` / `retrieve` / C
 | Memoryboard = LTM access/API; Continuity Ledger SoT | enforced |
 | AMUL = LTM substrate architecture | declared / partial |
 | STM view + budget + resolve API | enforced (`tests/test_emr.py`) |
-| EMR governed activation (lexical Q·R·P·decay) | partial (enforced tests; embedding resonance declared) |
+| Weighted retrieval + decay + metadata filtering | enforced (`tests/test_emr*.py`) |
+| Bounded graph expansion with path provenance | enforced (`tests/test_emr_dynamics.py`) |
+| Bounded persistent reinforcement, separate from truth | enforced (`tests/test_emr_reinforce.py`) |
+| Neural embedding resonance | declared |
 | Cross-agent constitutional enforcement of thresholds | declared |

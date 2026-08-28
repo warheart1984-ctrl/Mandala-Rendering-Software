@@ -1,7 +1,7 @@
 """AMUL RAG — Adaptive / Modular / Universal / Logical retrieval stack.
 
     Adaptive   classify_query -> {intent_type, retrieval_config, generation_config}
-    Modular    ingest | index (hashed-TF vector + BM25-lite) | retrieval |
+    Modular    ingest | index (neural or hashed-TF vector + BM25-lite) | retrieval |
                context builder | generation
     Universal  one document schema for every source, incl. Continuity Ledger
                memories; QueryRAG -> answer + evidence contract
@@ -11,11 +11,11 @@
 
 Maturity (honest tags):
     classifier/modes          - enforced (tests/test_amul_rag.py)
-    lexical vector + BM25     - enforced (deterministic v0)
-    neural embedding index    - DECLARED (swap-in point: embed/Index)
-    LLM generation            - partial (extractive v0; optional
-                                JARVIS_RAG_LLM_URL OpenAI-compatible hook)
-    evidence gate + replay    - enforced
+    lexical vector + BM25     - enforced (deterministic fallback)
+    neural embedding index    - enforced when configured/provider-ready
+    LLM generation            - enforced adapter with cited extractive fallback
+    trust/conflict membrane   - enforced for declared authority + explicit conflicts
+    evidence gate + replay    - enforced, redacted, retention-bounded
 """
 
 from __future__ import annotations
@@ -25,9 +25,11 @@ import json
 import math
 import os
 import re
-from datetime import datetime, timezone
+import threading
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+from urllib import request as urllib_request
 
 from pydantic import BaseModel, Field
 
@@ -39,9 +41,34 @@ RAG_DOCS_PATH = os.getenv("JARVIS_RAG_DOCS_PATH") or os.path.join("data", "amul-
 RAG_LOG_PATH = os.getenv("JARVIS_RAG_LOG_PATH") or os.path.join("data", "amul-rag-log.jsonl")
 RAG_LLM_URL = os.getenv("JARVIS_RAG_LLM_URL") or ""
 RAG_LLM_MODEL = os.getenv("JARVIS_RAG_LLM_MODEL") or "extractive-v0"
+RAG_LLM_REQUIRED = os.getenv("JARVIS_RAG_LLM_REQUIRED", "false").lower() == "true"
+RAG_EMBED_URL = os.getenv("JARVIS_RAG_EMBED_URL") or ""
+RAG_EMBED_MODEL = os.getenv("JARVIS_RAG_EMBED_MODEL") or "hashed-tf-v0"
+RAG_EMBED_REQUIRED = os.getenv("JARVIS_RAG_EMBED_REQUIRED", "false").lower() == "true"
+RAG_API_KEY_FILE = os.getenv("JARVIS_RAG_API_KEY_FILE") or ""
+RAG_LOG_REDACT = os.getenv("JARVIS_RAG_LOG_REDACT", "true").lower() != "false"
+RAG_LOG_RETENTION_DAYS = max(1, int(os.getenv("JARVIS_RAG_LOG_RETENTION_DAYS", "30")))
+RAG_LOG_MAX_BYTES = max(1024, int(os.getenv("JARVIS_RAG_LOG_MAX_BYTES", str(16 * 1024 * 1024))))
+RAG_PROVIDER_TIMEOUT = max(1.0, float(os.getenv("JARVIS_RAG_PROVIDER_TIMEOUT", "60")))
 
 EMBED_DIM = 128
 _WORD_RE = re.compile(r"[a-z0-9_]{2,}", re.I)
+_IO_LOCK = threading.RLock()
+_EMBED_LOCK = threading.RLock()
+_EMBED_CACHE: dict[tuple[str, str, str, str], list[float]] = {}
+
+AuthorityClass = Literal["untrusted", "working", "verified", "constitutional"]
+DocumentStatus = Literal["draft", "verified", "archived"]
+TRUST_WEIGHTS: dict[str, float] = {
+    "untrusted": 0.55,
+    "working": 0.75,
+    "verified": 1.0,
+    "constitutional": 1.0,
+}
+
+
+class RagProviderError(OSError):
+    """A configured required embedding/generation provider is unavailable."""
 
 
 def tokenize(text: str) -> list[str]:
@@ -117,6 +144,12 @@ class RagDocument(BaseModel):
     tags: list[str] = Field(default_factory=list)
     created_at: str
     version: int = 1
+    authority_class: AuthorityClass = "untrusted"
+    status: DocumentStatus = "draft"
+    subject: str | None = None
+    supersedes: str | None = None
+    conflict_ids: list[str] = Field(default_factory=list)
+    content_sha256: str = ""
 
 
 def normalize_document(raw: dict[str, Any], existing_version: int = 0) -> RagDocument:
@@ -131,15 +164,22 @@ def normalize_document(raw: dict[str, Any], existing_version: int = 0) -> RagDoc
         tags=[str(t) for t in raw.get("tags", [])],
         created_at=datetime.now(timezone.utc).isoformat(),
         version=(existing_version + 1) if existing_version else 1,
+        authority_class=str(raw.get("authority_class", "untrusted")),
+        status=str(raw.get("status", "draft")),
+        subject=str(raw["subject"]) if raw.get("subject") else None,
+        supersedes=str(raw["supersedes"]) if raw.get("supersedes") else None,
+        conflict_ids=sorted({str(v) for v in raw.get("conflict_ids", []) if v}),
+        content_sha256=hashlib.sha256(body.encode()).hexdigest(),
     )
 
 
 # --- Modular layer: index -------------------------------------------------------
 
-EMBED_SWAP_NOTE = "neural embeddings declared; deterministic hashed-TF is the v0 stand-in"
+EMBED_SWAP_NOTE = "OpenAI-compatible neural embeddings with deterministic hashed-TF fallback"
 
 
 def embed(text: str) -> list[float]:
+    """Deterministic fallback embedding retained for offline/replay stability."""
     vec = [0.0] * EMBED_DIM
     for tok in tokenize(text):
         idx = int(hashlib.md5(tok.encode()).hexdigest(), 16) % EMBED_DIM
@@ -152,12 +192,69 @@ def cosine(a: list[float], b: list[float]) -> float:
     return sum(x * y for x, y in zip(a, b))
 
 
+def _post_json(url: str, payload: dict[str, Any]) -> dict[str, Any]:
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    req = urllib_request.Request(
+        url,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib_request.urlopen(req, timeout=RAG_PROVIDER_TIMEOUT) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _normalized(values: list[Any]) -> list[float]:
+    vector = [float(v) for v in values]
+    if not vector or not all(math.isfinite(v) for v in vector):
+        raise ValueError("embedding provider returned an invalid vector")
+    norm = math.sqrt(sum(v * v for v in vector))
+    if norm <= 0:
+        raise ValueError("embedding provider returned a zero vector")
+    return [v / norm for v in vector]
+
+
+def neural_embed_many(texts: list[str], *, task: str) -> list[list[float]]:
+    """Use an OpenAI-compatible embeddings endpoint with bounded batching/cache."""
+    if not RAG_EMBED_URL:
+        raise RagProviderError("neural embedding provider is not configured")
+    if task not in {"document", "query"}:
+        raise ValueError("embedding task must be document or query")
+
+    prefix = ""
+    if "nomic" in RAG_EMBED_MODEL.lower():
+        prefix = "search_document: " if task == "document" else "search_query: "
+
+    keys = [
+        (RAG_EMBED_URL, RAG_EMBED_MODEL, task, hashlib.sha256(text.encode()).hexdigest())
+        for text in texts
+    ]
+    with _EMBED_LOCK:
+        missing = [(i, text, key) for i, (text, key) in enumerate(zip(texts, keys)) if key not in _EMBED_CACHE]
+        for start in range(0, len(missing), 16):
+            batch = missing[start:start + 16]
+            try:
+                data = _post_json(
+                    RAG_EMBED_URL.rstrip("/") + "/embeddings",
+                    {"model": RAG_EMBED_MODEL, "input": [prefix + text for _, text, _ in batch]},
+                )
+                rows = sorted(data["data"], key=lambda row: int(row.get("index", 0)))
+                if len(rows) != len(batch):
+                    raise ValueError("embedding provider returned the wrong row count")
+                for (_, _, key), row in zip(batch, rows):
+                    _EMBED_CACHE[key] = _normalized(row["embedding"])
+            except Exception as exc:
+                raise RagProviderError(f"neural embedding provider failed: {exc}") from exc
+        return [list(_EMBED_CACHE[key]) for key in keys]
+
+
 def append_jsonl(path: str, payload: dict[str, Any]) -> bool:
     try:
-        p = Path(path)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        with p.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(payload, separators=(",", ":")) + "\n")
+        with _IO_LOCK:
+            p = Path(path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with p.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(payload, separators=(",", ":")) + "\n")
         return True
     except Exception:
         return False
@@ -168,23 +265,54 @@ class RagIndex:
         self.docs: dict[str, RagDocument] = {}
         self.vectors: dict[str, list[float]] = {}
         self._df: dict[str, int] = {}
+        self.embedding_backend = "hashed-tf-v0"
+        self.embedding_model = "hashed-tf-v0"
+        self.vector_dimensions = EMBED_DIM
+
+    def _prepare(self, docs: list[RagDocument]) -> tuple[dict[str, RagDocument], dict[str, list[float]], str, str]:
+        latest = {doc.id: doc for doc in docs}
+        ordered = list(latest.values())
+        if RAG_EMBED_URL and ordered:
+            try:
+                vectors = neural_embed_many(
+                    [f"{doc.title} {doc.body}" for doc in ordered], task="document"
+                )
+                return latest, dict(zip(latest, vectors)), "neural-openai-compatible", RAG_EMBED_MODEL
+            except RagProviderError:
+                if RAG_EMBED_REQUIRED:
+                    raise
+        vectors = [embed(f"{doc.title} {doc.body}") for doc in ordered]
+        return latest, dict(zip(latest, vectors)), "hashed-tf-v0", "hashed-tf-v0"
+
+    def _commit(self, docs: dict[str, RagDocument], vectors: dict[str, list[float]], backend: str, model: str) -> None:
+        self.docs = docs
+        self.vectors = vectors
+        self._df = {}
+        for doc in docs.values():
+            for tok in set(tokenize(f"{doc.title} {doc.body}")):
+                self._df[tok] = self._df.get(tok, 0) + 1
+        self.embedding_backend = backend
+        self.embedding_model = model
+        self.vector_dimensions = len(next(iter(vectors.values()))) if vectors else EMBED_DIM
 
     def rebuild(self, docs: list[RagDocument]) -> None:
-        self.docs, self.vectors, self._df = {}, {}, {}
-        for d in docs:
-            self.add(d)
+        self._commit(*self._prepare(docs))
 
     def add(self, doc: RagDocument, persist: bool = False) -> None:
-        self.docs[doc.id] = doc
-        self.vectors[doc.id] = embed(f"{doc.title} {doc.body}")
-        for tok in set(tokenize(f"{doc.title} {doc.body}")):
-            self._df[tok] = self._df.get(tok, 0) + 1
-        if persist:
-            append_jsonl(RAG_DOCS_PATH, doc.model_dump())
+        candidate = list(self.docs.values()) + [doc]
+        prepared = self._prepare(candidate)
+        if persist and not append_jsonl(RAG_DOCS_PATH, doc.model_dump()):
+            raise OSError(f"failed to persist RAG document {doc.id}")
+        self._commit(*prepared)
+
+    def embed_query(self, query: str) -> list[float]:
+        if self.embedding_backend == "neural-openai-compatible":
+            return neural_embed_many([query], task="query")[0]
+        return embed(query)
 
     def search_vector(self, vec: list[float], k: int) -> list[tuple[str, float]]:
         scored = [(did, cosine(vec, dv)) for did, dv in self.vectors.items()]
-        scored.sort(key=lambda t: t[1], reverse=True)
+        scored.sort(key=lambda t: (-t[1], t[0]))
         return scored[:k]
 
     def search_keyword(self, query: str, k: int) -> list[tuple[str, float]]:
@@ -200,7 +328,7 @@ class RagIndex:
                 idf = math.log(1 + n_docs / (1 + self._df.get(t, 0)))
                 score += idf * tf.get(t, 0) / (tf.get(t, 0) + 1)
             out.append((did, score))
-        out.sort(key=lambda t: t[1], reverse=True)
+        out.sort(key=lambda t: (-t[1], t[0]))
         return out[:k]
 
 
@@ -250,7 +378,7 @@ def hybrid_retrieve(index: RagIndex, query: str, rcfg: dict[str, Any]) -> list[d
     defeat the Logical-layer min_support gate.
     """
     k = rcfg["k"]
-    vec_scores = dict(index.search_vector(embed(query), k)) if rcfg["use_vector"] else {}
+    vec_scores = dict(index.search_vector(index.embed_query(query), k)) if rcfg["use_vector"] else {}
     kw_scores = dict(index.search_keyword(query, k)) if rcfg["use_keyword"] else {}
 
     def _sat(x: float) -> float:
@@ -263,19 +391,27 @@ def hybrid_retrieve(index: RagIndex, query: str, rcfg: dict[str, Any]) -> list[d
 
     results = []
     for did in set(vec_scores) | set(kw_scores):
+        doc = index.docs[did]
+        if doc.status == "archived":
+            continue
         if total_w == 0:
-            final = 0.0
+            retrieval_score = 0.0
         else:
             v = vec_scores.get(did, 0.0)
             kk = _sat(kw_scores.get(did, 0.0))
-            final = (w_v * v + w_k * kk) / total_w
+            retrieval_score = (w_v * v + w_k * kk) / total_w
+        trust_weight = TRUST_WEIGHTS[doc.authority_class]
+        final = retrieval_score * trust_weight
         results.append({
             "id": did,
             "final": round(final, 6),
+            "retrieval_score": round(retrieval_score, 6),
+            "trust_weight": trust_weight,
+            "authority_class": doc.authority_class,
             "vector": round(vec_scores.get(did, 0.0), 6),
             "keyword": round(_sat(kw_scores.get(did, 0.0)), 6),
         })
-    results.sort(key=lambda r: r["final"], reverse=True)
+    results.sort(key=lambda r: (-r["final"], r["id"]))
     return results[:k]
 
 
@@ -325,36 +461,53 @@ def extractive_answer(query: str, index: RagIndex, used_ids: list[str]) -> str:
     return "Based on retrieved documents: " + " ".join(picks)
 
 
-def llm_generate(query: str, context: str, style: str) -> tuple[str, str] | None:
-    """Optional OpenAI-compatible hook (JARVIS_RAG_LLM_URL). Declared/partial."""
+def llm_generate(
+    query: str, context: str, style: str, allowed_doc_ids: list[str]
+) -> tuple[str, str] | None:
+    """Cited OpenAI-compatible generation with deterministic safe fallback."""
     if not RAG_LLM_URL:
         return None
     try:
-        import httpx
-
-        resp = httpx.post(
+        data = _post_json(
             RAG_LLM_URL.rstrip("/") + "/chat/completions",
-            json={
+            {
                 "model": RAG_LLM_MODEL,
                 "messages": [
                     {
                         "role": "system",
                         "content": (
                             f"Answer using ONLY the provided context. Style: {style}. "
-                            "Cite [Doc id] markers. If unsupported, say insufficient evidence."
+                            "Return a concise answer whose final characters are at least "
+                            "one allowed citation marker copied exactly. Never invent a "
+                            "citation. If unsupported, say insufficient evidence. Do not "
+                            "reveal hidden reasoning."
                         ),
                     },
-                    {"role": "user", "content": f"Context:\n{context}\n\nQuery: {query}"},
+                    {
+                        "role": "user",
+                        "content": (
+                            "/no_think\nAllowed citation markers: "
+                            + " ".join(f"[{doc_id}]" for doc_id in allowed_doc_ids)
+                            + f"\nContext:\n{context}\n\nQuery: {query}"
+                            + f"\nRequired format: <answer> [{allowed_doc_ids[0]}]"
+                        ),
+                    },
                 ],
                 "temperature": 0,
+                "max_tokens": 512,
             },
-            timeout=20,
         )
-        resp.raise_for_status()
-        data = resp.json()
-        return data["choices"][0]["message"]["content"], RAG_LLM_MODEL
-    except Exception:
-        return None  # graceful degradation to extractive
+        message = data["choices"][0]["message"]
+        answer = str(message.get("content") or "").strip()
+        citations = set(re.findall(r"\[([^\[\]]+)\]", answer))
+        allowed = set(allowed_doc_ids)
+        if not answer or not citations or not citations <= allowed:
+            raise ValueError("LLM output failed the exact-citation contract")
+        return answer, str(data.get("model") or RAG_LLM_MODEL)
+    except Exception as exc:
+        if RAG_LLM_REQUIRED:
+            raise RagProviderError(f"LLM generation provider failed: {exc}") from exc
+        return None
 
 
 # --- Logical layer -----------------------------------------------------------------
@@ -367,9 +520,16 @@ class EvidenceRecord(BaseModel):
     retrieval_config: dict[str, Any]
     docs_used: list[dict[str, Any]] = Field(default_factory=list)
     scores: dict[str, float] = Field(default_factory=dict)
+    conflicts: list[dict[str, Any]] = Field(default_factory=list)
     answer: str
     llm_model: str = "extractive-v0"
-    status: str  # answered | insufficient_evidence | chatty
+    embedding_backend: str = "hashed-tf-v0"
+    epistemic_status: str = "unsupported"
+    truth_notice: str = (
+        "Retrieved support is evidence, not an adjudication of factual truth."
+    )
+    query_sha256: str = ""
+    status: str  # answered | insufficient_evidence | conflicted_evidence | chatty
     timestamp: str
 
 
@@ -377,7 +537,15 @@ def ledger_docs(store) -> list[RagDocument]:
     """Continuity Ledger memories as a first-class corpus (Universal layer)."""
     out: list[RagDocument] = []
     try:
-        for m in store.list_memories(limit=999):
+        records = store.list_memories(limit=999)
+        conflict_map: dict[str, set[str]] = {}
+        for conflict in store.conflicts():
+            if not conflict.unresolved:
+                continue
+            ids = {m.id for m in conflict.memories}
+            for memory_id in ids:
+                conflict_map.setdefault(memory_id, set()).update(ids - {memory_id})
+        for m in records:
             out.append(RagDocument(
                 id=m.id,
                 title=m.subject or m.type,
@@ -385,6 +553,12 @@ def ledger_docs(store) -> list[RagDocument]:
                 source="continuity-ledger",
                 tags=list(m.tags),
                 created_at=m.created_at,
+                authority_class="verified" if m.status == "verified" else "working",
+                status=m.status,
+                subject=m.subject,
+                supersedes=m.supersedes,
+                conflict_ids=sorted(conflict_map.get(m.id, set())),
+                content_sha256=m.content_sha256 or hashlib.sha256(m.content.encode()).hexdigest(),
             ))
     except Exception:
         pass
@@ -397,6 +571,82 @@ INSUFFICIENT_TEMPLATE = (
     "document; refine the query or ingest relevant sources."
 )
 
+CONFLICT_TEMPLATE = (
+    "Conflicting evidence prevents a single answer. Review the cited records "
+    "and their provenance before adjudication."
+)
+
+_SECRET_VALUE_RE = re.compile(
+    r"(?i)\b(api[_ -]?key|password|passwd|token|authorization|secret)\b\s*[:=]\s*([^\s,;]+)"
+)
+_BEARER_RE = re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]{12,}")
+_KEYLIKE_RE = re.compile(r"\b(?:sk|pk|ghp|github_pat)_[A-Za-z0-9_-]{12,}\b")
+
+
+def redact_query(query: str) -> str:
+    value = _SECRET_VALUE_RE.sub(lambda m: f"{m.group(1)}=[REDACTED]", query)
+    value = _BEARER_RE.sub("Bearer [REDACTED]", value)
+    return _KEYLIKE_RE.sub("[REDACTED_KEY]", value)
+
+
+def _archive_paths(path: Path) -> list[Path]:
+    return sorted(path.parent.glob(path.name + ".*.archive"))
+
+
+def maintain_replay_log(*, apply: bool = True) -> dict[str, Any]:
+    """Rotate by size and expire only rotated archives by configured age."""
+    path = Path(RAG_LOG_PATH)
+    now = datetime.now(timezone.utc)
+    rotate = path.exists() and path.stat().st_size >= RAG_LOG_MAX_BYTES
+    expired = [
+        p for p in _archive_paths(path)
+        if datetime.fromtimestamp(p.stat().st_mtime, timezone.utc)
+        < now - timedelta(days=RAG_LOG_RETENTION_DAYS)
+    ]
+    rotated_to: str | None = None
+    if apply:
+        with _IO_LOCK:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if rotate:
+                stamp = now.strftime("%Y%m%dT%H%M%S.%fZ")
+                target = path.with_name(f"{path.name}.{stamp}.archive")
+                os.replace(path, target)
+                rotated_to = str(target)
+            for archive in expired:
+                archive.unlink(missing_ok=True)
+    return {
+        "rotated": bool(rotated_to),
+        "rotated_to": rotated_to,
+        "expired_archives": [str(p) for p in expired],
+        "retention_days": RAG_LOG_RETENTION_DAYS,
+        "max_bytes": RAG_LOG_MAX_BYTES,
+    }
+
+
+def _persist_replay(record: EvidenceRecord) -> None:
+    payload = record.model_dump()
+    payload["query"] = redact_query(record.query) if RAG_LOG_REDACT else record.query
+    maintain_replay_log(apply=True)
+    if not append_jsonl(RAG_LOG_PATH, payload):
+        raise OSError("failed to persist RAG replay record")
+
+
+def _conflicts_for_hits(index: RagIndex, hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    groups: set[tuple[str, ...]] = set()
+    for hit in hits:
+        doc = index.docs[hit["id"]]
+        present = sorted({doc.id, *(cid for cid in doc.conflict_ids if cid in index.docs)})
+        if len(present) > 1:
+            groups.add(tuple(present))
+    return [
+        {
+            "document_ids": list(ids),
+            "subject": next((index.docs[i].subject for i in ids if index.docs[i].subject), None),
+            "policy": "do_not_merge_or_choose_without_adjudication",
+        }
+        for ids in sorted(groups)
+    ]
+
 
 def answer_query(query: str, index: RagIndex, extra_docs: list[RagDocument] | None = None) -> EvidenceRecord:
     """Full AMUL-RAG loop with the Logical-layer gate and replay logging."""
@@ -405,14 +655,16 @@ def answer_query(query: str, index: RagIndex, extra_docs: list[RagDocument] | No
     rcfg = contract["retrieval_config"]
     gcfg = contract["generation_config"]
     now = datetime.now(timezone.utc).isoformat()
+    query_sha = hashlib.sha256(query.encode()).hexdigest()
 
     if intent == "chatty":
         record = EvidenceRecord(
             query=query, intent_type=intent, retrieval_config=rcfg,
             answer="Hello! Ask me about the workspace and I will retrieve governed evidence.",
             llm_model=gcfg["llm_model"], status="chatty", timestamp=now,
+            epistemic_status="not_applicable", query_sha256=query_sha,
         )
-        append_jsonl(RAG_LOG_PATH, record.model_dump())
+        _persist_replay(record)
         return record
 
     work_index = RagIndex()
@@ -427,12 +679,31 @@ def answer_query(query: str, index: RagIndex, extra_docs: list[RagDocument] | No
             docs_used=[], scores={"top_support": round(top, 6)},
             answer=INSUFFICIENT_TEMPLATE.format(top=top, thr=rcfg["min_support"]),
             llm_model=gcfg["llm_model"], status="insufficient_evidence", timestamp=now,
+            embedding_backend=work_index.embedding_backend,
+            epistemic_status="unsupported", query_sha256=query_sha,
         )
-        append_jsonl(RAG_LOG_PATH, record.model_dump())
+        _persist_replay(record)
+        return record
+
+    conflicts = _conflicts_for_hits(work_index, hits)
+    if conflicts:
+        conflict_ids = {doc_id for group in conflicts for doc_id in group["document_ids"]}
+        conflict_hits = [h for h in hits if h["id"] in conflict_ids]
+        record = EvidenceRecord(
+            query=query, intent_type=intent, retrieval_config=rcfg,
+            docs_used=conflict_hits,
+            scores={h["id"]: h["final"] for h in conflict_hits},
+            conflicts=conflicts, answer=CONFLICT_TEMPLATE,
+            llm_model="logical-conflict-membrane-v1",
+            embedding_backend=work_index.embedding_backend,
+            epistemic_status="conflicted", status="conflicted_evidence",
+            query_sha256=query_sha, timestamp=now,
+        )
+        _persist_replay(record)
         return record
 
     context, used_ids = build_context(work_index, hits, gcfg["max_context_tokens"])
-    gen = llm_generate(query, context, gcfg["style"])
+    gen = llm_generate(query, context, gcfg["style"], used_ids)
     if gen is None:
         answer, model = extractive_answer(query, work_index, used_ids), "extractive-v0"
     else:
@@ -443,28 +714,74 @@ def answer_query(query: str, index: RagIndex, extra_docs: list[RagDocument] | No
         docs_used=[h for h in hits if h["id"] in used_ids],
         scores={h["id"]: h["final"] for h in hits if h["id"] in used_ids},
         answer=answer, llm_model=model, status="answered", timestamp=now,
+        embedding_backend=work_index.embedding_backend,
+        epistemic_status="supported_not_adjudicated", query_sha256=query_sha,
     )
-    append_jsonl(RAG_LOG_PATH, record.model_dump())
+    _persist_replay(record)
     return record
 
 
 def rag_status() -> dict[str, Any]:
-    idx = get_index()
+    provider_error: str | None = None
+    try:
+        idx = get_index()
+        document_count = len(idx.docs)
+        sources = sorted({d.source for d in idx.docs.values()})
+        embedding_backend = idx.embedding_backend
+        embedding_model = idx.embedding_model
+        vector_dimensions = idx.vector_dimensions
+    except RagProviderError as exc:
+        docs = load_docs(RAG_DOCS_PATH)
+        document_count = len(docs)
+        sources = sorted({d.source for d in docs})
+        embedding_backend = "unavailable"
+        embedding_model = RAG_EMBED_MODEL
+        vector_dimensions = 0
+        provider_error = str(exc)
     log_lines = 0
     p = Path(RAG_LOG_PATH)
     if p.exists():
         log_lines = sum(1 for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip())
     return {
         "schema": EVIDENCE_SCHEMA,
-        "documents": len(idx.docs),
-        "by_source": sorted({d.source for d in idx.docs.values()}),
+        "documents": document_count,
+        "by_source": sources,
         "replay_log": {"path": RAG_LOG_PATH, "records": log_lines, "append_only": True},
+        "privacy": {
+            "query_redaction": RAG_LOG_REDACT,
+            "retention_days": RAG_LOG_RETENTION_DAYS,
+            "rotation_max_bytes": RAG_LOG_MAX_BYTES,
+            "archives": len(_archive_paths(p)),
+        },
+        "embedding": {
+            "backend": embedding_backend,
+            "model": embedding_model,
+            "dimensions": vector_dimensions,
+            "provider_configured": bool(RAG_EMBED_URL),
+            "provider_required": RAG_EMBED_REQUIRED,
+            "error": provider_error,
+        },
+        "generation": {
+            "provider_configured": bool(RAG_LLM_URL),
+            "provider_required": RAG_LLM_REQUIRED,
+            "model": RAG_LLM_MODEL,
+            "fallback": "extractive-v0",
+            "citation_contract": "enforced",
+        },
+        "access_control": {"api_key_file_configured": bool(RAG_API_KEY_FILE)},
+        "truth_boundary": {
+            "trust_weighting": "enforced",
+            "explicit_conflict_membrane": "enforced",
+            "factual_truth_adjudication": "out_of_scope",
+        },
         "modes": {k: v["min_support"] for k, v in MODE_CONFIGS.items()},
         "maturity": {
             "classifier_modes": "enforced",
             "lexical_vector_bm25": "enforced",
-            "neural_embeddings": "declared",
-            "llm_generation": "partial" if RAG_LLM_URL else "extractive-v0",
+            "neural_embeddings": "enforced" if embedding_backend == "neural-openai-compatible" else embedding_backend,
+            "llm_generation": "enforced-adapter" if RAG_LLM_URL else "extractive-v0",
+            "trust_conflict_membrane": "enforced",
+            "privacy_retention": "enforced",
             "evidence_gate_replay": "enforced",
         },
     }

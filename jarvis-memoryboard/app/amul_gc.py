@@ -236,7 +236,7 @@ def compact(
     field: AmulField,
     records: list[MemoryRecord],
     *,
-    checkpoints_path: str = CHECKPOINTS_PATH,
+    checkpoints_path: str | None = None,
     actor: str = "amul-gc",
     now: datetime | None = None,
 ) -> CompactReport:
@@ -245,6 +245,7 @@ def compact(
     The field file itself is NEVER mutated. Classification is adaptive
     (EMR salience law); dead-stays-dead is enforced before sealing.
     """
+    checkpoints_path = checkpoints_path or CHECKPOINTS_PATH
     raw_lines = _read_raw_lines(field.path)
     existing = _load_checkpoints(checkpoints_path)
     covered = existing[-1].range_end if existing else 0
@@ -324,7 +325,7 @@ def _verify_chain_structure(cps: list[Checkpoint]) -> list[str]:
 def verify_gc(
     field: AmulField,
     *,
-    checkpoints_path: str = CHECKPOINTS_PATH,
+    checkpoints_path: str | None = None,
 ) -> GCVerifyReport:
     """GC-aware integrity verification.
 
@@ -332,6 +333,7 @@ def verify_gc(
     range_sha/merkle comparison (G1); only the tail is parse+rehashed.
     Without: falls back to full per-artifact rehash (mode=full_rehash).
     """
+    checkpoints_path = checkpoints_path or CHECKPOINTS_PATH
     report = GCVerifyReport()
     cps = _load_checkpoints(checkpoints_path)
     raw_lines = _read_raw_lines(field.path)
@@ -398,8 +400,9 @@ def reconstruct_prefix(field: AmulField, n_lines: int) -> list[Artifact]:
 
 
 def gc_status(
-    field: AmulField, *, checkpoints_path: str = CHECKPOINTS_PATH
+    field: AmulField, *, checkpoints_path: str | None = None
 ) -> dict[str, Any]:
+    checkpoints_path = checkpoints_path or CHECKPOINTS_PATH
     cps = _load_checkpoints(checkpoints_path)
     covered = cps[-1].range_end if cps else 0
     return {

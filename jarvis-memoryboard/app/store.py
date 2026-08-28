@@ -36,6 +36,7 @@ def _make_id(prefix: str = "mem") -> str:
 class JarvisStore:
     def __init__(self, path: str = "data/jarvis-store.json"):
         self._path = Path(path)
+        self._path.parent.mkdir(parents=True, exist_ok=True)
         self._board: MemoryBoard = MemoryBoard()
         self._memories: dict[str, MemoryRecord] = {}
         self._loaded = False

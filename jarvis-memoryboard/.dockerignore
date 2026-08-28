@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+data/
+dist/
+tests/
+.git/
+*.md
+!README.md
+agent-hooks/
