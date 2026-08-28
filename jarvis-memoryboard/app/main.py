@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import os
-from typing import Any
+import secrets
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -12,25 +14,23 @@ from app.amul import (
     get_field,
     verify_field,
 )
-import app.amul_gc as amul_gc
+import app.amul_rag as amul_rag
 from app.amul_rag import (
+    AuthorityClass,
+    DocumentStatus,
     answer_query,
     get_index,
+    ledger_docs,
+    maintain_replay_log,
     normalize_document,
-    rag_status,
-)
-from app.amul_llm import (
-    PromptContract,
-    ToolCallContract,
-    execute_tool,
-    generate as llm_generate_record,
-    llm_status,
 )
 from app.emr import (
+    CorrectRequest,
     ExpandRequest,
     ExciteRequest,
     ReinforceRequest,
     clear_stm,
+    correct_memory_ids,
     emr_status,
     excite,
     expand_stm_entry,
@@ -39,11 +39,21 @@ from app.emr import (
     resolve_record,
     stm_context_block,
 )
+from app.emr_tool import EmrRecallRequest, emr_recall, tool_catalog
 from app.models import (
     BoardUpdate,
     MemoryBoard,
     MemoryCreate,
     MemoryUpdate,
+)
+from app.auth import (
+    deployment_label,
+    emr_recall_api_key,
+    ledger_read_protected,
+    ledger_read_protection_middleware,
+    memory_write_enabled,
+    require_emr_recall_api_key,
+    require_memory_write,
 )
 from app.store import get_store
 
@@ -65,6 +75,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _ledger_read_auth(request: Request, call_next):
+    return await ledger_read_protection_middleware(request, call_next)
 
 
 @app.get("/")
@@ -107,6 +122,7 @@ def index():
                 "active": "GET /api/jarvis/memory/active",
                 "excite": "POST /api/jarvis/memory/emr/excite",
                 "reinforce": "POST /api/jarvis/memory/emr/reinforce",
+                "correct": "POST /api/jarvis/memory/emr/correct",
                 "status": "GET /api/jarvis/memory/emr/status",
                 "stm": "GET /api/jarvis/memory/stm",
                 "stm_context": "GET /api/jarvis/memory/stm/context",
@@ -120,22 +136,17 @@ def index():
                 "lineage": "GET /api/jarvis/memory/amul/lineage/{memory_id}",
                 "field_status": "GET /api/jarvis/memory/amul/field/status",
                 "verify": "POST /api/jarvis/memory/amul/field/verify",
-                "gc_compact": "POST /api/jarvis/memory/amul/gc/compact",
-                "gc_status": "GET /api/jarvis/memory/amul/gc/status",
-                "gc_verify": "POST /api/jarvis/memory/amul/gc/verify",
             },
             "rag": {
-                "store_documents": "POST /api/jarvis/rag/documents",
+                "documents": "POST /api/jarvis/rag/documents",
                 "query": "POST /api/jarvis/rag/query",
-                "replay_log": "GET /api/jarvis/rag/log",
+                "log": "GET /api/jarvis/rag/log",
                 "status": "GET /api/jarvis/rag/status",
+                "maintenance": "POST /api/jarvis/rag/maintenance",
             },
-            "llm": {
-                "generate": "POST /api/jarvis/llm/generate",
-                "classify": "POST /api/jarvis/llm/classify?query=",
-                "tools": "GET /api/jarvis/llm/tools",
-                "tools_call": "POST /api/jarvis/llm/tools/call",
-                "status": "GET /api/jarvis/llm/status",
+            "tools": {
+                "catalog": "GET /api/jarvis/tools",
+                "emr_recall": "POST /api/jarvis/tools/emr_recall",
             },
         },
     }
@@ -151,7 +162,13 @@ def health():
         "schema": "continuity-ledger-v1",
         "memory_count": len(store.list_memories(limit=9999)),
         "board_id": board.board_id,
-        "memory_write_enabled": True,
+        "memory_write_enabled": memory_write_enabled(),
+        "deployment": deployment_label(),
+        "auth": {
+            "emr_recall_key_required": emr_recall_api_key() is not None,
+            "ledger_read_protected": ledger_read_protected(),
+        },
+        "store_path": os.getenv("JARVIS_STORE_PATH", "data/jarvis-store.json"),
     }
 
 
@@ -166,14 +183,14 @@ def get_board():
 
 
 @app.post("/api/jarvis/memory/board")
-def set_board(body: MemoryBoard):
+def set_board(body: MemoryBoard, _: None = Depends(require_memory_write)):
     store = get_store()
     board = store.set_board(body)
     return {"memory_board": board.model_dump()}
 
 
 @app.patch("/api/jarvis/memory/board")
-def patch_board(body: BoardUpdate):
+def patch_board(body: BoardUpdate, _: None = Depends(require_memory_write)):
     store = get_store()
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     board = store.patch_board(updates)
@@ -259,7 +276,7 @@ def list_memories(
 
 
 @app.post("/api/jarvis/memory")
-def create_memory(body: MemoryCreate):
+def create_memory(body: MemoryCreate, _: None = Depends(require_memory_write)):
     store = get_store()
     try:
         rec = store.create_memory(body)
@@ -271,18 +288,38 @@ def create_memory(body: MemoryCreate):
 # --- EMR / STM (LTM stays the store; STM is an activated view) ---
 
 
+@app.post("/api/jarvis/tools/emr_recall", dependencies=[Depends(require_emr_recall_api_key)])
+def tool_emr_recall(body: EmrRecallRequest):
+    """Read-only EMR Recall Protocol — governed bundle for agent tool calling."""
+    store = get_store()
+    try:
+        result = emr_recall(store, body)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return result.model_dump()
+
+
+@app.get("/api/jarvis/tools")
+def list_tools():
+    """Tool catalog (OpenAI-compatible function schemas, read-only v1)."""
+    return tool_catalog()
+
+
 @app.get("/api/jarvis/memory/emr/status")
 def get_emr_status():
     return emr_status()
 
 
-@app.post("/api/jarvis/memory/emr/excite")
+@app.post("/api/jarvis/memory/emr/excite", dependencies=[Depends(require_memory_write)])
 def emr_excite(body: ExciteRequest):
     """Governed recall: score LTM → bundle → promote/evict STM under budget."""
     store = get_store()
     candidates = store.list_memories(
         truth_scope=body.truth_scope,
-        limit=body.candidate_limit,
+        # Filters must see the whole local ledger cohort before candidate_limit
+        # is applied; otherwise older exact metadata matches can be hidden by
+        # the store's recency ordering and graph traversal becomes incomplete.
+        limit=9999,
     )
     try:
         result = excite(candidates, body)
@@ -291,7 +328,7 @@ def emr_excite(body: ExciteRequest):
     return result.model_dump()
 
 
-@app.post("/api/jarvis/memory/emr/reinforce")
+@app.post("/api/jarvis/memory/emr/reinforce", dependencies=[Depends(require_memory_write)])
 def emr_reinforce(body: ReinforceRequest):
     """Bounded reinforcement of retrievability (Q+, D−).
 
@@ -304,15 +341,50 @@ def emr_reinforce(body: ReinforceRequest):
     for mid in body.memory_ids:
         if store.get_memory(mid) is not None:
             known.add(mid)
-    reinforced, unknown = reinforce_ids(known, body.memory_ids)
+    reinforced, unknown, replayed = reinforce_ids(
+        known,
+        body.memory_ids,
+        outcome=body.outcome,
+    )
     return {
         "reinforced": [r.model_dump() for r in reinforced],
         "unknown_ids": unknown,
+        "replayed_memory_ids": replayed,
         "ltm_mutations": 0,
         "rule": (
-            "Reinforcement strengthens retrievability (salience up, decay damped) "
-            "within hard caps; truth/authority (status, confidence, content) remain "
-            "independently certified by the Continuity Ledger and are never mutated."
+            "Reinforcement requires an explicit positive outcome signal and "
+            "strengthens retrievability within separate and combined hard caps; "
+            "truth/authority remain independently certified by the Continuity "
+            "Ledger and are never mutated."
+        ),
+    }
+
+
+@app.post("/api/jarvis/memory/emr/correct", dependencies=[Depends(require_memory_write)])
+def emr_correct(body: CorrectRequest):
+    """Operator correction: immediately reset reinforcement overlay.
+
+    Clears salience and decay damping on corrected memories so wrong recall
+    cannot slowly outcompete a replacement. Never mutates LTM truth fields.
+    """
+    store = get_store()
+    known: set[str] = set()
+    for mid in body.memory_ids:
+        if store.get_memory(mid) is not None:
+            known.add(mid)
+    corrected, unknown, replayed = correct_memory_ids(
+        known,
+        body.memory_ids,
+        correction=body.correction,
+    )
+    return {
+        "corrected": [r.model_dump() for r in corrected],
+        "unknown_ids": unknown,
+        "replayed_correction_ids": replayed,
+        "ltm_mutations": 0,
+        "rule": (
+            "Operator correction resets reinforcement overlay immediately; "
+            "LTM truth/authority remain independently certified."
         ),
     }
 
@@ -342,7 +414,7 @@ def active_stm(
     )
     candidates = store.list_memories(
         truth_scope=body.truth_scope,
-        limit=body.candidate_limit,
+        limit=9999,
     )
     result = excite(candidates, body)
     return result.model_dump()
@@ -368,7 +440,7 @@ def read_stm_context(session_key: str = Query(default="default")):
     }
 
 
-@app.post("/api/jarvis/memory/stm/expand")
+@app.post("/api/jarvis/memory/stm/expand", dependencies=[Depends(require_memory_write)])
 def stm_expand(body: ExpandRequest):
     """Raise resolution summary→detail→evidence; payload still points at LTM."""
     store = get_store()
@@ -386,7 +458,7 @@ def stm_expand(body: ExpandRequest):
     return {"stm_entry": updated.model_dump()}
 
 
-@app.delete("/api/jarvis/memory/stm")
+@app.delete("/api/jarvis/memory/stm", dependencies=[Depends(require_memory_write)])
 def stm_clear(session_key: str | None = Query(default=None)):
     clear_stm(session_key)
     return {"status": "cleared", "session_key": session_key}
@@ -417,7 +489,7 @@ def get_memory(memory_id: str):
     return {"memory": rec.model_dump(), "selection": sel.model_dump()}
 
 
-@app.patch("/api/jarvis/memory/{memory_id}")
+@app.patch("/api/jarvis/memory/{memory_id}", dependencies=[Depends(require_memory_write)])
 def update_memory(memory_id: str, body: MemoryUpdate):
     store = get_store()
     try:
@@ -429,13 +501,110 @@ def update_memory(memory_id: str, body: MemoryUpdate):
     return {"memory": rec.model_dump()}
 
 
-@app.delete("/api/jarvis/memory/{memory_id}")
+@app.delete("/api/jarvis/memory/{memory_id}", dependencies=[Depends(require_memory_write)])
 def delete_memory(memory_id: str):
     store = get_store()
     ok = store.delete_memory(memory_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Memory not found")
     return {"status": "deleted", "id": memory_id}
+
+
+# --- AMUL RAG (adaptive retrieval + evidence gate + replay) ---
+
+
+class RagDocumentInput(BaseModel):
+    id: str | None = Field(default=None, min_length=1, max_length=256)
+    title: str = Field(default="", max_length=512)
+    body: str = Field(..., min_length=1, max_length=200_000)
+    source: str = Field(default="unknown", min_length=1, max_length=128)
+    tags: list[str] = Field(default_factory=list, max_length=64)
+    authority_class: AuthorityClass = "untrusted"
+    status: DocumentStatus = "draft"
+    subject: str | None = Field(default=None, max_length=256)
+    supersedes: str | None = Field(default=None, max_length=256)
+    conflict_ids: list[str] = Field(default_factory=list, max_length=64)
+
+
+class RagDocumentsBody(BaseModel):
+    documents: list[RagDocumentInput] = Field(..., min_length=1, max_length=256)
+
+
+class RagQueryBody(BaseModel):
+    query: str = Field(..., min_length=1, max_length=4000)
+
+
+class RagMaintenanceBody(BaseModel):
+    apply: bool = False
+
+
+def require_rag_api_key(x_jarvis_rag_key: str | None = Header(default=None)) -> None:
+    """Protect RAG content, queries, and replay data with a local secret file."""
+    key_path = Path(amul_rag.RAG_API_KEY_FILE) if amul_rag.RAG_API_KEY_FILE else None
+    try:
+        expected = key_path.read_text(encoding="utf-8").strip() if key_path else ""
+    except OSError as exc:
+        raise HTTPException(status_code=503, detail="RAG access key is unavailable") from exc
+    if not expected:
+        raise HTTPException(status_code=503, detail="RAG access control is not configured")
+    if not x_jarvis_rag_key or not secrets.compare_digest(x_jarvis_rag_key, expected):
+        raise HTTPException(status_code=401, detail="Invalid RAG access key")
+
+
+@app.post("/api/jarvis/rag/documents", dependencies=[Depends(require_rag_api_key)])
+def rag_documents(body: RagDocumentsBody):
+    index = get_index()
+    documents = []
+    for item in body.documents:
+        raw = item.model_dump(exclude_none=True)
+        requested_id = str(raw.get("id") or "")
+        existing = index.docs.get(requested_id) if requested_id else None
+        document = normalize_document(
+            raw,
+            existing_version=existing.version if existing else 0,
+        )
+        try:
+            index.add(document, persist=True)
+        except OSError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        documents.append(document.model_dump())
+    return {"documents": documents, "count": len(documents)}
+
+
+@app.post("/api/jarvis/rag/query", dependencies=[Depends(require_rag_api_key)])
+def rag_query(body: RagQueryBody):
+    try:
+        record = answer_query(
+            body.query,
+            get_index(),
+            extra_docs=ledger_docs(get_store()),
+        )
+    except OSError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return record.model_dump()
+
+
+@app.get("/api/jarvis/rag/log", dependencies=[Depends(require_rag_api_key)])
+def rag_log(limit: int = Query(default=50, ge=1, le=1000)):
+    records: list[dict] = []
+    path = Path(amul_rag.RAG_LOG_PATH)
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines()[-limit:]:
+            try:
+                records.append(json.loads(line))
+            except (json.JSONDecodeError, TypeError):
+                continue
+    return {"records": records, "count": len(records)}
+
+
+@app.get("/api/jarvis/rag/status")
+def get_rag_status():
+    return amul_rag.rag_status()
+
+
+@app.post("/api/jarvis/rag/maintenance", dependencies=[Depends(require_rag_api_key)])
+def rag_maintenance(body: RagMaintenanceBody):
+    return maintain_replay_log(apply=body.apply)
 
 
 # --- AMUL Architect (LTM substrate: append-only field, lineage, drift) ---
@@ -504,7 +673,6 @@ def amul_field_status():
             "resolution_artifacts": "enforced",
             "lineage_provenance": "enforced",
             "verify_drift": "enforced",
-            "gc_checkpoint_compaction": "enforced",
             "scale_gc_index": "declared",
         },
     }
@@ -512,149 +680,7 @@ def amul_field_status():
 
 @app.post("/api/jarvis/memory/amul/field/verify")
 def amul_field_verify():
-    """GC-aware integrity check + ledger drift detection since last anchors."""
+    """Rehash the whole field + detect ledger drift since last anchors."""
     store = get_store()
     report = verify_field(get_field(), store.list_memories(limit=9999))
     return report.model_dump()
-
-
-# --- AMUL-GC (Verifiable Checkpoint Compactor) ---
-
-
-class GCCompactBody(BaseModel):
-    actor: str = "amul-gc"
-
-
-@app.post("/api/jarvis/memory/amul/gc/compact")
-def amul_gc_compact(body: GCCompactBody | None = None):
-    """Seal the uncheckpointed field prefix into a sha-linked checkpoint."""
-    actor = body.actor if body else "amul-gc"
-    store = get_store()
-    try:
-        report = amul_gc.compact(
-            get_field(), store.list_memories(limit=9999), actor=actor
-        )
-    except amul_gc.GCViolation as exc:
-        raise HTTPException(status_code=409, detail=str(exc))
-    return report.model_dump()
-
-
-@app.get("/api/jarvis/memory/amul/gc/status")
-def amul_gc_status():
-    """Checkpoint chain coverage, cold-tier census, retention law table."""
-    return amul_gc.gc_status(get_field())
-
-
-@app.post("/api/jarvis/memory/amul/gc/verify")
-def amul_gc_verify():
-    """Chain authentication + tail-only payload rehash (O(checkpoints+tail))."""
-    return amul_gc.verify_gc(get_field()).model_dump()
-
-
-# --- AMUL RAG (Adaptive/Modular/Universal/Logical retrieval) ---
-
-
-class RagDocsBody(BaseModel):
-    documents: list[dict[str, Any]] = Field(..., min_length=1, max_length=200)
-
-
-@app.post("/api/jarvis/rag/documents")
-def rag_store_documents(body: RagDocsBody):
-    """StoreDocuments contract: normalize + append to the doc log."""
-    index = get_index()
-    stored = []
-    for raw in body.documents:
-        existing = index.docs.get(str(raw.get("id") or ""))
-        doc = normalize_document(raw, existing_version=existing.version if existing else 0)
-        index.add(doc, persist=True)
-        stored.append(doc.model_dump())
-    return {"stored": len(stored), "documents": stored}
-
-
-class RagQueryBody(BaseModel):
-    query: str = Field(..., min_length=1, max_length=2000)
-
-
-@app.post("/api/jarvis/rag/query")
-def rag_query(body: RagQueryBody):
-    """QueryRAG contract: answer + evidence under the Logical-layer gate.
-
-    Corpus = ingested documents + Continuity Ledger memories (Universal schema).
-    """
-    store = get_store()
-    from app.amul_rag import ledger_docs
-
-    corpus_extra = ledger_docs(store)
-    record = answer_query(body.query, get_index(), extra_docs=corpus_extra)
-    return record.model_dump()
-
-
-@app.get("/api/jarvis/rag/log")
-def rag_replay_log(limit: int = Query(default=20, ge=1, le=500)):
-    """Replay tail: intent, config, docs returned, answer per query."""
-    import json as _json
-    from pathlib import Path as _Path
-
-    from app.amul_rag import RAG_LOG_PATH
-
-    p = _Path(RAG_LOG_PATH)
-    if not p.exists():
-        return {"records": []}
-    lines = [ln for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
-    out = []
-    for ln in lines[-limit:]:
-        try:
-            out.append(_json.loads(ln))
-        except Exception:
-            continue
-    return {"records": out}
-
-
-@app.get("/api/jarvis/rag/status")
-def rag_layer_status():
-    return rag_status()
-
-
-# --- AMUL LLM (Adaptive/Modular/Universal/Logical inference governance) ---
-
-
-@app.post("/api/jarvis/llm/generate")
-def llm_generate_route(body: PromptContract):
-    """Universal prompt contract -> governed generation + replay record."""
-    try:
-        record = llm_generate_record(body)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return record
-
-
-@app.post("/api/jarvis/llm/classify")
-def llm_classify(query: str = Query(..., min_length=1, max_length=4000)):
-    """Adaptive layer probe: intent + mode + generation_config."""
-    from app.amul_llm import routing_contract
-
-    return routing_contract(query)
-
-
-@app.get("/api/jarvis/llm/tools")
-def llm_tools():
-    from app.amul_llm import TOOL_REGISTRY
-
-    return {
-        "tools": [
-            {"name": n, "description": s["description"], "schema": s["schema"]}
-            for n, s in sorted(TOOL_REGISTRY.items())
-        ]
-    }
-
-
-@app.post("/api/jarvis/llm/tools/call")
-def llm_tools_call(body: ToolCallContract):
-    """Tool module: schema-validated execution in the registry sandbox."""
-    store = get_store()
-    return execute_tool(body.name, body.arguments, ctx={"store": store})
-
-
-@app.get("/api/jarvis/llm/status")
-def llm_layer_status():
-    return llm_status()

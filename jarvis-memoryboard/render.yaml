@@ -1,0 +1,35 @@
+# Jarvis Memoryboard — Render blueprint
+# Repo: warheart1984-ctrl/persistence-memory (or monorepo subdir)
+# Docs: docs/DEPLOY_RENDER.md
+
+services:
+  - type: web
+    name: jarvis-memoryboard
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    disk:
+      name: jarvis-ledger
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: RENDER
+        value: "true"
+      - key: JARVIS_STORE_PATH
+        value: /var/data/jarvis-store.json
+      - key: JARVIS_EMR_DYNAMICS_PATH
+        value: /var/data/emr-dynamics.json
+      - key: JARVIS_AMUL_PATH
+        value: /var/data/amul-field.jsonl
+      - key: JARVIS_MEMORY_WRITE_ENABLED
+        value: "false"
+      - key: JARVIS_PROTECT_LEDGER_READ
+        value: "true"
+      - key: JARVIS_CORS_ORIGINS
+        value: "*"
+      # Set in Render dashboard (sync: false) — required for public recall
+      - key: EMR_RECALL_API_KEY
+        sync: false

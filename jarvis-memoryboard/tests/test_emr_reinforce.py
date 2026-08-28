@@ -20,7 +20,9 @@ from app.emr import (
     DAMP_GAIN,
     SALIENCE_CAP,
     SALIENCE_GAIN,
+    TOTAL_REINFORCEMENT_CAP,
     ExciteRequest,
+    PositiveOutcomeSignal,
     activate,
     excite,
     get_reinforcement,
@@ -75,6 +77,14 @@ def _snapshot(rec: MemoryRecord) -> dict:
     }
 
 
+def _outcome(outcome_id: str) -> PositiveOutcomeSignal:
+    return PositiveOutcomeSignal(
+        signal="positive",
+        source="task",
+        outcome_id=outcome_id,
+    )
+
+
 def test_reinforcement_raises_activation_ltm_untouched():
     rec = _rec(
         id="mem-r1",
@@ -87,8 +97,10 @@ def test_reinforcement_raises_activation_ltm_untouched():
     before = activate(rec, query="PhaseEncode tanh")
     snap = _snapshot(rec)
 
-    reinforced, unknown = reinforce_ids({"mem-r1"}, ["mem-r1"])
-    assert len(reinforced) == 1 and unknown == []
+    reinforced, unknown, replayed = reinforce_ids(
+        {"mem-r1"}, ["mem-r1"], outcome=_outcome("outcome-r1")
+    )
+    assert len(reinforced) == 1 and unknown == [] and replayed == []
     assert reinforced[0].use_count == 1
     assert reinforced[0].salience == pytest.approx(SALIENCE_GAIN)
     assert reinforced[0].decay_damp == pytest.approx(DAMP_GAIN)
@@ -103,30 +115,44 @@ def test_reinforcement_raises_activation_ltm_untouched():
 def test_reinforcement_is_bounded_no_runaway_dominance():
     rec = _rec(id="mem-cap", type="decision", status="verified", confidence=0.9)
     base = activate(rec, query="x").A
-    for _ in range(50):
-        reinforce_ids({"mem-cap"}, ["mem-cap"])
+    for index in range(50):
+        reinforce_ids(
+            {"mem-cap"},
+            ["mem-cap"],
+            outcome=_outcome(f"outcome-cap-{index}"),
+        )
     state = get_reinforcement("mem-cap")
     assert state.salience == SALIENCE_CAP
     assert state.decay_damp == DAMP_CAP
     assert state.use_count == 50
     boosted = activate(rec, query="x")
-    # Hard ceiling: at most (1+0.5) activation multiple, never unbounded.
+    # Combined hard ceiling covers salience and decay damping together.
     assert boosted.salience == SALIENCE_CAP
-    assert boosted.A <= base * (1.0 + SALIENCE_CAP) * 1.000001
+    assert boosted.reinforcement_multiplier == TOTAL_REINFORCEMENT_CAP
+    assert boosted.A <= base * TOTAL_REINFORCEMENT_CAP * 1.000001
 
 
 def test_unknown_ids_reported_not_silently_created():
-    reinforced, unknown = reinforce_ids(set(), ["mem-ghost", "mem-ghost2"])
+    reinforced, unknown, replayed = reinforce_ids(
+        set(),
+        ["mem-ghost", "mem-ghost2"],
+        outcome=_outcome("outcome-unknown"),
+    )
     assert reinforced == []
     assert sorted(unknown) == ["mem-ghost", "mem-ghost2"]
+    assert replayed == []
     assert get_reinforcement("mem-ghost") is None
 
 
 def test_reinforced_archived_particle_stays_dead():
     """Excitation ≠ admission: archived (P=0) can be reinforced yet never enters STM."""
     rec = _rec(id="mem-dead", status="archived", confidence=0.99)
-    for _ in range(20):
-        reinforce_ids({"mem-dead"}, ["mem-dead"])
+    for index in range(20):
+        reinforce_ids(
+            {"mem-dead"},
+            ["mem-dead"],
+            outcome=_outcome(f"outcome-dead-{index}"),
+        )
     resp = excite(
         [rec],
         ExciteRequest(query="Default memory content", token_budget=256, session_key="dead"),
@@ -154,8 +180,12 @@ def test_reinforced_stale_beats_fresher_noise_in_budget():
         tags=["sovereign-x"],
     )
     q = "sovereign router"
-    for _ in range(10):
-        reinforce_ids({"mem-stale"}, ["mem-stale"])
+    for index in range(10):
+        reinforce_ids(
+            {"mem-stale"},
+            ["mem-stale"],
+            outcome=_outcome(f"outcome-stale-{index}"),
+        )
     resp = excite(
         [stale, fresh_noise],
         ExciteRequest(query=q, token_budget=64, theta_promote=0.05, session_key="revive"),
@@ -185,7 +215,15 @@ def test_route_reinforce_preserves_ledger_bytes():
         client = TestClient(app)
         resp = client.post(
             "/api/jarvis/memory/emr/reinforce",
-            json={"memory_ids": [created.id, "mem-nonexistent"], "session_key": "rt"},
+            json={
+                "memory_ids": [created.id, "mem-nonexistent"],
+                "session_key": "rt",
+                "outcome": {
+                    "signal": "positive",
+                    "source": "operator",
+                    "outcome_id": "route-outcome-1",
+                },
+            },
         )
     assert resp.status_code == 200
     data = resp.json()
@@ -227,7 +265,15 @@ def test_route_excite_sees_reinforcement_effect():
         ).json()
         a_before = next(e["activation"] for e in r1["stm"] if e["memory_id"] == created.id)
         client.post(
-            "/api/jarvis/memory/emr/reinforce", json={"memory_ids": [created.id]}
+            "/api/jarvis/memory/emr/reinforce",
+            json={
+                "memory_ids": [created.id],
+                "outcome": {
+                    "signal": "positive",
+                    "source": "user",
+                    "outcome_id": "route-outcome-2",
+                },
+            },
         )
         r2 = client.post(
             "/api/jarvis/memory/emr/excite",
@@ -240,3 +286,25 @@ def test_route_excite_sees_reinforcement_effect():
         ).json()
         a_after = next(e["activation"] for e in r2["stm"] if e["memory_id"] == created.id)
     assert a_after > a_before
+
+
+def test_route_rejects_reinforcement_without_positive_outcome():
+    client = TestClient(app)
+    response = client.post(
+        "/api/jarvis/memory/emr/reinforce",
+        json={"memory_ids": ["mem-any"]},
+    )
+    assert response.status_code == 422
+
+
+def test_replayed_outcome_is_idempotent():
+    outcome = _outcome("outcome-once")
+    first, _, replayed_first = reinforce_ids(
+        {"mem-once"}, ["mem-once"], outcome=outcome
+    )
+    second, _, replayed_second = reinforce_ids(
+        {"mem-once"}, ["mem-once"], outcome=outcome
+    )
+    assert len(first) == 1 and replayed_first == []
+    assert second == [] and replayed_second == ["mem-once"]
+    assert get_reinforcement("mem-once").use_count == 1
