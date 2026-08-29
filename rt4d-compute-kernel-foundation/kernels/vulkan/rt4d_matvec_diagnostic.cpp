@@ -97,12 +97,14 @@ RT4DMatvecGpuDiagnosticResult rt4dDiagnoseMatvecGpu(
     float maxDelta = 0.0f;
     constexpr float kAbsTolerance = 1.0e-5f;
     for (int i = 0; i < M; ++i) {
-        const float delta = std::fabs(actual[static_cast<size_t>(i)] -
-                                       expected[static_cast<size_t>(i)]);
+        const float cpu = expected[static_cast<size_t>(i)];
+        const float gpu = actual[static_cast<size_t>(i)];
+        const float delta = std::fabs(gpu - cpu);
         maxDelta = std::max(maxDelta, delta);
-        if (delta > kAbsTolerance) {
+        if (!std::isfinite(cpu) || !std::isfinite(gpu) ||
+            !std::isfinite(delta) || delta > kAbsTolerance) {
             result.status = RT4DGpuParityStatus::failed;
-            result.detail = "CPU/GPU matvec delta exceeded 1e-5";
+            result.detail = "CPU/GPU matvec delta is non-finite or exceeded 1e-5";
             result.maximumAbsDelta = maxDelta;
             result.validationWarnings = dispatcher.validation().warnings;
             result.validationErrors = dispatcher.validation().errors;

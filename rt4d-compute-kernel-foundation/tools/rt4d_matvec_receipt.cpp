@@ -1,3 +1,4 @@
+#include "kernels/cpu/rt4d_evidence.h"
 #include "kernels/cpu/rt4d_matvec.h"
 #include "kernels/vulkan/rt4d_matvec_diagnostic.h"
 
@@ -55,14 +56,14 @@ int main(int argc, char** argv) {
            << "  \"mode\": \"diagnostic_only\",\n"
            << "  \"creationTool\": \"rt4d-diagnostic-cli\",\n"
            << "  \"gpuParity\": \"" << parityName(gpu.status) << "\",\n"
-           << "  \"gpuAdapter\": \"" << gpu.adapter << "\",\n"
+           << "  \"gpuAdapter\": \"" << rt4dJsonEscape(gpu.adapter) << "\",\n"
            << "  \"vendorId\": " << gpu.vendorId << ",\n"
            << "  \"deviceId\": " << gpu.deviceId << ",\n"
            << "  \"driverVersion\": " << gpu.driverVersion << ",\n"
            << "  \"M\": " << gpu.rows << ",\n"
            << "  \"N\": " << gpu.cols << ",\n"
            << "  \"maximumAbsDelta\": " << gpu.maximumAbsDelta << ",\n"
-           << "  \"gpuDetail\": \"" << gpu.detail << "\",\n"
+           << "  \"gpuDetail\": \"" << rt4dJsonEscape(gpu.detail) << "\",\n"
            << "  \"rendererPixelAuthority\": false\n"
            << "}\n";
     output.close();

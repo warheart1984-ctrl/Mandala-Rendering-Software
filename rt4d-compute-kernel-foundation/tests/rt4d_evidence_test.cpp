@@ -68,6 +68,8 @@ int main() {
     if (fnv == 0) return fail("fnv1a64 produced a zero debug hash");
     if (rt4dSha256Hex(rt4dSha256Bytes("abc", 3)) == std::to_string(fnv))
         return fail("fnv must not be interchangeable with sha256");
+    if (rt4dJsonEscape("a\"b\\c") != "a\\\"b\\\\c")
+        return fail("json escape is incorrect");
 
     const auto root = uniqueRoot();
     const std::string first = (root / "artifact.txt").string();

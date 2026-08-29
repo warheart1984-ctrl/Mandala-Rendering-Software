@@ -1,4 +1,5 @@
 #include "kernels/cpu/rt4d_kernel_contract.h"
+#include "kernels/cpu/rt4d_evidence.h"
 #include "kernels/vulkan/rt4d_pentachoron_diagnostic.h"
 
 #include <cstdio>
@@ -50,8 +51,9 @@ bool writeReceipt(const std::string& path, const RT4DPentachoronAsset4D& asset,
     output << "{\n"
            << "  \"schema\": \"rt4d-pentachoron-intake-receipt/0.1\",\n"
            << "  \"mode\": \"diagnostic_only\",\n"
-           << "  \"sourceSchema\": \"" << asset.schema << "\",\n"
-           << "  \"provenance\": \"" << asset.provenance << "\",\n"
+           << "  \"sourceSchema\": \"" << rt4dJsonEscape(asset.schema) << "\",\n"
+           << "  \"provenance\": \"" << rt4dJsonEscape(asset.provenance)
+           << "\",\n"
            << "  \"artistReviewed\": " << (asset.artistReviewed ? "true" : "false")
            << ",\n"
            << "  \"creationTool\": \"rt4d-diagnostic-cli\",\n"
@@ -61,7 +63,7 @@ bool writeReceipt(const std::string& path, const RT4DPentachoronAsset4D& asset,
            << "  \"deterministicRayCount\": " << hits.size() << ",\n"
            << "  \"hitCount\": " << hitCount << ",\n"
            << "  \"gpuParity\": \"" << parityName(gpu.status) << "\",\n"
-           << "  \"gpuAdapter\": \"" << gpu.adapter << "\",\n"
+           << "  \"gpuAdapter\": \"" << rt4dJsonEscape(gpu.adapter) << "\",\n"
            << "  \"vendorId\": " << gpu.vendorId << ",\n"
            << "  \"deviceId\": " << gpu.deviceId << ",\n"
            << "  \"driverVersion\": " << gpu.driverVersion << ",\n"
@@ -72,7 +74,7 @@ bool writeReceipt(const std::string& path, const RT4DPentachoronAsset4D& asset,
            << "  \"validationStatus\": \""
            << validationStatus(gpu.validationWarnings, gpu.validationErrors)
            << "\",\n"
-           << "  \"gpuDetail\": \"" << gpu.detail << "\",\n"
+           << "  \"gpuDetail\": \"" << rt4dJsonEscape(gpu.detail) << "\",\n"
            << "  \"rendererPixelAuthority\": false,\n"
            << "  \"glbIngestion\": false\n"
            << "}\n";

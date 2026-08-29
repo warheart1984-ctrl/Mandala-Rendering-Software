@@ -220,6 +220,12 @@ int main(int argc, char** argv) {
         rt4dMatvecClean(nullptr, x3, y3, 2, 3, &error))
         return fail("matvec length rejection is incorrect");
 
+    float nanA[2] = {1.0f, std::numeric_limits<float>::quiet_NaN()};
+    const float nanX[1] = {1.0f};
+    float nanY[2] = {};
+    if (rt4dMatvecClean(nanA, nanX, nanY, 2, 1, &error))
+        return fail("non-finite matvec was accepted");
+
     std::fprintf(stderr,
                  "[kernel-cpu] PASS: pentachoron intersection/slicing CPU "
                  "contracts and matvec oracle\n");

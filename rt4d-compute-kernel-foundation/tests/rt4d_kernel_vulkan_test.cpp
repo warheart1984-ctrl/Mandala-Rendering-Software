@@ -2,6 +2,7 @@
 #include "kernels/vulkan/rt4d_pentachoron_diagnostic.h"
 
 #include <cstdio>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -131,6 +132,16 @@ bool runMatvecContract(const char* spirvPath) {
     std::fprintf(stderr,
                  "[kernel-gpu] matvec PASS: M=%u N=%u maxAbsDelta=%g\n",
                  result.rows, result.cols, result.maximumAbsDelta);
+    std::vector<float> nanA = A;
+    nanA[0] = std::numeric_limits<float>::quiet_NaN();
+    const RT4DMatvecGpuDiagnosticResult nanResult =
+        rt4dDiagnoseMatvecGpu(nanA, x, M, N, spirvPath);
+    if (nanResult.status == RT4DGpuParityStatus::passed) {
+        std::fprintf(stderr,
+                     "[kernel-gpu] FAIL: non-finite matvec was certified as "
+                     "gpuParity=passed\n");
+        return false;
+    }
     return true;
 }
 
