@@ -401,6 +401,7 @@ bool rt4dLoadPentachoronSidecar(const std::string& path,
     }
     output = {};
     std::string line;
+    bool artistReviewedSeen = false;
     while (std::getline(input, line)) {
         if (line.empty() || line[0] == '#') continue;
         std::istringstream stream(line);
@@ -412,17 +413,48 @@ bool rt4dLoadPentachoronSidecar(const std::string& path,
                 setError(error, "invalid or duplicate pentachoron sidecar record");
                 return false;
             }
+        } else if (tag == "schemaVersion") {
+            if (!output.schemaVersion.empty() || !(stream >> output.schemaVersion)) {
+                setError(error, "invalid or duplicate pentachoron sidecar record");
+                return false;
+            }
+        } else if (tag == "migrationPath") {
+            if (!output.migrationPath.empty() || !(stream >> output.migrationPath)) {
+                setError(error, "invalid or duplicate pentachoron sidecar record");
+                return false;
+            }
         } else if (tag == "provenance") {
-            if (!(stream >> output.provenance)) {
+            if (!output.provenance.empty() || !(stream >> output.provenance)) {
+                setError(error, "invalid or duplicate pentachoron sidecar record");
+                return false;
+            }
+        } else if (tag == "author") {
+            if (!output.author.empty() || !(stream >> output.author)) {
+                setError(error, "invalid or duplicate pentachoron sidecar record");
+                return false;
+            }
+        } else if (tag == "license") {
+            if (!output.license.empty() || !(stream >> output.license)) {
+                setError(error, "invalid or duplicate pentachoron sidecar record");
+                return false;
+            }
+        } else if (tag == "creationTool") {
+            if (!output.creationTool.empty() || !(stream >> output.creationTool)) {
+                setError(error, "invalid or duplicate pentachoron sidecar record");
+                return false;
+            }
+        } else if (tag == "sourceHash") {
+            if (!output.sourceHash.empty() || !(stream >> output.sourceHash)) {
                 setError(error, "invalid or duplicate pentachoron sidecar record");
                 return false;
             }
         } else if (tag == "artist_reviewed") {
             std::string value;
-            if (!(stream >> value)) {
+            if (artistReviewedSeen || !(stream >> value)) {
                 setError(error, "invalid or duplicate pentachoron sidecar record");
                 return false;
             }
+            artistReviewedSeen = true;
             if (value == "true")
                 output.artistReviewed = true;
             else if (value == "false")
@@ -471,10 +503,24 @@ bool rt4dLoadPentachoronSidecar(const std::string& path,
             return false;
         }
     }
-    if (output.schema != "rt4d-pentachoron-sidecar/0.1" ||
-        output.provenance.empty() || output.primitives.empty()) {
-        setError(error, "pentachoron authored-sidecar contract is incorrect");
-        return false;
+    if (output.schema == "rt4d-pentachoron-sidecar/0.1") {
+        if (output.provenance.empty() || output.primitives.empty()) {
+            setError(error, "pentachoron authored-sidecar contract is incorrect");
+            return false;
+        }
+        output.schemaVersion = "1";
+        return true;
     }
-    return true;
+    if (output.schema == "rt4d-pentachoron-sidecar/0.2") {
+        if (output.provenance.empty() || output.primitives.empty() ||
+            output.schemaVersion != "2" || output.author.empty() ||
+            output.license.empty() || output.creationTool.empty() ||
+            output.sourceHash.empty() || output.migrationPath.empty()) {
+            setError(error, "pentachoron sidecar-v2 contract is incorrect");
+            return false;
+        }
+        return true;
+    }
+    setError(error, "unsupported pentachoron sidecar schema");
+    return false;
 }

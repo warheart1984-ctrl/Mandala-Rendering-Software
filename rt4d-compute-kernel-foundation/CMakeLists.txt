@@ -9,6 +9,13 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(rt4d_kernel_contract STATIC
     ${SRC_DIR}/kernels/cpu/rt4d_kernel_contract.cpp
     ${SRC_DIR}/kernels/cpu/rt4d_matvec.cpp
+    ${SRC_DIR}/kernels/cpu/rt4d_sha256.cpp
+    ${SRC_DIR}/kernels/cpu/rt4d_evidence.cpp
+    ${SRC_DIR}/kernels/cpu/rt4d_slice.cpp
+    ${SRC_DIR}/kernels/cpu/rt4d_preview.cpp
+    ${SRC_DIR}/kernels/cpu/rt4d_sidecar.cpp
+    ${SRC_DIR}/kernels/cpu/rt4d_review_packet.cpp
+    ${SRC_DIR}/kernels/cpu/rt4d_overlay.cpp
 )
 target_include_directories(rt4d_kernel_contract PUBLIC ${SRC_DIR})
 if(MSVC)
@@ -84,6 +91,21 @@ else()
         -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+function(rt4d_cpu_tool name)
+    add_executable(${name} ${SRC_DIR}/tools/${name}.cpp)
+    target_link_libraries(${name} PRIVATE rt4d_kernel_contract)
+    if(MSVC)
+        target_compile_options(${name} PRIVATE /W4 /WX)
+    else()
+        target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+endfunction()
+
+rt4d_cpu_tool(rt4d_review_packet_verifier)
+rt4d_cpu_tool(rt4d_slice_inspector)
+rt4d_cpu_tool(rt4d_overlay_evaluate)
+rt4d_cpu_tool(rt4d_packet_pack)
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(rt4d_kernel_contract_tests
@@ -98,6 +120,30 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME rt4d_kernel_cpu_contract COMMAND rt4d_kernel_contract_tests
         ${SRC_DIR}/fixtures/pentachora-v0.1.rt4d)
+
+    function(rt4d_cpu_test name)
+        add_executable(${name} ${SRC_DIR}/tests/${name}.cpp)
+        target_link_libraries(${name} PRIVATE rt4d_kernel_contract)
+        if(MSVC)
+            target_compile_options(${name} PRIVATE /W4 /WX)
+        else()
+            target_compile_options(${name} PRIVATE
+                -Wall -Wextra -Wpedantic -Werror)
+        endif()
+    endfunction()
+
+    rt4d_cpu_test(rt4d_evidence_test)
+    add_test(NAME rt4d_evidence_integrity COMMAND rt4d_evidence_test)
+
+    rt4d_cpu_test(rt4d_slice_preview_test)
+    add_test(NAME rt4d_slice_preview COMMAND rt4d_slice_preview_test)
+
+    rt4d_cpu_test(rt4d_sidecar_evolution_test)
+    add_test(NAME rt4d_sidecar_evolution COMMAND rt4d_sidecar_evolution_test
+        ${SRC_DIR}/fixtures/pentachora-v0.1.rt4d)
+
+    rt4d_cpu_test(rt4d_overlay_index_test)
+    add_test(NAME rt4d_overlay_index COMMAND rt4d_overlay_index_test)
 
     add_executable(rt4d_kernel_vulkan_tests
         ${SRC_DIR}/tests/rt4d_kernel_vulkan_test.cpp)

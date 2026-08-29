@@ -79,7 +79,13 @@ struct RT4DPentachoronBvh4D {
 
 struct RT4DPentachoronAsset4D {
     std::string schema;
+    std::string schemaVersion;
+    std::string migrationPath;
     std::string provenance;
+    std::string author;
+    std::string license;
+    std::string creationTool;
+    std::string sourceHash;
     bool artistReviewed = false;
     std::vector<RT4DPentachoronPrimitive4D> primitives;
 };
@@ -125,4 +131,8 @@ std::vector<RT4DPentachoronHit4D> rt4dTraversePentachoronBvh4DBatch(
 bool rt4dLoadPentachoronSidecar(
     const std::string& path,
     RT4DPentachoronAsset4D& output,
+    std::string* error);
+
+bool rt4dMigratePentachoronSidecarV1ToV2(
+    const std::string& sourcePath, const std::string& destinationPath,
     std::string* error);
