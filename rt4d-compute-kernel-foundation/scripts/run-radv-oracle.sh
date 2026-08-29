@@ -4,7 +4,22 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD="${RT4D_BUILD_DIR:-$ROOT/build}"
+if [[ -n "${RT4D_BUILD_DIR:-}" ]]; then
+  BUILD="$RT4D_BUILD_DIR"
+else
+  BUILD=""
+  for candidate in \
+    "$ROOT/build" \
+    "$ROOT/../build/rt4d-compute-kernel-foundation" \
+    "$ROOT/../build-rt4d-recon/rt4d-compute-kernel-foundation"
+  do
+    if [[ -x "$candidate/rt4d_hardware_oracle" ]]; then
+      BUILD="$candidate"
+      break
+    fi
+  done
+  BUILD="${BUILD:-$ROOT/build}"
+fi
 RECEIPT="${1:-$ROOT/receipts/rt4d-kernel-vulkan-radv-v0.1.json}"
 ICD="${RT4D_RADV_ICD:-/usr/share/vulkan/icd.d/radeon_icd.json}"
 
