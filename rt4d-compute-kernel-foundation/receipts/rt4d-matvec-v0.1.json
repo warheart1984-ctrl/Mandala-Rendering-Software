@@ -1,0 +1,15 @@
+{
+  "schema": "rt4d-matvec-receipt/0.1",
+  "mode": "diagnostic_only",
+  "creationTool": "rt4d-diagnostic-cli",
+  "gpuParity": "passed",
+  "gpuAdapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "vendorId": 65541,
+  "deviceId": 0,
+  "driverVersion": 104865800,
+  "M": 257,
+  "N": 64,
+  "maximumAbsDelta": 0,
+  "gpuDetail": "CPU/GPU matvec parity",
+  "rendererPixelAuthority": false
+}

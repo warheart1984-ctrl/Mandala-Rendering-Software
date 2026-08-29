@@ -58,6 +58,11 @@ evidence*.json
 # Cloud Agent environment config (must be tracked despite blanket *.json ignore)
 !.cursor/environment.json
 
+# RT4D diagnostic receipts (canonical evidence; not renderer pixels)
+!rt4d-compute-kernel-foundation/**/*.json
+!rt4d-compute-kernel-foundation/receipts/
+!rt4d-compute-kernel-foundation/receipts/**
+
 # HoloRT4D Spatial MCP package manifests (blanket *.json ignore)
 !mrs/apps/spatial-tokenizer/mcp/package.json
 !mrs/apps/spatial-tokenizer/mcp/package-lock.json
