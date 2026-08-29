@@ -1,0 +1,40 @@
+{
+  "schema": "rt4d-layers-2-6-receipt/0.1",
+  "mode": "diagnostic_only",
+  "creationTool": "rt4d-diagnostic-cli",
+  "gpuAdapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "layer1Regression": {
+    "pentachoronBvh": "24 primitives, 31 nodes, 143 rays, 131 hits, 12 misses, maxDelta 0",
+    "matvec": "M=257 N=64 maxAbsDelta 0",
+    "validation": "warnings=0 errors=0"
+  },
+  "sha256": {
+    "abc": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    "role": "evidence chain",
+    "fnv": "debug-only, never integrity"
+  },
+  "publishGovernance": [
+    "overwrite_rejected",
+    "empty_or_truncated",
+    "disk_full via /dev/full",
+    "unwritable directory",
+    "truncated preview fails verifier"
+  ],
+  "slice": {
+    "hypervolume4_unit": 0.041666666666666664,
+    "topologies": ["empty", "event", "tetrahedron", "prism"],
+    "permutationProofs": 120
+  },
+  "sidecarV2": {
+    "migrationPath": "rt4d-pentachoron-sidecar/0.1->0.2",
+    "provenancePreserved": true
+  },
+  "overlay": {
+    "status": "enforced as read-only diagnostic view",
+    "overlayAuthoritative": false,
+    "rendererPixelAuthority": false,
+    "refusesProtectedArtifacts": true
+  },
+  "rx480Oracle": "unavailable",
+  "rendererPixelAuthority": false
+}

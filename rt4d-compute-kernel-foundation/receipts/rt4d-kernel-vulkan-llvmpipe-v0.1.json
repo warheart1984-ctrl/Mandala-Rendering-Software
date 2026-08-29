@@ -1,0 +1,23 @@
+{
+  "schema": "rt4d-kernel-vulkan-receipt/0.1",
+  "mode": "diagnostic_only",
+  "creationTool": "rt4d-diagnostic-cli",
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "gpuParity": "passed",
+  "pentachoronBvh": {
+    "nodes": 31,
+    "primitives": 24,
+    "rays": 143,
+    "hits": 131,
+    "misses": 12,
+    "maximumWitnessDelta": 0
+  },
+  "matvec": {
+    "M": 257,
+    "N": 64,
+    "maximumAbsDelta": 0
+  },
+  "validationStatus": "clean",
+  "rendererPixelAuthority": false,
+  "note": "Software Vulkan (llvmpipe). Not an RX 480/RADV oracle."
+}

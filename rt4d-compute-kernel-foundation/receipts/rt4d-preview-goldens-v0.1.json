@@ -1,0 +1,11 @@
+{
+  "schema": "rt4d-preview-goldens/0.1",
+  "mode": "diagnostic_only",
+  "note": "SHA-256 of raw RGB (64x64x3), not PNG/PPM file bytes",
+  "width": 64,
+  "height": 64,
+  "empty": "f3cc103136423a57975750907ebc1d367e2985ac6338976d4d5a439f50323f4a",
+  "tetrahedron_w025_unit_pentachoron": "f55ca1116b20037d594b90f266d7d16e62547bfe806d112a2eae8d15a753c164",
+  "prism_w05_3plus2_split": "7cf48b81a9d59b60da999b61dff9d39c1cc7510226088d61c9f6d13d6a79f5b2",
+  "rendererPixelAuthority": false
+}
