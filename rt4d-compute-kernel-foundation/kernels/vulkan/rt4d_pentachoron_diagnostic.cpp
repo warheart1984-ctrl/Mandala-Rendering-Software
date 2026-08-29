@@ -74,9 +74,12 @@ RT4DPentachoronGpuDiagnosticResult rt4dDiagnosePentachoronBvhGpu(
         return result;
     }
     result.adapter = dispatcher.adapter().name;
+    result.driverName = dispatcher.adapter().driverName;
     result.vendorId = dispatcher.adapter().vendorId;
     result.deviceId = dispatcher.adapter().deviceId;
     result.driverVersion = dispatcher.adapter().driverVersion;
+    result.deviceType = dispatcher.adapter().deviceType;
+    result.driverId = dispatcher.adapter().driverId;
 
     std::vector<RT4DPentachoronHit4D> zero(origins.size());
     RT4DDiagnosticBuffer nodeBuffer(dispatcher);

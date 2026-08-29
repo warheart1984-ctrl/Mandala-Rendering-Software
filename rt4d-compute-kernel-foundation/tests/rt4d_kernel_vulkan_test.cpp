@@ -1,3 +1,4 @@
+#include "kernels/cpu/rt4d_adapter_class.h"
 #include "kernels/vulkan/rt4d_matvec_diagnostic.h"
 #include "kernels/vulkan/rt4d_pentachoron_diagnostic.h"
 
@@ -69,12 +70,29 @@ bool runPentachoronBvhContract(const char* spirvPath) {
     if (result.cpuHitCount == 0 || result.cpuHitCount == result.rayCount ||
         result.validationErrors != 0)
         return false;
+    RT4DAdapterIdentity identity;
+    identity.name = result.adapter;
+    identity.driverName = result.driverName;
+    identity.vendorId = result.vendorId;
+    identity.deviceId = result.deviceId;
+    identity.driverVersion = result.driverVersion;
+    identity.deviceType = result.deviceType;
+    identity.driverId = result.driverId;
+    const bool radv = rt4dAdapterIsAmdRadv(identity);
+    if ((result.vendorId == RT4D_PCI_VENDOR_MESA_SOFTWARE ||
+         result.deviceType == RT4D_VK_DEVICE_TYPE_CPU) &&
+        radv) {
+        std::fprintf(stderr,
+                     "[kernel-gpu] FAIL: software Vulkan adapter was classified "
+                     "as AMD RADV\n");
+        return false;
+    }
     std::fprintf(stderr,
                  "[kernel-gpu] pentachoron BVH4D PASS: nodes=%zu primitives=%zu "
-                 "rays=%u hits=%u misses=%u maxDelta=%g\n",
+                 "rays=%u hits=%u misses=%u maxDelta=%g radvOracle=%s\n",
                  bvh.bounds.nodes.size(), bvh.primitives.size(), result.rayCount,
                  result.cpuHitCount, result.rayCount - result.cpuHitCount,
-                 result.maximumWitnessDelta);
+                 result.maximumWitnessDelta, radv ? "eligible" : "ineligible");
     return true;
 }
 

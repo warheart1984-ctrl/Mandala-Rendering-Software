@@ -17,12 +17,16 @@ the canonical unit of evidence. Pixel output has no authority.
 | Sidecar v1 fuzz + v1→v2 migrator | `enforced` | Unknown records, NaN, truncated, duplicate provenance rejected; provenance preserved |
 | Review-packet index + inspect CLI | `enforced` | `rt4d_slice_inspector` is inspect-only; pack is a separate diagnostic CLI |
 | Read-only overlay | `enforced` as a non-authoritative view | Sync/perf/IQ gates; refuses sidecar/receipt/manifest/preview/obj paths |
-| RX 480 / RADV oracle | `unavailable` here | This environment has no discrete GPU |
+| AMD RADV hardware oracle | `unavailable` here | RADV ICD present; no DRM node; `--require-gpu --require-amd-radv` refuses lavapipe |
 
 `enforced` on lavapipe means CPU/GPU parity and zero validation messages were
-recorded in this environment. It does not mean production deployment, RX 480
-coverage, or renderer authority. Overlay is a read-only diagnostic view and
-is never ground truth (`overlayAuthoritative: false`).
+recorded in this environment. That is lavapipe-complete and **hardware-unproven**.
+It does not mean production deployment, AMD GPU coverage, or renderer authority.
+Overlay is a read-only diagnostic view and is never ground truth
+(`overlayAuthoritative: false`). The first hardware oracle is
+`receipts/rt4d-kernel-vulkan-radv-v0.1.json`, published only by
+`rt4d_hardware_oracle --require-gpu --require-amd-radv` on Mesa RADV. Until that
+file exists, do not treat GPU work as hardware-complete.
 
 ## Build and verify
 
@@ -55,8 +59,20 @@ Review packet (CPU-only):
   --require-topology tetrahedron --require-non-empty
 ```
 
-`--require-gpu` fails intake when `gpuParity` is not `passed`. Without it,
-CPU diagnostics still publish and `gpuParity` may be `unavailable`.
+`--require-gpu` fails intake when `gpuParity` is not `passed`. `--require-amd-radv`
+additionally refuses lavapipe/CPU adapters so a software pass cannot stamp the
+hardware oracle. Combined RADV receipt (Linux Mesa only; both flags required):
+
+```bash
+./scripts/run-radv-oracle.sh
+```
+
+That script requires a DRM render node and the RADV ICD
+(`/usr/share/vulkan/icd.d/radeon_icd.json`). This cloud environment has the ICD and
+`libvulkan_radeon.so` but no `/dev/dri`, so `vkEnumeratePhysicalDevices` on RADV
+fails and the hardware oracle receipt is not published. The probe of that miss
+is `receipts/rt4d-kernel-vulkan-radv-probe-cloud-v0.1.json`. Windows AMD drivers
+are not RADV; they will also be refused by `--require-amd-radv`.
 
 ## Boundary
 
@@ -65,3 +81,4 @@ CPU diagnostics still publish and `gpuParity` may be `unavailable`.
 - Overlay must not mutate sidecars, receipts, manifests, previews, or OBJ files.
 - `hypervolume4` and `sliceVolume3` are distinct named metrics.
 - Tiled/fused matvec is not claimed complete.
+- `rt4d-kernel-vulkan-radv-v0.1.json` is published only by `rt4d_hardware_oracle --require-gpu --require-amd-radv` on Mesa RADV. Lavapipe receipts are not that oracle.

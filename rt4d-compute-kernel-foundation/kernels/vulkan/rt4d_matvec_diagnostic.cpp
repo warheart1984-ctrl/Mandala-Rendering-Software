@@ -51,9 +51,12 @@ RT4DMatvecGpuDiagnosticResult rt4dDiagnoseMatvecGpu(
         return result;
     }
     result.adapter = dispatcher.adapter().name;
+    result.driverName = dispatcher.adapter().driverName;
     result.vendorId = dispatcher.adapter().vendorId;
     result.deviceId = dispatcher.adapter().deviceId;
     result.driverVersion = dispatcher.adapter().driverVersion;
+    result.deviceType = dispatcher.adapter().deviceType;
+    result.driverId = dispatcher.adapter().driverId;
 
     std::vector<float> zero(static_cast<size_t>(M), 0.0f);
     RT4DDiagnosticBuffer aBuffer(dispatcher);

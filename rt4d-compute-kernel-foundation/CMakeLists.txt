@@ -16,6 +16,7 @@ add_library(rt4d_kernel_contract STATIC
     ${SRC_DIR}/kernels/cpu/rt4d_sidecar.cpp
     ${SRC_DIR}/kernels/cpu/rt4d_review_packet.cpp
     ${SRC_DIR}/kernels/cpu/rt4d_overlay.cpp
+    ${SRC_DIR}/kernels/cpu/rt4d_adapter_class.cpp
 )
 target_include_directories(rt4d_kernel_contract PUBLIC ${SRC_DIR})
 if(MSVC)
@@ -80,6 +81,7 @@ add_custom_command(
 )
 add_custom_target(rt4d_diagnostic_shaders ALL
     DEPENDS ${PENTACHORON_SPV} ${MATVEC_SPV})
+add_dependencies(rt4d_pentachoron_intake rt4d_diagnostic_shaders)
 add_executable(rt4d_matvec_receipt
     ${SRC_DIR}/tools/rt4d_matvec_receipt.cpp)
 target_link_libraries(rt4d_matvec_receipt PRIVATE rt4d_vulkan_diagnostic)
@@ -88,6 +90,16 @@ if(MSVC)
     target_compile_options(rt4d_matvec_receipt PRIVATE /W4 /WX)
 else()
     target_compile_options(rt4d_matvec_receipt PRIVATE
+        -Wall -Wextra -Wpedantic -Werror)
+endif()
+add_executable(rt4d_hardware_oracle
+    ${SRC_DIR}/tools/rt4d_hardware_oracle.cpp)
+target_link_libraries(rt4d_hardware_oracle PRIVATE rt4d_vulkan_diagnostic)
+add_dependencies(rt4d_hardware_oracle rt4d_diagnostic_shaders)
+if(MSVC)
+    target_compile_options(rt4d_hardware_oracle PRIVATE /W4 /WX)
+else()
+    target_compile_options(rt4d_hardware_oracle PRIVATE
         -Wall -Wextra -Wpedantic -Werror)
 endif()
 
@@ -145,6 +157,9 @@ if(BUILD_TESTING)
     rt4d_cpu_test(rt4d_overlay_index_test)
     add_test(NAME rt4d_overlay_index COMMAND rt4d_overlay_index_test)
 
+    rt4d_cpu_test(rt4d_adapter_class_test)
+    add_test(NAME rt4d_adapter_class COMMAND rt4d_adapter_class_test)
+
     add_executable(rt4d_kernel_vulkan_tests
         ${SRC_DIR}/tests/rt4d_kernel_vulkan_test.cpp)
     target_link_libraries(rt4d_kernel_vulkan_tests PRIVATE
@@ -167,5 +182,14 @@ if(BUILD_TESTING)
                 ${MATVEC_SPV}
                 ${SRC_DIR}/fixtures/pentachora-v0.1.rt4d
         )
+        # Pin lavapipe when present so a leftover RADV-only ICD env cannot
+        # fail cloud CTest. Override with RT4D_VK_ICD on a real GPU box.
+        if(DEFINED ENV{RT4D_VK_ICD})
+            set_tests_properties(rt4d_kernel_vulkan_contract PROPERTIES
+                ENVIRONMENT "VK_ICD_FILENAMES=$ENV{RT4D_VK_ICD};DISPLAY=")
+        elseif(EXISTS "/usr/share/vulkan/icd.d/lvp_icd.json")
+            set_tests_properties(rt4d_kernel_vulkan_contract PROPERTIES
+                ENVIRONMENT "VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json;DISPLAY=")
+        endif()
     endif()
 endif()

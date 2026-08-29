@@ -1,5 +1,6 @@
-#include "kernels/cpu/rt4d_kernel_contract.h"
+#include "kernels/cpu/rt4d_adapter_class.h"
 #include "kernels/cpu/rt4d_evidence.h"
+#include "kernels/cpu/rt4d_kernel_contract.h"
 #include "kernels/vulkan/rt4d_pentachoron_diagnostic.h"
 
 #include <cstdio>
@@ -64,8 +65,11 @@ bool writeReceipt(const std::string& path, const RT4DPentachoronAsset4D& asset,
            << "  \"hitCount\": " << hitCount << ",\n"
            << "  \"gpuParity\": \"" << parityName(gpu.status) << "\",\n"
            << "  \"gpuAdapter\": \"" << rt4dJsonEscape(gpu.adapter) << "\",\n"
+           << "  \"driverName\": \"" << rt4dJsonEscape(gpu.driverName) << "\",\n"
            << "  \"vendorId\": " << gpu.vendorId << ",\n"
            << "  \"deviceId\": " << gpu.deviceId << ",\n"
+           << "  \"deviceType\": " << gpu.deviceType << ",\n"
+           << "  \"driverId\": " << gpu.driverId << ",\n"
            << "  \"driverVersion\": " << gpu.driverVersion << ",\n"
            << "  \"rayCount\": " << gpu.rayCount << ",\n"
            << "  \"cpuHitCount\": " << gpu.cpuHitCount << ",\n"
@@ -103,18 +107,21 @@ std::string defaultSpirvPath() {
 
 int main(int argc, char** argv) {
     bool requireGpu = false;
+    bool requireAmdRadv = false;
     std::vector<char*> args;
     args.reserve(static_cast<size_t>(argc));
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--require-gpu") == 0)
             requireGpu = true;
+        else if (std::strcmp(argv[i], "--require-amd-radv") == 0)
+            requireAmdRadv = true;
         else
             args.push_back(argv[i]);
     }
     if (args.size() != 2)
         return fail(
-            "usage: rt4d_pentachoron_intake [--require-gpu] <asset.rt4d> "
-            "<receipt.json>");
+            "usage: rt4d_pentachoron_intake [--require-gpu] [--require-amd-radv] "
+            "<asset.rt4d> <receipt.json>");
     RT4DPentachoronAsset4D asset;
     std::string error;
     if (!rt4dLoadPentachoronSidecar(args[0], asset, &error))
@@ -143,6 +150,20 @@ int main(int argc, char** argv) {
                                        defaultSpirvPath());
     if (requireGpu && gpu.status != RT4DGpuParityStatus::passed)
         return fail("GPU parity required but not passed");
+    if (requireAmdRadv) {
+        if (gpu.status != RT4DGpuParityStatus::passed)
+            return fail("AMD RADV oracle required but GPU parity did not pass");
+        RT4DAdapterIdentity identity;
+        identity.name = gpu.adapter;
+        identity.driverName = gpu.driverName;
+        identity.vendorId = gpu.vendorId;
+        identity.deviceId = gpu.deviceId;
+        identity.driverVersion = gpu.driverVersion;
+        identity.deviceType = gpu.deviceType;
+        identity.driverId = gpu.driverId;
+        if (!rt4dAdapterIsAmdRadv(identity))
+            return fail("AMD RADV oracle required but adapter is not Mesa RADV");
+    }
     if (!writeReceipt(args[1], asset, bvh, hits, gpu))
         return fail("receipt publication failed or destination exists");
     std::fprintf(stderr,

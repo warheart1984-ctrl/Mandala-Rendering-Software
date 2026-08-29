@@ -12,9 +12,12 @@ enum class RT4DGpuParityStatus { passed, failed, unavailable };
 struct RT4DPentachoronGpuDiagnosticResult {
     RT4DGpuParityStatus status = RT4DGpuParityStatus::unavailable;
     std::string adapter;
+    std::string driverName;
     uint32_t vendorId = 0;
     uint32_t deviceId = 0;
     uint32_t driverVersion = 0;
+    uint32_t deviceType = 0;
+    uint32_t driverId = 0;
     uint32_t rayCount = 0;
     uint32_t cpuHitCount = 0;
     uint32_t gpuHitCount = 0;

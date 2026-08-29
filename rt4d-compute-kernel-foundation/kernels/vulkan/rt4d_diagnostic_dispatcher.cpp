@@ -257,8 +257,9 @@ bool RT4DDiagnosticDispatcher::init() {
 
     uint32_t physicalCount = 0;
     if (!check(vkEnumeratePhysicalDevices(instance_, &physicalCount, nullptr),
-               "vkEnumeratePhysicalDevices(count)", lastError_) ||
-        physicalCount == 0) {
+               "vkEnumeratePhysicalDevices(count)", lastError_))
+        return false;
+    if (physicalCount == 0) {
         lastError_ = "no Vulkan physical devices";
         failLog(lastError_.c_str());
         return false;
@@ -334,9 +335,35 @@ bool RT4DDiagnosticDispatcher::init() {
     adapter_.vendorId = properties_.vendorID;
     adapter_.deviceId = properties_.deviceID;
     adapter_.driverVersion = properties_.driverVersion;
-    std::fprintf(stderr, "[rt4d-diagnostic] adapter=%s vendor=0x%x device=0x%x\n",
-                 adapter_.name.c_str(), adapter_.vendorId, adapter_.deviceId);
+    adapter_.deviceType = static_cast<uint32_t>(properties_.deviceType);
+    VkPhysicalDeviceDriverProperties driver{};
+    driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+    VkPhysicalDeviceProperties2 properties2{};
+    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    properties2.pNext = &driver;
+    vkGetPhysicalDeviceProperties2(physicalDevice_, &properties2);
+    adapter_.driverId = static_cast<uint32_t>(driver.driverID);
+    adapter_.driverName = driver.driverName;
+    std::fprintf(stderr,
+                 "[rt4d-diagnostic] adapter=%s vendor=0x%x device=0x%x "
+                 "type=%u driver=%s driverId=%u\n",
+                 adapter_.name.c_str(), adapter_.vendorId, adapter_.deviceId,
+                 adapter_.deviceType, adapter_.driverName.c_str(),
+                 adapter_.driverId);
     return true;
+}
+
+RT4DAdapterIdentity rt4dAdapterIdentityFrom(
+    const RT4DDiagnosticAdapterInfo& adapter) {
+    RT4DAdapterIdentity identity;
+    identity.name = adapter.name;
+    identity.driverName = adapter.driverName;
+    identity.vendorId = adapter.vendorId;
+    identity.deviceId = adapter.deviceId;
+    identity.driverVersion = adapter.driverVersion;
+    identity.deviceType = adapter.deviceType;
+    identity.driverId = adapter.driverId;
+    return identity;
 }
 
 void RT4DDiagnosticDispatcher::shutdown() {

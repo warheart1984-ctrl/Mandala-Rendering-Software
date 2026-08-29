@@ -1,5 +1,7 @@
 #pragma once
 
+#include "kernels/cpu/rt4d_adapter_class.h"
+
 #include <vulkan/vulkan.h>
 
 #include <cstddef>
@@ -13,10 +15,16 @@
 
 struct RT4DDiagnosticAdapterInfo {
     std::string name;
+    std::string driverName;
     uint32_t vendorId = 0;
     uint32_t deviceId = 0;
     uint32_t driverVersion = 0;
+    uint32_t deviceType = 0;
+    uint32_t driverId = 0;
 };
+
+RT4DAdapterIdentity rt4dAdapterIdentityFrom(
+    const RT4DDiagnosticAdapterInfo& adapter);
 
 struct RT4DDiagnosticValidationState {
     uint32_t warnings = 0;

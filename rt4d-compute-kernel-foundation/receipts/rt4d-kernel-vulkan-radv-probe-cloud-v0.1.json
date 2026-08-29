@@ -1,0 +1,20 @@
+{
+  "schema": "rt4d-hardware-oracle-probe/0.1",
+  "mode": "diagnostic_only",
+  "oracleClass": "amd_radv",
+  "status": "unavailable",
+  "environment": "cursor-cloud",
+  "vkIcd": "/usr/share/vulkan/icd.d/radeon_icd.json",
+  "radvLibraryPresent": true,
+  "radvLibraryPath": "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so",
+  "drmNodePresent": false,
+  "requireGpu": true,
+  "requireAmdRadv": true,
+  "gpuParity": "unavailable",
+  "vkEnumeratePhysicalDevices": -3,
+  "detail": "RADV ICD loads libvulkan_radeon.so. Loader validation: Failed to detect any valid GPUs in the current config. vkEnumeratePhysicalDevices(count) returned -3 (VK_ERROR_INITIALIZATION_FAILED). --require-gpu correctly refused to publish. This is not a hardware oracle.",
+  "llvmpipeOracle": "receipts/rt4d-kernel-vulkan-llvmpipe-v0.1.json",
+  "hardwareOracleReceipt": "receipts/rt4d-kernel-vulkan-radv-v0.1.json",
+  "hardwareOracleReceiptPresent": false,
+  "rendererPixelAuthority": false
+}
