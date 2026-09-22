@@ -30,7 +30,7 @@ Governance preserves **laws**, not equilibrium. No subsystem may commit a state 
 | Observer | 1 (Movie Lane path) |
 | Invariant | `proto.scalar-mass-conservation` (**enforced**) |
 | CPU | **enforced** source of truth |
-| GPU | Vulkan ∇φ kernel if RADV is live; else **declared** SPIR-V + blocked-with-evidence |
+| GPU | ∇φ kernel **partial** when a Vulkan device matches CPU (`maxAbsError ≤ 1e-4`). Lavapipe counts; RADV is preferred when a discrete device is present. Otherwise **declared** + blocked-with-evidence |
 
 RHFD mapping (Claim A only — computationally useful. Claim B / physical vacuum is **not** claimed):
 
@@ -51,6 +51,11 @@ node scripts/test-mandala-proto.mjs
 node mandala/proto/run.mjs
 # or
 node scripts/mandala-proto.mjs
+
+# AAIS-gated Vulkan slice movie (needs spirv-as, a Vulkan ICD, ffmpeg)
+node mandala/proto/vulkan-movie.mjs
+# Windows / RX 580, repo on G:
+powershell -ExecutionPolicy Bypass -File scripts/vulkan-aais-movie.ps1
 ```
 
 Outputs land in `output/mandala-proto/` (not `output/simulation/salt-atlas/`).

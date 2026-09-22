@@ -155,14 +155,18 @@ export function probeAndCompareGradient({
     const gpuGrad = new Float32Array(gpuBuf.buffer, gpuBuf.byteOffset, gpuBuf.byteLength / 4);
     const err = maxAbsError(cpuGrad, gpuGrad);
     let device = null;
+    let deviceType = null;
     try {
-      device = JSON.parse(proc.stdout.trim()).device;
+      const parsed = JSON.parse(proc.stdout.trim());
+      device = parsed.device;
+      deviceType = parsed.deviceType || null;
     } catch {
       device = (proc.stderr || "").split("\n").find((l) => l.includes("device=")) || "unknown";
     }
 
     evidence.gpuLive = true;
     evidence.device = device;
+    evidence.deviceType = deviceType;
     evidence.maxAbsError = err;
     evidence.passed = err <= GPU_NUMERIC_CONTRACT.maxAbsError;
     evidence.status = evidence.passed ? "partial" : "blocked-with-evidence";

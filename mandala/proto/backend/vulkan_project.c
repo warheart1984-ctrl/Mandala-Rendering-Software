@@ -1,6 +1,6 @@
-/* Tiny Vulkan compute host: ∇φ on a 32³ Float32 grid.
- * Mathematical contract is CPU JS (cpu-reference.mjs). This is a backend.
- * Prefer discrete RADV device. Host-visible buffers only (tiny proto).
+/* Vulkan compute host: orthographic φ slice → RGB bytes' source uints.
+ * Formula matches mandala/proto/mandala-project.mjs projectFrozen.
+ * CPU JS remains the definition of the picture. This only draws it.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +9,7 @@
 #include <vulkan/vulkan.h>
 
 static void die(const char *msg, VkResult r) {
-  fprintf(stderr, "vulkan_grad: %s (VkResult %d)\n", msg, (int)r);
+  fprintf(stderr, "vulkan_project: %s (VkResult %d)\n", msg, (int)r);
   exit(3);
 }
 
@@ -33,16 +33,26 @@ static uint32_t find_host_memory(VkPhysicalDevice pd, uint32_t type_bits) {
   return 0;
 }
 
-static int is_discrete_amd(VkPhysicalDevice pd) {
+static int is_discrete(VkPhysicalDevice pd) {
   VkPhysicalDeviceProperties p;
   vkGetPhysicalDeviceProperties(pd, &p);
   return p.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
 
+static const char *device_type_name(VkPhysicalDeviceType t) {
+  switch (t) {
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: return "discrete";
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: return "integrated";
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: return "virtual";
+    case VK_PHYSICAL_DEVICE_TYPE_CPU: return "cpu";
+    default: return "other";
+  }
+}
+
 static void *read_file(const char *path, size_t *out_sz) {
   FILE *f = fopen(path, "rb");
   if (!f) {
-    fprintf(stderr, "vulkan_grad: cannot open %s\n", path);
+    fprintf(stderr, "vulkan_project: cannot open %s\n", path);
     exit(2);
   }
   fseek(f, 0, SEEK_END);
@@ -50,7 +60,7 @@ static void *read_file(const char *path, size_t *out_sz) {
   fseek(f, 0, SEEK_SET);
   void *buf = malloc((size_t)n);
   if (!buf || fread(buf, 1, (size_t)n, f) != (size_t)n) {
-    fprintf(stderr, "vulkan_grad: read failed %s\n", path);
+    fprintf(stderr, "vulkan_project: read failed %s\n", path);
     exit(2);
   }
   fclose(f);
@@ -61,11 +71,11 @@ static void *read_file(const char *path, size_t *out_sz) {
 static void write_file(const char *path, const void *data, size_t n) {
   FILE *f = fopen(path, "wb");
   if (!f) {
-    fprintf(stderr, "vulkan_grad: cannot write %s\n", path);
+    fprintf(stderr, "vulkan_project: cannot write %s\n", path);
     exit(2);
   }
   if (fwrite(data, 1, n, f) != n) {
-    fprintf(stderr, "vulkan_grad: write failed %s\n", path);
+    fprintf(stderr, "vulkan_project: write failed %s\n", path);
     exit(2);
   }
   fclose(f);
@@ -75,7 +85,8 @@ int main(int argc, char **argv) {
   const char *shader = NULL;
   const char *in_path = NULL;
   const char *out_path = NULL;
-  uint32_t nx = 32, ny = 32, nz = 32;
+  uint32_t nx = 32, ny = 32, nz = 32, width = 128, height = 128, z = 16, defx = 16, defy = 16;
+  float ar = 0.82f, ag = 0.71f, ab = 0.55f;
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "--shader") && i + 1 < argc) shader = argv[++i];
     else if (!strcmp(argv[i], "--in") && i + 1 < argc) in_path = argv[++i];
@@ -83,9 +94,17 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "--nx") && i + 1 < argc) nx = (uint32_t)atoi(argv[++i]);
     else if (!strcmp(argv[i], "--ny") && i + 1 < argc) ny = (uint32_t)atoi(argv[++i]);
     else if (!strcmp(argv[i], "--nz") && i + 1 < argc) nz = (uint32_t)atoi(argv[++i]);
+    else if (!strcmp(argv[i], "--width") && i + 1 < argc) width = (uint32_t)atoi(argv[++i]);
+    else if (!strcmp(argv[i], "--height") && i + 1 < argc) height = (uint32_t)atoi(argv[++i]);
+    else if (!strcmp(argv[i], "--z") && i + 1 < argc) z = (uint32_t)atoi(argv[++i]);
+    else if (!strcmp(argv[i], "--defx") && i + 1 < argc) defx = (uint32_t)atoi(argv[++i]);
+    else if (!strcmp(argv[i], "--defy") && i + 1 < argc) defy = (uint32_t)atoi(argv[++i]);
+    else if (!strcmp(argv[i], "--ar") && i + 1 < argc) ar = (float)atof(argv[++i]);
+    else if (!strcmp(argv[i], "--ag") && i + 1 < argc) ag = (float)atof(argv[++i]);
+    else if (!strcmp(argv[i], "--ab") && i + 1 < argc) ab = (float)atof(argv[++i]);
   }
-  if (!shader || !in_path || !out_path) {
-    fprintf(stderr, "usage: vulkan_grad --shader grad.spv --in phi.bin --out grad.bin [--nx 32 --ny 32 --nz 32]\n");
+  if (!shader || !in_path || !out_path || !width || !height) {
+    fprintf(stderr, "usage: vulkan_project --shader project.spv --in phi.bin --out rgb.bin --nx 32 --ny 32 --nz 32 --width 128 --height 128 --z 16 --defx 16 --defy 16 --ar 0.82 --ag 0.71 --ab 0.55\n");
     return 2;
   }
 
@@ -93,15 +112,16 @@ int main(int argc, char **argv) {
   float *phi = read_file(in_path, &in_sz);
   uint32_t n = nx * ny * nz;
   if (in_sz != n * sizeof(float)) {
-    fprintf(stderr, "vulkan_grad: expected %u floats, got %zu bytes\n", n, in_sz);
+    fprintf(stderr, "vulkan_project: expected %u floats, got %zu bytes\n", n, in_sz);
     return 2;
   }
-  size_t out_bytes = (size_t)n * 3 * sizeof(float);
+  uint32_t pixels = width * height;
+  size_t out_bytes = (size_t)pixels * 3 * sizeof(uint32_t);
 
   VkInstance inst;
   VkApplicationInfo app = {
     .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-    .pApplicationName = "mandala-proto-grad",
+    .pApplicationName = "mandala-proto-project",
     .applicationVersion = 1,
     .pEngineName = "mandala-proto",
     .engineVersion = 1,
@@ -121,22 +141,15 @@ int main(int argc, char **argv) {
   vkEnumeratePhysicalDevices(inst, &pd_count, pds);
   VkPhysicalDevice pd = pds[0];
   for (uint32_t i = 0; i < pd_count; i++) {
-    if (is_discrete_amd(pds[i])) {
+    if (is_discrete(pds[i])) {
       pd = pds[i];
       break;
     }
   }
   VkPhysicalDeviceProperties props;
   vkGetPhysicalDeviceProperties(pd, &props);
-  const char *device_type = "other";
-  switch (props.deviceType) {
-    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: device_type = "discrete"; break;
-    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: device_type = "integrated"; break;
-    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: device_type = "virtual"; break;
-    case VK_PHYSICAL_DEVICE_TYPE_CPU: device_type = "cpu"; break;
-    default: break;
-  }
-  fprintf(stderr, "vulkan_grad: device=%s type=%s\n", props.deviceName, device_type);
+  const char *dtype = device_type_name(props.deviceType);
+  fprintf(stderr, "vulkan_project: device=%s type=%s\n", props.deviceName, dtype);
 
   uint32_t qf_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(pd, &qf_count, NULL);
@@ -196,7 +209,7 @@ int main(int argc, char **argv) {
   VkPushConstantRange pcr = {
     .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
     .offset = 0,
-    .size = 12,
+    .size = 40,
   };
   VkPipelineLayoutCreateInfo plci = {
     .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -240,10 +253,16 @@ int main(int argc, char **argv) {
   VkMemoryRequirements mr_in, mr_out;
   vkGetBufferMemoryRequirements(dev, buf_in, &mr_in);
   vkGetBufferMemoryRequirements(dev, buf_out, &mr_out);
-  uint32_t mt_in = find_host_memory(pd, mr_in.memoryTypeBits);
-  uint32_t mt_out = find_host_memory(pd, mr_out.memoryTypeBits);
-  VkMemoryAllocateInfo ai_in = { .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .allocationSize = mr_in.size, .memoryTypeIndex = mt_in };
-  VkMemoryAllocateInfo ai_out = { .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .allocationSize = mr_out.size, .memoryTypeIndex = mt_out };
+  VkMemoryAllocateInfo ai_in = {
+    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+    .allocationSize = mr_in.size,
+    .memoryTypeIndex = find_host_memory(pd, mr_in.memoryTypeBits),
+  };
+  VkMemoryAllocateInfo ai_out = {
+    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+    .allocationSize = mr_out.size,
+    .memoryTypeIndex = find_host_memory(pd, mr_out.memoryTypeBits),
+  };
   VkDeviceMemory mem_in, mem_out;
   r = vkAllocateMemory(dev, &ai_in, NULL, &mem_in);
   if (r != VK_SUCCESS) die("alloc in", r);
@@ -252,13 +271,10 @@ int main(int argc, char **argv) {
   vkBindBufferMemory(dev, buf_in, mem_in, 0);
   vkBindBufferMemory(dev, buf_out, mem_out, 0);
 
-  void *map_in, *map_out;
+  void *map_in;
   vkMapMemory(dev, mem_in, 0, in_sz, 0, &map_in);
   memcpy(map_in, phi, in_sz);
   vkUnmapMemory(dev, mem_in);
-  vkMapMemory(dev, mem_out, 0, out_bytes, 0, &map_out);
-  memset(map_out, 0, out_bytes);
-  vkUnmapMemory(dev, mem_out);
 
   VkDescriptorPoolSize dps = { .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 2 };
   VkDescriptorPoolCreateInfo dpci = {
@@ -305,13 +321,26 @@ int main(int argc, char **argv) {
   VkCommandBuffer cmd;
   r = vkAllocateCommandBuffers(dev, &cbai, &cmd);
   if (r != VK_SUCCESS) die("cmd", r);
-  VkCommandBufferBeginInfo cbi = { .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT };
+  VkCommandBufferBeginInfo cbi = {
+    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+  };
   vkBeginCommandBuffer(cmd, &cbi);
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipe);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &dset, 0, NULL);
-  uint32_t pcdata[3] = { nx, ny, nz };
-  vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 12, pcdata);
-  uint32_t groups = (n + 63) / 64;
+  uint32_t pc[10];
+  pc[0] = nx;
+  pc[1] = ny;
+  pc[2] = width;
+  pc[3] = height;
+  pc[4] = z;
+  pc[5] = defx;
+  pc[6] = defy;
+  memcpy(&pc[7], &ar, 4);
+  memcpy(&pc[8], &ag, 4);
+  memcpy(&pc[9], &ab, 4);
+  vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 40, pc);
+  uint32_t groups = (pixels + 63) / 64;
   vkCmdDispatch(cmd, groups, 1, 1);
   VkMemoryBarrier barrier = {
     .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
@@ -327,11 +356,12 @@ int main(int argc, char **argv) {
   r = vkQueueWaitIdle(queue);
   if (r != VK_SUCCESS) die("wait", r);
 
+  void *map_out;
   vkMapMemory(dev, mem_out, 0, out_bytes, 0, &map_out);
   write_file(out_path, map_out, out_bytes);
   vkUnmapMemory(dev, mem_out);
 
-  printf("{\"ok\":true,\"device\":\"%s\",\"deviceType\":\"%s\",\"cells\":%u}\n", props.deviceName, device_type, n);
+  printf("{\"ok\":true,\"device\":\"%s\",\"deviceType\":\"%s\",\"pixels\":%u}\n", props.deviceName, dtype, pixels);
 
   vkDestroyPipeline(dev, pipe, NULL);
   vkDestroyPipelineLayout(dev, layout, NULL);
