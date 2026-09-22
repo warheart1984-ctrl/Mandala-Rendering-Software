@@ -128,7 +128,15 @@ int main(int argc, char **argv) {
   }
   VkPhysicalDeviceProperties props;
   vkGetPhysicalDeviceProperties(pd, &props);
-  fprintf(stderr, "vulkan_grad: device=%s\n", props.deviceName);
+  const char *device_type = "other";
+  switch (props.deviceType) {
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: device_type = "discrete"; break;
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: device_type = "integrated"; break;
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: device_type = "virtual"; break;
+    case VK_PHYSICAL_DEVICE_TYPE_CPU: device_type = "cpu"; break;
+    default: break;
+  }
+  fprintf(stderr, "vulkan_grad: device=%s type=%s\n", props.deviceName, device_type);
 
   uint32_t qf_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(pd, &qf_count, NULL);
@@ -323,7 +331,7 @@ int main(int argc, char **argv) {
   write_file(out_path, map_out, out_bytes);
   vkUnmapMemory(dev, mem_out);
 
-  printf("{\"ok\":true,\"device\":\"%s\",\"cells\":%u}\n", props.deviceName, n);
+  printf("{\"ok\":true,\"device\":\"%s\",\"deviceType\":\"%s\",\"cells\":%u}\n", props.deviceName, device_type, n);
 
   vkDestroyPipeline(dev, pipe, NULL);
   vkDestroyPipelineLayout(dev, layout, NULL);

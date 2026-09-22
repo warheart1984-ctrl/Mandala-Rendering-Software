@@ -30,7 +30,7 @@ Governance preserves **laws**, not equilibrium. No subsystem may commit a state 
 | Observer | 1 (Movie Lane path) |
 | Invariant | `proto.scalar-mass-conservation` (**enforced**) |
 | CPU | **enforced** source of truth |
-| GPU | Vulkan ∇φ kernel if RADV is live; else **declared** SPIR-V + blocked-with-evidence |
+| GPU | ∇φ kernel **partial** when a Vulkan device matches CPU (`maxAbsError ≤ 1e-4`). Lavapipe counts; RADV is preferred when a discrete device is present. Otherwise **declared** + blocked-with-evidence |
 
 RHFD mapping (Claim A only — computationally useful. Claim B / physical vacuum is **not** claimed):
 
