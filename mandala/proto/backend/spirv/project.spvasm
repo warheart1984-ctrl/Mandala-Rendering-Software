@@ -1,0 +1,208 @@
+; Orthographic z-slice of certified φ. CPU SoT: mandala-project.mjs projectFrozen.
+; Binding 0: phi[n] float. Binding 1: rgb[width*height*3] uint (0..255).
+; Push uints: nx, ny, width, height, z, defectX, defectY
+; Push floats: albedo.r, albedo.g, albedo.b
+; lum = clamp(0.5 + φ*0.25, 0, 1)
+; byte = floor(min(clamp(lum*albedo,0,1)*255 + 0.5, 255))  — JS Math.round for x>=0
+; Defect pixel is (255, 40, 40).
+
+OpCapability Shader
+%glsl = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %gid
+OpExecutionMode %main LocalSize 64 1 1
+
+OpDecorate %gid BuiltIn GlobalInvocationId
+
+OpDecorate %phi_arr ArrayStride 4
+OpMemberDecorate %PhiBlock 0 Offset 0
+OpDecorate %PhiBlock BufferBlock
+OpDecorate %phi_var DescriptorSet 0
+OpDecorate %phi_var Binding 0
+
+OpDecorate %pix_arr ArrayStride 4
+OpMemberDecorate %PixBlock 0 Offset 0
+OpDecorate %PixBlock BufferBlock
+OpDecorate %pix_var DescriptorSet 0
+OpDecorate %pix_var Binding 1
+
+OpMemberDecorate %PC 0 Offset 0
+OpMemberDecorate %PC 1 Offset 4
+OpMemberDecorate %PC 2 Offset 8
+OpMemberDecorate %PC 3 Offset 12
+OpMemberDecorate %PC 4 Offset 16
+OpMemberDecorate %PC 5 Offset 20
+OpMemberDecorate %PC 6 Offset 24
+OpMemberDecorate %PC 7 Offset 28
+OpMemberDecorate %PC 8 Offset 32
+OpMemberDecorate %PC 9 Offset 36
+OpDecorate %PC Block
+
+%void = OpTypeVoid
+%fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%v3uint = OpTypeVector %uint 3
+%ptr_in_v3 = OpTypePointer Input %v3uint
+%gid = OpVariable %ptr_in_v3 Input
+%bool = OpTypeBool
+
+%u0 = OpConstant %uint 0
+%u1 = OpConstant %uint 1
+%u2 = OpConstant %uint 2
+%u3 = OpConstant %uint 3
+%u4 = OpConstant %uint 4
+%u5 = OpConstant %uint 5
+%u6 = OpConstant %uint 6
+%u7 = OpConstant %uint 7
+%u8 = OpConstant %uint 8
+%u9 = OpConstant %uint 9
+%u40 = OpConstant %uint 40
+%u255 = OpConstant %uint 255
+%f0 = OpConstant %float 0
+%f1 = OpConstant %float 1
+%f05 = OpConstant %float 0.5
+%f025 = OpConstant %float 0.25
+%f255 = OpConstant %float 255
+
+%phi_arr = OpTypeRuntimeArray %float
+%PhiBlock = OpTypeStruct %phi_arr
+%ptr_phi = OpTypePointer Uniform %PhiBlock
+%phi_var = OpVariable %ptr_phi Uniform
+%ptr_u_float = OpTypePointer Uniform %float
+
+%pix_arr = OpTypeRuntimeArray %uint
+%PixBlock = OpTypeStruct %pix_arr
+%ptr_pix = OpTypePointer Uniform %PixBlock
+%pix_var = OpVariable %ptr_pix Uniform
+%ptr_u_uint = OpTypePointer Uniform %uint
+
+%PC = OpTypeStruct %uint %uint %uint %uint %uint %uint %uint %float %float %float
+%ptr_pc = OpTypePointer PushConstant %PC
+%pc = OpVariable %ptr_pc PushConstant
+%ptr_pc_uint = OpTypePointer PushConstant %uint
+%ptr_pc_float = OpTypePointer PushConstant %float
+
+%main = OpFunction %void None %fn
+%entry = OpLabel
+
+%gidv = OpLoad %v3uint %gid
+%i = OpCompositeExtract %uint %gidv 0
+
+%p_nx = OpAccessChain %ptr_pc_uint %pc %u0
+%p_ny = OpAccessChain %ptr_pc_uint %pc %u1
+%p_w = OpAccessChain %ptr_pc_uint %pc %u2
+%p_h = OpAccessChain %ptr_pc_uint %pc %u3
+%nx = OpLoad %uint %p_nx
+%ny = OpLoad %uint %p_ny
+%width = OpLoad %uint %p_w
+%height = OpLoad %uint %p_h
+
+%npix = OpIMul %uint %width %height
+%in_range = OpULessThan %bool %i %npix
+OpSelectionMerge %done None
+OpBranchConditional %in_range %body %done
+
+%body = OpLabel
+%p_z = OpAccessChain %ptr_pc_uint %pc %u4
+%p_dx = OpAccessChain %ptr_pc_uint %pc %u5
+%p_dy = OpAccessChain %ptr_pc_uint %pc %u6
+%z = OpLoad %uint %p_z
+%defx = OpLoad %uint %p_dx
+%defy = OpLoad %uint %p_dy
+%p_ar = OpAccessChain %ptr_pc_float %pc %u7
+%p_ag = OpAccessChain %ptr_pc_float %pc %u8
+%p_ab = OpAccessChain %ptr_pc_float %pc %u9
+%ar = OpLoad %float %p_ar
+%ag = OpLoad %float %p_ag
+%ab = OpLoad %float %p_ab
+
+%px = OpUMod %uint %i %width
+%py = OpUDiv %uint %i %width
+%pxf = OpConvertUToF %float %px
+%pyf = OpConvertUToF %float %py
+%nxf = OpConvertUToF %float %nx
+%nyf = OpConvertUToF %float %ny
+%wf = OpConvertUToF %float %width
+%hf = OpConvertUToF %float %height
+%pxc = OpFAdd %float %pxf %f05
+%pyc = OpFAdd %float %pyf %f05
+%xs = OpFMul %float %pxc %nxf
+%x = OpFDiv %float %xs %wf
+%ys = OpFMul %float %pyc %nyf
+%y = OpFDiv %float %ys %hf
+%xi0 = OpConvertFToU %uint %x
+%yi0 = OpConvertFToU %uint %y
+%nxm = OpISub %uint %nx %u1
+%nym = OpISub %uint %ny %u1
+%xi_ok = OpULessThan %bool %xi0 %nx
+%yi_ok = OpULessThan %bool %yi0 %ny
+%xi = OpSelect %uint %xi_ok %xi0 %nxm
+%yi = OpSelect %uint %yi_ok %yi0 %nym
+
+%nyz = OpIMul %uint %ny %z
+%row = OpIAdd %uint %yi %nyz
+%base = OpIMul %uint %nx %row
+%cell = OpIAdd %uint %xi %base
+%pphi = OpAccessChain %ptr_u_float %phi_var %u0 %cell
+%phi = OpLoad %float %pphi
+%phs = OpFMul %float %phi %f025
+%lum0 = OpFAdd %float %f05 %phs
+%lum = OpExtInst %float %glsl FClamp %lum0 %f0 %f1
+
+%lr = OpFMul %float %lum %ar
+%lg = OpFMul %float %lum %ag
+%lb = OpFMul %float %lum %ab
+%cr = OpExtInst %float %glsl FClamp %lr %f0 %f1
+%cg = OpExtInst %float %glsl FClamp %lg %f0 %f1
+%cb = OpExtInst %float %glsl FClamp %lb %f0 %f1
+%sr = OpFMul %float %cr %f255
+%sg = OpFMul %float %cg %f255
+%sb = OpFMul %float %cb %f255
+%sr2 = OpFAdd %float %sr %f05
+%sg2 = OpFAdd %float %sg %f05
+%sb2 = OpFAdd %float %sb %f05
+%rcl = OpExtInst %float %glsl FMin %sr2 %f255
+%gcl = OpExtInst %float %glsl FMin %sg2 %f255
+%bcl = OpExtInst %float %glsl FMin %sb2 %f255
+%ur = OpConvertFToU %uint %rcl
+%ug = OpConvertFToU %uint %gcl
+%ub = OpConvertFToU %uint %bcl
+
+%defxf = OpConvertUToF %float %defx
+%defyf = OpConvertUToF %float %defy
+%dxs = OpFDiv %float %defxf %nxf
+%dys = OpFDiv %float %defyf %nyf
+%dxw = OpFMul %float %dxs %wf
+%dyh = OpFMul %float %dys %hf
+%wm = OpISub %uint %width %u1
+%hm = OpISub %uint %height %u1
+%wmf = OpConvertUToF %float %wm
+%hmf = OpConvertUToF %float %hm
+%dxa = OpFAdd %float %dxw %f05
+%dya = OpFAdd %float %dyh %f05
+%dxc = OpExtInst %float %glsl FMin %dxa %wmf
+%dyc = OpExtInst %float %glsl FMin %dya %hmf
+%sdx = OpConvertFToU %uint %dxc
+%sdy = OpConvertFToU %uint %dyc
+%samex = OpIEqual %bool %px %sdx
+%samey = OpIEqual %bool %py %sdy
+%isdef = OpLogicalAnd %bool %samex %samey
+%or_ = OpSelect %uint %isdef %u255 %ur
+%og = OpSelect %uint %isdef %u40 %ug
+%ob = OpSelect %uint %isdef %u40 %ub
+
+%i3 = OpIMul %uint %i %u3
+%i3g = OpIAdd %uint %i3 %u1
+%i3b = OpIAdd %uint %i3 %u2
+%orp = OpAccessChain %ptr_u_uint %pix_var %u0 %i3
+%ogp = OpAccessChain %ptr_u_uint %pix_var %u0 %i3g
+%obp = OpAccessChain %ptr_u_uint %pix_var %u0 %i3b
+OpStore %orp %or_
+OpStore %ogp %og
+OpStore %obp %ob
+OpBranch %done
+
+%done = OpLabel
+OpReturn
+OpFunctionEnd
