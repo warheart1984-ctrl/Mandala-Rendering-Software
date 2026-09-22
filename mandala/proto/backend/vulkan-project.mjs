@@ -5,7 +5,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,21 +20,69 @@ function run(cmd, args, opts = {}) {
   });
 }
 
+function firstExisting(paths) {
+  for (const p of paths) {
+    if (p && existsSync(p)) return p;
+  }
+  return null;
+}
+
+function toolOnPath(name) {
+  const finder = process.platform === "win32" ? "where.exe" : "which";
+  const found = run(finder, [name]);
+  if (found.status !== 0) return null;
+  const line = String(found.stdout || "").split(/\r?\n/).map((s) => s.trim()).find(Boolean);
+  return line || null;
+}
+
+function sdkBin(file) {
+  const sdk = process.env.VULKAN_SDK;
+  if (!sdk) return null;
+  return firstExisting([join(sdk, "Bin", file), join(sdk, "bin", file)]);
+}
+
+function spirvTool(base) {
+  const exe = process.platform === "win32" ? `${base}.exe` : base;
+  return sdkBin(exe) || toolOnPath(base) || base;
+}
+
 export function assembleProjectSpirv(outSpv) {
   const asm = join(__dirname, "spirv/project.spvasm");
-  const as = run("spirv-as", [asm, "-o", outSpv, "--target-env", "vulkan1.0"]);
+  const as = run(spirvTool("spirv-as"), [asm, "-o", outSpv, "--target-env", "vulkan1.0"]);
   if (as.status !== 0) {
     return { ok: false, step: "spirv-as", stderr: as.stderr || as.error?.message };
   }
-  const val = run("spirv-val", [outSpv, "--target-env", "vulkan1.0"]);
+  const val = run(spirvTool("spirv-val"), [outSpv, "--target-env", "vulkan1.0"]);
   if (val.status !== 0) {
     return { ok: false, step: "spirv-val", stderr: val.stderr || val.error?.message };
   }
   return { ok: true, spv: outSpv };
 }
 
-export function compileProjectHost(binPath) {
+export function compileProjectHost(binPath, { cwd } = {}) {
   const src = join(__dirname, "vulkan_project.c");
+  if (process.platform === "win32") {
+    const sdk = process.env.VULKAN_SDK;
+    if (!sdk) {
+      return { ok: false, step: "cl", stderr: "VULKAN_SDK is not set. The RX 580 host needs the LunarG Vulkan SDK plus the AMD driver." };
+    }
+    const out = binPath.toLowerCase().endsWith(".exe") ? binPath : `${binPath}.exe`;
+    const cc = run("cl", [
+      "/nologo",
+      "/O2",
+      `/I${join(sdk, "Include")}`,
+      `/Fo${cwd || dirname(out)}\\`,
+      src,
+      `/Fe:${out}`,
+      "/link",
+      `/LIBPATH:${join(sdk, "Lib")}`,
+      "vulkan-1.lib",
+    ], { cwd: cwd || dirname(out) });
+    if (cc.status !== 0) {
+      return { ok: false, step: "cl", stderr: cc.stderr || cc.stdout || cc.error?.message };
+    }
+    return { ok: true, bin: out };
+  }
   const cc = run("gcc", ["-O2", "-o", binPath, src, "-lvulkan"]);
   if (cc.status !== 0) {
     return { ok: false, step: "gcc", stderr: cc.stderr || cc.error?.message };
@@ -45,12 +93,12 @@ export function compileProjectHost(binPath) {
 function ensureTools(buildDir) {
   mkdirSync(buildDir, { recursive: true });
   const spv = join(buildDir, "project.spv");
-  const bin = join(buildDir, "vulkan_project");
+  const bin = join(buildDir, process.platform === "win32" ? "vulkan_project.exe" : "vulkan_project");
   const asm = assembleProjectSpirv(spv);
   if (!asm.ok) return { ok: false, reason: asm };
-  const compiled = compileProjectHost(bin);
+  const compiled = compileProjectHost(bin, { cwd: buildDir });
   if (!compiled.ok) return { ok: false, reason: compiled };
-  return { ok: true, spv, bin };
+  return { ok: true, spv, bin: compiled.bin };
 }
 
 /**

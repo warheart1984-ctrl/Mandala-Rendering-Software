@@ -29,8 +29,12 @@ export const VULKAN_MOVIE_STATUS = "partial";
 
 function ffmpegBin() {
   if (process.env.MRS_FFMPEG && existsSync(process.env.MRS_FFMPEG)) return process.env.MRS_FFMPEG;
-  const which = spawnSync("which", ["ffmpeg"], { encoding: "utf8" });
-  if (which.status === 0 && which.stdout.trim()) return which.stdout.trim();
+  const finder = process.platform === "win32" ? "where.exe" : "which";
+  const which = spawnSync(finder, ["ffmpeg"], { encoding: "utf8" });
+  if (which.status === 0) {
+    const line = String(which.stdout || "").split(/\r?\n/).map((s) => s.trim()).find(Boolean);
+    if (line) return line;
+  }
   return null;
 }
 

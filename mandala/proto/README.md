@@ -52,8 +52,10 @@ node mandala/proto/run.mjs
 # or
 node scripts/mandala-proto.mjs
 
-# AAIS-gated Vulkan slice movie (needs spirv-as, libvulkan, a Vulkan ICD, ffmpeg)
+# AAIS-gated Vulkan slice movie (needs spirv-as, a Vulkan ICD, ffmpeg)
 node mandala/proto/vulkan-movie.mjs
+# Windows / RX 580, repo on G:
+powershell -ExecutionPolicy Bypass -File scripts/vulkan-aais-movie.ps1
 ```
 
 Outputs land in `output/mandala-proto/` (not `output/simulation/salt-atlas/`).
